@@ -7,7 +7,7 @@
 		{ label: '문서', path: '/docs' },
 		{ label: '이용약관', path: '/terms' },
 		{ label: '개인정보 처리방침', path: '/privacy' }
-	];
+	] as const;
 </script>
 
 <footer class="border-t border-border">
@@ -36,11 +36,8 @@
 		<nav aria-label="서비스 정책 및 안내" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
 			{#each footerLinks as link (link.path)}
 				<a
-					href={`${SERVICE_URL}${link.path}`}
+					href={resolve(link.path)}
 					class={['footer-link', { 'font-semibold': link.path === '/privacy' }]}
-					target="_blank"
-					rel="noreferrer"
-					aria-label={`${link.label} (운영 사이트, 새 창)`}
 				>
 					{link.label}
 				</a>
