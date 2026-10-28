@@ -12,6 +12,7 @@
     "build:bot": "pnpm --filter @msm2/bot build",
     "start": "pnpm --filter @msm2/web start",
     "start:bot": "pnpm --filter @msm2/bot start",
-    "check": "pnpm -r check"
+    "check": "pnpm check:branding && pnpm -r check",
+    "check:branding": "node scripts/check_branding.mjs"
   }
 }
