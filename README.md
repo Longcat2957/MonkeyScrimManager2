@@ -140,6 +140,7 @@ ROFL2 메타데이터·청크·패킷 경계를 읽는 자체 서버 파서와 �
 
 ```sh
 pnpm --silent rofl:inspect /path/to/replay.rofl
+pnpm --silent rofl:project /path/to/replay.rofl
 pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 ```
 
@@ -148,6 +149,10 @@ pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 현재는 파일 분석 단계이며 업로드·경기 등록·DB 저장은 구현하지 않았다.
 로컬 원본·분석 결과는 Git에서 제외되는 프로젝트 루트 `samples/`에 둔다.
 명령과 출력 형식은 [ROFL 분석 문서](docs/rofl.md), 실측 결과와 후속 과제는 [연구 기록](docs/rofl-research.md)을 따른다.
+
+`rofl:project`는 서비스에 사용할 P0~P2 통계 33개와 최종 아이템·주문·룬을 선별한다.
+파일 지문과 서비스의 서버·경기·계정 연결을 받는 적재 초안 모델도 제공한다.
+필드·검증 규칙과 DB 연결 전 범위는 [ROFL 적재 모델](docs/rofl-import.md)에 정리했다.
 
 ## Discord 봇
 

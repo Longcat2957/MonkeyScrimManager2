@@ -5,6 +5,9 @@ Riot 계정 조회와 독립되어 있으며, Linux에서 Node.js 기본 모듈�
 외부 ROFL 라이브러리·API·게임 실행파일은 사용하지 않는다.
 패킷 본문은 의미가 확인되지 않은 상태로도 원본 바이트를 보존한다.
 
+운영 통계용 P0~P2 선별 파싱은 `pnpm rofl:project`를 사용한다.
+전체 데이터 조사와 구분한 출력·적재 모델은 [서비스용 파싱·적재 모델](rofl-import.md)을 따른다.
+
 ## 로컬 확인
 
 프로젝트 루트에서 실행한다. 입력 파일은 읽기만 하고 결과 JSON은 표준 출력으로 보낸다.
@@ -96,8 +99,10 @@ pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 | `parser.ts` | `readRoflMetadata`의 전체 JSON 필드, `parseRoflMetadata`의 검증된 경기 요약 |
 | `container.ts` | 17·18바이트 청크 헤더 판별, 청크 경계·크기 검사, 기본 Zstd 압축 해제 |
 | `packets.ts` | 청크별 상태를 초기화하는 패킷 경계 순회. 본문은 복사·해석하지 않음 |
+| `projection.ts` | P0~P2 통계·최종 세팅 선별과 팀 결과 일관성 확인 |
+| `import-model.ts` | 파일 지문·서비스 문맥·연결 정보를 담는 적재 초안. 실제 저장 없음 |
 
-위 모듈은 `apps/web/src/lib/server/rofl/`에 있다. 두 로컬 CLI는 같은 모듈을 사용한다.
+위 모듈은 `apps/web/src/lib/server/rofl/`에 있다. 로컬 CLI도 같은 모듈을 사용한다.
 
 ## 지원 형식과 검증
 

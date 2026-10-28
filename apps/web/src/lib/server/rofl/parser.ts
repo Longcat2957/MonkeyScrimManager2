@@ -103,9 +103,9 @@ export function readRoflMetadata(bytes: Uint8Array): RoflRawMetadata {
 	return { formatVersion: 2, gameVersion: layout.gameVersion, metadata, playerStats: stats.map(record) };
 }
 
-/** Reads ROFL2 summary metadata only; does not authenticate the signature or decode payload packets. */
-export function parseRoflMetadata(bytes: Uint8Array): RoflMetadata {
-	const { metadata, playerStats, gameVersion } = readRoflMetadata(bytes);
+/** Applies the existing summary validation to metadata that has already been read. */
+export function summarizeRoflMetadata(raw: RoflRawMetadata): RoflMetadata {
+	const { metadata, playerStats, gameVersion } = raw;
 	if (typeof metadata.gameLength !== 'number' || !Number.isSafeInteger(metadata.gameLength) || metadata.gameLength < 0) invalidMetadata();
 	return {
 		formatVersion: 2,
@@ -114,4 +114,9 @@ export function parseRoflMetadata(bytes: Uint8Array): RoflMetadata {
 		participants: playerStats.map(participant),
 		metadata
 	};
+}
+
+/** Reads ROFL2 summary metadata only; does not authenticate the signature or decode payload packets. */
+export function parseRoflMetadata(bytes: Uint8Array): RoflMetadata {
+	return summarizeRoflMetadata(readRoflMetadata(bytes));
 }
