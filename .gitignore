@@ -8,3 +8,6 @@ dist/
 .DS_Store
 Thumbs.db
 vite.config.*.timestamp-*
+
+# Local replay samples and analysis outputs.
+/samples/

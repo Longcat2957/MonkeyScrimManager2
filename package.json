@@ -13,6 +13,8 @@
     "start": "pnpm --filter @msm2/web start",
     "start:bot": "pnpm --filter @msm2/bot start",
     "check": "pnpm check:branding && pnpm -r check",
+    "rofl:inspect": "node --experimental-strip-types scripts/inspect_rofl.mts",
+    "rofl:research": "node --experimental-strip-types scripts/research_rofl.mts",
     "check:branding": "node scripts/check_branding.mjs"
   }
 }

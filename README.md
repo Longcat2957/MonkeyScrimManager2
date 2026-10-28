@@ -132,6 +132,23 @@ Riot 요청 처리 테스트는 실제 키와 외부 API 호출 없이 실행한
 pnpm --filter @msm2/web test
 ```
 
+## ROFL 분석
+
+ROFL2 메타데이터·청크·패킷 경계를 읽는 자체 서버 파서와 로컬 명령을 제공한다.
+경기 시간·참가자·챔피언·팀·승패·KDA·CS를 요약하고, 전체 원본 필드와 미해석 패킷도 보존한다.
+외부 ROFL 라이브러리 없이 Node.js 기본 Zstd를 사용한다.
+
+```sh
+pnpm --silent rofl:inspect /path/to/replay.rofl
+pnpm --silent rofl:research samples/replay.rofl samples/replay-research
+```
+
+`rofl:research`는 새 디렉터리에 원본 사본·전체 메타데이터·압축 해제 청크·패킷 인덱스·분석 보고서를 만든다.
+패킷의 시각·ID·본문 위치를 추출하며, 킬·이동 등 본문의 의미 해석은 아직 검증하지 않았다.
+현재는 파일 분석 단계이며 업로드·경기 등록·DB 저장은 구현하지 않았다.
+로컬 원본·분석 결과는 Git에서 제외되는 프로젝트 루트 `samples/`에 둔다.
+명령과 출력 형식은 [ROFL 분석 문서](docs/rofl.md), 실측 결과와 후속 과제는 [연구 기록](docs/rofl-research.md)을 따른다.
+
 ## Discord 봇
 
 프로젝트 루트에서 환경 변수 예제를 복사한다.
