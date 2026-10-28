@@ -24,8 +24,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-기본 개발 주소는 `http://localhost:5173`이다. 첫 화면은 STDF 스타일과 버튼 동작을
-확인하기 위한 개발 환경 확인 페이지다.
+기본 개발 주소는 `http://localhost:5173`이다. 현재 페이지는 공통 레이아웃과 제목만 갖춘 상태다.
 
 ## 진입점
 
@@ -59,8 +58,8 @@ pnpm dev
 긴 페이지에서는 콘텐츠 다음에 배치된다.
 헤더에는 홈·GitHub 링크를 제공하며, 1024px 미만에서는 접을 수 있는 모바일 메뉴를 사용한다.
 푸터는 [MSM1 푸터](https://github.com/Longcat2957/MonkeyScrimManager/blob/8847ac77b5d939c683099f381386a242fe764517/apps/web/src/lib/components/layout/AppFooter.svelte)를 참고해
-서비스 도메인과 문서·이용약관·개인정보 처리방침을 제공한다. 정책·문서 링크는 `SERVICE_URL`을 기준으로
-기존 서비스의 `https://monkeybot.lol/docs`, `/terms`, `/privacy` 주소에 연결한다.
+서비스 도메인과 문서·이용약관·개인정보 처리방침을 제공한다. 정책·문서 링크는 같은 탭에서
+내부 `/docs`, `/terms`, `/privacy` 페이지로 이동한다. 각 페이지의 본문은 아직 작성하지 않았다.
 푸터는 워드마크·도메인·정책 링크를 적은 여백으로 배치한 간결한 구성이다.
 경계선은 `layout.css`의 공통 `--color-border`·`--color-border-strong` 토큰으로 관리한다.
 배치와 얇은 경계선은 [STDF 헤더](https://github.com/any-tdf/any-tdf/blob/main/apps/stdf-site/src/lib/header/Header.svelte)와
@@ -83,6 +82,55 @@ pnpm dev
 본문·내비게이션·STDF 컨트롤은 MSM1과 동일한 `Noto Sans KR`을 사용한다. Google Fonts에서
 400·500·600·700·800 굵기를 `display=swap`으로 불러오며 `@theme`의 `--font-sans`로 전역 적용한다.
 `Monkeybot` 워드마크에는 Google Fonts의 `Jersey 10` regular 400을 `font-brand`로 적용한다.
+
+## Riot API
+
+Riot API 키는 **`apps/web/.env`**의 `RIOT_API_KEY`에 입력한다.
+새 환경에서는 [환경 변수 예제](apps/web/.env.example)를 복사해 사용한다.
+
+```sh
+cp apps/web/.env.example apps/web/.env
+```
+
+```dotenv
+RIOT_API_KEY=
+RIOT_ACCOUNT_REGION=asia
+RIOT_PLATFORM=kr
+RIOT_API_TIMEOUT_MS=10000
+```
+
+`RIOT_ACCOUNT_REGION`은 계정 조회 지역, `RIOT_PLATFORM`은 프로필·개인 랭크를 조회할 LoL 플랫폼이다.
+한국 계정은 위 기본값을 사용한다. `RIOT_API_TIMEOUT_MS`는 요청 제한 시간이며
+기본값은 10초, 허용 범위는 1–60000ms다. 기존 `.env`에는 키가 있으면 충분하며 나머지는 기본값을 사용한다.
+
+프로젝트 루트에서 `pnpm dev`로 실행한다. 값을 변경하면 개발 서버를 재시작한다.
+`pnpm start`도 `apps/web/.env`를 읽으며, 운영 환경에서는 서비스 관리자가 환경 변수를 주입할 수 있다.
+키는 서버에서만 사용하고 `.env`는 Git에서 제외한다. `pnpm check`와 `pnpm build`에는 키가 필요하지 않다.
+
+현재 서비스의 계정·참가자 정보와 화면 표시에 필요한 **Riot 조회 5개, Data Dragon 2개 라우트 패턴**을 제공한다.
+
+| 구분 | 지원 범위 |
+| --- | --- |
+| Riot 조회 | Riot ID·PUUID·활성 지역, 참가자 프로필·개인 랭크 |
+| Data Dragon | 버전 목록, 챔피언·아이템·룬·소환사 주문·프로필 아이콘 카탈로그 및 이미지 URL 생성 |
+
+각 경로의 사용 목적·파라미터·응답·제약은 [Riot API 연동 문서](docs/riot-api.md)에 정리했다.
+외부 API는 현재 기능에서 사용할 근거가 있을 때만 추가한다. 화면·봇 연결과 사용자 계정 저장은 아직 구현하지 않았다.
+
+공통 요청 처리는 `apps/web/src/lib/server/riot/transport.ts`, 환경 변수 연결은 `client.ts`,
+계정 조회는 `account.ts`, LoL 조회는 `lol/`의 각 모듈이 담당한다.
+HTTP 경로와 웹 서버 내부의 호출은 동일한 조회 함수를 사용한다.
+
+현재 조회 API에는 사용자 인증을 적용하지 않았다. 웹 서버 프로세스당 Riot 요청은 최대 8개를 동시에 처리하고,
+`429` 응답을 받으면 `Retry-After`에 따라 해당 호스트의 후속 요청을 일시 중단한다.
+Riot 응답 캐시와 자동 재시도는 적용하지 않았다. Data Dragon은 API 키 없이 별도로 요청하며,
+버전 목록은 5분, 버전별 정적 데이터는 24시간 캐시한다.
+
+Riot 요청 처리 테스트는 실제 키와 외부 API 호출 없이 실행한다.
+
+```sh
+pnpm --filter @msm2/web test
+```
 
 ## Discord 봇
 

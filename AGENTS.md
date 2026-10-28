@@ -23,6 +23,7 @@ feature, or architectural decisions.
 - Do not assume MSM1 features must be preserved.
 - Prefer simple, maintainable solutions.
 - Avoid unnecessary complexity and abstractions.
+- Implement external API endpoints only when a currently agreed service feature needs them. Identify the consuming feature before adding an endpoint; upstream API completeness, parity with MSM1, and possible future use are not sufficient reasons.
 
 ## Web UI and Content Rules
 
