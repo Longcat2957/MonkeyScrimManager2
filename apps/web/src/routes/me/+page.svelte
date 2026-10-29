@@ -96,14 +96,14 @@
 	<section aria-labelledby="accounts">
 		<div class="region">
 			<span class="lbl" id="accounts">연결한 Riot 계정</span>
-			<button type="button" class="btn btn--text min-h-9 px-2" onclick={() => (linkOpen = true)}>계정 연결</button>
 		</div>
 
 		{#if profile.accounts.length === 0}
-			<div class="panel px-5 py-4">
+			<div class="panel px-5 py-5">
 				<p class="text-[13px] text-mut">
 					연결된 Riot 계정이 없습니다. 계정을 연결하면 참가 신청과 ROFL 기록 연결에 사용합니다.
 				</p>
+				<button type="button" class="btn mt-3" onclick={() => (linkOpen = true)}>계정 연결</button>
 			</div>
 		{:else}
 			<ul class="panel">
@@ -129,6 +129,13 @@
 						</div>
 					</li>
 				{/each}
+				<li class="border-t border-line">
+					<button type="button" class="row w-full text-left" onclick={() => (linkOpen = true)}>
+						<span class="row-title text-accent">+ 계정 연결</span>
+						<span></span>
+						<span></span>
+					</button>
+				</li>
 			</ul>
 		{/if}
 	</section>

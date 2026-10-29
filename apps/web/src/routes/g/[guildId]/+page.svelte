@@ -84,7 +84,7 @@
 		<section aria-labelledby="recent">
 			<div class="region">
 				<span class="lbl" id="recent">최근 경기</span>
-				<span class="count">{home.recentMatches.status === 'ready' ? `${home.recentMatches.data.length}` : ''}</span>
+				<span class="count">{home.recentMatches.status === 'ready' ? `${home.recentMatches.data.length}건` : ''}</span>
 			</div>
 
 			<AsyncSection

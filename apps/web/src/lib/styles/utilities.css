@@ -38,24 +38,24 @@
 	}
 
 	/* 구역 라벨은 패널 밖에 둔다. 패널마다 머리 띠를 반복하지 않는다. */
+	/* 구역 라벨은 왼쪽에만 쌓는다. 오른쪽 끝에 작은 글자를 두면 시선이 갈라진다. */
 	.region {
 		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-bottom: 0.625rem;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 2px;
+		margin-bottom: 0.75rem;
 	}
 
 	.lbl {
-		font-size: 0.65625rem;
+		font-size: 0.875rem;
 		font-weight: 700;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--faint);
+		letter-spacing: -0.01em;
+		color: var(--fg);
 	}
 
 	.count {
-		font-size: 0.6875rem;
+		font-size: 0.71875rem;
 		color: var(--faint);
 		font-variant-numeric: tabular-nums;
 	}

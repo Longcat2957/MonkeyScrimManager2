@@ -53,7 +53,7 @@
 		<Input title="검색" placeholder="내전명 또는 팀명" type="search" py="2" bind:value={query} />
 	</div>
 	<div class="grid gap-1.5">
-		<label for="match-status" class="lbl">상태</label>
+		<label for="match-status" class="text-[12px] font-semibold text-mut">상태</label>
 		<select id="match-status" class="field w-36" value={data.status} onchange={(event) => go({ status: event.currentTarget.value, page: 1 })}>
 			<option value="all">전체</option>
 			<option value="in_progress">진행 중</option>

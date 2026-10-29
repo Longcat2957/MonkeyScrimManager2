@@ -89,7 +89,8 @@
 		<p class="text-[15px] font-bold">소제목 15/700</p>
 		<p class="text-[14px]">본문 14/400 — 내전 결과는 ROFL 파일로 자동 기록됩니다.</p>
 		<p class="text-[12.5px] text-mut">보조 12.5/400 — 서브 정보와 안내</p>
-		<p class="lbl">라벨 10.5 UPPERCASE 0.16em</p>
+		<p class="lbl">구역 라벨 14/700</p>
+		<p class="count">보조 11.5 — 라벨 아래 한 줄</p>
 		<p class="font-brand text-[44px] leading-none">128 7 / 10 :</p>
 	</div>
 </section>
