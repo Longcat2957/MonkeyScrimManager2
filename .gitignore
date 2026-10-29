@@ -11,3 +11,6 @@ vite.config.*.timestamp-*
 
 # Local replay samples and analysis outputs.
 /samples/
+
+# 로컬 조사·임시 산출물
+/.scratch/

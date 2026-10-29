@@ -5,7 +5,8 @@
 - `docs/purpose.md`: Project vision, goals, and constraints.
 - `docs/web/routing.md`: Agreed page routes, layout ownership, and navigation structure (design; not yet implemented).
 - `docs/web/page-requirements.md`: Route index, shared interaction rules, and links to structured page requirements (design draft; includes open decisions).
-- `docs/web/ui-plan.md`: Header replacement, shared layouts, and page component placement plans using STDF (text-only design; not implemented).
+- `docs/web/design/`: Frontend design rewrite plan (current). Start at `docs/web/design/README.md`. Implement against `system.md` (tokens/CSS), `architecture.md` (shell, context, data contracts), `components.md` (component catalogue + STDF mapping), `pages.md` (per-route code plan), and `delivery.md` (phases and gates).
+- `docs/web/ui-plan.md`: Earlier text-only placement plan (superseded by `docs/web/design/`; kept as history).
 
 Consult the relevant documents when making product,
 feature, or architectural decisions.
