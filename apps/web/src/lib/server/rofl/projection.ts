@@ -3,7 +3,7 @@ import { readRoflMetadata, summarizeRoflMetadata } from './parser.ts';
 
 export const ROFL_PROJECTION_VERSION = 1;
 
-/** Only agreed P0–P2 fields become service statistics; unknown metadata stays in the source archive. */
+/** 합의한 P0~P2 필드만 선별한다. 알 수 없는 원본 필드는 서비스 저장 대상에 포함하지 않는다. */
 export const ROFL_STAT_FIELDS = {
 	kills: { source: 'CHAMPIONS_KILLED', priority: 0, unit: 'count' },
 	deaths: { source: 'NUM_DEATHS', priority: 0, unit: 'count' },
@@ -27,7 +27,7 @@ export const ROFL_STAT_FIELDS = {
 	totalHeal: { source: 'TOTAL_HEAL', priority: 2, unit: 'healing' },
 	healOnTeammates: { source: 'TOTAL_HEAL_ON_TEAMMATES', priority: 2, unit: 'healing' },
 	damageShieldedOnTeammates: { source: 'TOTAL_DAMAGE_SHIELDED_ON_TEAMMATES', priority: 2, unit: 'shielding' },
-	// Preserve source values until the replay units have been independently verified.
+	// 리플레이의 단위를 독립적으로 검증하기 전까지 선별한 원값을 유지한다.
 	timeCcingOthers: { source: 'TIME_CCING_OTHERS', priority: 2, unit: 'unverified' },
 	totalTimeCrowdControlDealt: { source: 'TOTAL_TIME_CROWD_CONTROL_DEALT', priority: 2, unit: 'unverified' },
 	totalTimeCrowdControlDealtToChampions: { source: 'TOTAL_TIME_CROWD_CONTROL_DEALT_TO_CHAMPIONS', priority: 2, unit: 'unverified' },
@@ -54,15 +54,15 @@ export interface RoflProjectedParticipant {
 	win: boolean | null;
 	stats: Record<keyof typeof ROFL_STAT_FIELDS, number | null>;
 	loadout: {
-		/** Seven slots in original ITEM0–ITEM6 order, including empty slots. */
+		/** 빈 슬롯을 포함해 원래 ITEM0~ITEM6 순서의 일곱 칸을 유지한다. */
 		itemIds: (number | null)[];
-		/** Two slots in original SUMMONER_SPELL_1–2 order. */
+		/** 원래 SUMMONER_SPELL_1~2 순서의 두 칸을 유지한다. */
 		summonerSpellIds: (number | null)[];
 		primaryRuneStyleId: number | null;
 		secondaryRuneStyleId: number | null;
-		/** Six slots in original PERK0–PERK5 order. */
+		/** 원래 PERK0~PERK5 순서의 여섯 칸을 유지한다. */
 		runeIds: (number | null)[];
-		/** Three slots in original STAT_PERK_0–2 order. */
+		/** 원래 STAT_PERK_0~2 순서의 세 칸을 유지한다. */
 		statRuneIds: (number | null)[];
 	};
 }
@@ -74,7 +74,7 @@ export interface RoflGameProjection {
 	gameLengthMs: number;
 	participants: RoflProjectedParticipant[];
 	teams: { teamId: number; win: boolean | null }[];
-	/** Metadata consistency only: does not establish authenticity, authorization or account ownership. */
+	/** 메타데이터의 일관성만 나타내며 진위·등록 권한·계정 소유권을 증명하지 않는다. */
 	result: { status: 'consistent' | 'incomplete' | 'conflicting'; winnerTeamId: number | null };
 }
 
@@ -117,7 +117,7 @@ function teamResults(participants: RoflProjectedParticipant[]): Pick<RoflGamePro
 	};
 }
 
-/** Builds selected service records from metadata; source archives and operational links remain separate. */
+/** 메타데이터에서 서비스용 데이터만 선별한다. 원본 보관이나 서비스 객체 연결은 수행하지 않는다. */
 export function projectRoflGame(bytes: Uint8Array): RoflGameProjection {
 	const raw = readRoflMetadata(bytes);
 	const summary = summarizeRoflMetadata(raw);

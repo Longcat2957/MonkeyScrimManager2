@@ -141,7 +141,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 ```
 
 기존 `.env`는 유지하고 해당 항목만 채운다. 운영 환경에서는 서비스 관리자가 같은 환경 변수를 주입할 수 있다.
-값을 바꾸면 웹 서버를 재시작한다. 테이블은 스키마를 하나씩 합의한 뒤 추가한다.
+값을 바꾸면 웹 서버를 재시작한다. 합의한 테이블과 관계는 `schema.ts`에서 관리한다.
 
 현재 로컬 개발 환경에서는 `msm2-dev` 컨테이너의 PostgreSQL 17을 사용한다.
 호스트 접속 주소는 `127.0.0.1:35432`이며, MSM2 전용 DB·접속 계정 이름은 `msm2`다.
@@ -152,14 +152,17 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 테이블 정의와 조회·삽입 타입. 현재 `users` 포함 |
+| `apps/web/src/lib/server/db/schema.ts` | 27개 테이블과 관계, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
 DB는 `getDb()`를 처음 호출할 때 초기화한다. 주소 미설정 상태에서도 기존 화면·타입 검사·빌드는 가능하다.
 풀은 최대 10개 연결, 연결 대기는 10초로 제한한다. 실제 연결은 쿼리 실행 시 시작한다.
 
-테이블을 하나씩 정의한 뒤, 프로젝트 루트에서 SQL을 생성하고 내용을 검토한 다음 적용한다.
+스키마는 사용자·길드·Riot 계정, 내전·팀·참가자, 경매 이력, 라운드·대진,
+Match·Game, 버전별 ROFL 데이터, 공개 범위·Discord 설정을 포함한다.
+전체 관계와 주요 제약은 [DB ERD](docs/database-erd.md)에서 확인할 수 있다.
+스키마 변경을 확정한 뒤 프로젝트 루트에서 SQL을 생성하고 내용을 검토한 다음 적용한다.
 
 ```sh
 pnpm db:generate
@@ -170,7 +173,8 @@ pnpm db:migrate
 `db:generate`는 DB 접속 없이 스키마 변경에 대한 SQL을 생성한다.
 `db:migrate`는 실제 DB에 접속해 검토한 마이그레이션을 적용하는 명령이다.
 생성한 SQL과 메타데이터는 Git으로 관리하고 접속 정보는 제외한다.
-현재 로컬 개발 DB에는 `0000_create_users` 마이그레이션을 적용했다. 검증용 사용자는 롤백해 남기지 않았다.
+현재 관리하는 마이그레이션은 `0000_create_users`뿐이다. 이후 추가한 테이블과 제약은
+스키마 정의 단계이며, 해당 변경의 마이그레이션 생성·DB 적용은 아직 하지 않았다.
 
 ### User
 
@@ -183,13 +187,14 @@ pnpm db:migrate
 | `username` | Discord 사용자명, 필수. 계정 식별이나 고유 제약에 사용하지 않음 |
 | `globalName` | Discord 전역 표시 이름, 없으면 `null` |
 | `avatarHash` | Discord 전역 아바타 해시, 없으면 `null` |
+| `isServiceAdmin` | 전체 서비스 운영자 여부, 기본값 `false`. 길드 관리자 권한과 구분 |
 | `createdAt` | 서비스 사용자 생성 시각, `timestamptz(3)`, 기본값 `now()` |
 | `updatedAt` | 사용자 정보 수정 시각, `timestamptz(3)`, 기본값 `now()` |
 
 프로필 필드는 Discord 응답의 복사본이며 서버별 닉네임·프로필과 구분한다.
 `updatedAt`은 Drizzle의 수정 쿼리에서 자동 갱신한다. 직접 SQL로 수정할 때는 호출자가 함께 갱신해야 한다.
 비밀번호·이메일·OAuth 토큰·길드 권한은 User에 저장하지 않는다.
-사용자 한 명이 여러 Riot 계정을 연결하는 관계는 별도 객체를 정의할 때 추가한다.
+사용자 한 명은 여러 `riot_accounts`를 연결할 수 있으며, 길드 소속과 관리자 권한은 `guild_members`에서 관리한다.
 OAuth 로그인 처리와 세션 관리는 아직 구현하지 않았다.
 
 필드 근거: [Discord User](https://docs.discord.com/developers/resources/user#user-object),
@@ -201,7 +206,8 @@ OAuth 로그인 처리와 세션 관리는 아직 구현하지 않았다.
 ## ROFL 분석
 
 ROFL2 메타데이터·청크·패킷 경계를 읽는 자체 서버 파서와 로컬 명령을 제공한다.
-경기 시간·참가자·챔피언·팀·승패·KDA·CS를 요약하고, 전체 원본 필드와 미해석 패킷도 보존한다.
+경기 시간·참가자·챔피언·팀·승패·KDA·CS를 요약하고, 개발자가 명시적으로 실행한 로컬 연구에서는
+전체 원본 필드와 미해석 패킷도 추출할 수 있다.
 외부 ROFL 라이브러리 없이 Node.js 기본 Zstd를 사용한다.
 
 ```sh
@@ -212,13 +218,16 @@ pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 
 `rofl:research`는 새 디렉터리에 원본 사본·전체 메타데이터·압축 해제 청크·패킷 인덱스·분석 보고서를 만든다.
 패킷의 시각·ID·본문 위치를 추출하며, 킬·이동 등 본문의 의미 해석은 아직 검증하지 않았다.
-현재는 파일 분석 단계이며 업로드·경기 등록·DB 저장은 구현하지 않았다.
+서비스 업로드·경기 등록·DB 저장은 아직 구현하지 않았다.
 로컬 원본·분석 결과는 Git에서 제외되는 프로젝트 루트 `samples/`에 둔다.
 명령과 출력 형식은 [ROFL 분석 문서](docs/rofl.md), 실측 결과와 후속 과제는 [연구 기록](docs/rofl-research.md)을 따른다.
 
 `rofl:project`는 서비스에 사용할 P0~P2 통계 33개와 최종 아이템·주문·룬을 선별한다.
-파일 지문과 서비스의 서버·경기·계정 연결을 받는 적재 초안 모델도 제공한다.
-필드·검증 규칙과 DB 연결 전 범위는 [ROFL 적재 모델](docs/rofl-import.md)에 정리했다.
+`prepareRoflImport`는 파일 지문과 서비스의 서버·경기·내전 참가자 연결을 받아 공통 메타데이터와 버전별 테이블에 맞는 행을 만든다.
+서비스는 모집·팀 편성·대진을 운영하며, 밴픽과 경기 중 과정은 게임에서 처리한다.
+결과는 ROFL을 서버에서 검증한 뒤 자동 등록하는 것이 목표이며, 수동 결과 입력·상시 승인 절차는 두지 않는다.
+서비스에서는 원본 파일·전체 메타데이터·패킷·파일 보관 경로를 저장하지 않으며, 재분석에는 파일 재업로드가 필요하다.
+필드·검증 규칙과 실제 DB 저장 전 범위는 [ROFL 적재 모델](docs/rofl-import.md)에 정리했다.
 
 ## Discord 봇
 

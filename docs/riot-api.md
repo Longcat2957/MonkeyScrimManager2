@@ -20,7 +20,7 @@ Riot 조회 5개와 Data Dragon 2개 라우트 패턴이며 모두 `GET`이다.
 | `/api/lol/summoner/v4/summoners/by-puuid/[puuid]` | 참가자 프로필 아이콘·레벨 표시 |
 | `/api/lol/league/v4/entries/by-puuid/[puuid]` | 참가자 개인 랭크 표시 |
 | `/api/ddragon/versions` | 표시용 정적 데이터의 버전 확인 |
-| `/api/ddragon/[version]/[locale]/[resource]` | 밴픽·경기 상세·참가자 화면에 필요한 이름·이미지 데이터 |
+| `/api/ddragon/[version]/[locale]/[resource]` | 경기 상세·참가자 화면에 필요한 이름·이미지 데이터 |
 
 Data Dragon의 `resource`는 `champions`, `items`, `runes`, `summoner-spells`, `profile-icons`다.
 `version`은 명시적인 패치 버전, `locale`은 `ko_KR` 같은 언어 코드다.

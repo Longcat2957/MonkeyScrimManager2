@@ -25,6 +25,12 @@ feature, or architectural decisions.
 - Avoid unnecessary complexity and abstractions.
 - Implement external API endpoints only when a currently agreed service feature needs them. Identify the consuming feature before adding an endpoint; upstream API completeness, parity with MSM1, and possible future use are not sufficient reasons.
 
+## Service Workflow
+
+- 서비스는 모집·참가자 관리·팀 편성(수동 또는 경매)·대진 운영을 담당한다. 밴픽·픽 순서·경기 중 진행 과정은 게임에서 처리하며 서비스의 입력·진행 관리 대상으로 만들지 않는다.
+- 전적은 ROFL의 최종 결과로 자동 기록한다. 정상 파일은 서버가 권한·참가자 연결·중복·데이터를 검증한 뒤 저장하며, 수동 결과 입력이나 매번 사람의 승인을 요구하지 않는다. 연결 실패·데이터 충돌 등은 예외로 처리한다.
+- 하드 피어리스는 이전 경기의 실제 사용 챔피언을 기준으로 안내하며, 위반을 이유로 ROFL 업로드나 결과 등록을 막지 않는다.
+
 ## Code Comments
 
 - 코드 주석은 한국어로 작성한다. 한 줄·블록 주석, JSDoc/TSDoc, 테스트·설정·SQL의 설명 주석에 모두 적용하며, 주석을 추가하거나 수정할 때 이 규칙을 따른다.

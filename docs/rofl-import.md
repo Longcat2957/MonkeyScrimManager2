@@ -1,8 +1,13 @@
 # ROFL 서비스용 파싱·적재 모델
 
-P0~P2에서 합의한 정보만 선택하는 모델이다. Drizzle 연결 설정은 준비되어 있으며,
-테이블 스키마와 이 모델의 실제 DB 저장은 다음 단계다.
-원본 보존과 전체 추출은 [ROFL 분석](rofl.md)의 기존 경로를 유지한다.
+P0~P2에서 합의한 정보만 선택하고 현재 DB 스키마의 공통 메타데이터·참가자 및 버전별 데이터 행으로 변환하는 모델이다.
+Drizzle 연결 설정과 테이블 정의는 준비되어 있다. 실제 DB 저장은 아직 구현하지 않았고,
+추가 스키마의 마이그레이션도 생성·적용하지 않았다.
+
+서비스는 파일 SHA-256·크기, 형식·게임·매핑 버전, 업로더·업로드 시각과 선별한 데이터만 저장한다.
+원본 ROFL 파일은 DB나 별도 파일 보관소에 남기지 않으며, 전체 메타데이터·패킷 덤프·보관 경로도 저장하지 않는다.
+추출 규칙이 바뀌어 다시 분석하려면 파일을 재업로드해야 한다.
+[ROFL 분석](rofl.md)의 전체 추출 명령은 개발자가 명시적으로 실행하는 로컬 연구용으로만 유지한다.
 
 ## 서비스용 출력
 
@@ -22,8 +27,10 @@ pnpm --silent rofl:project samples/replay.rofl > samples/replay-projection.json
 | 참가자 통계 | `stats`: P0~P2 숫자 필드 33개 |
 | 참가자 최종 세팅 | `loadout`: 아이템·주문·룬·능력치 파편 |
 
-`projectionVersion`은 서비스용 필드 매핑·검증 규칙의 버전이다. 현재 값은 1이며,
-이 규칙을 변경할 때 증가시켜 원본 재파싱의 기준으로 사용한다.
+`projectionVersion`은 서비스용 필드 매핑·검증 규칙의 버전이며 현재 값은 1이다.
+DB의 V1 통계·최종 세팅 계약은 고정한다. 저장 형식이나 의미가 바뀌면 새 버전의 모델·하위 테이블과 매핑을 추가하고,
+기존 V1 데이터의 해석을 바꾸지 않는다. 적재 모델이 지원하지 않는 버전은 `UNSUPPORTED_PROJECTION`으로 거부한다.
+ROFL 컨테이너의 `formatVersion`이나 게임 패치와는 별개다.
 `gameVersion`은 전체 게임 빌드 문자열을 유지한다.
 `champion`은 `SKIN`에서 읽은 문자열이며 숫자 챔피언 ID로 임의 변환하지 않는다.
 
@@ -83,30 +90,47 @@ P1 최종 세팅은 다음 슬롯 순서를 유지한다.
 참가자 수나 `100`·`200`이라는 팀 값은 고정하지 않는다.
 `consistent`라도 기본 성적·계정 연결이 완전하다는 뜻은 아니며, 서명·소유권·등록 권한을 인증하지 않는다.
 
-## 적재 초안
+## 적재 데이터
 
-`apps/web/src/lib/server/rofl/import-model.ts`의 `createRoflImportDraft(bytes, context)`는
-파일 지문과 서비스 문맥을 붙인 메모리 내 초안 `RoflImportDraft`를 만든다.
+`apps/web/src/lib/server/rofl/import-model.ts`의 `prepareRoflImport(bytes, context)`는
+파일 지문과 서비스 문맥을 붙인 메모리 내 적재 데이터 `RoflImportData`를 만든다.
+파싱 결과 전체를 JSON 하나로 저장하는 대신, 선별한 필드를 아래 네 테이블의 삽입 행으로 변환한다.
 
-| 초안 영역 | 내용 |
+| 영역 | 내용 |
 | --- | --- |
-| `status` | 항상 `pending_review` |
 | `registration` | 서버·내전·Match·Game ID, Match 안에서 1부터 시작하는 `gameNumber` |
-| `upload` | 서비스가 전달한 업로더 ID·업로드 시각 |
-| `source` | 원본 ROFL과 메타데이터의 보관 키·SHA-256·바이트 수 |
-| `game` | 위 서비스용 파싱 결과 |
+| `rows.projectionVersion` | 현재 저장 계약을 구분하는 값 `1` |
+| `rows.metadata` | `rofl_metadata`: 새 UUID, 파일 SHA-256·크기, 형식·게임·매핑 버전, 업로더·업로드 시각 |
+| `rows.participants` | `rofl_participants`: 메타데이터 ID와 ROFL 참가자 인덱스의 공통 참조 |
+| `rows.gameData` | `rofl_game_data_v1`: 메타데이터 ID·매핑 버전, 경기 시간, 결과 일관성, 승리 팀과 팀별 결과 |
+| `rows.participantData` | `rofl_participant_data_v1`: 공통 참가자 참조, Riot ID·원시 PUUID·챔피언·팀·승패, 고정된 통계 33개·최종 세팅 |
 | `links.teams` | ROFL 팀 값과 서비스 팀 ID의 대응 |
-| `links.participants` | ROFL 참가자 인덱스와 서비스 참가자·Riot 계정 ID의 대응 |
+| `links.participants` | ROFL 참가자 인덱스와 `scrimParticipantId`·`riotAccountId`의 대응 |
 
-`context`는 서비스가 전달한다. 업로드 시각은 유효한 `Date`로 받고 ISO 문자열로 출력한다.
+`context`는 서비스가 전달하며 보관 키를 받지 않는다. 업로드 시각은 유효한 `Date`로 받아 복사한 `Date`를 행에 넣는다.
+길드·사용자 ID는 비어 있지 않은 문자열이고, 내전·Match·Game·팀·내전 참가자·Riot 계정 ID는 UUID 형식을 검증해 소문자로 정규화한다.
+`gameNumber`는 PostgreSQL integer에 들어가는 1~2,147,483,647의 정수다.
 경기 시작 시각을 업로드 시각이나 파일명에서 만들지 않는다.
-연결 정보가 없는 팀·참가자는 `null`로 남긴다. 존재하지 않는 ROFL 팀·참가자나 같은 대상에 대한 중복 연결은
-`INVALID_IMPORT_CONTEXT`로 거부한다. 실제 서비스 ID 존재 여부와 연결 권한은 다음 등록 단계에서 검증해야 한다.
-ROFL PUUID와 Riot API 계정 식별자를 자동 연결하지 않는다.
 
-이 함수는 DB·파일 시스템에 쓰지 않는다. 보관 키는 실제 원본 보관을 담당할 호출자가 제공할 참조다.
-메타데이터 해시는 JSON 재직렬화본이 아닌 원본 바이트를 대상으로 한다.
-원본 파일 해시는 같은 바이트의 중복 업로드를 확인하는 기준이며, 같은 경기의 서로 다른 파일을 판별하는 경기 ID가 아니다.
+연결 정보가 없는 팀·참가자는 `null`로 남긴다. 존재하지 않는 ROFL 팀·참가자, 같은 ROFL 대상의 중복 연결,
+서로 다른 ROFL 대상을 같은 서비스 팀·내전 참가자·Riot 계정에 연결하는 문맥은 `INVALID_IMPORT_CONTEXT`로 거부한다.
+실제 `game_participants` 행에는 ROFL 메타데이터 ID와 참가자 인덱스가 필수다. 미연결 원본 참가자는 ROFL 하위 데이터로 남겨 두고, 서비스 출전 행은 연결이 확인된 뒤에 만든다.
+실제 서비스 ID의 존재, 길드·내전 소속과 등록 권한은 향후 저장 단계에서 서버가 검증해야 한다.
+ROFL PUUID를 Riot API 계정 식별자로 간주하거나, 팀 값에서 블루·레드를 추정하거나, 챔피언 문자열을 숫자 ID로 자동 변환하지 않는다.
+최상위 승인 대기 상태는 없다. `resultStatus`는 데이터 일관성 정보이며 사람의 검토·승인 상태가 아니다.
+자동 등록 흐름에서는 필요한 검증과 연결을 통과한 결과를 곧바로 저장하고, 연결 실패·결과 충돌 등만 예외로 처리한다.
+하드 피어리스 위반은 안내하며 업로드나 결과 등록을 막지 않는다.
+
+모든 하위 행의 `roflMetadataId`는 `rows.metadata.id`와 같다.
+함수 호출마다 새 UUID를 생성하므로 같은 파일을 다시 처리해도 메타데이터 ID는 달라진다.
+향후 저장 단계에서는 파일 SHA-256·매핑 버전의 중복 제약을 처리하고,
+기존 메타데이터를 재사용한다면 하위 행의 참조까지 함께 맞춰야 한다. 새 UUID로 무조건 삽입하는 방식은 사용할 수 없다.
+파일 해시는 같은 바이트의 중복 업로드 기준이며, 같은 경기의 서로 다른 파일을 판별하는 경기 ID가 아니다.
+
+이 함수는 DB·파일 시스템에 쓰지 않으며, DB 스키마는 타입으로만 참조한다.
+`registration`과 `links`는 결과를 서비스 경기에 연결하기 위한 문맥이다.
+업로드 API·자동 참가자 연결·`Game`·`GameParticipant` 저장·시리즈 집계는 아직 구현하지 않았다.
+원본 바이트나 전체 메타데이터를 반환값에 남기지 않는다.
 
 ## 검증
 
