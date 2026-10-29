@@ -25,6 +25,11 @@ feature, or architectural decisions.
 - Avoid unnecessary complexity and abstractions.
 - Implement external API endpoints only when a currently agreed service feature needs them. Identify the consuming feature before adding an endpoint; upstream API completeness, parity with MSM1, and possible future use are not sufficient reasons.
 
+## Code Comments
+
+- 코드 주석은 한국어로 작성한다. 한 줄·블록 주석, JSDoc/TSDoc, 테스트·설정·SQL의 설명 주석에 모두 적용하며, 주석을 추가하거나 수정할 때 이 규칙을 따른다.
+- 식별자, 공식 기술명, URL, 컴파일러·린터 등의 도구 지시문은 원문을 유지한다.
+
 ## Web UI and Content Rules
 
 - Evaluate the complete rendered page, including the shared header, body, footer, menus, and dialogs.

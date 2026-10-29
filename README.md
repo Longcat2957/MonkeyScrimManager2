@@ -14,7 +14,7 @@
 - 봇: discord.js 14, TypeScript 6, tsx
 - 디자인 프레임워크: [STDF 3](https://stdf.dev/), Tailwind CSS 4
 - 운영 서버: VPS에서 `@sveltejs/adapter-node`로 실행
-- 데이터베이스: PostgreSQL 사용 예정. 연결과 스키마는 아직 구현하지 않았다.
+- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 연결 설정만 준비했으며 테이블은 아직 정의하지 않았다.
 
 프로젝트 루트에서 실행한다.
 
@@ -131,6 +131,49 @@ Riot 요청 처리 테스트는 실제 키와 외부 API 호출 없이 실행한
 ```sh
 pnpm --filter @msm2/web test
 ```
+
+## PostgreSQL / Drizzle
+
+접속 정보는 **`apps/web/.env`**의 `DATABASE_URL`에 설정한다.
+
+```dotenv
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
+```
+
+기존 `.env`는 유지하고 해당 항목만 채운다. 운영 환경에서는 서비스 관리자가 같은 환경 변수를 주입할 수 있다.
+값을 바꾸면 웹 서버를 재시작한다. 테이블은 스키마를 하나씩 합의한 뒤 추가한다.
+
+현재 로컬 개발 환경에서는 `msm2-dev` 컨테이너의 PostgreSQL 17을 사용한다.
+호스트 접속 주소는 `127.0.0.1:35432`이며, MSM2 전용 DB·접속 계정 이름은 `msm2`다.
+비밀번호를 포함한 접속 정보는 로컬 `.env`에만 저장한다.
+현재 컨테이너는 기존 `/home/min/workspace/aibidder/compose.yaml`의 `postgres` 서비스에서 관리하며,
+`container_name`을 `msm2-dev`로 설정했다. 데이터 볼륨은 기존 `aibidder_postgres_data`를 유지한다.
+
+| 위치 | 역할 |
+| --- | --- |
+| `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
+| `apps/web/src/lib/server/db/schema.ts` | 합의한 테이블을 추가할 스키마 진입점. 현재 비어 있음 |
+| `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
+| `apps/web/drizzle/` | 이후 생성되는 SQL 마이그레이션과 메타데이터의 보관 경로 |
+
+DB는 `getDb()`를 처음 호출할 때 초기화한다. 주소 미설정 상태에서도 기존 화면·타입 검사·빌드는 가능하다.
+풀은 최대 10개 연결, 연결 대기는 10초로 제한한다. 실제 연결은 쿼리 실행 시 시작한다.
+
+테이블을 하나씩 정의한 뒤, 프로젝트 루트에서 SQL을 생성하고 내용을 검토한 다음 적용한다.
+
+```sh
+pnpm db:generate
+pnpm db:migrate
+```
+
+두 명령은 `apps/web/.env`를 읽으며, 이미 설정된 프로세스 환경 변수가 우선한다.
+`db:generate`는 DB 접속 없이 동작한다. 현재는 테이블 0개이므로 SQL 변경을 만들지 않는다.
+`db:migrate`는 실제 DB에 접속해 검토한 마이그레이션을 적용하는 명령이다.
+생성한 SQL과 메타데이터는 Git으로 관리하고 접속 정보는 제외한다.
+현재 개발 DB는 Drizzle 연결을 확인한 빈 상태이며 업무 테이블과 마이그레이션 이력은 아직 없다.
+
+설정 근거: [Drizzle PostgreSQL](https://orm.drizzle.team/docs/get-started-postgresql),
+[Drizzle Kit 설정](https://orm.drizzle.team/docs/drizzle-config-file), [pg 연결 풀](https://node-postgres.com/features/pooling).
 
 ## ROFL 분석
 

@@ -38,6 +38,7 @@ MSM2의 기술 스택과 배포 환경은 다음과 같이 확정한다.
 - **봇 애플리케이션:** discord.js 기반 Discord 봇
 - **디자인 프레임워크:** [STDF](https://stdf.dev/) (Svelte 5 및 Tailwind CSS 4 기반)
 - **데이터베이스:** PostgreSQL
+- **ORM 및 마이그레이션:** Drizzle ORM + node-postgres(`pg`), Drizzle Kit
 - **배포 환경:** VPS
 
 MSM1에서 사용하던 Rust-Axum 기반의 별도 웹 백엔드와 분리된 Riot API 처리 구조는 제거한다.
