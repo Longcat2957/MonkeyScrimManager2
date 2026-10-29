@@ -25,7 +25,6 @@ pnpm dev
 ```
 
 기본 개발 주소는 `http://localhost:5173`이다. 대부분의 업무 페이지는 공통 레이아웃과 제목만 갖춘 상태다.
-개발 모드의 `/me`에는 목 데이터 기반 계정 연결·공개 범위 UI와 상호작용을 구현했다.
 
 ## 진입점
 
@@ -56,10 +55,8 @@ pnpm dev
 [UI 배치·컴포넌트 계획](docs/web/ui-plan.md)은 전역·서버·내전 헤더의 교체 구조와
 페이지별 데스크톱·모바일 배치, STDF 적용 근거를 다룬다. 실제 UI 구현과 구분한 문서 설계다.
 
-`/me`는 본인 식별, Riot 계정 조회·연결·해제, 공개 범위 편집·저장과 작업별 오류·재시도를 개발용 목 데이터로 제공한다.
-[페이지 구현](apps/web/src/routes/me/+page.svelte)과 [내 정보 배치안](docs/web/ui/global.md#2-me--내-정보),
-[목 데이터·상태 미리보기 안내](apps/web/src/lib/mocks/README.md)를 참고한다.
-실제 Discord 인증·계정 소유권 확인·DB 저장은 후속 작업이다. 운영 모드에서는 목 개인정보를 반환하지 않고 로그인 안내만 표시하며 개발용 `preview` 쿼리를 무시한다.
+`/me`는 공통 레이아웃과 `내 정보` 제목만 표시하는 빈 페이지다.
+[내 정보 배치안](docs/web/ui/global.md#2-me--내-정보)은 구현된 기능이 아닌 설계 기록으로 유지한다.
 
 웹의 서비스명은 `#lib/branding.ts`에서 가져온 `SERVICE_NAME`을 사용한다.
 프로젝트명과 서비스명 사용 규칙은 [AGENTS.md](AGENTS.md)의 Naming and Branding을 따른다.

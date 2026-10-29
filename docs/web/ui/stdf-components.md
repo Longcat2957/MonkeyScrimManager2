@@ -84,12 +84,6 @@ STDF `Alert`는 fixed 알림이며 기본 자동 닫힘이 있다. 지속되는 
 | Stepper `onchange` | 문서의 객체 형태 설명과 설치 타입의 숫자 콜백이 다름 | 이번 계획의 직접 숫자 입력에는 사용하지 않음 |
 | List의 `clickable` | 가이드에 있지만 공개 props 표·설치 계약에 동일 옵션 없음 | `clickable=false`로 링크 감싸기를 해결한다고 가정하지 않음 |
 
-### `/me` 구현에서 확인한 보완
-
-- `ModalBoundary`의 native dialog가 Popup·Dialog의 배경 조작 차단·Escape·포커스 복귀를 담당한다. STDF Mask는 숨겨 이름 없는 배경 버튼을 추가하지 않는다.
-- 중앙 Popup의 `size`는 높이를 조절하며 폭 옵션은 없다. 공통 모달 안의 직계 Popup 배치 요소에만 최대 폭과 세로 스크롤 제한을 적용한다. STDF 표면·입력·버튼은 그대로 사용하며 설치 버전 변경 시 이 구조를 다시 확인한다.
-- 설치된 Button의 `md`·`sm`은 `tdf-button-md`·`tdf-button-sm` 클래스를 출력하지만 배포 CSS에 해당 여백 정의가 없다. 공개 `injClass`로 공통 `app-button`의 가로 여백·최소 클릭 높이·포커스를 연결한다.
-
 ## 6. 구현 전 확인 목록
 
 1. 설치 버전과 사용 컴포넌트의 공개 API를 다시 대조한다. 개발자 로컬의 다른 STDF 버전 예제를 그대로 가져오지 않는다.

@@ -36,7 +36,9 @@ DB 열이나 상태 값이 존재한다는 이유만으로 편집 버튼·업무
 | `/g/[guildId]` | 현재 서버에서 확인할 내전·경기를 선택 | [서버 페이지](pages/guild.md) |
 | `/g/[guildId]/scrims` | 내전을 찾거나 새 모집 생성 | [내전 페이지](pages/scrims.md) |
 | `/g/[guildId]/scrims/[scrimId]` | 참가 신청·참가자 관리와 내전 운영 상태 확인 | [내전 페이지](pages/scrims.md) |
-| `/g/[guildId]/scrims/[scrimId]/teams` | 수동 또는 경매로 팀 편성, 확정 결과 확인 | [내전 페이지](pages/scrims.md) |
+| `/g/[guildId]/scrims/[scrimId]/teams` | 설정된 편성 방식의 페이지로 진입. 방식 미정이면 조건 확인 | [내전 페이지](pages/scrims.md) |
+| `/g/[guildId]/scrims/[scrimId]/teams/manual` | 수동 팀·포지션 배정과 확정 결과 확인 | [내전 페이지](pages/scrims.md) |
+| `/g/[guildId]/scrims/[scrimId]/teams/auction` | 경매 준비·진행·이력과 최종 팀 확인 | [내전 페이지](pages/scrims.md) |
 | `/g/[guildId]/scrims/[scrimId]/bracket` | 라운드·대진 구성과 시리즈 진행 결과 확인 | [내전 페이지](pages/scrims.md) |
 | `/g/[guildId]/matches` | 서버 안의 시리즈 검색·열람 | [기록 페이지](pages/records.md) |
 | `/g/[guildId]/matches/[matchId]` | 시리즈·Game 결과 조회와 ROFL 등록 | [기록 페이지](pages/records.md) |
@@ -47,7 +49,7 @@ DB 열이나 상태 값이 존재한다는 이유만으로 편집 버튼·업무
 | `/dev/error` | 개발 중 공통 오류 화면 확인 | [전역 페이지](pages/global.md) |
 
 `[userId]`는 목표 경로의 파라미터 이름이다. 현재 `[playerId]` 디렉터리는 이번 문서 작업에서 변경하지 않는다.
-HTTP API·OAuth 콜백은 페이지 명세 대상이 아니며, 별도의 모집 생성·경매·업로드·밴픽 페이지를 추가하지 않는다.
+HTTP API·OAuth 콜백은 페이지 명세 대상이 아니며, 별도의 모집 생성·업로드·밴픽 페이지를 추가하지 않는다.
 
 ## 3. 상세 페이지의 공통 형식
 

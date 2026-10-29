@@ -38,7 +38,9 @@
 | `/g/[guildId]` | `GuildHeader` | 진행 중 내전 | [서버](ui/guild.md) |
 | `/g/[guildId]/scrims` | `GuildHeader` | 제목·모집 생성·목록 조건 | [내전](ui/scrims.md) |
 | `/g/[guildId]/scrims/[scrimId]` | `ScrimHeader` | 내전 식별 정보·나의 신청 | [내전](ui/scrims.md) |
-| `/g/[guildId]/scrims/[scrimId]/teams` | `ScrimHeader` | 내전 식별 정보·편성 작업 | [내전](ui/scrims.md) |
+| `/g/[guildId]/scrims/[scrimId]/teams` | `ScrimHeader` | 방식별 페이지로 이동. 방식 미정이면 조건 안내 | [내전](ui/scrims.md) |
+| `/g/[guildId]/scrims/[scrimId]/teams/manual` | `ScrimHeader` | 내전 식별 정보·수동 팀 배정 | [내전](ui/scrims.md) |
+| `/g/[guildId]/scrims/[scrimId]/teams/auction` | `ScrimHeader` | 내전 식별 정보·경매 준비 또는 현재 후보 | [내전](ui/scrims.md) |
 | `/g/[guildId]/scrims/[scrimId]/bracket` | `ScrimHeader` | 내전 식별 정보·라운드와 대진 | [내전](ui/scrims.md) |
 | `/g/[guildId]/matches` | `GuildHeader` | 제목·검색·시리즈 목록 | [기록](ui/records.md) |
 | `/g/[guildId]/matches/[matchId]` | `GuildHeader` | 시리즈 점수·ROFL 업로드 | [기록](ui/records.md) |
@@ -93,6 +95,7 @@ RootLayout
 
 `ScrimHeader`의 서버 메뉴는 서버 홈·내전 목록·경기 기록·통계·관리를 제공한다.
 요약·팀 편성·대진 링크는 그 메뉴에 넣지 않아 같은 대상의 조작이 겹치지 않는다.
+팀 편성 링크는 `/teams` 공통 진입점 하나로 유지하고 `/teams/manual`·`/teams/auction`에서도 활성 상태로 표시한다.
 개인 메뉴는 `/me`, 권한이 있는 경우 `/backoffice`, 로그아웃만 담당한다.
 정책 링크는 푸터에만 둔다. 서버 선택기의 현재 서버는 표시 항목으로 두며 서버 홈 링크와 중복시키지 않는다.
 

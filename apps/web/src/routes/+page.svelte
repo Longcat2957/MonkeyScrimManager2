@@ -19,6 +19,8 @@
 		{ label: '내전 목록', href: resolve('/g/[guildId]/scrims', { guildId }) },
 		{ label: '내전 상세', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },
 		{ label: '팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId, scrimId }) },
+		{ label: '수동 팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/manual', { guildId, scrimId }) },
+		{ label: '경매', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/auction', { guildId, scrimId }) },
 		{ label: '대진', href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', { guildId, scrimId }) },
 		{ label: '매치 목록', href: resolve('/g/[guildId]/matches', { guildId }) },
 		{ label: '매치 상세', href: resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId }) },

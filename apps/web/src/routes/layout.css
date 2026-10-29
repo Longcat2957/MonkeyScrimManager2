@@ -66,8 +66,6 @@
 		--app-header-height: 4rem;
 		--app-header-width: 96rem;
 		--app-content-width: 84rem;
-		--app-settings-width: 44rem;
-		--app-dialog-width: 32rem;
 		font-family: var(--font-sans);
 		color-scheme: light;
 		scroll-padding-top: calc(var(--app-header-height) + 1rem);
@@ -82,18 +80,6 @@
 }
 
 @layer components {
-	.app-button {
-		min-height: 2.75rem;
-		/* 설치된 STDF 3의 md·sm 버튼에 없는 가로 여백을 공통으로 보완한다. */
-		padding-inline: 1rem;
-	}
-
-	.app-button:focus-visible,
-	input:focus-visible {
-		outline: 2px solid currentColor;
-		outline-offset: 3px;
-	}
-
 	.app-frame {
 		width: min(calc(100% - 3rem), var(--app-content-width));
 		margin-inline: auto;

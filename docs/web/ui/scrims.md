@@ -170,7 +170,20 @@ ScrimContext: 제목·상태·예정 시각
 - 선발 확정·시작·종료·복귀 정책을 정한 뒤 운영 패널의 정확한 행동 이름과 확인 내용을 채운다.
 - 제외 사유 공개 범위가 좁으면 해당 이력의 내용을 권한별로 줄인다. 공개 가능한 상태까지 지우지는 않는다.
 
-## `/g/[guildId]/scrims/[scrimId]/teams` — 팀 편성·경매
+## `/g/[guildId]/scrims/[scrimId]/teams` — 팀 편성 공통 진입점
+
+헤더의 팀 편성 메뉴는 이 경로 하나를 가리킨다. 본문에 수동·경매를 선택하는 탭이나 별도 헤더 메뉴를 추가하지 않는다.
+이번 범위는 제목만 있는 빈 페이지이며 내부 컴포넌트·데이터 조회·방식별 리다이렉트를 구현하지 않는다.
+저장된 `formationMethod`에 따른 상세 페이지 이동, 방식 미정 안내, 잘못된 방식 경로 교정은 후속 구현 대상으로 둔다.
+
+| 상세 경로 | 담당 화면 | 이번 범위 |
+| --- | --- | --- |
+| `/g/[guildId]/scrims/[scrimId]/teams/manual` | 수동 배정·최종 팀 | 제목만 있는 빈 페이지 추가 |
+| `/g/[guildId]/scrims/[scrimId]/teams/auction` | 경매 준비·운영·최종 팀·구매 이력 | 제목만 있는 빈 페이지 추가 |
+
+## `/g/[guildId]/scrims/[scrimId]/teams/manual` · `/g/[guildId]/scrims/[scrimId]/teams/auction` — 방식별 상세 배치 계획
+
+아래는 두 상세 페이지의 후속 UI 계획이다. 경로 분리와 별개로 최종 팀·참가자 표시의 공통 책임은 재사용한다.
 
 ### 목표·우선순위
 
@@ -178,7 +191,7 @@ ScrimContext: 제목·상태·예정 시각
 2. 경매 방식은 현재 후보·처리와 팀별 잔여 포인트·영입 결과를 함께 확인한다.
 3. 완료 후에는 최종 팀과 이력을 편하게 읽는다.
 
-편성 방식은 내전 데이터로 결정한다. 이 페이지에 수동/경매를 바꾸는 탭을 두지 않는다.
+편성 방식은 내전 데이터로 결정한다. 상세 경로를 바꾸는 행동으로 편성 방식을 변경하지 않는다.
 한 참가자는 현재 편성 영역에서 미배정 목록 또는 팀 목록 중 한 곳에만 나타난다.
 
 ### 데스크톱 배치
@@ -186,7 +199,7 @@ ScrimContext: 제목·상태·예정 시각
 ```text
 내전 전용 헤더(기존 전역/서버 헤더 대체)
 ScrimContext: 제목·상태·예정 시각
-수동 방식
+/teams/manual
 ┌ 팀 편성                                      [편성 확정] ┐
 ├ 미배정 참가자 ───────┬ 팀 A ─────────────┬ 팀 B ─────────┤
 │ 이름·희망·[배정]    │ 포지션·이름·[수정]│ 포지션·이름     │
@@ -194,7 +207,7 @@ ScrimContext: 제목·상태·예정 시각
 └─────────────────────┴──────────────────┴────────────────┘
 20인: 미배정 영역 옆에 팀 A·B, 다음 줄에 팀 C·D
 
-경매 방식: 준비 때는 팀장·시작 포인트 폼
+/teams/auction: 준비 때는 팀장·시작 포인트 폼
 진행 때
 ┌ 현재 후보 / 필요한 참가 정보 ──┬ 팀별 포인트·현재 명단 ─┐
 │ [처리 입력 열기]                │ 팀장 표시는 해당 명단 행│
@@ -218,12 +231,12 @@ ScrimContext: 제목·상태·예정 시각
 
 | 서비스 컴포넌트 | 책임·입력 | 사용자 행동 | 실제 조합 | 범위 |
 | --- | --- | --- | --- | --- |
-| `TeamFormationBoard` | 선발 참가자·현재 배정·편성 제약 | 대상별 배정 편집 열기 | 팀별 `Card`, 의미 있는 명단, `ParticipantIdentity`, `Button` | 이 페이지의 수동·경매 완료 표시 공통 |
-| `TeamAssignmentEditor` | 선택 참가자·팀·포지션·오류 | 배정·수정·허용된 해제 | 행 아래 네이티브 select와 제출 `Button` | 이 페이지 |
-| `AuctionSetup` | 팀·선발된 팀장 후보·시작 포인트 | 준비값 입력 | 팀장용 네이티브 select + 포인트용 `Input`, 시작 `Button` 한 곳 | 이 페이지 |
-| `AuctionCurrentLot` | 현재 후보·가능한 처리·현재성 | 허용된 후보 처리 입력 | 필요한 범위의 `Card`, `ParticipantIdentity`, 네이티브 radio·select + 가격용 `Input`, `Button` | 이 페이지 |
-| `AuctionTeamSummary` | 잔여 포인트·팀장·유효 영입 | 현재 편성 조회 | 팀별 `Card` + 같은 명단 표현 | 이 페이지 |
-| `AuctionHistory` | 등장·거래·정정 관계·허용 권한 | 이력 펼침, 허용된 정정 | `Accordion`, 의미 있는 이력 목록, `Button`, 정정용 `TaskDialog`·텍스트용 `Form`·네이티브 선택 입력 | 이 페이지 |
+| `TeamFormationBoard` | 선발 참가자·현재 배정·편성 제약 | 대상별 배정 편집 열기 | 팀별 `Card`, 의미 있는 명단, `ParticipantIdentity`, `Button` | 수동 상세·경매 완료 표시 공통 |
+| `TeamAssignmentEditor` | 선택 참가자·팀·포지션·오류 | 배정·수정·허용된 해제 | 행 아래 네이티브 select와 제출 `Button` | `/teams/manual` |
+| `AuctionSetup` | 팀·선발된 팀장 후보·시작 포인트 | 준비값 입력 | 팀장용 네이티브 select + 포인트용 `Input`, 시작 `Button` 한 곳 | `/teams/auction` |
+| `AuctionCurrentLot` | 현재 후보·가능한 처리·현재성 | 허용된 후보 처리 입력 | 필요한 범위의 `Card`, `ParticipantIdentity`, 네이티브 radio·select + 가격용 `Input`, `Button` | `/teams/auction` |
+| `AuctionTeamSummary` | 잔여 포인트·팀장·유효 영입 | 현재 편성 조회 | 팀별 `Card` + 같은 명단 표현 | `/teams/auction` |
+| `AuctionHistory` | 등장·거래·정정 관계·허용 권한 | 이력 펼침, 허용된 정정 | `Accordion`, 의미 있는 이력 목록, `Button`, 정정용 `TaskDialog`·텍스트용 `Form`·네이티브 선택 입력 | `/teams/auction` |
 
 팀명·팀장·포인트를 각각 별도 카드로 분리하지 않는다. 한 팀의 판단에 필요한 정보를 한 단위에 모은다.
 가격 입력은 `Input`의 숫자 입력 모드로 받되 문자열을 업무 금액으로 검증한다. 큰 포인트 값을 반복 증감하는 조작을 요구하지 않는다.
