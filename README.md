@@ -24,7 +24,8 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-기본 개발 주소는 `http://localhost:5173`이다. 현재 페이지는 공통 레이아웃과 제목만 갖춘 상태다.
+기본 개발 주소는 `http://localhost:5173`이다. 대부분의 업무 페이지는 공통 레이아웃과 제목만 갖춘 상태다.
+개발 모드의 `/me`에는 목 데이터 기반 계정 연결·공개 범위 UI와 상호작용을 구현했다.
 
 ## 진입점
 
@@ -49,6 +50,16 @@ pnpm dev
 
 합의한 목표 라우트와 내비게이션은 [웹 구조 설계](docs/web/routing.md)를 따른다.
 해당 문서는 구현 전 설계이며, 아래는 현재 구현된 공통 화면의 상태다.
+페이지별 역할·접근 대상·필요 정보·상호작용·상태·미결정 사항은
+[페이지 요구사항 색인](docs/web/page-requirements.md)과 연결된 상세 문서에서 관리한다.
+기존 합의와 상호작용 초안을 구분하며, 문서에 적힌 동작이 구현 완료를 의미하지는 않는다.
+[UI 배치·컴포넌트 계획](docs/web/ui-plan.md)은 전역·서버·내전 헤더의 교체 구조와
+페이지별 데스크톱·모바일 배치, STDF 적용 근거를 다룬다. 실제 UI 구현과 구분한 문서 설계다.
+
+`/me`는 본인 식별, Riot 계정 조회·연결·해제, 공개 범위 편집·저장과 작업별 오류·재시도를 개발용 목 데이터로 제공한다.
+[페이지 구현](apps/web/src/routes/me/+page.svelte)과 [내 정보 배치안](docs/web/ui/global.md#2-me--내-정보),
+[목 데이터·상태 미리보기 안내](apps/web/src/lib/mocks/README.md)를 참고한다.
+실제 Discord 인증·계정 소유권 확인·DB 저장은 후속 작업이다. 운영 모드에서는 목 개인정보를 반환하지 않고 로그인 안내만 표시하며 개발용 `preview` 쿼리를 무시한다.
 
 웹의 서비스명은 `#lib/branding.ts`에서 가져온 `SERVICE_NAME`을 사용한다.
 프로젝트명과 서비스명 사용 규칙은 [AGENTS.md](AGENTS.md)의 Naming and Branding을 따른다.

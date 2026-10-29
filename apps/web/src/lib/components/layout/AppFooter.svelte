@@ -15,22 +15,16 @@
 		class="app-frame flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between md:px-10"
 	>
 		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-			<a
-				href={resolve('/')}
+			<span
 				class="font-brand text-xl font-normal no-underline [font-synthesis:none]"
-				aria-label={`${SERVICE_NAME} 홈`}
 			>
 				{SERVICE_NAME}
-			</a>
-			<a
-				href={SERVICE_URL}
-				target="_blank"
-				rel="noreferrer"
-				class="footer-link text-xs text-text-primary/60 dark:text-text-dark/60"
-				aria-label={`${serviceDomain} 운영 사이트 (새 창)`}
+			</span>
+			<span
+				class="text-xs text-text-primary/60 dark:text-text-dark/60"
 			>
 				{serviceDomain}
-			</a>
+			</span>
 		</div>
 
 		<nav aria-label="서비스 정책 및 안내" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">

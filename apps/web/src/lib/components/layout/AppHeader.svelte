@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/state';
 	import { asset, resolve } from '$app/paths';
 	import { REPOSITORY_URL, SERVICE_NAME } from '#lib/branding.ts';
 
@@ -41,14 +40,6 @@
 />
 
 {#snippet navigationLinks()}
-	<a
-		href={resolve('/')}
-		class="nav-link"
-		aria-current={page.route.id === '/' ? 'page' : undefined}
-		onclick={() => (mobileOpen = false)}
-	>
-		홈
-	</a>
 	<a
 		href={REPOSITORY_URL}
 		class="nav-link"
@@ -164,19 +155,10 @@
 	}
 
 	.nav-link:hover,
-	.nav-link[aria-current='page'],
 	.nav-action:hover,
 	.nav-action[aria-pressed='true'] {
 		border-color: var(--color-border);
 		opacity: 1;
-	}
-
-	.nav-link[aria-current='page'] {
-		color: var(--color-primary);
-	}
-
-	:global(html[data-mode='dark']) .nav-link[aria-current='page'] {
-		color: var(--color-dark);
 	}
 
 	a:focus-visible,

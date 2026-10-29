@@ -4,6 +4,8 @@
 
 - `docs/purpose.md`: Project vision, goals, and constraints.
 - `docs/web/routing.md`: Agreed page routes, layout ownership, and navigation structure (design; not yet implemented).
+- `docs/web/page-requirements.md`: Route index, shared interaction rules, and links to structured page requirements (design draft; includes open decisions).
+- `docs/web/ui-plan.md`: Header replacement, shared layouts, and page component placement plans using STDF (text-only design; not implemented).
 
 Consult the relevant documents when making product,
 feature, or architectural decisions.
