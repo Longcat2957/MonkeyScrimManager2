@@ -2,6 +2,14 @@
 
 ## 2026-10-29
 
+- 프론트엔드 디자인 재작성 P0(기반·셸)을 구현. 색·타입·간격을 `lib/styles/{tokens,base,utilities}.css`로 분리하고 로고에서 추출한 잉크·크림·시안 토큰, 의미 토큰, 타입 스케일을 적용. `app.html`은 첫 페인트 전에 `theme-mode` 저장값 또는 시스템 설정으로 `data-mode`를 정하고 `color-scheme`·`theme-color` 메타를 추가하며, 폰트는 가변 굵기로 요청 수를 줄임.
+  - 헤더·레일·푸터·건너뛰기·경로 포커스를 `lib/components/shell/`로 새로 작성하고 루트 레이아웃을 `ConfigProvider(ko_KR)`로 감쌈. 기존 `components/layout/AppHeader.svelte`·`AppFooter.svelte`와 `.app-frame` 규칙, GitHub 메뉴·중복 링크·`details` 기반 모바일 메뉴를 삭제.
+  - 화면 모드는 `lib/shell/appearance.svelte.ts`가 유일한 상태 소유자. 헤더의 토글은 STDF Button이 `aria-label`을 전달하지 못하므로 native 버튼(`aria-label`·`aria-pressed`·해/달 아이콘·44px)으로 구현.
+  - 문맥 목적지는 `lib/shell/navigation.ts`(서버·내전)와 순수 판정 함수 `lib/shell/destinations.ts`로 분리하고, 가장 긴 접두사 하나만 활성인지 단위 테스트 4개 추가.
+  - 공통 오류 화면을 403/404/5xx 문장과 5xx 전용 `다시 시도`로 재작성. `/dev/components`는 토큰·버튼·입력·상태·표면·오버레이·헤더 변형과 `?scenario=` 5상태 전환을 제공하는 디자인 기준 화면이 됨.
+  - 본문 컨테이너를 헤더와 같은 `.shell`(88rem, 16/24/32px 거터)로 통일하고 `main`에 상단 여백을 추가해 헤더에 글씨가 붙어 있던 문제를 수정. 루트 레이아웃의 `<title>`을 제거해 페이지 제목이 두 번 출력되던 문제도 수정.
+  - 서버 선택기·계정 메뉴·본문 콘텐츠·목 데이터는 계획대로 P1~P4에서 진행. 이번 변경은 셸·토큰·오류·개발 화면까지다.
+
 - 프론트엔드 디자인 전면 재작성 계획을 `docs/web/design/`에 작성(브랜치 `design/frontend-rewrite`). 현재 UI 진단서, 디자인 시스템(토큰·CSS), 셸·문맥·데이터 코드 구조, 컴포넌트 카탈로그(STDF 3.0.0 실측 대응), 18개 라우트 페이지 계획, P0~P7 단계·PR 단위 실행 계획을 정리. 설치판 `stdf@3.0.0` 조사 기록과 이전 프로젝트 UX 조사 기록을 `docs/web/design/research/`에 함께 둠.
   - 진단 근거: 18개 서비스 페이지가 모두 `h1` 한 줄, 앱 전체 STDF 사용은 `+error.svelte`의 `Button` 1회, 프론트 목 데이터·데이터 로딩·상태 처리 부재, 헤더 자체 CSS 54줄과 규칙( GitHub 링크 제외) 위반.
   - 기존 `ui-plan.md`·`ui/*.md`는 새 계획으로 대체됨을 표시하고 역사 기록으로 유지. `AGENTS.md` 문서 목록과 `routing.md`의 참조를 갱신.

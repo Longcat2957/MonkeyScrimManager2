@@ -19,7 +19,7 @@
 
 | 제약 | 확인 근거 | plan 대응 |
 | --- | --- | --- |
-| 어떤 STDF 컴포넌트도 **알 수 없는 props를 전달하지 않는다**(`$$restProps` 없음). `aria-label`·`id`·`class`·`data-*`를 컴포넌트에 붙일 수 없다 | `grep -rn '\$\$restProps'` 결과 없음 | 아이콘 단독 버튼 없음(항상 텍스트 라벨), 필요한 ARIA는 안쪽 DOM에 직접 |
+| 어떤 STDF 컴포넌트도 **알 수 없는 props를 전달하지 않는다**(`$$restProps` 없음). `aria-label`·`id`·`class`·`data-*`를 컴포넌트에 붙일 수 없다 | `grep -rn '\$\$restProps'` 결과 없음 | 필요한 ARIA는 안쪽 DOM에 직접. 아이콘 단독 조작은 native 버튼 + `aria-label`(화면 모드 토글) |
 | **링크를 렌더하는 컴포넌트가 없다.** `Button`은 항상 `<div><button>`, `List`·`Cell` 행도 button | `button/Button.svelte:41-48`, `list/List.svelte:343-357` | 경로 이동은 native `<a>` |
 | `Button size="md"\|"sm"`은 클래스 `.tdf-button-md/-sm`을 만들지만 **어떤 CSS에도 정의가 없다**(패딩 0) | `@any-tdf/common/dist/derived/button.js` | `size="full"`(폼 제출) 또는 `size="auto" injClass="px-4"`(인라인)만 사용 |
 | `Popup`·`Dialog`·`Modal`·`ActionSheet` 계열은 **포커스 트랩·Escape·`role="dialog"`·`aria-modal`·배경 inert·스크롤 잠금이 전혀 없다**. 마스크는 라벨 없는 전면 `<button>` | `grep -rn Escape` 결과 없음, `popup/Popup.svelte:126-146`, `mask/Mask.svelte:31-39` | `TaskDialog`가 전부 보완(§4.7) |
@@ -37,7 +37,7 @@
 | 인라인 행동(행 안, 도구줄) | `<Button size="auto" injClass="px-4" fill="line">`, 높이는 `heightIn="2"`로 44px 근처 유지 |
 | 보조·파괴적 | `fill="line"` / `state="error"` + `ConfirmDialog` |
 | 글자만(계정 메뉴 트리거 등) | `fill="text"` + `size="auto" injClass="px-2"` |
-| 아이콘 단독 | 만들지 않는다. 텍스트 라벨을 붙인다(라벨이 없으면 native 버튼) |
+| 아이콘 단독 | 원칙적으로 만들지 않는다. 접근 가능한 이름이 꼭 필요한 아이콘 조작(화면 모드 토글)만 native `<button aria-label>` |
 | 처리 중 | `loading={pending ? { height: '4', width: '4' } : null}` (기본 `disabledLoading=true`로 자동 비활성) |
 
 ## 2. 컴포넌트 지도
@@ -145,7 +145,7 @@ document/ DocumentPage TocNav
 | 컴포넌트 | 내용 |
 | --- | --- |
 | `AccountMenu` | `viewer`가 있을 때만 렌더. `Button fill="text"` + `Popup`: 내 정보(`/me`) → 운영자면 백오피스 → 로그아웃(`Button fill="text" state="error"`). 아바타는 정적 이미지(버튼 아님) |
-| `AppearanceToggle` | `Button fill="text" size="auto" injClass="px-2"` + **현재 모드를 글자로**(`다크`/`라이트`). 아이콘 단독 버튼은 STDF가 `aria-label`을 받지 못하므로 만들지 않는다. `appearance.svelte.ts`만 상태를 바꾼다. 로그인·설정 페이지에 같은 설정을 반복하지 않는다 |
+| `AppearanceToggle` | native `<button aria-label="다크 모드" aria-pressed>` + 해/달 아이콘(44px). STDF Button은 `aria-label`을 전달하지 못하므로 이 조작만 native다. 이름은 유지하고 `aria-pressed`로 현재 모드를 읽힌다. `appearance.svelte.ts`만 상태를 바꾼다. 로그인·설정 페이지에 같은 설정을 반복하지 않는다 |
 | `AppFooter` | 워드마크(링크 아님) + 도메인 + 문서·이용약관·개인정보 링크. 모바일에서는 두 줄. 저장소·SNS 링크 없음 |
 
 ## 4. UI 기반
@@ -843,6 +843,7 @@ FearlessStrip:  하드 피어리스 사용 이력(이전 Game에서 사용한 �
 | 불리언 | `Switch`의 라벨·상태 연결 불충분 | native checkbox + label | 하드 피어리스 |
 | 숫자·시각 | `Stepper`는 직접 입력·라벨 계약 없음, `TimePicker`는 스크롤 선택 | `type="number"`, `datetime-local` | 정원·포인트·예정 시각 |
 | 파일 | `Input`에 file 타입 없음, FileUpload 없음 | `<input type="file">` | ROFL |
+| 아이콘 단독 토글 | STDF 컴포넌트에 `aria-label`을 줄 수 없어 아이콘만 있는 버튼의 이름을 만들 수 없음 | native `<button aria-label aria-pressed>` | 헤더 화면 모드 토글 |
 | 스크롤 영역 상태 | `PullRefresh`·`InfiniteScroll`은 모바일 제스처 전용 | `AsyncSection` + `Pagination` | 목록 |
 
 ## 10. 컴포넌트 검토 체크리스트

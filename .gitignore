@@ -14,3 +14,4 @@ vite.config.*.timestamp-*
 
 # 로컬 조사·임시 산출물
 /.scratch/
+/.tmp/

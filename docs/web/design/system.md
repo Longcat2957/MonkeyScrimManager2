@@ -136,7 +136,7 @@ STDF 컴포넌트(`Button state="error"`, `Progress`, `Loading` 등)가 자동�
 | 기본 단위 | 4px (Tailwind 기본 스케일 사용, 임의 값 금지) |
 | 페이지 거터 | 16px(≤639) → 24px(640~1023) → 32px(≥1024) |
 | 셸 최대 폭 | 88rem (헤더·푸터·본문 공통) |
-| 보드 최대 폭 | 76rem |
+| 본문 최대 폭 | 셸과 동일한 88rem. 좁은 읽기 폭이 필요한 영역만 `.measure`(42rem) |
 | 읽기 폭 | 42rem |
 | 영역 간격 | 24px, 큰 블록 사이 32~40px |
 | 헤더 높이 | 56px(모바일) / 64px(데스크톱) |
@@ -188,7 +188,9 @@ STDF 컴포넌트(`Button state="error"`, `Progress`, `Loading` 등)가 자동�
 - STDF의 내장 글리프(닫기·체크·화살표·더보기)는 STDF 컴포넌트가 그리는 그대로 사용한다.
 - 도메인 글리프(사용자·깃발·트로피·타이머·포인트 등)는 **`ServiceIcon.svelte` 한 파일의 레지스트리**로만 추가한다.
   페이지마다 인라인 SVG를 쓰지 않는다. 아이콘 라이브러리 의존성은 추가하지 않는다.
-- 아이콘 단독 버튼은 `aria-label`을 갖는다. 아이콘+텍스트 버튼은 아이콘을 `aria-hidden`으로 둔다.
+- 아이콘 단독 조작은 **native `<button>` + `aria-label`** 하나만 허용한다(STDF는 `aria-label`을 전달하지 못한다).
+  현재 해당 항목은 화면 모드 토글 하나이며, 나머지는 텍스트 라벨을 붙인다.
+- 아이콘+텍스트 버튼은 아이콘을 `aria-hidden`으로 둔다.
 
 ## 8. 코드: 토큰과 기저 스타일
 
@@ -424,10 +426,6 @@ html[data-mode='dark'] {
 		}
 	}
 
-	.board {
-		max-width: 76rem;
-	}
-
 	.measure {
 		max-width: 42rem;
 	}
@@ -496,7 +494,7 @@ html[data-mode='dark'] {
 			(() => {
 				const saved = (() => {
 					try {
-						return localStorage.getItem('msm2-mode');
+						return localStorage.getItem('theme-mode');
 					} catch {
 						return null;
 					}
@@ -517,7 +515,8 @@ html[data-mode='dark'] {
 </html>
 ```
 
-- 저장 키는 `msm2-mode`(`light` | `dark`). `primary`/`dark` 혼용을 없앤다.
+- 저장 키는 `theme-mode`(`light` | `dark`). 이전 값(`primary`)은 유효하지 않은 값으로 보고 시스템 설정을 쓴다.
+- 브랜드 토큰이 아닌 문자열이므로 `pnpm check:branding` 대상이 아니다.
 - `app.html`에서 `data-mode`를 인라인으로 결정하므로 하이드레이션 전 깜빡임이 없다.
 - `ConfigProvider`(`stdf/lang`의 `ko_KR`)는 루트 레이아웃에서 한 번만 감싼다. 컴포넌트마다 언어를 지정하지 않는다.
 
@@ -529,7 +528,7 @@ html[data-mode='dark'] {
 | 모든 정보를 카드로 감싸기 | 제목·구분선·정렬된 표 |
 | 장식용 그라디언트·글로우·유리 효과 | 잉크 표면 단계 + 시안 1포인트 |
 | 페이지마다 다른 버튼 모양 | STDF `Button` + 3종 변형(`accent`/`outline`/`ghost`)만 |
-| 아이콘 단독 장식 | 텍스트 라벨 우선, 아이콘은 보조 |
+| 아이콘 단독 장식 | 텍스트 라벨 우선, 아이콘은 보조. 아이콘만 남는 조작은 화면 모드 토글 하나 |
 | 모바일용·데스크톱용 두 벌의 마크업 | 같은 마크업 + 재배치 |
 
 ## 11. 계획 검토 체크리스트

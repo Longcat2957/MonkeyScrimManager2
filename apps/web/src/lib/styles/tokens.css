@@ -1,0 +1,166 @@
+/*
+ * 디자인 토큰.
+ * STDF가 읽는 고정 변수(@theme)와 서비스 의미 토큰(@theme inline + :root)을 한 곳에서 정의한다.
+ * 색·크기·간격을 화면 코드에서 임의로 만들지 않고 이 파일의 토큰만 사용한다.
+ */
+
+/* 다크 변형은 html[data-mode] 하나로만 판정한다. STDF는 dark 변형을 제공하지 않는다. */
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
+
+@theme {
+	--font-sans:
+		'Noto Sans KR', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+		sans-serif;
+	--font-brand: 'Jersey 10', 'Noto Sans KR', ui-sans-serif, sans-serif;
+	--font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+
+	/* 브랜드 원색: 로고(static/brand/logo.png)의 잉크·크림·시안 */
+	--color-ink-950: #050a15;
+	--color-ink-900: #0b1322;
+	--color-ink-850: #101a2c;
+	--color-ink-800: #16223a;
+	--color-ink-700: #22314c;
+	--color-ink-600: #34445f;
+	--color-ink-500: #4c5d78;
+	--color-cream-50: #f7f3ec;
+	--color-cream-100: #f1ebdf;
+	--color-cream-200: #e6dccb;
+	--color-cream-300: #d6c9b4;
+	--color-signal-300: #5ee7f6;
+	--color-signal-400: #2adcf0;
+	--color-signal-500: #09e5f9;
+	--color-signal-600: #00b4c8;
+	--color-signal-700: #0a6b7a;
+	--color-signal-800: #075763;
+
+	/*
+	 * STDF 계약: primary는 라이트 모드 강조색, dark는 다크 모드 강조색이다.
+	 * dark를 배경색으로 쓰면 다크 모드의 기본 버튼이 사라진다.
+	 */
+	--color-primary: #09e5f9;
+	--color-text-on-primary: #04121c;
+	--color-dark: #2adcf0;
+	--color-text-on-dark: #04121c;
+	--color-bg-base: #f7f3ec;
+	--color-bg-surface: #ffffff;
+	--color-bg-overlay: #ffffff;
+	--color-bg-highlight: #f1ebdf;
+	--color-bg-base-dark: #060b16;
+	--color-bg-surface-dark: #0b1322;
+	--color-bg-overlay-dark: #16223a;
+	--color-bg-highlight-dark: #101a2c;
+	--color-text-primary: #0b1322;
+	--color-text-dark: #e9edf5;
+	--color-success: #177a55;
+	--color-warning: #8a5a06;
+	--color-error: #b32638;
+	--color-info: #0a6b7a;
+	--radius-small: 0.25rem;
+	--radius-form: 0.5rem;
+	--radius-box: 0.75rem;
+
+	/* 타입 스케일. 시스템 문서(design/system.md §3)의 역할 이름과 같다. */
+	--text-display-xl: 3.5rem;
+	--text-display-xl--line-height: 0.95;
+	--text-display-l: 2.5rem;
+	--text-display-l--line-height: 1;
+	--text-title-xl: 1.5rem;
+	--text-title-xl--line-height: 1.35;
+	--text-title-xl--font-weight: 700;
+	--text-title-l: 1.25rem;
+	--text-title-l--line-height: 1.4;
+	--text-title-l--font-weight: 700;
+	--text-title-m: 1rem;
+	--text-title-m--line-height: 1.45;
+	--text-title-m--font-weight: 700;
+	--text-body: 0.9375rem;
+	--text-body--line-height: 1.65;
+	--text-body-s: 0.875rem;
+	--text-body-s--line-height: 1.55;
+	--text-caption: 0.78125rem;
+	--text-caption--line-height: 1.4;
+	--text-caption--font-weight: 500;
+	--text-caption--letter-spacing: 0.02em;
+}
+
+/* 의미 토큰: bg-surface-card, text-muted, border-line 처럼 유틸리티로 바로 쓴다. */
+@theme inline {
+	--color-surface-app: var(--surface-app);
+	--color-surface-card: var(--surface-card);
+	--color-surface-sunken: var(--surface-sunken);
+	--color-surface-raised: var(--surface-raised);
+	--color-surface-overlay: var(--surface-overlay);
+	--color-line: var(--line);
+	--color-line-strong: var(--line-strong);
+	--color-fg: var(--text);
+	--color-muted: var(--text-muted);
+	--color-faint: var(--text-faint);
+	--color-action: var(--action-bg);
+	--color-action-fg: var(--action-fg);
+	--color-side-a: var(--side-a);
+	--color-side-b: var(--side-b);
+	--color-tone-success: var(--success);
+	--color-tone-warning: var(--warning);
+	--color-tone-danger: var(--danger);
+	--color-tone-info: var(--info);
+}
+
+:root {
+	--surface-app: #f7f3ec;
+	--surface-card: #ffffff;
+	--surface-sunken: #f1ebdf;
+	--surface-raised: #ffffff;
+	--surface-overlay: #ffffff;
+	--line: #e6dccb;
+	--line-strong: #d6c9b4;
+	--text: #0b1322;
+	--text-muted: #55617a;
+	--text-faint: #7b8699;
+	--action-bg: #09e5f9;
+	--action-fg: #04121c;
+	--focus-ring: #0a6b7a;
+	--side-a: #1d4ed8;
+	--side-b: #c0273b;
+	--success: #177a55;
+	--warning: #8a5a06;
+	--danger: #b32638;
+	--info: #0a6b7a;
+	--shadow-overlay: 0 24px 60px -20px rgb(3 10 23 / 0.35);
+	--motion-fast: 120ms;
+	--motion-base: 180ms;
+	--motion-slow: 320ms;
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--app-header-height: 3.5rem;
+	--app-rail-height: 2.75rem;
+}
+
+html[data-mode='dark'] {
+	--surface-app: #060b16;
+	--surface-card: #0b1322;
+	--surface-sunken: #050a15;
+	--surface-raised: #101a2c;
+	--surface-overlay: #16223a;
+	--line: #22314c;
+	--line-strong: #34445f;
+	--text: #e9edf5;
+	--text-muted: #9aa7bd;
+	--text-faint: #7483a0;
+	--action-bg: #2adcf0;
+	--action-fg: #04121c;
+	--focus-ring: #2adcf0;
+	--side-a: #7fa7ff;
+	--side-b: #ff8a97;
+	--success: #3bd08b;
+	--warning: #f0b04a;
+	--danger: #ff7a88;
+	--info: #2adcf0;
+	--shadow-overlay: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+	--app-header-height: 4rem;
+	color-scheme: dark;
+}
+
+@media (min-width: 64rem) {
+	:root {
+		--app-header-height: 4rem;
+	}
+}

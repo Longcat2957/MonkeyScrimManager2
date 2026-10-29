@@ -31,6 +31,7 @@
 </script>
 
 <svelte:head>
+	<title>{SERVICE_NAME}</title>
 	<meta name="description" content="리그 오브 레전드 내전 기록 관리" />
 </svelte:head>
 

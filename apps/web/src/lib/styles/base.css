@@ -1,0 +1,60 @@
+/*
+ * 기저 스타일.
+ * 문서 전체의 배경·글자색·포커스·모션 기본값을 한 곳에서 정한다.
+ */
+
+@layer base {
+	html {
+		font-family: var(--font-sans);
+		color-scheme: light;
+		-webkit-text-size-adjust: 100%;
+		background-color: var(--surface-app);
+		color: var(--text);
+		scroll-padding-top: calc(var(--app-header-height) + var(--app-rail-height) + 1rem);
+	}
+
+	body {
+		min-height: 100dvh;
+		background-color: var(--surface-app);
+		color: var(--text);
+	}
+
+	:where(h1, h2, h3, h4) {
+		text-wrap: balance;
+	}
+
+	p {
+		text-wrap: pretty;
+	}
+
+	:where(a) {
+		color: inherit;
+		text-underline-offset: 0.25em;
+	}
+
+	/*
+	 * 포커스는 항상 보인다.
+	 * 포커스 링은 의미 토큰 하나로 통일하고, 표 셀처럼 좁은 곳에서 잘리지 않게 offset을 제한한다.
+	 */
+	:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 2px;
+		border-radius: var(--radius-small);
+	}
+
+	::selection {
+		background: color-mix(in oklab, var(--action-bg) 45%, transparent);
+		color: inherit;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
+}
