@@ -152,9 +152,9 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 합의한 테이블을 추가할 스키마 진입점. 현재 비어 있음 |
+| `apps/web/src/lib/server/db/schema.ts` | 테이블 정의와 조회·삽입 타입. 현재 `users` 포함 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
-| `apps/web/drizzle/` | 이후 생성되는 SQL 마이그레이션과 메타데이터의 보관 경로 |
+| `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
 DB는 `getDb()`를 처음 호출할 때 초기화한다. 주소 미설정 상태에서도 기존 화면·타입 검사·빌드는 가능하다.
 풀은 최대 10개 연결, 연결 대기는 10초로 제한한다. 실제 연결은 쿼리 실행 시 시작한다.
@@ -167,10 +167,33 @@ pnpm db:migrate
 ```
 
 두 명령은 `apps/web/.env`를 읽으며, 이미 설정된 프로세스 환경 변수가 우선한다.
-`db:generate`는 DB 접속 없이 동작한다. 현재는 테이블 0개이므로 SQL 변경을 만들지 않는다.
+`db:generate`는 DB 접속 없이 스키마 변경에 대한 SQL을 생성한다.
 `db:migrate`는 실제 DB에 접속해 검토한 마이그레이션을 적용하는 명령이다.
 생성한 SQL과 메타데이터는 Git으로 관리하고 접속 정보는 제외한다.
-현재 개발 DB는 Drizzle 연결을 확인한 빈 상태이며 업무 테이블과 마이그레이션 이력은 아직 없다.
+현재 로컬 개발 DB에는 `0000_create_users` 마이그레이션을 적용했다. 검증용 사용자는 롤백해 남기지 않았다.
+
+### User
+
+로그인은 Discord OAuth2만 사용한다. `users` 테이블의 한 행은 Discord 계정 하나에 대응하며,
+조회 타입 `User`와 삽입 타입 `NewUser`를 스키마에서 추론한다.
+
+| 필드 | 저장 내용 |
+| --- | --- |
+| `id` | Discord 사용자 ID 문자열, 기본키 |
+| `username` | Discord 사용자명, 필수. 계정 식별이나 고유 제약에 사용하지 않음 |
+| `globalName` | Discord 전역 표시 이름, 없으면 `null` |
+| `avatarHash` | Discord 전역 아바타 해시, 없으면 `null` |
+| `createdAt` | 서비스 사용자 생성 시각, `timestamptz(3)`, 기본값 `now()` |
+| `updatedAt` | 사용자 정보 수정 시각, `timestamptz(3)`, 기본값 `now()` |
+
+프로필 필드는 Discord 응답의 복사본이며 서버별 닉네임·프로필과 구분한다.
+`updatedAt`은 Drizzle의 수정 쿼리에서 자동 갱신한다. 직접 SQL로 수정할 때는 호출자가 함께 갱신해야 한다.
+비밀번호·이메일·OAuth 토큰·길드 권한은 User에 저장하지 않는다.
+사용자 한 명이 여러 Riot 계정을 연결하는 관계는 별도 객체를 정의할 때 추가한다.
+OAuth 로그인 처리와 세션 관리는 아직 구현하지 않았다.
+
+필드 근거: [Discord User](https://docs.discord.com/developers/resources/user#user-object),
+[Discord Snowflake](https://docs.discord.com/developers/reference#snowflakes).
 
 설정 근거: [Drizzle PostgreSQL](https://orm.drizzle.team/docs/get-started-postgresql),
 [Drizzle Kit 설정](https://orm.drizzle.team/docs/drizzle-config-file), [pg 연결 풀](https://node-postgres.com/features/pooling).
