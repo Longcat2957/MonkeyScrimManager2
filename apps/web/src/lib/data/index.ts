@@ -9,6 +9,22 @@ export {
 	getGuildHome,
 	listScrims,
 	listMatches,
-	createScrim
+	createScrim,
+	getScrimDetail,
+	getScrimContext,
+	closeRecruitment,
+	registerSelf,
+	withdrawRegistration,
+	setRegistrationStatus,
+	getMatchDetail,
+	getPlayerProfile,
+	getGuildStats,
+	getGuildAdmin,
+	getViewerProfile,
+	linkRiotAccount,
+	unlinkRiotAccount,
+	savePrivacy,
+	saveGuildSettings,
+	setMemberRole
 } from './adapter.mocks.ts';
 export type { Scenario } from '#lib/mocks/simulate.ts';

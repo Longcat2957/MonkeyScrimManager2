@@ -39,12 +39,7 @@
 			</span>
 		</a>
 
-		{#if scrim && guild}
-			<span class="min-w-0 items-center gap-2 text-body-s text-muted sm:flex">
-				<span class="text-faint" aria-hidden="true">/</span>
-				<span class="truncate font-semibold text-fg">{scrim.title}</span>
-			</span>
-		{/if}
+		<!-- 내전 제목·상태는 본문이 표시한다. 헤더는 브랜드·서버·화면 모드만 담당한다. -->
 
 		<div class="ml-auto flex shrink-0 items-center gap-1">
 			{#if viewer}<GuildSwitcher {guild} {viewer} />{/if}

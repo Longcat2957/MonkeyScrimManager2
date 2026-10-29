@@ -120,3 +120,106 @@ export interface NewScrimInput {
 
 /** 포지션 표시 순서. 모든 편성·명단 화면이 같은 순서를 쓴다. */
 export const POSITIONS: Position[] = ['top', 'jungle', 'mid', 'bot', 'support'];
+
+/** 내전 요약 화면의 데이터. 신청·운영 권한은 서버가 판단한 값만 전달한다. */
+export interface ScrimDetail extends ScrimSummary {
+	createdAt: string;
+	registrations: Registration[];
+	viewerRegistration: Registration | null;
+	capabilities: {
+		canManage: boolean;
+		canRegister: boolean;
+		/** 신청할 수 없는 이유. 없으면 null. */
+		registerBlockedReason: string | null;
+	};
+}
+
+/** 한 경기의 출전 기록. 값이 없으면 null이며 0으로 채우지 않는다. */
+export interface GameParticipantLine {
+	participantId: string;
+	player: PlayerRef;
+	champion: string;
+	position: Position;
+	side: GameSide;
+	kills: number;
+	deaths: number;
+	assists: number;
+	cs: number;
+	gold: number;
+	vision: number;
+}
+
+export interface GameDetail {
+	id: string;
+	number: number;
+	status: GameStatus;
+	blueTeam: TeamRef;
+	redTeam: TeamRef;
+	winnerSide: GameSide | null;
+	/** 실제 경기 길이. 확인하지 못했으면 null이다. */
+	durationMs: number | null;
+	participants: GameParticipantLine[];
+}
+
+export interface MatchDetail extends MatchSummary {
+	games: GameDetail[];
+	isHardFearless: boolean;
+	capabilities: { canUploadRofl: boolean };
+}
+
+export interface PlayerRecentGame {
+	matchId: string;
+	gameId: string;
+	gameNumber: number;
+	opponent: string;
+	champion: string;
+	result: 'win' | 'loss' | 'unknown';
+	playedAt: string | null;
+}
+
+export interface PlayerProfile {
+	player: PlayerRef;
+	totals: { games: number; wins: number; losses: number };
+	/** 승률. 출전 Game이 없으면 null이다. */
+	winRate: number | null;
+	mmrSeason: string | null;
+	/** 공개 범위에서 MMR을 제공하지 않으면 null이다. */
+	positionMmr: { position: Position; value: number; status: 'applied' | 'pending' }[] | null;
+	recent: PlayerRecentGame[];
+	total: number;
+}
+
+export interface GuildStatsView {
+	games: number;
+	players: number;
+	averageDurationMs: number | null;
+	positions: { position: Position; games: number; kda: number; cs: number }[];
+}
+
+export interface GuildAdminView {
+	members: { player: PlayerRef; role: 'member' | 'admin'; joinedAt: string }[];
+	settings: { recruitChannel: string | null; resultChannel: string | null };
+	capabilities: { canEdit: boolean; canChangeRoles: boolean };
+}
+
+export interface RegistrationInput {
+	positions: Position[];
+}
+
+export interface RiotAccountView {
+	id: string;
+	gameName: string;
+	tagLine: string;
+	platform: string;
+	verified: boolean;
+}
+
+export interface PrivacySettingsView {
+	publicProfile: boolean;
+	showRiotIds: boolean;
+}
+
+export interface ViewerProfile {
+	accounts: RiotAccountView[];
+	privacy: PrivacySettingsView;
+}

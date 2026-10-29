@@ -1,17 +1,45 @@
 import { dev } from '$app/env';
 import type {
+	PrivacySettingsView,
+	RiotAccountView,
+	ViewerProfile,
+	GuildAdminView,
+	GuildStatsView,
 	Loadable,
+	MatchDetail,
 	MatchListFilter,
 	MatchSummary,
 	NewScrimInput,
 	PageResult,
+	PlayerProfile,
+	Position,
+	ScrimDetail,
 	ScrimListFilter,
 	ScrimSummary
 } from '#lib/data/types.ts';
 import type { GuildContext, ViewerContext } from '#lib/shell/context.ts';
 import { GUILDS, USERS, VIEWER, findGuild } from '#lib/mocks/guilds.ts';
+import { addAccount, getPrivacy, listAccounts, removeAccount, updatePrivacy } from '#lib/mocks/account.ts';
+import { findGames } from '#lib/mocks/games.ts';
+import type { ScrimContext } from '#lib/shell/context.ts';
+import {
+	buildGuildAdmin,
+	buildGuildStats,
+	buildPlayerProfile,
+	updateGuildSettings,
+	updateMemberRole
+} from '#lib/mocks/players.ts';
 import { MATCHES } from '#lib/mocks/records.ts';
-import { SCRIMS, addScrim, toSummary } from '#lib/mocks/scrims.ts';
+import {
+	SCRIMS,
+	addScrim,
+	findScrim,
+	registerParticipant,
+	setRegistrationStatus as setRegistrationStatusStore,
+	setScrimStatus,
+	toSummary,
+	withdrawRegistration as withdrawRegistrationStore
+} from '#lib/mocks/scrims.ts';
 import { pause, type Scenario } from '#lib/mocks/simulate.ts';
 
 /*
@@ -124,7 +152,8 @@ export async function listMatches(
 						value.toLowerCase().includes(query)
 					)
 		)
-		.sort((a, b) => (b.playedAt ?? '').localeCompare(a.playedAt ?? ''));
+		.sort((a, b) => (b.playedAt ?? '').localeCompare(a.playedAt ?? ''))
+		.map((match) => ({ ...match }));
 
 	if (scenario === 'empty') return { items: [], total: 0 };
 
@@ -135,4 +164,185 @@ export async function listMatches(
 /** 모집 생성. 같은 내전을 중복 생성하지 않도록 제목을 그대로 새 항목으로만 추가한다. */
 export async function createScrim(guildId: string, input: NewScrimInput): Promise<ScrimSummary> {
 	return toSummary(addScrim(guildId, input));
+}
+
+/** 내전 요약. 신청 가능 여부와 운영 권한은 서버가 판단한 값만 전달한다. */
+export async function getScrimDetail(
+	guildId: string,
+	scrimId: string,
+	viewer: ViewerContext | null,
+	canManage: boolean,
+	scenario: Scenario = 'normal'
+): Promise<ScrimDetail | 'missing'> {
+	await pause(scenario);
+	if (scenario === 'error') throw new Error('내전을 불러오지 못했습니다.');
+
+	const scrim = findScrim(scrimId);
+	if (!scrim || scrim.guildId !== guildId) return 'missing';
+
+	// 화면 상태가 저장소의 배열을 직접 참조하지 않도록 복사해서 넘긴다.
+	const registrations = scrim.registrations.map((registration) => ({ ...registration }));
+	const viewerRegistration =
+		registrations.find((registration) => registration.player.userId === viewer?.id) ?? null;
+	const isFull = scrim.applicantCount >= scrim.appliedCapacity;
+
+	const registerBlockedReason =
+		scrim.status !== 'recruit'
+			? '모집이 마감되었습니다.'
+			: isFull
+				? '신청 정원이 찼습니다.'
+				: null;
+
+	return {
+		...toSummary(scrim),
+		createdAt: scrim.createdAt,
+		registrations,
+		viewerRegistration,
+		capabilities: {
+			canManage,
+			canRegister: Boolean(viewer) && !viewerRegistration && registerBlockedReason === null,
+			registerBlockedReason
+		}
+	};
+}
+
+/** 본인 신청. 같은 내전에 이미 신청이 있으면 추가하지 않는다. */
+export async function registerSelf(
+	scrimId: string,
+	viewer: ViewerContext,
+	positions: Position[]
+): Promise<boolean> {
+	return (
+		registerParticipant(
+			scrimId,
+			{ userId: viewer.id, displayName: viewer.displayName, riotId: null },
+			positions
+		) !== null
+	);
+}
+
+export async function withdrawRegistration(scrimId: string, participantId: string): Promise<boolean> {
+	return withdrawRegistrationStore(scrimId, participantId);
+}
+
+export async function setRegistrationStatus(
+	scrimId: string,
+	participantId: string,
+	status: 'selected' | 'standby' | 'excluded'
+): Promise<boolean> {
+	return setRegistrationStatusStore(scrimId, participantId, status);
+}
+
+/** 시리즈·Game 상세. */
+export async function getMatchDetail(
+	guildId: string,
+	matchId: string,
+	canUploadRofl: boolean,
+	scenario: Scenario = 'normal'
+): Promise<MatchDetail | 'missing'> {
+	await pause(scenario);
+	if (scenario === 'error') throw new Error('경기 기록을 불러오지 못했습니다.');
+
+	const match = MATCHES.find((candidate) => candidate.id === matchId);
+	if (!match) return 'missing';
+	const scrim = findScrim(match.scrimId);
+	if (!scrim || scrim.guildId !== guildId) return 'missing';
+
+	const games =
+		scenario === 'empty'
+			? []
+			: findGames(match.id).map((game) => ({
+					...game,
+					participants: game.participants.map((line) => ({ ...line }))
+				}));
+
+	return {
+		...match,
+		games,
+		isHardFearless: scrim.isHardFearless,
+		capabilities: { canUploadRofl }
+	};
+}
+
+export async function getPlayerProfile(
+	guildId: string,
+	userId: string,
+	page: number,
+	pageSize: number,
+	scenario: Scenario = 'normal'
+): Promise<PlayerProfile | 'missing'> {
+	await pause(scenario);
+	if (scenario === 'error') throw new Error('전적을 불러오지 못했습니다.');
+
+	const profile = buildPlayerProfile(guildId, userId, page, pageSize);
+	return profile ?? 'missing';
+}
+
+export async function getGuildStats(guildId: string, scenario: Scenario = 'normal'): Promise<GuildStatsView> {
+	await pause(scenario);
+	if (scenario === 'error') throw new Error('통계를 불러오지 못했습니다.');
+	return buildGuildStats(guildId);
+}
+
+export async function getGuildAdmin(guildId: string, scenario: Scenario = 'normal'): Promise<GuildAdminView | 'missing'> {
+	await pause(scenario);
+	if (scenario === 'error') throw new Error('관리 정보를 불러오지 못했습니다.');
+	const admin = buildGuildAdmin(guildId);
+	return admin ?? 'missing';
+}
+
+
+/** 헤더·제목이 쓰는 내전 문맥. 존재 여부만 확인한다. */
+export async function getScrimContext(guildId: string, scrimId: string): Promise<ScrimContext | 'missing'> {
+	const scrim = findScrim(scrimId);
+	if (!scrim || scrim.guildId !== guildId) return 'missing';
+	return {
+		id: scrim.id,
+		guildId: scrim.guildId,
+		title: scrim.title,
+		status: scrim.status,
+		formationMethod: scrim.formationMethod,
+		teamCount: scrim.teamCount,
+		expectedStartAt: scrim.expectedStartAt
+	};
+}
+
+/** 모집 마감. 편성 방식이 정해져 있어야 한다. */
+export async function closeRecruitment(scrimId: string): Promise<boolean> {
+	return setScrimStatus(scrimId, 'preparing');
+}
+
+
+/** 본인 계정 연결·공개 범위. 로그인 사용자 문맥을 확인한 뒤 호출한다. */
+export async function getViewerProfile(): Promise<ViewerProfile> {
+	return { accounts: listAccounts(), privacy: getPrivacy() };
+}
+
+/** Riot ID 조회 결과를 연결한다. 소유권 확인은 아직 별도 단계가 없다. */
+export async function linkRiotAccount(gameName: string, tagLine: string): Promise<RiotAccountView | null> {
+	return addAccount(gameName, tagLine);
+}
+
+export async function unlinkRiotAccount(accountId: string): Promise<boolean> {
+	return removeAccount(accountId);
+}
+
+export async function savePrivacy(next: PrivacySettingsView): Promise<PrivacySettingsView> {
+	return updatePrivacy(next);
+}
+
+
+export async function saveGuildSettings(
+	guildId: string,
+	next: { recruitChannel: string | null; resultChannel: string | null }
+): Promise<boolean> {
+	return updateGuildSettings(guildId, next);
+}
+
+export async function setMemberRole(
+	guildId: string,
+	userId: string,
+	role: 'member' | 'admin'
+): Promise<boolean> {
+	return updateMemberRole(guildId, userId, role);
 }

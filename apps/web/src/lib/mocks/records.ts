@@ -35,7 +35,7 @@ const SEEDS: MatchSeed[] = [
 		teamB: '팀 D',
 		bestOf: 3,
 		score: [1, 0],
-		status: 'pending',
+		status: 'in_progress',
 		playedAt: '2026-10-29T20:15:00+09:00'
 	},
 	{

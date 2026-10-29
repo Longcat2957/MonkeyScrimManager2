@@ -240,6 +240,77 @@ export function findScrim(scrimId: string): MockScrim | undefined {
 	return SCRIMS.find((scrim) => scrim.id === scrimId);
 }
 
+/** 모집 마감처럼 운영 단계만 바꾼다. 편성 방식이 없으면 편성 단계로 넘기지 않는다. */
+export function setScrimStatus(scrimId: string, status: ScrimStatus): boolean {
+	const scrim = findScrim(scrimId);
+	if (!scrim) return false;
+	if (status !== 'recruit' && status !== 'cancelled' && !scrim.formationMethod) return false;
+	scrim.status = status;
+	return true;
+}
+
+/** 참가 신청. 같은 사용자의 중복 신청은 추가하지 않는다. */
+export function registerParticipant(
+	scrimId: string,
+	player: { userId: string; displayName: string; riotId: string | null },
+	positions: Position[]
+): Registration | null {
+	const scrim = findScrim(scrimId);
+	if (!scrim) return null;
+	if (scrim.registrations.some((registration) => registration.player.userId === player.userId)) return null;
+	if (scrim.applicantCount >= scrim.appliedCapacity) return null;
+
+	const registration: Registration = {
+		participantId: `${scrim.id}-p${String(scrim.registrations.length + 1).padStart(2, '0')}`,
+		player,
+		status: 'pending',
+		positions,
+		joinedAt: new Date().toISOString(),
+		teamId: null,
+		teamPosition: null
+	};
+	scrim.registrations.push(registration);
+	scrim.applicantCount += 1;
+	return registration;
+}
+
+/** 신청 철회. 참가 행은 지우지 않고 상태만 닫는다. */
+export function withdrawRegistration(scrimId: string, participantId: string): boolean {
+	const scrim = findScrim(scrimId);
+	const registration = scrim?.registrations.find((item) => item.participantId === participantId);
+	if (!scrim || !registration || registration.status === 'withdrawn') return false;
+
+	if (registration.status === 'selected') scrim.selectedCount = Math.max(0, scrim.selectedCount - 1);
+	registration.status = 'withdrawn';
+	scrim.applicantCount = Math.max(0, scrim.applicantCount - 1);
+	return true;
+}
+
+/** 선발·대기·제외 처리. */
+export function setRegistrationStatus(
+	scrimId: string,
+	participantId: string,
+	status: 'selected' | 'standby' | 'excluded'
+): boolean {
+	const scrim = findScrim(scrimId);
+	const registration = scrim?.registrations.find((item) => item.participantId === participantId);
+	if (!scrim || !registration || registration.status === 'withdrawn') return false;
+
+	const previous = registration.status;
+	// 선발 인원은 실출전 정원을 넘지 않는다.
+	if (status === 'selected' && previous !== 'selected' && scrim.selectedCount >= scrim.playingCapacity) {
+		return false;
+	}
+
+	if (previous === 'selected' && status !== 'selected') scrim.selectedCount = Math.max(0, scrim.selectedCount - 1);
+	if (status === 'selected' && previous !== 'selected') scrim.selectedCount += 1;
+	// 제외는 신청을 닫고 정원에서 뺀다(철회와 구분되는 운영 처리).
+	if (status === 'excluded' && previous !== 'excluded') scrim.applicantCount = Math.max(0, scrim.applicantCount - 1);
+
+	registration.status = status;
+	return true;
+}
+
 /** 목록·홈에서 쓰는 요약 값만 꺼낸다. registrations 참조를 화면으로 넘기지 않는다. */
 export function toSummary(scrim: MockScrim): ScrimSummary {
 	const { registrations: _registrations, guildId: _guildId, createdAt: _createdAt, ...summary } = scrim;
