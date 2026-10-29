@@ -10,6 +10,7 @@
 	const playerId = 'devPlayer001';
 	const shortcuts = [
 		{ label: '내 정보', href: resolve('/me') },
+		{ label: '백오피스', href: resolve('/backoffice') },
 		{ label: '길드 홈', href: resolve('/g/[guildId]', { guildId }) },
 		{ label: '내전 목록', href: resolve('/g/[guildId]/scrims', { guildId }) },
 		{ label: '내전 상세', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },
