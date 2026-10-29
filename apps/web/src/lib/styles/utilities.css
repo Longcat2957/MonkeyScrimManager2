@@ -65,3 +65,83 @@
 		box-shadow: inset 3px 0 0 var(--side-b);
 	}
 }
+
+@layer components {
+	/*
+	 * 데이터 표.
+	 * 데스크톱은 표, 좁은 화면에서는 같은 DOM을 라벨-값 카드로 재배치한다.
+	 * 셀은 `data-label`로 열 이름을 제공하고, 행 머리 셀은 <th scope="row">를 쓴다.
+	 */
+	.data-table-container {
+		overflow-x: auto;
+	}
+
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+	}
+
+	.data-table thead th {
+		border-bottom: 1px solid var(--line-strong);
+		padding: 0.5rem 0.75rem 0.5rem 0;
+		text-align: start;
+		font-weight: 600;
+		color: var(--text-muted);
+		white-space: nowrap;
+	}
+
+	.data-table tbody td,
+	.data-table tbody th {
+		border-bottom: 1px solid var(--line);
+		padding: 0.625rem 0.75rem 0.625rem 0;
+		text-align: start;
+		vertical-align: middle;
+	}
+
+	.data-table tbody tr:last-child td,
+	.data-table tbody tr:last-child th {
+		border-bottom: 0;
+	}
+
+	@media (max-width: 63.999rem) {
+		.data-table thead {
+			display: none;
+		}
+
+		.data-table tbody tr {
+			display: block;
+			padding-block: 0.5rem;
+			border-bottom: 1px solid var(--line);
+		}
+
+		.data-table tbody tr:last-child {
+			border-bottom: 0;
+		}
+
+		.data-table tbody td {
+			display: grid;
+			grid-template-columns: 6.5rem minmax(0, 1fr);
+			gap: 0.5rem;
+			padding: 0.125rem 0;
+			border-bottom: 0;
+		}
+
+		.data-table tbody td::before {
+			content: attr(data-label);
+			color: var(--text-muted);
+			font-weight: 600;
+		}
+
+		.data-table tbody th[scope='row'] {
+			display: block;
+			padding: 0 0 0.25rem;
+			border-bottom: 0;
+			font-weight: 700;
+		}
+
+		.data-table tbody .hide-in-stack {
+			display: none;
+		}
+	}
+}

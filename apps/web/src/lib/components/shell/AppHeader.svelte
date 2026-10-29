@@ -6,6 +6,7 @@
 	import type { GuildContext, ScrimContext, ViewerContext } from '#lib/shell/context.ts';
 	import AppearanceToggle from './AppearanceToggle.svelte';
 	import ContextRail from './ContextRail.svelte';
+	import GuildSwitcher from './GuildSwitcher.svelte';
 
 	let {
 		guild = null,
@@ -39,21 +40,14 @@
 		</a>
 
 		{#if scrim && guild}
-			<span class="text-faint" aria-hidden="true">/</span>
-			<span class="flex min-w-0 items-center gap-2 text-body-s text-muted">
-				<span class="hidden shrink-0 sm:inline">{guild.name}</span>
-				<span class="hidden text-faint sm:inline" aria-hidden="true">/</span>
+			<span class="min-w-0 items-center gap-2 text-body-s text-muted sm:flex">
+				<span class="text-faint" aria-hidden="true">/</span>
 				<span class="truncate font-semibold text-fg">{scrim.title}</span>
 			</span>
-		{:else if guild}
-			<span class="text-faint" aria-hidden="true">/</span>
-			<span class="truncate text-body-s font-semibold">{guild.name}</span>
-		{:else if viewer && viewer.guilds.length > 0}
-			<!-- 서버 선택기는 P3에서 연결한다. 그전에는 현재 서버 목록을 알려 주지 않는다. -->
-			<span class="sr-only">서버가 선택되지 않았습니다.</span>
 		{/if}
 
 		<div class="ml-auto flex shrink-0 items-center gap-1">
+			{#if viewer}<GuildSwitcher {guild} {viewer} />{/if}
 			<AppearanceToggle />
 		</div>
 	</div>

@@ -16,6 +16,17 @@
 	} from 'stdf';
 	import { SERVICE_NAME } from '#lib/branding.ts';
 	import AppHeader from '#lib/components/shell/AppHeader.svelte';
+	import AsyncSection from '#lib/components/ui/AsyncSection.svelte';
+	import ChoiceGroup from '#lib/components/ui/ChoiceGroup.svelte';
+	import ConfirmDialog from '#lib/components/ui/ConfirmDialog.svelte';
+	import DataTable from '#lib/components/ui/DataTable.svelte';
+	import FillMeter from '#lib/components/ui/FillMeter.svelte';
+	import MetricList from '#lib/components/ui/MetricList.svelte';
+	import NativeField from '#lib/components/ui/NativeField.svelte';
+	import StatusTag from '#lib/components/ui/StatusTag.svelte';
+	import TaskDialog from '#lib/components/ui/TaskDialog.svelte';
+	import { MATCH_STATUS, POSITION_LABEL, SCRIM_STATUS } from '#lib/components/ui/status.ts';
+	import type { Loadable } from '#lib/data/types.ts';
 	import type { GuildContext, ScrimContext, ViewerContext } from '#lib/shell/context.ts';
 
 	type Scenario = 'normal' | 'empty' | 'slow' | 'error' | 'partial';
@@ -39,7 +50,10 @@
 
 	let dialogOpen = $state(false);
 	let popupOpen = $state(false);
+	let taskOpen = $state(false);
+	let confirmOpen = $state(false);
 	let busy = $state(false);
+	let demoChoices = $state<'all' | 'recruit'>('all');
 
 	function runBusyDemo() {
 		busy = true;
@@ -69,6 +83,21 @@
 		isServiceAdmin: false,
 		guilds: [demoGuild]
 	};
+
+	// 비동기 영역 표시를 시나리오에 맞춰 바꾼다.
+	const demoResult: Loadable<string[]> = $derived(
+		scenario === 'error'
+			? { status: 'error', message: '불러오지 못했어요.' }
+			: scenario === 'empty'
+				? { status: 'ready', data: [] }
+				: { status: 'ready', data: ['참가자 01', '참가자 02'] }
+	);
+
+	const demoRoster = [
+		{ name: '참가자 01', position: 'top' as const, status: SCRIM_STATUS.recruit },
+		{ name: '참가자 02', position: 'jungle' as const, status: SCRIM_STATUS.preparing },
+		{ name: '참가자 03', position: 'mid' as const, status: SCRIM_STATUS.completed }
+	];
 
 	const brandColors = [
 		{ name: 'ink-900', value: 'var(--color-ink-900)' },
@@ -286,7 +315,36 @@
 		<div class="mt-3 flex flex-wrap gap-2 border-t border-line pt-4">
 			<Button size="auto" injClass="px-4" fill="line" onclick={() => dialogOpen = true}>확인 다이얼로그</Button>
 			<Button size="auto" injClass="px-4" fill="line" onclick={() => popupOpen = true}>팝업</Button>
+			<Button size="auto" injClass="px-4" fill="base" state="theme" onclick={() => taskOpen = true}>입력 패널</Button>
+			<Button size="auto" injClass="px-4" fill="line" state="error" onclick={() => confirmOpen = true}>철회 확인</Button>
 		</div>
+
+		<TaskDialog
+			bind:open={taskOpen}
+			title="입력 패널"
+			description="포커스 트랩·Escape·복귀를 TaskDialog가 보완한다."
+			submitLabel="저장"
+			onsubmit={() => (taskOpen = false)}
+		>
+			<ChoiceGroup
+				legend="편성 방식"
+				name="demo-method"
+				options={[
+					{ value: 'all', label: '엔트리 편성' },
+					{ value: 'recruit', label: '경매 편성' }
+				]}
+				bind:value={demoChoices}
+			/>
+		</TaskDialog>
+
+		<ConfirmDialog
+			bind:open={confirmOpen}
+			title="참가를 철회할까요?"
+			content="철회하면 선발 대기 순서가 사라집니다."
+			confirmLabel="철회"
+			danger
+			onconfirm={() => (confirmOpen = false)}
+		/>
 
 		<Dialog
 			bind:visible={dialogOpen}
@@ -305,6 +363,105 @@
 				<Button size="full" fill="line" onclick={() => (popupOpen = false)}>닫기</Button>
 			</div>
 		</Popup>
+	</section>
+
+	<!-- 상태·미터·지표 -->
+	<section class="mt-10" aria-labelledby="status">
+		<h2 id="status" class="text-title-l">상태·미터·지표</h2>
+		<div class="mt-3 grid gap-6 border-t border-line pt-4 lg:grid-cols-2">
+			<div class="space-y-3">
+				<div class="flex flex-wrap gap-2">
+					<StatusTag status={SCRIM_STATUS.recruit} />
+					<StatusTag status={SCRIM_STATUS.preparing} />
+					<StatusTag status={MATCH_STATUS.completed} />
+					<StatusTag status={MATCH_STATUS.ended_early} />
+					<StatusTag status={MATCH_STATUS.cancelled} />
+				</div>
+				<div class="max-w-xs">
+					<FillMeter current={7} total={10} label="선발 인원" />
+				</div>
+				<p class="text-caption text-muted">상태는 문구와 점으로 함께 표시하고, 색만으로 구분하지 않는다.</p>
+			</div>
+			<MetricList
+				columns="grid-2"
+				items={[
+					{ label: '완료 Game', value: '128', unit: '경기' },
+					{ label: '참가 사용자', value: '46', unit: '명' },
+					{ label: '평균 경기 길이', value: '31분 24초' },
+					{ label: '선발 인원', value: '7 / 10' }
+				]}
+			/>
+		</div>
+	</section>
+
+	<!-- 표 -->
+	<section class="mt-10" aria-labelledby="table">
+		<h2 id="table" class="text-title-l">표</h2>
+		<p class="mt-1 text-body-s text-muted">좁은 화면에서는 같은 DOM이 라벨-값 카드로 재배치된다.</p>
+		<div class="mt-3 border-t border-line pt-2">
+			<DataTable
+				caption="참가자 명단"
+				columns={[{ label: '참가자' }, { label: '포지션' }, { label: '상태', align: 'end' }]}
+				items={demoRoster}
+			>
+				{#snippet row(item)}
+					<tr>
+						<th scope="row">{item.name}</th>
+						<td data-label="포지션">{POSITION_LABEL[item.position]}</td>
+						<td data-label="상태" class="text-end"><StatusTag status={item.status} /></td>
+					</tr>
+				{/snippet}
+			</DataTable>
+		</div>
+	</section>
+
+	<!-- 비동기 영역 -->
+	<section class="mt-10" aria-labelledby="async">
+		<h2 id="async" class="text-title-l">비동기 영역</h2>
+		<p class="mt-1 text-body-s text-muted">위 시나리오 전환에 따라 로딩·빈 데이터·오류·정상이 바뀐다.</p>
+		<div class="mt-3 border-t border-line pt-4">
+			<AsyncSection
+				result={demoResult}
+				label="비동기 영역 예시"
+				emptyText="조건에 맞는 항목이 없습니다."
+				loading={scenario === 'slow'}
+				onretry={() => setScenario('normal')}
+			>
+				{#snippet children(items)}
+					<ul class="divide-hairline">
+						{#each items as item (item)}
+							<li class="py-2 text-body-s">{item}</li>
+						{/each}
+					</ul>
+				{/snippet}
+			</AsyncSection>
+		</div>
+	</section>
+
+	<!-- 선택·입력 -->
+	<section class="mt-10" aria-labelledby="choice">
+		<h2 id="choice" class="text-title-l">선택·입력</h2>
+		<div class="mt-3 grid max-w-2xl gap-4 border-t border-line pt-4">
+			<ChoiceGroup
+				legend="상태"
+				name="demo-status"
+				options={[
+					{ value: 'all', label: '전체' },
+					{ value: 'recruit', label: '모집 중' }
+				]}
+				bind:value={demoChoices}
+			/>
+			<NativeField id="demo-datetime" label="예정 시각" hint="한국 시간(KST) 기준입니다.">
+				{#snippet children(describedBy)}
+					<input
+						id="demo-datetime"
+						type="datetime-local"
+						aria-describedby={describedBy || undefined}
+						class="min-h-11 rounded-sm border border-line bg-surface-sunken px-3 text-body-s"
+					/>
+				{/snippet}
+			</NativeField>
+		</div>
 	</section>
 
 	<!-- 헤더 -->

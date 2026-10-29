@@ -2,6 +2,14 @@
 
 ## 2026-10-29
 
+- 프론트엔드 P1(데이터·상태)과 P3 일부(서버 문맥·서버 홈·내전 목록)를 구현.
+  - `lib/data`: DB enum과 1:1인 뷰 모델(`types.ts`)과 화면이 쓰는 유일한 진입점(`index.ts`) 추가. `lib/mocks`: 고정 표본(서버 3개·사용자 24명·내전 9개·시리즈 6개)과 `?scenario=`(정상·빈·느림·오류·부분 실패) 시뮬레이션. 모집 생성은 목 저장소를 실제로 갱신.
+  - `lib/components/ui`: `AsyncSection`(로딩·빈·오류·재시도 단일 규칙), `PageHeader`, `DataTable`(좁은 화면 라벨-값 재배치), `StatusTag`+`status.ts`(상태 문구·톤 단일 출처), `MetricList`, `FillMeter`, `TaskDialog`(포커스 트랩·Escape·복귀), `ConfirmDialog`, `ChoiceGroup`, `NativeField` 추가. `format.ts`로 KST 시각·길이·점수 표기를 통일.
+  - 서버 문맥: `g/[guildId]/+layout.ts`가 존재·권한을 확인해 403/404로 분기하고 헤더에 문맥을 전달. 서버 홈은 "지금" 내전과 최근 경기, 서버 현황을 각각 독립 오류로 표시. 내전 목록은 상태 필터·페이지·모집 생성 패널을 URL 상태로 관리.
+  - 서버 선택기는 STDF Popup 시트 대신 **헤더 오른쪽 드롭다운**(native disclosure, `aria-expanded`, Escape·바깥 클릭 닫기, 링크 이동 유지)으로 구현.
+  - `TaskDialog`는 Popup의 전체 폭 패널 대신 투명 배경 위에 카드만 그려 중앙 정렬을 바로잡음. 화면 모드 토글은 첫 방문에 `prefers-color-scheme`를 따르고, 사용자가 고르면 그 값을 저장한다.
+  - 검증: 헤드리스 Chrome으로 라이트·다크·390px 렌더와 모집 생성 패널의 포커스 위치·Tab 순환·Escape 복귀·테마 전환을 확인. `pnpm check`·`pnpm --filter @msm2/web test`(82개)·`build` 통과.
+
 - 프론트엔드 디자인 재작성 P0(기반·셸)을 구현. 색·타입·간격을 `lib/styles/{tokens,base,utilities}.css`로 분리하고 로고에서 추출한 잉크·크림·시안 토큰, 의미 토큰, 타입 스케일을 적용. `app.html`은 첫 페인트 전에 `theme-mode` 저장값 또는 시스템 설정으로 `data-mode`를 정하고 `color-scheme`·`theme-color` 메타를 추가하며, 폰트는 가변 굵기로 요청 수를 줄임.
   - 헤더·레일·푸터·건너뛰기·경로 포커스를 `lib/components/shell/`로 새로 작성하고 루트 레이아웃을 `ConfigProvider(ko_KR)`로 감쌈. 기존 `components/layout/AppHeader.svelte`·`AppFooter.svelte`와 `.app-frame` 규칙, GitHub 메뉴·중복 링크·`details` 기반 모바일 메뉴를 삭제.
   - 화면 모드는 `lib/shell/appearance.svelte.ts`가 유일한 상태 소유자. 헤더의 토글은 STDF Button이 `aria-label`을 전달하지 못하므로 native 버튼(`aria-label`·`aria-pressed`·해/달 아이콘·44px)으로 구현.

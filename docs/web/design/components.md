@@ -129,13 +129,14 @@ document/ DocumentPage TocNav
 
 | 항목 | 내용 |
 | --- | --- |
-| props | `guild`, `viewer`, `mode: 'select' \| 'context'`, `scrimTitle?: string` |
-| 기반 | STDF `Button fill="line" size="sm"` + `Popup position="bottom" maskClosable` |
-| 내용 | 현재 서버(표시 전용) → 다른 서버 `<a>` 목록(아이콘+이름) → 내전 문맥이면 `서버 홈` 링크 |
-| 표시 조건 | `viewer`가 있을 때만 렌더(로그인 전 서버 목록을 알 수 없다). 문맥이 없으면 `mode="select"` |
-| 상태 | 목록 없음: "참여한 서버가 없습니다." / 실패: 문장 + `다시 시도` / 로딩: `Skeleton` 2줄 |
-| 접근성 | 트리거에 `aria-expanded`·`aria-controls`, 닫으면 트리거로 포커스 복귀 |
-| 금지 | 현재 서버를 링크로 만들기, 선택 시 현재 페이지를 잃고 서버 홈으로 강제 이동(현재 서버 재선택은 항목 비활성) |
+| props | `guild`, `viewer` |
+| 위치 | 헤더 **오른쪽**, 화면 모드 토글 바로 왼쪽 |
+| 기반 | native disclosure: 텍스트+캐럿 버튼 + 트리거에 붙는 링크 목록(STDF에는 링크를 담는 앵커 메뉴가 없다, §9) |
+| 내용 | 현재 서버(표시 전용, `현재` 표시) → 다른 서버 `<a>` 목록 |
+| 표시 조건 | `viewer`가 있을 때만 렌더(로그인 전 서버 목록을 알 수 없다) |
+| 상태 | 목록 없음: "참여한 다른 서버가 없습니다." |
+| 접근성 | `aria-expanded`·`aria-controls`, 열면 첫 이동 항목으로 포커스, Escape로 닫고 트리거로 복귀, 바깥 클릭·포커스 이탈 시 닫힘 |
+| 금지 | 현재 서버를 링크로 만들기, 화면 하단 시트·모달처럼 화면을 덮는 패널로 만들기 |
 
 > MSM1의 교훈: 서버 전환이 **항상 대시보드로 이동**해 맥락을 잃었다(`AppShell.svelte:192-194`). 새로울 것도
 > 현재 서버 항목은 링크가 아니므로 같은 실수를 반복하지 않는다. 다른 서버로 갈 때는 그 서버 홈이 맞다(라우트 계약).
@@ -207,7 +208,16 @@ document/ DocumentPage TocNav
 ### 4.3. `AsyncSection`
 
 [architecture.md §7.2](architecture.md#72-비동기-영역-하나로-통일)의 구현. 모든 조회 영역은 이 컴포넌트를 통과한다.
-`Skeleton`은 **실제 레이아웃 모양**의 줄 수로 만들고, 오류는 문장 + 재시도 1개, 빈 상태는 문장 1개다.
+
+```svelte
+<AsyncSection result={home.recentMatches} label="최근 경기" emptyText="아직 기록된 경기가 없습니다." onretry={...}>
+	{#snippet children(matches)}...{/snippet}
+</AsyncSection>
+```
+
+- `result: Loadable<T>`(`{ status: 'ready', data }` 또는 `{ status: 'error', message }`) 또는 `null`(로딩)을 받는다.
+- 상태 판정: `loading` → `null` → `error` → 빈 값(배열 길이 0 또는 `isEmpty`) → 정상. **상태 계산을 페이지마다 다시 쓰지 않는다.**
+- `Skeleton`은 실제 레이아웃 모양의 줄 수로 만들고, 오류는 문장 + 재시도 1개, 빈 상태는 문장 1개다.
 
 ### 4.4. `DataTable`
 
@@ -844,6 +854,7 @@ FearlessStrip:  하드 피어리스 사용 이력(이전 Game에서 사용한 �
 | 숫자·시각 | `Stepper`는 직접 입력·라벨 계약 없음, `TimePicker`는 스크롤 선택 | `type="number"`, `datetime-local` | 정원·포인트·예정 시각 |
 | 파일 | `Input`에 file 타입 없음, FileUpload 없음 | `<input type="file">` | ROFL |
 | 아이콘 단독 토글 | STDF 컴포넌트에 `aria-label`을 줄 수 없어 아이콘만 있는 버튼의 이름을 만들 수 없음 | native `<button aria-label aria-pressed>` | 헤더 화면 모드 토글 |
+| 서버 선택 드롭다운 | STDF `ActionPopover`는 항목이 `button`이고, `Popup`은 트리거에 붙지 않고 화면을 덮는다. 서버 이동은 링크여야 새 탭·주소 복사가 된다 | native disclosure(버튼 + `aria-expanded` + 링크 목록) | 헤더 서버 선택 |
 | 스크롤 영역 상태 | `PullRefresh`·`InfiniteScroll`은 모바일 제스처 전용 | `AsyncSection` + `Pagination` | 목록 |
 
 ## 10. 컴포넌트 검토 체크리스트
