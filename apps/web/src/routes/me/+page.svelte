@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { Button, Input } from 'stdf';
+	import { Input } from 'stdf';
 	import { linkRiotAccount, savePrivacy, unlinkRiotAccount } from '#lib/data/index.ts';
 	import { pageTitle } from '#lib/shell/titles.ts';
 	import ConfirmDialog from '#lib/components/ui/ConfirmDialog.svelte';
-	import PageHeader from '#lib/components/ui/PageHeader.svelte';
-	import StatusTag from '#lib/components/ui/StatusTag.svelte';
+	import StatusState from '#lib/components/ui/StatusState.svelte';
 	import TaskDialog from '#lib/components/ui/TaskDialog.svelte';
 	import type { PageProps } from './$types';
 
@@ -61,27 +60,23 @@
 		}
 	}
 
-	// 공개 범위
+	// 공개 범위: 바꾸면 바로 저장한다(저장 버튼을 따로 두지 않는다).
 	let publicProfile = $state(untrack(() => profile.privacy.publicProfile));
 	let showRiotIds = $state(untrack(() => profile.privacy.showRiotIds));
 	let saving = $state(false);
-	let saved = $state(false);
 	let saveError = $state<string | null>(null);
 
-	const dirty = $derived(
-		publicProfile !== profile.privacy.publicProfile || showRiotIds !== profile.privacy.showRiotIds
-	);
-
-	async function submitPrivacy() {
+	async function persist(next: { publicProfile: boolean; showRiotIds: boolean }) {
 		saving = true;
 		saveError = null;
-		saved = false;
 		try {
-			await savePrivacy({ publicProfile, showRiotIds });
+			await savePrivacy(next);
 			await invalidateAll();
-			saved = true;
 		} catch {
 			saveError = '공개 범위를 저장하지 못했어요.';
+			// 실패하면 원래 값으로 되돌린다.
+			publicProfile = profile.privacy.publicProfile;
+			showRiotIds = profile.privacy.showRiotIds;
 		} finally {
 			saving = false;
 		}
@@ -92,38 +87,45 @@
 	<title>{pageTitle('내 정보')}</title>
 </svelte:head>
 
-<PageHeader title="내 정보" description={viewer ? `${viewer.displayName} · Discord 계정` : undefined} />
+<h1 class="page-title">내 정보</h1>
+{#if viewer}
+	<p class="mt-1.5 text-[13px] text-mut">{viewer.displayName} · Discord 계정</p>
+{/if}
 
-<div class="measure space-y-12">
+<div class="measure mt-8 space-y-10">
 	<section aria-labelledby="accounts">
-		<div class="flex flex-wrap items-baseline justify-between gap-2 border-t border-line pt-4">
-			<h2 id="accounts" class="text-title-l">연결한 Riot 계정</h2>
-			<Button size="auto" injClass="px-4" fill="base" state="theme" onclick={() => (linkOpen = true)}>
-				계정 연결
-			</Button>
+		<div class="region">
+			<span class="lbl" id="accounts">연결한 Riot 계정</span>
+			<button type="button" class="btn btn--text min-h-9 px-2" onclick={() => (linkOpen = true)}>계정 연결</button>
 		</div>
 
 		{#if profile.accounts.length === 0}
-			<p class="mt-3 text-body-s text-muted">
-				연결된 Riot 계정이 없습니다. 계정을 연결하면 참가 신청과 ROFL 기록 연결에 사용합니다.
-			</p>
+			<div class="panel px-5 py-4">
+				<p class="text-[13px] text-mut">
+					연결된 Riot 계정이 없습니다. 계정을 연결하면 참가 신청과 ROFL 기록 연결에 사용합니다.
+				</p>
+			</div>
 		{:else}
-			<ul class="mt-3 divide-hairline">
+			<ul class="panel">
 				{#each profile.accounts as account (account.id)}
-					<li class="flex flex-wrap items-center justify-between gap-3 py-3">
+					<li class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 first:border-t-0">
 						<div class="min-w-0">
-							<p class="truncate font-semibold">{account.gameName}#{account.tagLine}</p>
-							<p class="text-caption text-muted">{account.platform}</p>
+							<p class="truncate text-[14px] font-bold">{account.gameName}#{account.tagLine}</p>
+							<p class="text-[11.5px] text-faint">{account.platform}</p>
 						</div>
-						<div class="flex items-center gap-2">
-							<StatusTag
+						<div class="flex items-center gap-3">
+							<StatusState
 								status={account.verified
-									? { text: '확인됨', tone: 'success' }
-									: { text: '확인 대기', tone: 'warning' }}
+									? { text: '확인됨', tone: 'done' }
+									: { text: '확인 대기', tone: 'wait' }}
 							/>
-							<Button size="auto" injClass="px-3" fill="line" state="error" onclick={() => (unlinkTarget = account.id)}>
+							<button
+								type="button"
+								class="btn btn--text min-h-9 px-2 text-rose"
+								onclick={() => (unlinkTarget = account.id)}
+							>
 								해제
-							</Button>
+							</button>
 						</div>
 					</li>
 				{/each}
@@ -132,47 +134,42 @@
 	</section>
 
 	<section aria-labelledby="privacy">
-		<h2 id="privacy" class="border-t border-line pt-4 text-title-l">공개 범위</h2>
+		<div class="region">
+			<span class="lbl" id="privacy">공개 범위</span>
+			{#if saving}<span class="count">저장 중…</span>{/if}
+		</div>
 
-		<form
-			class="mt-3 space-y-4"
-			onsubmit={(event) => {
-				event.preventDefault();
-				submitPrivacy();
-			}}
-		>
-			<label class="flex min-h-11 items-start gap-3">
-				<input type="checkbox" bind:checked={publicProfile} class="mt-1 size-4" style:accent-color="var(--action-bg)" />
-				<span>
-					<span class="block text-body-s font-semibold">프로필 공개</span>
-					<span class="block text-caption text-muted">같은 서버의 다른 참가자가 내 전적을 볼 수 있습니다.</span>
+		<div class="panel divide-y divide-line">
+			<label class="flex min-h-14 cursor-pointer items-start gap-3 px-5 py-3.5">
+				<input
+					type="checkbox"
+					bind:checked={publicProfile}
+					onchange={() => persist({ publicProfile, showRiotIds })}
+					class="mt-0.5 size-4"
+					style:accent-color="var(--accent)"
+				/>
+				<span class="min-w-0">
+					<span class="block text-[14px] font-semibold">프로필 공개</span>
+					<span class="block text-[11.5px] text-faint">같은 서버의 다른 참가자가 내 전적을 볼 수 있습니다.</span>
 				</span>
 			</label>
 
-			<label class="flex min-h-11 items-start gap-3">
-				<input type="checkbox" bind:checked={showRiotIds} class="mt-1 size-4" style:accent-color="var(--action-bg)" />
-				<span>
-					<span class="block text-body-s font-semibold">Riot ID 표시</span>
-					<span class="block text-caption text-muted">과거 경기 기록에도 현재 설정이 적용됩니다.</span>
+			<label class="flex min-h-14 cursor-pointer items-start gap-3 px-5 py-3.5">
+				<input
+					type="checkbox"
+					bind:checked={showRiotIds}
+					onchange={() => persist({ publicProfile, showRiotIds })}
+					class="mt-0.5 size-4"
+					style:accent-color="var(--accent)"
+				/>
+				<span class="min-w-0">
+					<span class="block text-[14px] font-semibold">Riot ID 표시</span>
+					<span class="block text-[11.5px] text-faint">과거 경기 기록에도 현재 설정이 적용됩니다.</span>
 				</span>
 			</label>
+		</div>
 
-			<div class="flex flex-wrap items-center gap-3 pt-1">
-				<Button
-					type="submit"
-					size="auto"
-					injClass="px-4"
-					fill="base"
-					state="theme"
-					disabled={!dirty}
-					loading={saving ? { height: '4', width: '4' } : null}
-				>
-					공개 범위 저장
-				</Button>
-				{#if saved && !dirty}<span class="text-caption" style:color="var(--success)">저장되었습니다.</span>{/if}
-				{#if saveError}<span class="text-caption" style:color="var(--danger)">{saveError}</span>{/if}
-			</div>
-		</form>
+		{#if saveError}<p class="mt-2 text-[11.5px] text-rose">{saveError}</p>{/if}
 	</section>
 </div>
 

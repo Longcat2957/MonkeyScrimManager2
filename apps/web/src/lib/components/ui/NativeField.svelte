@@ -26,8 +26,8 @@
 </script>
 
 <div class="space-y-1">
-	<label for={id} class="block text-body-s font-semibold">{label}</label>
+	<label for={id} class="block text-[12px] font-semibold">{label}</label>
 	{@render children(describedBy ?? '')}
-	{#if hint}<p id={hintId} class="text-caption text-muted">{hint}</p>{/if}
-	{#if error}<p id={errorId} class="text-caption" style:color="var(--danger)">{error}</p>{/if}
+	{#if hint}<p id={hintId} class="text-[11px] text-faint">{hint}</p>{/if}
+	{#if error}<p id={errorId} class="text-[11px] text-rose">{error}</p>{/if}
 </div>

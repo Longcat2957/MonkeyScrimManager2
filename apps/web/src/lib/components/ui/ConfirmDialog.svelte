@@ -33,5 +33,5 @@
 	onsubmit={onconfirm}
 	{onclosed}
 >
-	<p class="text-body text-muted">{content}</p>
+	<p class="text-[13px] leading-relaxed text-mut">{content}</p>
 </TaskDialog>

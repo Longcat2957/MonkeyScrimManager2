@@ -11,7 +11,7 @@
 -->
 <button
 	type="button"
-	class="inline-flex size-11 items-center justify-center rounded-sm border border-transparent text-muted transition-colors hover:border-line hover:bg-surface-raised hover:text-fg active:bg-surface-raised"
+	class="btn btn--text size-10 min-h-10 px-0"
 	aria-label="다크 모드"
 	aria-pressed={isDark}
 	title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}

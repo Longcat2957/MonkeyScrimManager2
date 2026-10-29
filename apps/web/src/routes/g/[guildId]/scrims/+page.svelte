@@ -2,12 +2,11 @@
 	import { resolve } from '$app/paths';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Button, Input, Pagination } from 'stdf';
+	import { Input, Pagination } from 'stdf';
 	import { createScrim } from '#lib/data/index.ts';
 	import { pageTitle } from '#lib/shell/titles.ts';
 	import ChoiceGroup from '#lib/components/ui/ChoiceGroup.svelte';
 	import NativeField from '#lib/components/ui/NativeField.svelte';
-	import PageHeader from '#lib/components/ui/PageHeader.svelte';
 	import TaskDialog from '#lib/components/ui/TaskDialog.svelte';
 	import ScrimRow from '#lib/components/scrim/ScrimRow.svelte';
 	import type { PageProps } from './$types';
@@ -38,7 +37,8 @@
 	function go(patch: Record<string, string | number | null>) {
 		const url = new URL(String(page.url));
 		for (const [key, value] of Object.entries(patch)) {
-			const removable = value === null || value === '' || value === 'all' || (key === 'page' && Number(value) === 1);
+			const removable =
+				value === null || value === '' || value === 'all' || (key === 'page' && Number(value) === 1);
 			if (removable) url.searchParams.delete(key);
 			else url.searchParams.set(key, String(value));
 		}
@@ -108,15 +108,12 @@
 	<title>{pageTitle('내전', guild.name)}</title>
 </svelte:head>
 
-<PageHeader title="내전">
-	{#snippet actions()}
-		<Button size="auto" injClass="px-4" fill="base" state="theme" onclick={() => (createOpen = true)}>
-			모집 생성
-		</Button>
-	{/snippet}
-</PageHeader>
+<div class="flex flex-wrap items-end justify-between gap-4">
+	<h1 class="page-title">내전</h1>
+	<button type="button" class="btn btn--primary" onclick={() => (createOpen = true)}>모집 생성</button>
+</div>
 
-<div class="border-t border-line pt-4">
+<div class="mt-6 border-t border-line pt-4">
 	<ChoiceGroup
 		legend="상태"
 		name="scrim-status"
@@ -126,31 +123,34 @@
 	/>
 </div>
 
-<div class="mt-6">
-	{#if data.result.total === 0}
-		<p class="py-4 text-body-s text-muted">
-			{data.status === 'all' ? '아직 내전이 없습니다.' : '조건에 맞는 내전이 없습니다.'}
-		</p>
-	{:else}
-		<p class="text-caption text-muted">총 {data.result.total}건</p>
-		<ul class="mt-2 border-t border-line">
-			{#each data.result.items as scrim (scrim.id)}
-				<ScrimRow {scrim} href={scrimHref(scrim.id)} />
-			{/each}
-		</ul>
-		{#if data.result.total > data.pageSize}
-			<div class="mt-6">
-				<Pagination
-					total={data.result.total}
-					pageSize={data.pageSize}
-					current={data.page}
-					maxShowPage={5}
-					onchange={(current) => go({ page: current })}
-				/>
-			</div>
-		{/if}
-	{/if}
+<div class="region mt-7">
+	<span class="lbl">내전 목록</span>
+	<span class="count">총 {data.result.total}건</span>
 </div>
+
+{#if data.result.total === 0}
+	<div class="panel px-5 py-6">
+		<p class="text-[13px] text-mut">{data.status === 'all' ? '아직 만들어진 내전이 없습니다.' : '조건에 맞는 내전이 없습니다.'}</p>
+	</div>
+{:else}
+	<div class="panel">
+		{#each data.result.items as scrim (scrim.id)}
+			<ScrimRow {scrim} href={scrimHref(scrim.id)} />
+		{/each}
+	</div>
+
+	{#if data.result.total > data.pageSize}
+		<div class="mt-6">
+			<Pagination
+				total={data.result.total}
+				pageSize={data.pageSize}
+				current={data.page}
+				maxShowPage={5}
+				onchange={(current) => go({ page: current })}
+			/>
+		</div>
+	{/if}
+{/if}
 
 <TaskDialog
 	bind:open={createOpen}
@@ -164,7 +164,7 @@
 	onsubmit={submit}
 	onclosed={resetDraft}
 >
-	<div class="space-y-4">
+	<div class="space-y-5">
 		<Input title="내전 제목" bind:value={title} maxlength={60} py="2" placeholder="예: 30일 밤 내전" />
 
 		<NativeField id="scrim-start" label="예정 시각" hint="비워 두면 미정으로 저장됩니다. 한국 시간(KST) 기준입니다.">
@@ -174,7 +174,7 @@
 					type="datetime-local"
 					bind:value={startsAt}
 					aria-describedby={describedBy || undefined}
-					class="min-h-11 w-full rounded-sm border border-line bg-surface-sunken px-3 text-body-s"
+					class="field"
 				/>
 			{/snippet}
 		</NativeField>
@@ -190,20 +190,15 @@
 					max="20"
 					bind:value={reserve}
 					aria-describedby={describedBy || undefined}
-					class="tabular min-h-11 w-28 rounded-sm border border-line bg-surface-sunken px-3 text-end text-body-s"
+					class="field tabular w-28 text-end"
 				/>
 			{/snippet}
 		</NativeField>
 
 		<ChoiceGroup legend="편성 방식" name="scrim-method" options={METHOD_OPTIONS} bind:value={method} />
 
-		<label class="flex min-h-11 items-center gap-2 text-body-s">
-			<input
-				type="checkbox"
-				bind:checked={fearless}
-				class="size-4"
-				style:accent-color="var(--action-bg)"
-			/>
+		<label class="flex min-h-11 items-center gap-2.5 text-[13px]">
+			<input type="checkbox" bind:checked={fearless} class="size-4" style:accent-color="var(--accent)" />
 			하드 피어리스
 		</label>
 	</div>

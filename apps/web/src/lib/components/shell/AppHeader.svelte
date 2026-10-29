@@ -18,30 +18,26 @@
 		viewer?: ViewerContext | null;
 	} = $props();
 
-	// 현재 경로의 문맥에 맞는 레일 하나만 고른다. 내전 > 서버 > 전역 순이다.
 	const rail = $derived(destinationsFor(guild, scrim));
 </script>
 
 <!--
 	헤더는 하나의 DOM이다. 전역·서버·내전 문맥은 이 안의 내용만 바뀐다.
-	서버 선택기(P3)·계정 메뉴(인증 후)가 같은 줄에 들어오므로 폭은 셸 기준선을 공유한다.
+	헤더는 브랜드·서버 선택·화면 모드만 담당하고, 내전 제목·상태는 본문이 표시한다.
 -->
-<header class="sticky top-0 z-40 border-b border-line bg-surface-app/95 backdrop-blur-sm">
+<header
+	class="sticky top-0 z-40 border-b border-line backdrop-blur-md"
+	style:background-color="color-mix(in oklab, var(--bg) 92%, transparent)"
+>
 	<div class="shell flex h-[var(--app-header-height)] items-center gap-3">
-		<a
-			href={resolve('/')}
-			class="flex min-w-0 shrink-0 items-center gap-2 rounded-sm py-1"
-			aria-label={`${SERVICE_NAME} 홈`}
-		>
-			<img src={asset('brand/logo.png')} alt="" width="28" height="28" class="size-7" />
-			<span class="font-brand text-2xl leading-none font-normal tracking-tight [font-synthesis:none]">
+		<a href={resolve('/')} class="flex items-center gap-2.5" aria-label={`${SERVICE_NAME} 홈`}>
+			<img src={asset('brand/logo.png')} alt="" width="30" height="30" class="size-[30px]" />
+			<span class="font-brand text-[26px] leading-none font-normal tracking-tight [font-synthesis:none]">
 				{SERVICE_NAME}
 			</span>
 		</a>
 
-		<!-- 내전 제목·상태는 본문이 표시한다. 헤더는 브랜드·서버·화면 모드만 담당한다. -->
-
-		<div class="ml-auto flex shrink-0 items-center gap-1">
+		<div class="ml-auto flex items-center gap-1">
 			{#if viewer}<GuildSwitcher {guild} {viewer} />{/if}
 			<AppearanceToggle />
 		</div>

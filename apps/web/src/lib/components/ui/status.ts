@@ -11,10 +11,11 @@ import type {
 
 /*
  * 상태 문구와 톤의 단일 출처.
- * 화면마다 다른 동의어를 만들지 않는다. 색은 보조 신호이며 문구가 항상 함께 읽힌다.
+ * 톤은 "지금 벌어지는 일(live) / 기다리는 일(wait) / 끝난 일(done) / 무효·취소(danger)" 네 가지뿐이다.
+ * 색은 보조 신호이며 문구가 항상 함께 읽힌다.
  */
 
-export type Tone = 'theme' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+export type Tone = 'live' | 'wait' | 'done' | 'danger';
 
 export interface StatusMeta {
 	text: string;
@@ -22,51 +23,51 @@ export interface StatusMeta {
 }
 
 export const SCRIM_STATUS: Record<ScrimStatus, StatusMeta> = {
-	recruit: { text: '모집 중', tone: 'info' },
-	preparing: { text: '편성 중', tone: 'info' },
-	ready: { text: '편성 완료', tone: 'success' },
-	in_progress: { text: '진행 중', tone: 'info' },
-	completed: { text: '종료', tone: 'neutral' },
-	ended_early: { text: '중도 종료', tone: 'warning' },
-	cancelled: { text: '취소', tone: 'error' }
+	recruit: { text: '모집 중', tone: 'live' },
+	preparing: { text: '편성 중', tone: 'wait' },
+	ready: { text: '편성 완료', tone: 'live' },
+	in_progress: { text: '진행 중', tone: 'live' },
+	completed: { text: '종료', tone: 'done' },
+	ended_early: { text: '중도 종료', tone: 'wait' },
+	cancelled: { text: '취소', tone: 'danger' }
 };
 
 export const REGISTRATION_STATUS: Record<RegistrationStatus, StatusMeta> = {
-	pending: { text: '신청', tone: 'neutral' },
-	selected: { text: '선발', tone: 'success' },
-	standby: { text: '대기', tone: 'warning' },
-	withdrawn: { text: '철회', tone: 'neutral' },
-	excluded: { text: '제외', tone: 'error' }
+	pending: { text: '신청', tone: 'wait' },
+	selected: { text: '선발', tone: 'live' },
+	standby: { text: '대기', tone: 'wait' },
+	withdrawn: { text: '철회', tone: 'done' },
+	excluded: { text: '제외', tone: 'danger' }
 };
 
 export const MATCH_STATUS: Record<MatchStatus, StatusMeta> = {
-	pending: { text: '예정', tone: 'neutral' },
-	in_progress: { text: '진행 중', tone: 'info' },
-	completed: { text: '종료', tone: 'success' },
-	ended_early: { text: '중도 종료', tone: 'warning' },
-	cancelled: { text: '취소', tone: 'error' }
+	pending: { text: '예정', tone: 'wait' },
+	in_progress: { text: '진행 중', tone: 'live' },
+	completed: { text: '종료', tone: 'done' },
+	ended_early: { text: '중도 종료', tone: 'wait' },
+	cancelled: { text: '취소', tone: 'danger' }
 };
 
 export const GAME_STATUS: Record<GameStatus, StatusMeta> = {
-	pending: { text: '예정', tone: 'neutral' },
-	in_progress: { text: '진행 중', tone: 'info' },
-	awaiting_result: { text: '결과 대기', tone: 'warning' },
-	completed: { text: '기록됨', tone: 'success' },
-	cancelled: { text: '취소', tone: 'error' }
+	pending: { text: '예정', tone: 'wait' },
+	in_progress: { text: '진행 중', tone: 'live' },
+	awaiting_result: { text: '결과 대기', tone: 'wait' },
+	completed: { text: '기록됨', tone: 'done' },
+	cancelled: { text: '취소', tone: 'danger' }
 };
 
 export const AUCTION_STATUS: Record<AuctionStatus, StatusMeta> = {
-	setup: { text: '경매 준비', tone: 'neutral' },
-	in_progress: { text: '입찰 진행', tone: 'info' },
-	completed: { text: '경매 완료', tone: 'success' },
-	cancelled: { text: '경매 취소', tone: 'error' }
+	setup: { text: '경매 준비', tone: 'wait' },
+	in_progress: { text: '입찰 진행', tone: 'live' },
+	completed: { text: '경매 완료', tone: 'done' },
+	cancelled: { text: '경매 취소', tone: 'danger' }
 };
 
 export const LOT_STATUS: Record<LotStatus, StatusMeta> = {
-	open: { text: '입찰 중', tone: 'info' },
-	sold: { text: '낙찰', tone: 'success' },
-	unsold: { text: '유찰', tone: 'warning' },
-	cancelled: { text: '취소', tone: 'error' }
+	open: { text: '입찰 중', tone: 'live' },
+	sold: { text: '낙찰', tone: 'done' },
+	unsold: { text: '유찰', tone: 'wait' },
+	cancelled: { text: '취소', tone: 'danger' }
 };
 
 /** 포지션 이름. MSM1 사용자 용어(원딜)를 유지한다. */

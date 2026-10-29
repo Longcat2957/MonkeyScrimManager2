@@ -2,41 +2,33 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import {
+		ActionSheet,
+		Accordion,
 		Badge,
 		Button,
-		Card,
-		Dialog,
-		Divider,
+		Cell,
+		CellGroup,
 		Input,
-		Loading,
-		Pagination,
-		Popup,
 		Progress,
-		Skeleton
+		Steps
 	} from 'stdf';
 	import { SERVICE_NAME } from '#lib/branding.ts';
 	import AppHeader from '#lib/components/shell/AppHeader.svelte';
 	import AsyncSection from '#lib/components/ui/AsyncSection.svelte';
 	import ChoiceGroup from '#lib/components/ui/ChoiceGroup.svelte';
 	import ConfirmDialog from '#lib/components/ui/ConfirmDialog.svelte';
-	import DataTable from '#lib/components/ui/DataTable.svelte';
-	import FillMeter from '#lib/components/ui/FillMeter.svelte';
-	import MetricList from '#lib/components/ui/MetricList.svelte';
-	import NativeField from '#lib/components/ui/NativeField.svelte';
-	import StatusTag from '#lib/components/ui/StatusTag.svelte';
+	import StatusState from '#lib/components/ui/StatusState.svelte';
 	import TaskDialog from '#lib/components/ui/TaskDialog.svelte';
-	import { MATCH_STATUS, POSITION_LABEL, SCRIM_STATUS } from '#lib/components/ui/status.ts';
+	import { MATCH_STATUS, POSITION_LABEL, REGISTRATION_STATUS, SCRIM_STATUS } from '#lib/components/ui/status.ts';
 	import type { Loadable } from '#lib/data/types.ts';
-	import type { GuildContext, ScrimContext, ViewerContext } from '#lib/shell/context.ts';
 
-	type Scenario = 'normal' | 'empty' | 'slow' | 'error' | 'partial';
 
+	type Scenario = 'normal' | 'empty' | 'slow' | 'error';
 	const SCENARIOS: { value: Scenario; label: string }[] = [
 		{ value: 'normal', label: '정상' },
 		{ value: 'empty', label: '빈 데이터' },
 		{ value: 'slow', label: '로딩' },
-		{ value: 'error', label: '오류' },
-		{ value: 'partial', label: '부분 누락' }
+		{ value: 'error', label: '오류' }
 	];
 
 	const scenario = $derived((page.url.searchParams.get('scenario') ?? 'normal') as Scenario);
@@ -44,80 +36,24 @@
 	function setScenario(value: Scenario) {
 		const url = new URL(String(page.url));
 		url.searchParams.set('scenario', value);
-		// 시나리오 전환은 화면 상태만 바꾸므로 다시 로드하지 않고 URL만 갱신한다.
 		goto(url, { replace: true, shallow: true, reset: false });
 	}
 
-	let dialogOpen = $state(false);
-	let popupOpen = $state(false);
 	let taskOpen = $state(false);
 	let confirmOpen = $state(false);
-	let busy = $state(false);
-	let demoChoices = $state<'all' | 'recruit'>('all');
+	let sheetOpen = $state(false);
+	let demoChoice = $state<'all' | 'recruit'>('all');
+	let demoText = $state('');
 
-	function runBusyDemo() {
-		busy = true;
-		setTimeout(() => (busy = false), 1200);
-	}
+	const sample = $derived.by((): Loadable<string[]> => {
+		if (scenario === 'error') return { status: 'error', message: '예시 오류: 서버가 응답하지 않습니다.' };
+		if (scenario === 'empty') return { status: 'ready', data: [] };
+		return { status: 'ready', data: ['첫 번째 항목', '두 번째 항목'] };
+	});
 
-	// 헤더 변형을 확인하기 위한 목 문맥이다. 실제 데이터가 아니다.
-	const demoGuild: GuildContext = {
-		id: 'demo-guild',
-		name: '모의 서버',
-		iconUrl: null,
-		viewerRole: 'admin'
-	};
-	const demoScrim: ScrimContext = {
-		id: 'demo-scrim',
-		guildId: demoGuild.id,
-		title: '30일 밤 내전 #12',
-		status: 'preparing',
-		formationMethod: 'auction',
-		teamCount: 2,
-		expectedStartAt: '2026-10-29T20:00:00+09:00'
-	};
-	const demoViewer: ViewerContext = {
-		id: 'demo-viewer',
-		displayName: '모의 사용자',
-		avatarUrl: null,
-		isServiceAdmin: false,
-		guilds: [demoGuild]
-	};
-
-	// 비동기 영역 표시를 시나리오에 맞춰 바꾼다.
-	const demoResult: Loadable<string[]> = $derived(
-		scenario === 'error'
-			? { status: 'error', message: '불러오지 못했어요.' }
-			: scenario === 'empty'
-				? { status: 'ready', data: [] }
-				: { status: 'ready', data: ['참가자 01', '참가자 02'] }
-	);
-
-	const demoRoster = [
-		{ name: '참가자 01', position: 'top' as const, status: SCRIM_STATUS.recruit },
-		{ name: '참가자 02', position: 'jungle' as const, status: SCRIM_STATUS.preparing },
-		{ name: '참가자 03', position: 'mid' as const, status: SCRIM_STATUS.completed }
-	];
-
-	const brandColors = [
-		{ name: 'ink-900', value: 'var(--color-ink-900)' },
-		{ name: 'ink-800', value: 'var(--color-ink-800)' },
-		{ name: 'cream-50', value: 'var(--color-cream-50)' },
-		{ name: 'cream-200', value: 'var(--color-cream-200)' },
-		{ name: 'signal-500', value: 'var(--color-signal-500)' },
-		{ name: 'signal-700', value: 'var(--color-signal-700)' }
-	];
-
-	const semanticColors = [
-		{ name: 'surface-card', value: 'var(--surface-card)' },
-		{ name: 'surface-sunken', value: 'var(--surface-sunken)' },
-		{ name: 'line', value: 'var(--line)' },
-		{ name: 'action', value: 'var(--action-bg)' },
-		{ name: 'success', value: 'var(--success)' },
-		{ name: 'warning', value: 'var(--warning)' },
-		{ name: 'danger', value: 'var(--danger)' },
-		{ name: 'side-a', value: 'var(--side-a)' },
-		{ name: 'side-b', value: 'var(--side-b)' }
+	const rowLinks = [
+		{ title: '월요 정규전', meta: '10월 27일 (화) 21:00 · 엔트리 편성', num: '10 / 10', state: 'live' as const },
+		{ title: '수요 내전', meta: '10월 29일 (목) 20:00 · 경매 편성', num: '7 / 10', state: 'wait' as const }
 	];
 </script>
 
@@ -126,363 +62,257 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="px-1 py-8">
-	<p class="category-label">디자인 검토</p>
-	<h1 class="mt-1 text-title-xl">컴포넌트 갤러리</h1>
-	<p class="measure mt-2 text-body-s text-muted">
-		디자인 회귀의 기준 화면이다. 라이트·다크, 360px·768px·1280px에서 같은 항목을 확인한다.
-	</p>
+<h1 class="page-title">컴포넌트 갤러리</h1>
+<p class="mt-1.5 text-[13px] text-mut">새 시각 규칙(표면 램프·행·상태·버튼)을 한 화면에서 확인한다.</p>
 
-	<!-- 시나리오 전환: 정상·빈·로딩·오류·부분 누락 -->
-	<fieldset class="mt-6">
-		<legend class="text-body-s font-semibold">상태 시나리오</legend>
-		<div class="mt-2 flex flex-wrap gap-2">
-			{#each SCENARIOS as item (item.value)}
-				<label
-					class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border px-3 text-body-s {scenario ===
-					item.value
-						? 'border-action bg-surface-raised font-semibold'
-						: 'border-line text-muted'}"
-				>
-					<input
-						type="radio"
-						name="scenario"
-						value={item.value}
-						checked={scenario === item.value}
-						onchange={() => setScenario(item.value)}
-						class="size-4 accent-[var(--action-bg)]"
-					/>
-					{item.label}
-				</label>
-			{/each}
-		</div>
-	</fieldset>
+<div class="mt-6 flex flex-wrap gap-2">
+	{#each SCENARIOS as item (item.value)}
+		<label class="chip">
+			<input
+				type="radio"
+				name="scenario"
+				value={item.value}
+				checked={scenario === item.value}
+				class="sr-only"
+				onchange={() => setScenario(item.value)}
+			/>
+			{item.label}
+		</label>
+	{/each}
+</div>
 
-	<!-- 색 -->
-	<section class="mt-10" aria-labelledby="colors">
-		<h2 id="colors" class="text-title-l">색</h2>
-		<div class="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
-			{#each brandColors as color (color.name)}
-				<div>
-					<div class="h-12 rounded-sm border border-line" style:background={color.value}></div>
-					<p class="mt-1 text-caption text-muted">{color.name}</p>
-				</div>
-			{/each}
-		</div>
-		<div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
-			{#each semanticColors as color (color.name)}
-				<div>
-					<div class="h-12 rounded-sm border border-line" style:background={color.value}></div>
-					<p class="mt-1 text-caption text-muted">{color.name}</p>
-				</div>
-			{/each}
-		</div>
-	</section>
+<section class="mt-10" aria-labelledby="type">
+	<div class="region"><span class="lbl" id="type">타입</span></div>
+	<div class="panel space-y-2 p-5">
+		<p class="page-title">페이지 제목 24/800</p>
+		<p class="text-[18px] font-extrabold">섹션 제목 18/800</p>
+		<p class="text-[15px] font-bold">소제목 15/700</p>
+		<p class="text-[14px]">본문 14/400 — 내전 결과는 ROFL 파일로 자동 기록됩니다.</p>
+		<p class="text-[12.5px] text-mut">보조 12.5/400 — 서브 정보와 안내</p>
+		<p class="lbl">라벨 10.5 UPPERCASE 0.16em</p>
+		<p class="font-brand text-[44px] leading-none">128 7 / 10 :</p>
+	</div>
+</section>
 
-	<!-- 타입 -->
-	<section class="mt-10" aria-labelledby="type">
-		<h2 id="type" class="text-title-l">타입</h2>
-		<div class="mt-3 space-y-3 border-t border-line pt-3">
-			<p class="numeric-display text-display-xl">2 : 1</p>
-			<p class="text-display-l">라운드 2</p>
-			<p class="text-title-xl">시리즈 점수</p>
-			<p class="text-title-l">참가자 명단</p>
-			<p class="text-title-m">30일 밤 내전 #12</p>
-			<p class="text-body">본문 15px. 내전 모집과 참가 현황을 한 화면에서 확인합니다.</p>
-			<p class="text-body-s">표 셀 14px. <span class="tabular">1&thinsp;500</span> · <span class="tabular">KDA 3.42</span></p>
-			<p class="category-label">구역 라벨</p>
-		</div>
-	</section>
-
-	<!-- 버튼 -->
-	<section class="mt-10" aria-labelledby="buttons">
-		<h2 id="buttons" class="text-title-l">버튼</h2>
-		<div class="mt-3 space-y-4 border-t border-line pt-4">
-			<div class="flex flex-wrap items-center gap-2">
-				<Button size="auto" injClass="px-4" fill="base" state="theme">주 행동</Button>
-				<Button size="auto" injClass="px-4" fill="line">보조</Button>
-				<Button size="auto" injClass="px-4" fill="text">글자</Button>
-				<Button size="auto" injClass="px-4" fill="line" state="error">철회</Button>
-				<Button size="auto" injClass="px-4" fill="base" state="theme" loading={busy ? { height: '4', width: '4' } : null} onclick={runBusyDemo}>
-					{busy ? '처리 중' : '처리 실행'}
-				</Button>
-				<Button size="auto" injClass="px-4" disabled>비활성</Button>
-			</div>
-			<div class="grid max-w-md gap-2">
-				<Button size="full" fill="base" state="theme">폼 제출(전체 폭)</Button>
+<section class="mt-8" aria-labelledby="colors">
+	<div class="region"><span class="lbl" id="colors">색·상태</span></div>
+	<div class="grid gap-3 sm:grid-cols-2">
+		<div class="panel p-4">
+			<p class="lbl mb-2">상태</p>
+			<div class="flex flex-col gap-2">
+				<StatusState status={SCRIM_STATUS.recruit} />
+				<StatusState status={SCRIM_STATUS.preparing} />
+				<StatusState status={SCRIM_STATUS.completed} />
+				<StatusState status={SCRIM_STATUS.cancelled} />
+				<StatusState status={REGISTRATION_STATUS.selected} />
+				<StatusState status={REGISTRATION_STATUS.pending} />
+				<StatusState status={MATCH_STATUS.ended_early} />
 			</div>
 		</div>
-	</section>
-
-	<!-- 입력 -->
-	<section class="mt-10" aria-labelledby="inputs">
-		<h2 id="inputs" class="text-title-l">입력</h2>
-		<div class="mt-3 grid max-w-2xl gap-4 border-t border-line pt-4">
-			<Input title="내전 제목" placeholder="예: 30일 밤 내전" py="2" />
-			<Input title="검색" placeholder="팀명으로 검색" type="search" py="2" />
-			<Input title="Riot ID" value="hide on bush" state="error" tip="계정을 찾을 수 없습니다." py="2" />
-			<div class="grid gap-1">
-				<label for="demo-select" class="text-body-s font-semibold">편성 방식</label>
-				<select
-					id="demo-select"
-					class="min-h-11 rounded-sm border border-line bg-surface-sunken px-3 text-body-s"
-				>
-					<option>엔트리 편성</option>
-					<option>경매 편성</option>
-				</select>
-				<p class="text-caption text-muted">STDF Picker는 키보드 선택을 보장하지 않아 native select를 쓴다.</p>
+		<div class="panel p-4">
+			<p class="lbl mb-2">표면 단</p>
+			<div class="grid grid-cols-4 gap-2 text-center text-[10px]">
+				<div class="bg-surface-app border border-line py-4 text-faint">app</div>
+				<div class="bg-panel border border-line py-4 text-faint">panel</div>
+				<div class="bg-panel-2 border border-line py-4 text-faint">panel-2</div>
+				<div class="bg-inset border border-line py-4 text-faint">inset</div>
+			</div>
+			<div class="mt-3 flex items-center gap-3 text-[11px]">
+				<span class="text-accent">accent</span>
+				<span class="text-gold">gold</span>
+				<span class="text-rose">rose</span>
+				<span class="text-mut">mut</span>
+				<span class="text-faint">faint</span>
 			</div>
 		</div>
-	</section>
+	</div>
+</section>
 
-	<!-- 상태 -->
-	<section class="mt-10" aria-labelledby="states">
-		<h2 id="states" class="text-title-l">상태</h2>
-		<p class="mt-1 text-body-s text-muted">현재 시나리오: <strong>{scenario}</strong></p>
-		<div class="mt-3 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
-			{#if scenario === 'slow'}
-				<div class="space-y-2">
-					{#each [1, 2, 3] as line (line)}
-						<Skeleton type="p" width="full" height="4" />
-					{/each}
-					<p class="sr-only" role="status">불러오는 중</p>
-				</div>
-			{:else if scenario === 'empty'}
-				<p class="text-body-s text-muted">아직 등록된 경기가 없습니다.</p>
-			{:else if scenario === 'error'}
-				<div class="space-y-2 rounded-sm border border-line p-3">
-					<p class="text-body-s text-muted">불러오지 못했어요.</p>
-					<Button size="auto" injClass="px-3" fill="line">다시 시도</Button>
-				</div>
-			{:else if scenario === 'partial'}
-				<div class="space-y-1 text-body-s">
-					<p>참가자 01 · 미드 · 선발</p>
-					<p class="text-muted">참가자 02 · 포지션 미확인</p>
-				</div>
-			{:else}
-				<div class="space-y-1 text-body-s">
-					<p>참가자 01 · 미드 · 선발</p>
-					<p>참가자 02 · 정글 · 선발</p>
-				</div>
-			{/if}
-			<div class="flex items-center gap-4">
-				<Loading height="6" width="6" />
-				<div class="w-full">
-					<Progress percent={70} height="2" />
-				</div>
-			</div>
+<section class="mt-8" aria-labelledby="controls">
+	<div class="region"><span class="lbl" id="controls">버튼·입력</span></div>
+	<div class="panel space-y-4 p-5">
+		<div class="flex flex-wrap items-center gap-2">
+			<button type="button" class="btn btn--primary">주 행동</button>
+			<button type="button" class="btn">보조 행동</button>
+			<button type="button" class="btn btn--danger">위험</button>
+			<button type="button" class="btn btn--text">텍스트</button>
+			<button type="button" class="btn" disabled>비활성</button>
 		</div>
-	</section>
+		<div class="flex flex-wrap items-center gap-2">
+			<label class="chip"><input type="radio" name="chip-demo" class="sr-only" checked />칩 선택됨</label>
+			<label class="chip"><input type="radio" name="chip-demo" class="sr-only" />칩</label>
+			<select class="field w-40"><option>선택</option></select>
+			<input type="number" class="field w-24 text-end" value="0" />
+		</div>
+		<div class="max-w-sm">
+			<Input title="STDF Input" placeholder="예: 30일 밤 내전" py="2" bind:value={demoText} />
+		</div>
+		<ChoiceGroup
+			legend="상태 필터"
+			name="gallery-status"
+			options={[
+				{ value: 'all', label: '전체' },
+				{ value: 'recruit', label: '모집 중' }
+			]}
+			bind:value={demoChoice}
+		/>
+	</div>
+</section>
 
-	<!-- 표면 -->
-	<section class="mt-10" aria-labelledby="surfaces">
-		<h2 id="surfaces" class="text-title-l">표면·배지</h2>
-		<div class="mt-3 grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
-			<Card border="solid" borderWidth="1" shadow="none" p="4" bg="surface">
-				{#snippet header()}
-					<div class="flex items-center justify-between">
-						<span class="text-title-m">팀 A</span>
-						<Badge text="4/5" isShow />
+<section class="mt-8" aria-labelledby="surfaces">
+	<div class="region"><span class="lbl" id="surfaces">패널·행·지표</span></div>
+	<div class="space-y-3">
+		<article class="hero">
+			<div class="hero-main">
+				<StatusState status={SCRIM_STATUS.recruit} />
+				<p class="hero-title">30일 밤 내전 #12</p>
+				<p class="hero-meta">10월 30일 (금) 20:00 · 2팀 10인 · 경매 편성</p>
+			</div>
+			<div class="hero-score">
+				<div class="score"><b>7</b><span>/ 10 선발</span></div>
+				<div class="meter"><i style:width="70%"></i></div>
+				<button type="button" class="btn btn--primary w-full">내전 열기</button>
+			</div>
+		</article>
+
+		<div class="panel">
+			{#each rowLinks as row (row.title)}
+				<div class="row">
+					<div class="min-w-0">
+						<p class="row-title">{row.title}</p>
+						<p class="row-meta">{row.meta}</p>
 					</div>
-				{/snippet}
-				<p class="text-body-s text-muted">업무 단위 카드. 내부에 링크·버튼이 있으면 눌리는 카드로 만들지 않는다.</p>
-			</Card>
-			<div class="space-y-3">
-				<div class="flex flex-wrap items-center gap-2 text-body-s">
-					<span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption" style:border-color="color-mix(in oklab, var(--info) 35%, transparent)" style:color="var(--info)">
-						<span class="size-1.5 rounded-full" style:background="var(--info)" aria-hidden="true"></span>모집 중
-					</span>
-					<span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption" style:border-color="color-mix(in oklab, var(--success) 35%, transparent)" style:color="var(--success)">
-						<span class="size-1.5 rounded-full" style:background="var(--success)" aria-hidden="true"></span>선발
-					</span>
-					<span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption" style:border-color="color-mix(in oklab, var(--warning) 35%, transparent)" style:color="var(--warning)">
-						<span class="size-1.5 rounded-full" style:background="var(--warning)" aria-hidden="true"></span>대기
-					</span>
+					<p class="row-num">{row.num}</p>
+					<div class="row-side"><StatusState status={SCRIM_STATUS[row.state === 'live' ? 'in_progress' : 'preparing']} /></div>
 				</div>
-				<p class="text-caption text-muted">상태 라벨은 native span이다. STDF Tag는 role="button"이라 표 행마다 포커스가 생긴다.</p>
-				<Divider />
-				<Pagination total={42} pageSize={20} current={1} maxShowPage={5} />
-			</div>
-		</div>
-	</section>
-
-	<!-- 오버레이 -->
-	<section class="mt-10" aria-labelledby="overlays">
-		<h2 id="overlays" class="text-title-l">오버레이</h2>
-		<p class="mt-1 text-body-s text-muted">
-			설치판 Popup에는 포커스 트랩·Escape·dialog 의미가 없다. 실제 입력 패널은 P1의 TaskDialog가 보완한다.
-		</p>
-		<div class="mt-3 flex flex-wrap gap-2 border-t border-line pt-4">
-			<Button size="auto" injClass="px-4" fill="line" onclick={() => dialogOpen = true}>확인 다이얼로그</Button>
-			<Button size="auto" injClass="px-4" fill="line" onclick={() => popupOpen = true}>팝업</Button>
-			<Button size="auto" injClass="px-4" fill="base" state="theme" onclick={() => taskOpen = true}>입력 패널</Button>
-			<Button size="auto" injClass="px-4" fill="line" state="error" onclick={() => confirmOpen = true}>철회 확인</Button>
+			{/each}
 		</div>
 
-		<TaskDialog
-			bind:open={taskOpen}
-			title="입력 패널"
-			description="포커스 트랩·Escape·복귀를 TaskDialog가 보완한다."
-			submitLabel="저장"
-			onsubmit={() => (taskOpen = false)}
-		>
-			<ChoiceGroup
-				legend="편성 방식"
-				name="demo-method"
-				options={[
-					{ value: 'all', label: '엔트리 편성' },
-					{ value: 'recruit', label: '경매 편성' }
-				]}
-				bind:value={demoChoices}
-			/>
-		</TaskDialog>
-
-		<ConfirmDialog
-			bind:open={confirmOpen}
-			title="참가를 철회할까요?"
-			content="철회하면 선발 대기 순서가 사라집니다."
-			confirmLabel="철회"
-			danger
-			onconfirm={() => (confirmOpen = false)}
-		/>
-
-		<Dialog
-			bind:visible={dialogOpen}
-			title="참가를 철회할까요?"
-			content="철회하면 선발 대기 순서가 사라집니다."
-			primaryText="철회"
-			secondaryText="닫기"
-			primaryButton={{ state: 'error' }}
-			onprimary={() => (dialogOpen = false)}
-		/>
-
-		<Popup bind:visible={popupOpen} position="bottom" size={0} maskClosable>
-			<div class="space-y-3 p-5">
-				<h3 class="text-title-l">서버 선택</h3>
-				<p class="text-body-s text-muted">P3에서 서버 목록 링크가 들어온다.</p>
-				<Button size="full" fill="line" onclick={() => (popupOpen = false)}>닫기</Button>
-			</div>
-		</Popup>
-	</section>
-
-	<!-- 상태·미터·지표 -->
-	<section class="mt-10" aria-labelledby="status">
-		<h2 id="status" class="text-title-l">상태·미터·지표</h2>
-		<div class="mt-3 grid gap-6 border-t border-line pt-4 lg:grid-cols-2">
-			<div class="space-y-3">
-				<div class="flex flex-wrap gap-2">
-					<StatusTag status={SCRIM_STATUS.recruit} />
-					<StatusTag status={SCRIM_STATUS.preparing} />
-					<StatusTag status={MATCH_STATUS.completed} />
-					<StatusTag status={MATCH_STATUS.ended_early} />
-					<StatusTag status={MATCH_STATUS.cancelled} />
-				</div>
-				<div class="max-w-xs">
-					<FillMeter current={7} total={10} label="선발 인원" />
-				</div>
-				<p class="text-caption text-muted">상태는 문구와 점으로 함께 표시하고, 색만으로 구분하지 않는다.</p>
-			</div>
-			<MetricList
-				columns="grid-2"
-				items={[
-					{ label: '완료 Game', value: '128', unit: '경기' },
-					{ label: '참가 사용자', value: '46', unit: '명' },
-					{ label: '평균 경기 길이', value: '31분 24초' },
-					{ label: '선발 인원', value: '7 / 10' }
-				]}
-			/>
+		<div class="stats grid-cols-1 sm:grid-cols-3">
+			<div class="stat"><span>완료 Game</span><b>128<small>경기</small></b></div>
+			<div class="stat"><span>참가 사용자</span><b>46<small>명</small></b></div>
+			<div class="stat"><span>평균 경기 길이</span><b>31<small>분 24초</small></b></div>
 		</div>
-	</section>
 
-	<!-- 표 -->
-	<section class="mt-10" aria-labelledby="table">
-		<h2 id="table" class="text-title-l">표</h2>
-		<p class="mt-1 text-body-s text-muted">좁은 화면에서는 같은 DOM이 라벨-값 카드로 재배치된다.</p>
-		<div class="mt-3 border-t border-line pt-2">
-			<DataTable
-				caption="참가자 명단"
-				columns={[{ label: '참가자' }, { label: '포지션' }, { label: '상태', align: 'end' }]}
-				items={demoRoster}
-			>
-				{#snippet row(item)}
+		<div class="panel data-table-container px-5 py-2">
+			<table class="data-table">
+				<caption class="sr-only">표 예시</caption>
+				<thead>
 					<tr>
-						<th scope="row">{item.name}</th>
-						<td data-label="포지션">{POSITION_LABEL[item.position]}</td>
-						<td data-label="상태" class="text-end"><StatusTag status={item.status} /></td>
+						<th scope="col">포지션</th>
+						<th scope="col" class="text-end">표본</th>
+						<th scope="col" class="text-end">평균 KDA</th>
 					</tr>
-				{/snippet}
-			</DataTable>
+				</thead>
+				<tbody>
+					{#each ['top', 'jungle', 'mid'] as const as position (position)}
+						<tr>
+							<th scope="row">{POSITION_LABEL[position]}</th>
+							<td data-label="표본" class="tabular text-end">12</td>
+							<td data-label="평균 KDA" class="tabular text-end">3.41</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
 		</div>
-	</section>
+	</div>
+</section>
 
-	<!-- 비동기 영역 -->
-	<section class="mt-10" aria-labelledby="async">
-		<h2 id="async" class="text-title-l">비동기 영역</h2>
-		<p class="mt-1 text-body-s text-muted">위 시나리오 전환에 따라 로딩·빈 데이터·오류·정상이 바뀐다.</p>
-		<div class="mt-3 border-t border-line pt-4">
-			<AsyncSection
-				result={demoResult}
-				label="비동기 영역 예시"
-				emptyText="조건에 맞는 항목이 없습니다."
-				loading={scenario === 'slow'}
-				onretry={() => setScenario('normal')}
+<section class="mt-8" aria-labelledby="stdf">
+	<div class="region"><span class="lbl" id="stdf">STDF 컴포넌트</span></div>
+	<div class="grid gap-3 lg:grid-cols-2">
+		<div class="panel p-5">
+			<Steps
+				steps={[{ step: { title: '모집' } }, { step: { title: '편성' } }, { step: { title: '경기' } }, { step: { title: '기록' } }]}
+				current={2}
+			/>
+			<div class="mt-5 flex items-center gap-3">
+				<span class="relative inline-flex">
+					<Badge text="3" isShow />
+				</span>
+				<div class="flex-1"><Progress percent={70} percentPosition={null} /></div>
+			</div>
+		</div>
+
+		<div class="panel p-5">
+			<Accordion
+				items={[{ title: '하드 피어리스 사용 챔피언', content: '' }]}
+				expandIcon="plus"
 			>
-				{#snippet children(items)}
-					<ul class="divide-hairline">
-						{#each items as item (item)}
-							<li class="py-2 text-body-s">{item}</li>
+				{#snippet children()}
+					<ul class="flex flex-wrap gap-2">
+						{#each ['아트록스', '리 신', '아지르'] as champion (champion)}
+							<li class="border border-line px-2.5 py-1 text-[12px] text-mut">{champion}</li>
 						{/each}
 					</ul>
 				{/snippet}
+			</Accordion>
+		</div>
+
+		<div class="panel p-2">
+			<CellGroup>
+				<Cell title="참가자 01" detail="참가자01#KR1" info="관리자" right="arrow" bg="gray" my="0" onclick={() => (sheetOpen = true)} />
+				<Cell title="참가자 02" detail="참가자02#KR1" info="일반" right="arrow" bg="gray" my="0" onclick={() => (sheetOpen = true)} />
+			</CellGroup>
+		</div>
+
+		<div class="panel p-5">
+			<AsyncSection result={sample} label="비동기" emptyText="표시할 항목이 없습니다." loading={scenario === 'slow'}>
+				{#snippet children(items)}
+					<ul class="space-y-1 text-[13px]">{#each items as item (item)}<li>{item}</li>{/each}</ul>
+				{/snippet}
 			</AsyncSection>
 		</div>
-	</section>
+	</div>
+</section>
 
-	<!-- 선택·입력 -->
-	<section class="mt-10" aria-labelledby="choice">
-		<h2 id="choice" class="text-title-l">선택·입력</h2>
-		<div class="mt-3 grid max-w-2xl gap-4 border-t border-line pt-4">
-			<ChoiceGroup
-				legend="상태"
-				name="demo-status"
-				options={[
-					{ value: 'all', label: '전체' },
-					{ value: 'recruit', label: '모집 중' }
-				]}
-				bind:value={demoChoices}
-			/>
-			<NativeField id="demo-datetime" label="예정 시각" hint="한국 시간(KST) 기준입니다.">
-				{#snippet children(describedBy)}
-					<input
-						id="demo-datetime"
-						type="datetime-local"
-						aria-describedby={describedBy || undefined}
-						class="min-h-11 rounded-sm border border-line bg-surface-sunken px-3 text-body-s"
-					/>
-				{/snippet}
-			</NativeField>
-		</div>
-	</section>
+<section class="mt-8" aria-labelledby="overlays">
+	<div class="region"><span class="lbl" id="overlays">오버레이</span></div>
+	<div class="panel flex flex-wrap gap-2 p-5">
+		<button type="button" class="btn" onclick={() => (taskOpen = true)}>TaskDialog</button>
+		<button type="button" class="btn" onclick={() => (confirmOpen = true)}>ConfirmDialog</button>
+		<button type="button" class="btn" onclick={() => (sheetOpen = true)}>ActionSheet</button>
+	</div>
+</section>
 
-	<!-- 헤더 -->
-	<section class="mt-10" aria-labelledby="headers">
-		<h2 id="headers" class="text-title-l">헤더 변형</h2>
-		<p class="mt-1 text-body-s text-muted">
-			전역·서버·내전은 같은 헤더의 내용만 바뀐다. 문맥 목적지는 헤더 아래 레일 하나가 담당한다.
-		</p>
-		<div class="mt-3 space-y-6 border-t border-line pt-4">
-			<div>
-				<p class="category-label mb-2">서버 문맥</p>
-				<div class="overflow-hidden rounded-sm border border-line">
-					<AppHeader guild={demoGuild} viewer={demoViewer} />
-				</div>
-			</div>
-			<div>
-				<p class="category-label mb-2">내전 문맥</p>
-				<div class="overflow-hidden rounded-sm border border-line">
-					<AppHeader guild={demoGuild} scrim={demoScrim} viewer={demoViewer} />
-				</div>
-			</div>
+<section class="mt-8" aria-labelledby="headers">
+	<div class="region"><span class="lbl" id="headers">헤더 변형</span></div>
+	<div class="space-y-6">
+		<div class="overflow-hidden border border-line">
+			<AppHeader />
 		</div>
-	</section>
-</div>
+	</div>
+</section>
+
+<TaskDialog
+	bind:open={taskOpen}
+	title="모집 생성"
+	description="생성하면 서버의 내전 목록 맨 위에 추가됩니다."
+	submitLabel="생성"
+	pending={false}
+	canSubmit={true}
+	onsubmit={() => (taskOpen = false)}
+	onclosed={() => (taskOpen = false)}
+>
+	<div class="space-y-4">
+		<Input title="내전 제목" py="2" placeholder="예: 30일 밤 내전" />
+	</div>
+</TaskDialog>
+
+<ConfirmDialog
+	bind:open={confirmOpen}
+	title="모집을 마감할까요?"
+	content="마감하면 더 이상 새 신청을 받지 않습니다."
+	confirmLabel="마감"
+	onconfirm={() => (confirmOpen = false)}
+/>
+
+<ActionSheet
+	bind:visible={sheetOpen}
+	title="참가자 01 처리"
+	actions={[{ content: '선발' }, { content: '대기' }, { content: '제외', style: 'error' }]}
+	showCancel
+	cancelText="닫기"
+	onclickAction={() => (sheetOpen = false)}
+	onclose={() => (sheetOpen = false)}
+/>

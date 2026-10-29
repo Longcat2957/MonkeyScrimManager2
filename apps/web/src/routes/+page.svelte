@@ -13,32 +13,24 @@
 
 	const groups = [
 		{
-			title: '전역',
-			links: [
-				{ label: '내 정보', href: resolve('/me') },
-				{ label: '이용 문서', href: resolve('/docs') },
-				{ label: '백오피스', href: resolve('/backoffice') }
-			]
-		},
-		{
 			title: '서버',
 			links: [
 				{ label: '서버 홈', href: resolve('/g/[guildId]', { guildId }) },
 				{ label: '내전 목록', href: resolve('/g/[guildId]/scrims', { guildId }) },
 				{ label: '경기 기록', href: resolve('/g/[guildId]/matches', { guildId }) },
-				{ label: '서버 통계', href: resolve('/g/[guildId]/stats', { guildId }) },
-				{ label: '서버 관리', href: resolve('/g/[guildId]/admin', { guildId }) }
+				{ label: '통계', href: resolve('/g/[guildId]/stats', { guildId }) },
+				{ label: '관리', href: resolve('/g/[guildId]/admin', { guildId }) }
 			]
 		},
 		{
-			title: '내전 운영',
+			title: '내전',
 			links: [
-				{ label: '내전 요약 · 모집 중', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },
+				{ label: '요약 · 모집 중', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },
 				{
-					label: '내전 요약 · 진행 중',
+					label: '요약 · 진행 중',
 					href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: paidScrimId })
 				},
-				{ label: '팀 편성 진입', href: resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId, scrimId }), note: '준비 중' },
+				{ label: '팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId, scrimId }), note: '준비 중' },
 				{
 					label: '엔트리 편성',
 					href: resolve('/g/[guildId]/scrims/[scrimId]/teams/manual', { guildId, scrimId }),
@@ -55,23 +47,28 @@
 		{
 			title: '기록',
 			links: [
-				{
-					label: '경기 상세 · 종료',
-					href: resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId })
-				},
+				{ label: '경기 상세 · 종료', href: resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId }) },
 				{
 					label: '경기 상세 · 진행 중',
 					href: resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: 'match-1003-1' })
 				},
 				{ label: '사용자 전적', href: resolve('/g/[guildId]/players/[playerId]', { guildId, playerId }) }
 			]
+		},
+		{
+			title: '전역',
+			links: [
+				{ label: '내 정보', href: resolve('/me') },
+				{ label: '이용 문서', href: resolve('/docs') },
+				{ label: '백오피스', href: resolve('/backoffice') }
+			]
 		}
 	];
 
 	const devTools = [
 		{ label: '컴포넌트 갤러리', href: resolve('/dev/components') },
-		{ label: '오류 화면 404', href: resolve('/dev/error') },
-		{ label: '오류 화면 500', href: `${resolve('/dev/error')}?status=500` }
+		{ label: '오류 404', href: resolve('/dev/error') },
+		{ label: '오류 500', href: `${resolve('/dev/error')}?status=500` }
 	];
 </script>
 
@@ -80,45 +77,39 @@
 	<meta name="description" content="리그 오브 레전드 내전 운영과 전적 기록" />
 </svelte:head>
 
-<h1 class="font-brand text-display-l font-normal [font-synthesis:none]">{SERVICE_NAME}</h1>
-<p class="measure mt-2 text-body text-muted">내전 모집부터 팀 편성, 대진, 전적 기록까지 한 곳에서 운영합니다.</p>
+<h1 class="font-brand text-[44px] leading-none font-normal [font-synthesis:none]">{SERVICE_NAME}</h1>
+<p class="measure mt-2 text-[13px] text-mut">내전 모집부터 팀 편성, 대진, 전적 기록까지 한 곳에서 운영합니다.</p>
 
 {#if dev}
 	<div class="mt-10 space-y-8">
 		{#each groups as group (group.title)}
 			<section aria-labelledby={`group-${group.title}`}>
-				<h2 id={`group-${group.title}`} class="category-label">{group.title}</h2>
-				<ul class="mt-2 grid gap-x-6 gap-y-1 border-t border-line pt-2 sm:grid-cols-2 lg:grid-cols-3">
+				<div class="region">
+					<span class="lbl" id={`group-${group.title}`}>{group.title}</span>
+				</div>
+				<div class="panel">
 					{#each group.links as link (link.href)}
-						<li class="min-w-0">
-							<a
-								href={link.href}
-								class="flex min-h-11 items-center gap-2 rounded-sm px-1 text-body-s underline-offset-4 hover:bg-surface-raised hover:underline"
-							>
-								<span class="truncate">{link.label}</span>
-								{#if link.note}<span class="shrink-0 text-caption text-faint">{link.note}</span>{/if}
-							</a>
-						</li>
+						<a href={link.href} class="row">
+							<span class="row-title">{link.label}</span>
+							<span class="row-meta">{link.note ?? ''}</span>
+							<span class="row-side text-faint" aria-hidden="true">→</span>
+						</a>
 					{/each}
-				</ul>
+				</div>
 			</section>
 		{/each}
 
 		<section aria-labelledby="devtools">
-			<h2 id="devtools" class="category-label">개발 도구</h2>
-			<ul class="mt-2 flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-2">
+			<div class="region"><span class="lbl" id="devtools">개발 도구</span></div>
+			<div class="panel">
 				{#each devTools as tool (tool.href)}
-					<li>
-						<a
-							href={tool.href}
-							data-sveltekit-preload-data="off"
-							class="flex min-h-11 items-center text-body-s underline-offset-4 hover:underline"
-						>
-							{tool.label}
-						</a>
-					</li>
+					<a href={tool.href} data-sveltekit-preload-data="off" class="row">
+						<span class="row-title">{tool.label}</span>
+						<span class="row-meta">{tool.href}</span>
+						<span></span>
+					</a>
 				{/each}
-			</ul>
+			</div>
 		</section>
 	</div>
 {/if}

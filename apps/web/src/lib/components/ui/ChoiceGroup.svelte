@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends string">
 	/*
-	 * 배타 선택(상태 필터·편성 방식·BO). STDF Radio는 role/checked 연결이 없어 native radio를 쓴다.
+	 * 배타 선택(상태 필터·편성 방식·팀 수). STDF Radio는 role/checked 연결이 없어 native radio를 쓴다.
+	 * 라디오는 키보드·스크린리더용으로만 남기고, 보이는 칩이 조작 모양이 된다.
 	 */
 	let {
 		legend,
@@ -8,30 +9,23 @@
 		options,
 		value = $bindable(),
 		onchange,
-		variant = 'chip'
+		visuallyHiddenLegend = false
 	}: {
 		legend: string;
 		name: string;
 		options: readonly { value: T; label: string }[];
 		value: T;
 		onchange?: (value: T) => void;
-		variant?: 'chip' | 'card';
+		/** 필터처럼 구역 라벨이 이미 뜻을 전달하는 경우 */
+		visuallyHiddenLegend?: boolean;
 	} = $props();
 </script>
 
 <fieldset class="min-w-0">
-	<legend class="text-body-s font-semibold">{legend}</legend>
+	<legend class={visuallyHiddenLegend ? 'sr-only' : 'lbl'}>{legend}</legend>
 	<div class="mt-2 flex flex-wrap gap-2">
 		{#each options as option (option.value)}
-			<label
-				class="inline-flex min-h-11 cursor-pointer items-center border text-body-s transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus-ring)] {value ===
-				option.value
-					? 'border-action bg-surface-raised font-semibold text-fg'
-					: 'border-line text-muted hover:border-line-strong'} {variant === 'card'
-					? 'rounded-sm px-4 py-2'
-					: 'rounded-full px-3'}"
-			>
-				<!-- 라디오는 키보드·스크린리더용으로만 남기고, 칩 자체가 조작 모양이 된다. -->
+			<label class="chip">
 				<input
 					type="radio"
 					{name}

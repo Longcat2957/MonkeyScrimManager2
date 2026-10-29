@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Popup, Button } from 'stdf';
+	import { Popup } from 'stdf';
 	import type { Snippet } from 'svelte';
 
 	/*
@@ -116,35 +116,30 @@
 			aria-modal="true"
 			aria-labelledby={titleId}
 			tabindex="-1"
-			class="flex max-h-[85dvh] w-full max-w-[34rem] flex-col overflow-hidden rounded-[var(--radius-box)] border border-line bg-surface-overlay shadow-[var(--shadow-overlay)] outline-none"
+			class="flex max-h-[85dvh] w-full max-w-[34rem] flex-col overflow-hidden rounded-[2px] border border-line-strong bg-panel shadow-2xl outline-none"
 		>
-		<div class="border-b border-line px-5 pt-5 pb-3">
-			<h2 id={titleId} class="text-title-l">{title}</h2>
-			{#if description}<p class="mt-1 text-body-s text-muted">{description}</p>{/if}
+		<div class="border-b border-line px-5 pt-5 pb-3.5">
+			<h2 id={titleId} class="text-[18px] font-extrabold tracking-tight">{title}</h2>
+			{#if description}<p class="mt-1 text-[12.5px] text-mut">{description}</p>{/if}
 		</div>
 
 		<div class="overflow-y-auto px-5 py-4">{@render children()}</div>
 
 		<div class="space-y-3 border-t border-line px-5 py-4">
 			{#if submitError}
-				<p role="alert" class="text-body-s" style:color="var(--danger)">{submitError}</p>
+				<p role="alert" class="text-[12px] text-rose">{submitError}</p>
 			{/if}
 			<div class="flex justify-end gap-2">
 				{#if footer}{@render footer()}{/if}
-				<Button size="auto" injClass="px-4" fill="line" disabled={pending} onclick={close}>
-					{cancelLabel}
-				</Button>
-				<Button
-					size="auto"
-					injClass="px-4"
-					fill="base"
-					state={submitTone}
-					disabled={!canSubmit}
-					loading={pending ? { height: '4', width: '4' } : null}
+				<button type="button" class="btn" disabled={pending} onclick={close}>{cancelLabel}</button>
+				<button
+					type="button"
+					class="btn {submitTone === 'error' ? 'btn--danger' : 'btn--primary'}"
+					disabled={!canSubmit || pending}
 					onclick={onsubmit}
 				>
-					{submitLabel}
-				</Button>
+					{pending ? '처리 중…' : submitLabel}
+				</button>
 			</div>
 		</div>
 	</div>

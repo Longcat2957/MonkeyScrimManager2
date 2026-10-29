@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import { Button } from 'stdf';
+	import { Steps } from 'stdf';
 	import {
 		closeRecruitment,
 		registerSelf,
@@ -8,75 +8,70 @@
 		withdrawRegistration,
 		type Position
 	} from '#lib/data/index.ts';
+	import { formatDateTime } from '#lib/format.ts';
 	import { pageTitle } from '#lib/shell/titles.ts';
 	import ConfirmDialog from '#lib/components/ui/ConfirmDialog.svelte';
-	import NowLine from '#lib/components/ui/NowLine.svelte';
-	import PageHeader from '#lib/components/ui/PageHeader.svelte';
 	import RegistrationDialog from '#lib/components/scrim/RegistrationDialog.svelte';
 	import RosterTable from '#lib/components/scrim/RosterTable.svelte';
-	import ScrimContextBar from '#lib/components/scrim/ScrimContextBar.svelte';
-	import { SCRIM_STATUS } from '#lib/components/ui/status.ts';
+	import StatusState from '#lib/components/ui/StatusState.svelte';
+	import { FORMATION_LABEL, SCRIM_STATUS } from '#lib/components/ui/status.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const guild = $derived(data.guild);
-	const scrim = $derived(data.scrim);
 	const detail = $derived(data.detail);
 	const viewer = $derived(data.viewer ?? null);
 
-	const title = $derived(pageTitle(scrim.title, guild.name));
+	const title = $derived(pageTitle(detail.title, guild.name));
+
+	// 운영 흐름: 모집 → 편성 → 경기 → 기록. Steps가 현재 위치를 한 곳에서 보여 준다.
+	const stepCurrent = $derived(
+		detail.status === 'recruit'
+			? 1
+			: detail.status === 'preparing'
+				? 2
+				: detail.status === 'ready' || detail.status === 'in_progress'
+					? 3
+					: 4
+	);
+
+	const progress = $derived(
+		Math.min(100, Math.round((detail.selectedCount / Math.max(1, detail.playingCapacity)) * 100))
+	);
 
 	type Action = 'register' | 'close' | null;
 
-	// "지금 줄": 역할과 상태에 따라 문장 하나와 행동 하나만 정한다.
-	const now = $derived.by((): { tone: 'info' | 'warning' | 'success' | 'danger'; text: string; action: Action } => {
+	// 지금 할 수 있는 일 하나와 그 이유 한 문장. 역할·상태에 따라 다르다.
+	const now = $derived.by((): { text: string; action: Action } => {
 		if (detail.capabilities.canManage && detail.status === 'recruit') {
 			const shortage = detail.playingCapacity - detail.selectedCount;
-			if (shortage > 0) {
-				return {
-					tone: 'info',
-					text: `선발이 ${shortage}명 부족합니다. 참가자를 선발하면 팀 편성을 시작할 수 있습니다.`,
-					action: null
-				};
-			}
-			return {
-				tone: 'success',
-				text: '선발이 끝났습니다. 모집을 마감하면 팀 편성을 시작할 수 있습니다.',
-				action: 'close'
-			};
+			if (shortage > 0) return { text: `선발이 ${shortage}명 부족합니다.`, action: null };
+			return { text: '선발이 끝났습니다. 모집을 마감하면 팀 편성을 시작할 수 있습니다.', action: 'close' };
 		}
 
-		if (detail.capabilities.canManage) {
-			if (detail.status === 'cancelled') return { tone: 'danger', text: '취소된 내전입니다.', action: null };
-			if (detail.status === 'ended_early') return { tone: 'warning', text: '중도 종료된 내전입니다.', action: null };
-			if (detail.status === 'completed') return { tone: 'success', text: '종료된 내전입니다.', action: null };
-			if (detail.status === 'in_progress') return { tone: 'info', text: '경기가 진행 중입니다.', action: null };
-			return { tone: 'info', text: '편성 중입니다.', action: null };
-		}
+		if (detail.status === 'cancelled') return { text: '취소된 내전입니다.', action: null };
+		if (detail.status === 'ended_early') return { text: '중도 종료된 내전입니다.', action: null };
+		if (detail.status === 'completed') return { text: '종료된 내전입니다.', action: null };
 
 		const registration = detail.viewerRegistration;
 		if (registration) {
-			if (registration.status === 'selected') return { tone: 'success', text: '선발되었습니다.', action: null };
-			if (registration.status === 'standby') return { tone: 'warning', text: '대기 중입니다. 선발 인원이 바뀌면 알려 드립니다.', action: null };
-			if (registration.status === 'pending') return { tone: 'info', text: '신청 완료 · 선발 결과를 기다리는 중입니다.', action: null };
-			if (registration.status === 'excluded') return { tone: 'danger', text: '이 내전에서 제외되었습니다.', action: null };
-			return { tone: 'warning', text: '신청을 철회했습니다.', action: null };
+			if (registration.status === 'selected') return { text: '선발되었습니다.', action: null };
+			if (registration.status === 'standby') return { text: '대기 중입니다. 선발 인원이 바뀌면 알려 드립니다.', action: null };
+			if (registration.status === 'pending') return { text: '신청 완료 · 선발 결과를 기다리는 중입니다.', action: null };
+			if (registration.status === 'excluded') return { text: '이 내전에서 제외되었습니다.', action: null };
+			return { text: '신청을 철회했습니다.', action: null };
 		}
 
-		if (detail.capabilities.canRegister) return { tone: 'info', text: '참가 신청을 받고 있습니다.', action: 'register' };
+		if (detail.capabilities.canRegister) return { text: '참가 신청을 받고 있습니다.', action: 'register' };
 		if (detail.capabilities.registerBlockedReason) {
-			return { tone: 'warning', text: detail.capabilities.registerBlockedReason, action: null };
+			return { text: detail.capabilities.registerBlockedReason, action: null };
 		}
-		if (!viewer) return { tone: 'info', text: '로그인하면 참가 신청할 수 있습니다.', action: null };
-		return { tone: 'info', text: `${SCRIM_STATUS[detail.status].text} 상태입니다.`, action: null };
+		if (!viewer) return { text: '로그인하면 참가 신청할 수 있습니다.', action: null };
+		return { text: `${SCRIM_STATUS[detail.status].text} 상태입니다.`, action: null };
 	});
 
-	const rosterSummary = $derived(
-		`신청 ${detail.applicantCount} / ${detail.appliedCapacity} · 선발 ${detail.selectedCount} / ${detail.playingCapacity}`
-	);
-
-	// 신청 패널 상태
+	// 신청 패널
 	let registerOpen = $state(false);
 	let registerPending = $state(false);
 	let registerError = $state<string | null>(null);
@@ -167,50 +162,71 @@
 	<title>{title}</title>
 </svelte:head>
 
-<!-- 모집 마감은 "지금 줄"이 조건을 만족할 때 한 곳에서만 제공한다. -->
-<PageHeader title={scrim.title} />
+<h1 class="page-title">{detail.title}</h1>
 
-<div class="space-y-3">
-	<ScrimContextBar scrim={detail} />
-
-	<NowLine tone={now.tone} statements={now.text}>
-		{#snippet action()}
-			{#if now.action === 'register'}
-				<Button size="auto" injClass="px-4" fill="base" state="theme" onclick={() => (registerOpen = true)}>
-					참가 신청
-				</Button>
-			{:else if now.action === 'close'}
-				<Button size="auto" injClass="px-4" fill="base" state="theme" onclick={() => (confirm = { kind: 'close' })}>
-					모집 마감
-				</Button>
-			{/if}
-		{/snippet}
-	</NowLine>
-</div>
-
-<section class="mt-10" aria-labelledby="roster">
-	<div class="flex flex-wrap items-baseline justify-between gap-2">
-		<h2 id="roster" class="text-title-l">참가자</h2>
-		<p class="tabular text-caption text-muted">{rosterSummary}</p>
+<!-- 대표 요약: 왼쪽 서사 / 오른쪽 스코어보드 -->
+<article class="hero mt-5">
+	<div class="hero-main">
+		<StatusState status={SCRIM_STATUS[detail.status]} />
+		<p class="hero-meta mt-2">
+			{formatDateTime(detail.expectedStartAt)}
+			<span aria-hidden="true"> · </span>
+			{detail.teamCount}팀 {detail.playingCapacity}인
+			<span aria-hidden="true"> · </span>
+			{detail.formationMethod ? FORMATION_LABEL[detail.formationMethod] : '편성 방식 미정'}
+		</p>
+		{#if detail.isHardFearless}
+			<p class="hero-meta">하드 피어리스 적용</p>
+		{/if}
+		<p class="mt-3 text-[12.5px] text-mut">{now.text}</p>
 	</div>
-
-	<div class="mt-3 border-t border-line pt-2">
-		{#if detail.registrations.length === 0}
-			<p class="py-4 text-body-s text-muted">아직 신청한 참가자가 없습니다.</p>
-		{:else}
-			<RosterTable
-				registrations={detail.registrations}
-				viewerId={viewer?.id ?? null}
-				canManage={detail.capabilities.canManage}
-				canWithdraw={detail.status === 'recruit'}
-				onstatus={(participantId, status) => {
-					if (status === 'excluded') confirm = { kind: 'exclude', participantId };
-					else changeStatus(participantId, status);
-				}}
-				onwithdraw={(participantId) => (confirm = { kind: 'withdraw', participantId })}
-			/>
+	<div class="hero-score">
+		<div class="score"><b>{detail.selectedCount}</b><span>/ {detail.playingCapacity} 선발</span></div>
+		<div class="meter"><i style:width={`${progress}%`}></i></div>
+		{#if now.action === 'register'}
+			<button type="button" class="btn btn--primary w-full" onclick={() => (registerOpen = true)}>
+				참가 신청
+			</button>
+		{:else if now.action === 'close'}
+			<button type="button" class="btn btn--primary w-full" onclick={() => (confirm = { kind: 'close' })}>
+				모집 마감
+			</button>
 		{/if}
 	</div>
+</article>
+
+<!-- 운영 흐름의 현재 위치 -->
+<div class="panel mt-3 px-5 py-4">
+	<Steps
+		steps={[
+			{ step: { title: '모집' } },
+			{ step: { title: '편성' } },
+			{ step: { title: '경기' } },
+			{ step: { title: '기록' } }
+		]}
+		current={stepCurrent}
+	/>
+</div>
+
+<section class="mt-8" aria-labelledby="roster">
+	<div class="region">
+		<span class="lbl" id="roster">참가자</span>
+		<span class="count tabular">
+			신청 {detail.applicantCount} / {detail.appliedCapacity} · 선발 {detail.selectedCount} / {detail.playingCapacity}
+		</span>
+	</div>
+
+	<RosterTable
+		registrations={detail.registrations}
+		viewerId={viewer?.id ?? null}
+		canManage={detail.capabilities.canManage}
+		canWithdraw={detail.status === 'recruit'}
+		onstatus={(participantId, status) => {
+			if (status === 'excluded') confirm = { kind: 'exclude', participantId };
+			else changeStatus(participantId, status);
+		}}
+		onwithdraw={(participantId) => (confirm = { kind: 'withdraw', participantId })}
+	/>
 </section>
 
 {#if viewer && now.action === 'register'}

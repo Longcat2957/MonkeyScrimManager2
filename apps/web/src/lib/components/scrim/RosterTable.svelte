@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { Button } from 'stdf';
+	import { ActionSheet, type ActionProps } from 'stdf';
 	import type { Registration } from '#lib/data/types.ts';
-	import DataTable from '#lib/components/ui/DataTable.svelte';
-	import StatusTag from '#lib/components/ui/StatusTag.svelte';
+	import StatusState from '#lib/components/ui/StatusState.svelte';
 	import { POSITION_LABEL, REGISTRATION_STATUS } from '#lib/components/ui/status.ts';
 
 	/*
 	 * 참가자 명단.
-	 * 본인 행을 맨 위에 고정하고, 운영자는 행 하나만 펼쳐 처리한다(여러 편집 영역을 동시에 열지 않는다).
+	 * 본인 행을 맨 위에 고정하고, 운영자는 행 하나를 골라 ActionSheet에서 처리한다.
+	 * 표가 아니라 큰 터치 행으로 두어 모바일에서도 같은 조작을 쓴다.
 	 */
 	let {
 		registrations,
@@ -35,65 +35,90 @@
 		})
 	);
 
-	let opened: string | null = $state(null);
+	let target = $state<Registration | null>(null);
+	let sheetOpen = $state(false);
+	let pending = $state(false);
 
-	function toggle(participantId: string) {
-		opened = opened === participantId ? null : participantId;
+	function openSheet(registration: Registration) {
+		target = registration;
+		sheetOpen = true;
 	}
 
-	const columns = $derived([
-		{ label: '참가자' },
-		{ label: '희망 포지션', hideInStack: true },
-		{ label: '상태' },
-		{ label: canManage || canWithdraw ? '관리' : '', align: 'end' as const }
-	]);
+	const actions = $derived.by((): ActionProps[] => {
+		if (!target) return [];
+		return [
+			{ content: '선발', disabled: target.status === 'selected' },
+			{ content: '대기', disabled: target.status === 'standby' },
+			{ content: '제외', style: 'error', disabled: target.status === 'excluded' }
+		];
+	});
+
+	async function onAction(index: number) {
+		if (!target || pending) return;
+		const next = (['selected', 'standby', 'excluded'] as const)[index];
+		if (!next) return;
+		pending = true;
+		try {
+			await onstatus(target.participantId, next);
+			sheetOpen = false;
+		} finally {
+			pending = false;
+		}
+	}
+
+	const positionText = (registration: Registration) =>
+		registration.positions.length > 0
+			? registration.positions.map((position) => POSITION_LABEL[position]).join(' · ')
+			: '포지션 미지정';
 </script>
 
-{#snippet rowCell(registration: Registration)}
-	<th scope="row" class="flex min-w-0 items-center gap-2 py-2">
-		<span class="min-w-0">
-			<span class="block truncate font-semibold">{registration.player.displayName}</span>
-			<span class="block truncate text-caption text-muted">{registration.player.riotId ?? 'Riot 계정 미연결'}</span>
-		</span>
-		{#if viewerId && registration.player.userId === viewerId}
-			<span class="shrink-0 rounded-full border border-line px-1.5 text-caption text-muted">나</span>
-		{/if}
-	</th>
-	<td data-label="희망 포지션" class="hide-in-stack text-muted">
-		{registration.positions.length > 0
-			? registration.positions.map((position) => POSITION_LABEL[position]).join(' · ')
-			: '미지정'}
-	</td>
-	<td data-label="상태"><StatusTag status={REGISTRATION_STATUS[registration.status]} /></td>
-	<td data-label="관리" class="text-end">
-		{#if canManage && registration.status !== 'withdrawn'}
-			<Button size="auto" injClass="px-3" fill="line" onclick={() => toggle(registration.participantId)}>
-				{opened === registration.participantId ? '닫기' : '관리'}
-			</Button>
-		{:else if canWithdraw && registration.player.userId === viewerId && registration.status !== 'withdrawn'}
-			<Button size="auto" injClass="px-3" fill="line" state="error" onclick={() => onwithdraw(registration.participantId)}>
-				신청 철회
-			</Button>
-		{/if}
-	</td>
-{/snippet}
+{#if sorted.length === 0}
+	<p class="py-5 text-[13px] text-mut">아직 신청한 참가자가 없습니다.</p>
+{:else}
+	<ul class="panel">
+		{#each sorted as registration (registration.participantId)}
+			{@const self = Boolean(viewerId && registration.player.userId === viewerId)}
+			<li
+				class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line px-5 py-3 first:border-t-0 {self
+					? 'bg-[color-mix(in_oklab,var(--accent)_5%,transparent)]'
+					: ''}"
+			>
+				<div class="min-w-0 flex-1">
+					<p class="truncate text-[14px] font-bold">
+						{registration.player.displayName}
+						{#if self}<span class="ml-1.5 text-[10.5px] font-semibold text-accent">나</span>{/if}
+					</p>
+					<p class="truncate text-[11.5px] text-faint">
+						{registration.player.riotId ?? 'Riot 계정 미연결'} · {positionText(registration)}
+					</p>
+				</div>
 
-<DataTable caption="참가자 명단" {columns} items={sorted}>
-	{#snippet row(registration)}
-		<tr aria-current={viewerId && registration.player.userId === viewerId ? 'true' : undefined}>
-			{@render rowCell(registration)}
-		</tr>
-		{#if canManage && opened === registration.participantId}
-			<tr class="bg-surface-raised">
-				<td colspan={columns.length} data-label="처리">
-					<div class="flex flex-wrap items-center gap-2 py-1">
-						<span class="text-caption text-muted">선발 처리</span>
-						<Button size="auto" injClass="px-3" fill="line" disabled={registration.status === 'selected'} onclick={() => onstatus(registration.participantId, 'selected')}>선발</Button>
-						<Button size="auto" injClass="px-3" fill="line" disabled={registration.status === 'standby'} onclick={() => onstatus(registration.participantId, 'standby')}>대기</Button>
-						<Button size="auto" injClass="px-3" fill="line" state="error" disabled={registration.status === 'excluded'} onclick={() => onstatus(registration.participantId, 'excluded')}>제외</Button>
-					</div>
-				</td>
-			</tr>
-		{/if}
-	{/snippet}
-</DataTable>
+				<StatusState status={REGISTRATION_STATUS[registration.status]} />
+
+				{#if canManage && registration.status !== 'withdrawn'}
+					<button type="button" class="btn btn--text min-h-9 px-2" onclick={() => openSheet(registration)}>
+						관리
+					</button>
+				{:else if canWithdraw && self && registration.status !== 'withdrawn'}
+					<button
+						type="button"
+						class="btn btn--text min-h-9 px-2 text-rose"
+						onclick={() => onwithdraw(registration.participantId)}
+					>
+						철회
+					</button>
+				{/if}
+			</li>
+		{/each}
+	</ul>
+{/if}
+
+<ActionSheet
+	bind:visible={sheetOpen}
+	title={target ? `${target.player.displayName} 처리` : ''}
+	{actions}
+	showCancel
+	cancelText="닫기"
+	onclickAction={onAction}
+	onclose={() => (target = null)}
+/>

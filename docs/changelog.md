@@ -1,5 +1,15 @@
 # 변경 이력
 
+## 2026-10-29 (2)
+
+- 프론트엔드 시각 시스템을 다크 우선(Arena Console)으로 전면 개편.
+  - 토큰: 잉크 네이비 표면 4단(`bg`·`panel`·`panel-2`·`inset`), 크림빛 글자 3단, 시안 하나의 강조, 상태 톤 4종(live·wait·done·danger). 라이트는 같은 구조의 반전.
+  - 화면 규칙: `.hero`(비대칭 2단 스코어보드) · `.row`(목록 3열) · `.match-row`(경기 4열) · `.stats/.stat`(인셋 지표 웰) · `.state`(글자+마커) · `.btn` 3종 · `.field` · `.chip` · `.data-table`.
+  - 컴포넌트 정리: `StatusTag`→`StatusState`, `NowLine`·`ScrimContextBar`·`MetricList`·`FillMeter`·`DataTable` 제거(규칙으로 흡수).
+  - STDF 도입: `Steps`(모집→편성→경기→기록), `ActionSheet`(참가자 처리·멤버 처리), `Accordion`(하드 피어리스 이력).
+  - 전 화면 적용: 서버 홈, 내전 목록·요약, 경기 목록·상세, 사용자 전적, 통계, 관리, 내 정보, 문서·약관·처리방침, 백오피스, 오류, 컴포넌트 갤러리.
+  - 모바일에서 히어로·행·경기 행이 세로로 쌓이도록 수정하고, 한국어 `word-break: keep-all` 적용.
+
 ## 2026-10-29
 
 - 프론트엔드 나머지 화면을 구현. 홈의 개발 바로가기를 목 표본 ID(monkey-dorm·scrim-1001·match-1004-1·user-demo)로 연결해 각 화면을 바로 열 수 있게 함.

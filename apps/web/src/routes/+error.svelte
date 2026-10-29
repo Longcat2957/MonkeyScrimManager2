@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Button } from 'stdf';
 	import { SERVICE_NAME } from '#lib/branding.ts';
 
 	// 서버가 보낸 개발자용 문장을 그대로 노출하지 않고, 상태별 사용자 문장을 한 곳에서 정한다.
@@ -28,20 +27,13 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<!--
-	오류별 행동은 하나뿐이다.
-	홈 이동은 헤더의 브랜드 링크가 이미 제공하므로 본문에 반복하지 않는다.
--->
-<section class="measure px-1 py-16 sm:py-24" aria-labelledby="error-title">
-	<p class="numeric-display text-display-l text-muted">{page.status}</p>
-	<h1 id="error-title" class="mt-4 text-title-xl">{message.title}</h1>
-	<p class="mt-2 text-body text-muted">{message.description}</p>
+<!-- 오류별 행동은 하나뿐이다. 홈 이동은 헤더의 브랜드 링크가 이미 제공한다. -->
+<section class="measure py-16 sm:py-24" aria-labelledby="error-title">
+	<p class="numeric-display text-[3.5rem] text-faint">{page.status}</p>
+	<h1 id="error-title" class="mt-3 text-[22px] font-extrabold">{message.title}</h1>
+	<p class="mt-2 text-[13.5px] text-mut">{message.description}</p>
 
 	{#if page.status >= 500}
-		<div class="mt-8 max-w-40">
-			<Button size="full" fill="base" state="theme" onclick={() => window.location.reload()}>
-				다시 시도
-			</Button>
-		</div>
+		<button type="button" class="btn btn--primary mt-8" onclick={() => window.location.reload()}>다시 시도</button>
 	{/if}
 </section>

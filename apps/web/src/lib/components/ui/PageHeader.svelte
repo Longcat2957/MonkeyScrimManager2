@@ -15,11 +15,11 @@
 	} = $props();
 </script>
 
-<div class="flex flex-wrap items-end justify-between gap-4 pb-4">
+<div class="flex flex-wrap items-end justify-between gap-4">
 	<div class="min-w-0">
-		{#if kicker}<p class="category-label">{kicker}</p>{/if}
-		<h1 class="mt-1 text-title-xl">{title}</h1>
-		{#if description}<p class="measure mt-1 text-body-s text-muted">{description}</p>{/if}
+		{#if kicker}<p class="lbl">{kicker}</p>{/if}
+		<h1 class="page-title {kicker ? 'mt-1.5' : ''}">{title}</h1>
+		{#if description}<p class="measure mt-1.5 text-[13px] text-mut">{description}</p>{/if}
 	</div>
 	{#if actions}
 		<div class="flex flex-wrap items-center gap-2">{@render actions()}</div>

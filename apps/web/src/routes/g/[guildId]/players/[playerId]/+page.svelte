@@ -5,9 +5,6 @@
 	import { Pagination } from 'stdf';
 	import { formatDateTime } from '#lib/format.ts';
 	import { pageTitle } from '#lib/shell/titles.ts';
-	import DataTable from '#lib/components/ui/DataTable.svelte';
-	import MetricList from '#lib/components/ui/MetricList.svelte';
-	import PageHeader from '#lib/components/ui/PageHeader.svelte';
 	import { POSITION_LABEL } from '#lib/components/ui/status.ts';
 	import type { PageProps } from './$types';
 
@@ -26,48 +23,40 @@
 		goto(url, { reset: false });
 	}
 
-	const columns = [
-		{ label: '시각' },
-		{ label: '상대' },
-		{ label: '챔피언', hideInStack: true },
-		{ label: '결과', align: 'end' as const }
-	];
-
 	const resultLabel = { win: '승리', loss: '패배', unknown: '결과 미확인' } as const;
-	const resultColor = { win: 'var(--success)', loss: 'var(--danger)', unknown: 'var(--text-muted)' } as const;
+	const resultClass = { win: 'text-accent', loss: 'text-rose', unknown: 'text-faint' } as const;
 </script>
 
 <svelte:head>
 	<title>{pageTitle(`${profile.player.displayName} 전적`, guild.name)}</title>
 </svelte:head>
 
-<PageHeader title={profile.player.displayName} description={profile.player.riotId ?? 'Riot 계정 미연결'} />
+<h1 class="page-title">{profile.player.displayName}</h1>
+<p class="mt-1.5 text-[13px] text-mut">{profile.player.riotId ?? 'Riot 계정 미연결'}</p>
 
-<div class="border-t border-line pt-4">
-	<MetricList
-		columns="grid-4"
-		items={[
-			{ label: '출전 Game', value: String(profile.totals.games), unit: '판' },
-			{ label: '승리', value: String(profile.totals.wins) },
-			{ label: '패배', value: String(profile.totals.losses) },
-			{ label: '승률', value: profile.winRate === null ? '기록 없음' : `${profile.winRate.toFixed(1)}%` }
-		]}
-	/>
+<div class="stats mt-6 grid-cols-2 sm:grid-cols-4">
+	<div class="stat"><span>출전 Game</span><b>{profile.totals.games}<small>판</small></b></div>
+	<div class="stat"><span>승리</span><b>{profile.totals.wins}</b></div>
+	<div class="stat"><span>패배</span><b>{profile.totals.losses}</b></div>
+	<div class="stat">
+		<span>승률</span>
+		<b>{profile.winRate === null ? '—' : `${profile.winRate.toFixed(1)}%`}</b>
+	</div>
 </div>
 
 {#if profile.positionMmr && profile.positionMmr.length > 0}
-	<section class="mt-10" aria-labelledby="mmr">
-		<div class="flex flex-wrap items-baseline justify-between gap-2">
-			<h2 id="mmr" class="text-title-l">포지션별 MMR</h2>
-			<p class="text-caption text-muted">{profile.mmrSeason}</p>
+	<section class="mt-8" aria-labelledby="mmr">
+		<div class="region">
+			<span class="lbl" id="mmr">포지션별 MMR</span>
+			<span class="count">{profile.mmrSeason}</span>
 		</div>
-		<dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line pt-3 sm:grid-cols-3 lg:grid-cols-5">
+		<dl class="panel grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
 			{#each profile.positionMmr as item (item.position)}
-				<div>
-					<dt class="text-caption text-muted">{POSITION_LABEL[item.position]}</dt>
-					<dd class="tabular mt-0.5 text-title-m">{item.value.toLocaleString('ko-KR')}</dd>
+				<div class="border-l border-line px-4 py-3 first:border-l-0">
+					<dt class="text-[11px] text-faint">{POSITION_LABEL[item.position]}</dt>
+					<dd class="mt-0.5 font-brand text-[26px] leading-none tabular">{item.value.toLocaleString('ko-KR')}</dd>
 					{#if item.status === 'pending'}
-						<dd class="text-caption" style:color="var(--warning)">반영 보류</dd>
+						<dd class="mt-0.5 text-[10.5px] text-gold">반영 보류</dd>
 					{/if}
 				</div>
 			{/each}
@@ -75,44 +64,47 @@
 	</section>
 {/if}
 
-<section class="mt-10" aria-labelledby="recent">
-	<div class="flex flex-wrap items-baseline justify-between gap-2">
-		<h2 id="recent" class="text-title-l">출전 기록</h2>
-		<p class="tabular text-caption text-muted">총 {profile.total}건</p>
+<section class="mt-8" aria-labelledby="recent">
+	<div class="region">
+		<span class="lbl" id="recent">출전 기록</span>
+		<span class="count">총 {profile.total}건</span>
 	</div>
 
-	<div class="mt-3 border-t border-line pt-2">
-		{#if profile.recent.length === 0}
-			<p class="py-4 text-body-s text-muted">이 서버에서 출전한 기록이 없습니다.</p>
-		{:else}
-			<DataTable caption="출전 기록" {columns} items={profile.recent}>
-				{#snippet row(item)}
+	{#if profile.recent.length === 0}
+		<div class="panel px-5 py-6"><p class="text-[13px] text-mut">이 서버에서 출전한 기록이 없습니다.</p></div>
+	{:else}
+		<div class="panel data-table-container px-5 py-2">
+			<table class="data-table">
+				<caption class="sr-only">출전 기록</caption>
+				<thead>
 					<tr>
-						<th scope="row">{formatDateTime(item.playedAt)}</th>
-						<td data-label="상대">
-							<a class="underline-offset-4 hover:underline" href={gameHref(item.matchId, item.gameId)}>
-								{item.opponent} · {item.gameNumber}경기
-							</a>
-						</td>
-						<td data-label="챔피언" class="hide-in-stack">{item.champion}</td>
-						<td data-label="결과" class="text-end">
-							<span style:color={resultColor[item.result]}>{resultLabel[item.result]}</span>
-						</td>
+						<th scope="col">시각</th>
+						<th scope="col">상대</th>
+						<th scope="col" class="hide-in-stack">챔피언</th>
+						<th scope="col" class="text-end">결과</th>
 					</tr>
-				{/snippet}
-			</DataTable>
+				</thead>
+				<tbody>
+					{#each profile.recent as item (item.gameId)}
+						<tr>
+							<th scope="row" class="whitespace-nowrap tabular">{formatDateTime(item.playedAt)}</th>
+							<td data-label="상대">
+								<a class="underline-offset-4 hover:underline" href={gameHref(item.matchId, item.gameId)}>
+									{item.opponent} · {item.gameNumber}경기
+								</a>
+							</td>
+							<td data-label="챔피언" class="hide-in-stack">{item.champion}</td>
+							<td data-label="결과" class="text-end {resultClass[item.result]}">{resultLabel[item.result]}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 
-			{#if profile.total > data.pageSize}
-				<div class="mt-6">
-					<Pagination
-						total={profile.total}
-						pageSize={data.pageSize}
-						current={data.page}
-						maxShowPage={5}
-						onchange={goPage}
-					/>
-				</div>
-			{/if}
+		{#if profile.total > data.pageSize}
+			<div class="mt-6">
+				<Pagination total={profile.total} pageSize={data.pageSize} current={data.page} maxShowPage={5} onchange={goPage} />
+			</div>
 		{/if}
-	</div>
+	{/if}
 </section>

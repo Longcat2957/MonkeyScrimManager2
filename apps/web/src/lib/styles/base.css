@@ -8,15 +8,17 @@
 		font-family: var(--font-sans);
 		color-scheme: light;
 		-webkit-text-size-adjust: 100%;
-		background-color: var(--surface-app);
-		color: var(--text);
+		background-color: var(--bg);
+		color: var(--fg);
 		scroll-padding-top: calc(var(--app-header-height) + var(--app-rail-height) + 1rem);
 	}
 
 	body {
 		min-height: 100dvh;
-		background-color: var(--surface-app);
-		color: var(--text);
+		/* 한국어는 단어 중간에서 줄바꿈하지 않는다. */
+		word-break: keep-all;
+		background-color: var(--bg);
+		color: var(--fg);
 	}
 
 	:where(h1, h2, h3, h4) {

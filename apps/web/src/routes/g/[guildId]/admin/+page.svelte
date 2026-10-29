@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { Button } from 'stdf';
+	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
+	import { ActionSheet, type ActionProps } from 'stdf';
 	import { saveGuildSettings, setMemberRole } from '#lib/data/index.ts';
 	import { pageTitle } from '#lib/shell/titles.ts';
 	import ConfirmDialog from '#lib/components/ui/ConfirmDialog.svelte';
-	import DataTable from '#lib/components/ui/DataTable.svelte';
-	import NativeField from '#lib/components/ui/NativeField.svelte';
-	import PageHeader from '#lib/components/ui/PageHeader.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -15,7 +14,7 @@
 	const guild = $derived(data.guild);
 	const admin = $derived(data.admin);
 
-	// 게시 설정 초안. 저장 전에는 현재 저장값과 구분해 표시한다.
+	// 게시 설정 초안
 	let recruitChannel = $state(untrack(() => admin.settings.recruitChannel ?? ''));
 	let resultChannel = $state(untrack(() => admin.settings.resultChannel ?? ''));
 	let saving = $state(false);
@@ -54,7 +53,45 @@
 		saved = false;
 	}
 
-	// 권한 변경
+	// 멤버: 행을 누르면 처리 시트가 열린다. 별도 버튼을 나열하지 않는다.
+	let memberIndex = $state<number | null>(null);
+	let sheetOpen = $state(false);
+
+	const member = $derived(memberIndex === null ? null : admin.members[memberIndex]);
+
+	const actions = $derived.by((): ActionProps[] => {
+		if (!member) return [];
+		return [
+			{ content: '전적 보기' },
+			{
+				content: member.role === 'admin' ? '관리자 해제' : '관리자 지정',
+				style: member.role === 'admin' ? 'error' : 'normal'
+			}
+		];
+	});
+
+	function openMember(index: number) {
+		memberIndex = index;
+		sheetOpen = true;
+	}
+
+	async function onAction(index: number) {
+		if (memberIndex === null || !member) return;
+		if (index === 0) {
+			const userId = member.player.userId;
+			sheetOpen = false;
+			if (userId) goto(resolve('/g/[guildId]/players/[playerId]', { guildId: guild.id, playerId: userId }));
+			return;
+		}
+		// 권한 변경은 확인을 거친다.
+		roleTarget = {
+			userId: member.player.userId ?? '',
+			displayName: member.player.displayName,
+			nextRole: member.role === 'admin' ? 'member' : 'admin'
+		};
+		sheetOpen = false;
+	}
+
 	type RoleTarget = { userId: string; displayName: string; nextRole: 'member' | 'admin' };
 	let roleTarget = $state<RoleTarget | null>(null);
 	let rolePending = $state(false);
@@ -70,121 +107,80 @@
 			rolePending = false;
 		}
 	}
-
-	const columns = [
-		{ label: '참가자' },
-		{ label: '권한', hideInStack: true },
-		{ label: '연결일', hideInStack: true },
-		{ label: '관리', align: 'end' as const }
-	];
 </script>
 
 <svelte:head>
 	<title>{pageTitle('관리', guild.name)}</title>
 </svelte:head>
 
-<PageHeader title="관리" description="서버 설정과 멤버 권한을 관리합니다." />
+<h1 class="page-title">관리</h1>
 
-<div class="space-y-12">
+<div class="measure mt-8 space-y-10">
 	{#if admin.capabilities.canEdit}
 		<section aria-labelledby="channels">
-			<h2 id="channels" class="border-t border-line pt-4 text-title-l">게시 설정</h2>
+			<div class="region">
+				<span class="lbl" id="channels">게시 설정</span>
+			</div>
 
-			<form class="mt-3 grid max-w-xl gap-4" onsubmit={submitSettings}>
-				<NativeField id="recruit-channel" label="모집 채널" hint="새 모집을 안내할 Discord 채널입니다. 미설정이면 게시하지 않습니다.">
-					{#snippet children(describedBy)}
-						<select
-							id="recruit-channel"
-							bind:value={recruitChannel}
-							aria-describedby={describedBy || undefined}
-							class="min-h-11 w-full rounded-sm border border-line bg-surface-sunken px-3 text-body-s"
-						>
-							<option value="">미설정</option>
-							{#each channelOptions as channel (channel)}
-								<option value={channel}>{channel}</option>
-							{/each}
-						</select>
-					{/snippet}
-				</NativeField>
+			<form class="panel grid gap-4 p-5" onsubmit={submitSettings}>
+				<div class="grid gap-1.5">
+					<label for="recruit-channel" class="text-[12px] font-semibold">모집 채널</label>
+					<select id="recruit-channel" class="field" bind:value={recruitChannel}>
+						<option value="">미설정</option>
+						{#each channelOptions as channel (channel)}<option value={channel}>{channel}</option>{/each}
+					</select>
+					<p class="text-[11px] text-faint">새 모집을 안내할 Discord 채널입니다. 미설정이면 게시하지 않습니다.</p>
+				</div>
 
-				<NativeField id="result-channel" label="결과 채널" hint="경기 결과가 기록될 때 알릴 Discord 채널입니다.">
-					{#snippet children(describedBy)}
-						<select
-							id="result-channel"
-							bind:value={resultChannel}
-							aria-describedby={describedBy || undefined}
-							class="min-h-11 w-full rounded-sm border border-line bg-surface-sunken px-3 text-body-s"
-						>
-							<option value="">미설정</option>
-							{#each channelOptions as channel (channel)}
-								<option value={channel}>{channel}</option>
-							{/each}
-						</select>
-					{/snippet}
-				</NativeField>
+				<div class="grid gap-1.5">
+					<label for="result-channel" class="text-[12px] font-semibold">결과 채널</label>
+					<select id="result-channel" class="field" bind:value={resultChannel}>
+						<option value="">미설정</option>
+						{#each channelOptions as channel (channel)}<option value={channel}>{channel}</option>{/each}
+					</select>
+					<p class="text-[11px] text-faint">경기 결과가 기록될 때 알릴 Discord 채널입니다.</p>
+				</div>
 
 				<div class="flex flex-wrap items-center gap-3">
-					<Button
-						type="submit"
-						size="auto"
-						injClass="px-4"
-						fill="base"
-						state="theme"
-						disabled={!dirty}
-						loading={saving ? { height: '4', width: '4' } : null}
-					>
-						저장
-					</Button>
-					<Button size="auto" injClass="px-4" fill="line" disabled={!dirty || saving} onclick={revertSettings}>
-						변경 취소
-					</Button>
-					{#if saved && !dirty}<span class="text-caption" style:color="var(--success)">저장되었습니다.</span>{/if}
-					{#if saveError}<span class="text-caption" style:color="var(--danger)">{saveError}</span>{/if}
+					<button type="submit" class="btn btn--primary" disabled={!dirty || saving}>저장</button>
+					<button type="button" class="btn" disabled={!dirty || saving} onclick={revertSettings}>변경 취소</button>
+					{#if saved && !dirty}<span class="text-[11.5px] text-accent">저장되었습니다.</span>{/if}
+					{#if saveError}<span class="text-[11.5px] text-rose">{saveError}</span>{/if}
 				</div>
 			</form>
 		</section>
 	{/if}
 
 	<section aria-labelledby="members">
-		<div class="flex flex-wrap items-baseline justify-between gap-2">
-			<h2 id="members" class="border-t border-line pt-4 text-title-l">멤버·권한</h2>
-			<p class="tabular text-caption text-muted">{admin.members.length}명</p>
+		<div class="region">
+			<span class="lbl" id="members">멤버·권한</span>
+			<span class="count">{admin.members.length}명</span>
 		</div>
 
-		<div class="mt-3 border-line">
-			<DataTable caption="서버 멤버" {columns} items={admin.members}>
-				{#snippet row(member)}
-					<tr>
-						<th scope="row">
-							<span class="block truncate font-semibold">{member.player.displayName}</span>
-							<span class="block truncate text-caption text-muted">{member.player.riotId ?? 'Riot 계정 미연결'}</span>
-						</th>
-						<td data-label="권한" class="hide-in-stack">{member.role === 'admin' ? '관리자' : '일반'}</td>
-						<td data-label="연결일" class="hide-in-stack text-muted">{member.joinedAt.slice(0, 10)}</td>
-						<td data-label="관리" class="text-end">
-							{#if admin.capabilities.canChangeRoles}
-								<Button
-									size="auto"
-									injClass="px-3"
-									fill="line"
-									onclick={() =>
-										(roleTarget = {
-											userId: member.player.userId ?? '',
-											displayName: member.player.displayName,
-											nextRole: member.role === 'admin' ? 'member' : 'admin'
-										})}
-									disabled={!member.player.userId}
-								>
-									{member.role === 'admin' ? '관리자 해제' : '관리자 지정'}
-								</Button>
-							{/if}
-						</td>
-					</tr>
-				{/snippet}
-			</DataTable>
+		<div class="panel">
+			{#each admin.members as item, index (item.player.userId ?? `${item.player.displayName}-${index}`)}
+				<button type="button" class="row w-full text-left" onclick={() => openMember(index)}>
+					<span class="min-w-0">
+						<span class="row-title block">{item.player.displayName}</span>
+						<span class="row-meta block">{item.player.riotId ?? 'Riot 계정 미연결'}</span>
+					</span>
+					<span class="row-meta text-right">{item.role === 'admin' ? '관리자' : '일반'}</span>
+					<span class="row-side text-faint" aria-hidden="true">→</span>
+				</button>
+			{/each}
 		</div>
 	</section>
 </div>
+
+<ActionSheet
+	bind:visible={sheetOpen}
+	title={member?.player.displayName ?? ''}
+	{actions}
+	showCancel
+	cancelText="닫기"
+	onclickAction={onAction}
+	onclose={() => (memberIndex = null)}
+/>
 
 <ConfirmDialog
 	bind:open={() => roleTarget !== null, (value) => (roleTarget = value ? roleTarget : null)}

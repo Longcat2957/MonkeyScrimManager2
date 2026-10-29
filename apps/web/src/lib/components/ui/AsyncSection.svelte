@@ -1,5 +1,5 @@
 <script lang="ts" generics="T">
-	import { Skeleton, Button } from 'stdf';
+	import { Skeleton } from 'stdf';
 	import type { Snippet } from 'svelte';
 	import type { Loadable } from '#lib/data/types.ts';
 
@@ -45,14 +45,14 @@
 		</div>
 		<p class="sr-only" role="status">불러오는 중</p>
 	{:else if state === 'error'}
-		<div class="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line px-4 py-3">
-			<p class="text-body-s text-muted">{result?.status === 'error' ? result.message : '불러오지 못했어요.'}</p>
+		<div class="panel flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+			<p class="text-[13px] text-mut">{result?.status === 'error' ? result.message : '불러오지 못했어요.'}</p>
 			{#if onretry}
-				<Button size="auto" injClass="px-4" fill="line" onclick={onretry}>다시 시도</Button>
+				<button type="button" class="btn" onclick={onretry}>다시 시도</button>
 			{/if}
 		</div>
 	{:else if state === 'empty'}
-		<p class="py-2 text-body-s text-muted">{emptyText}</p>
+		<p class="py-2 text-[13px] text-mut">{emptyText}</p>
 	{:else if result?.status === 'ready'}
 		{@render children(result.data)}
 	{/if}

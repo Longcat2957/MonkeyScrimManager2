@@ -1,3 +1,7 @@
+# 컴포넌트
+
+> **2026-10-29 개정.** 상태 라벨은 `StatusState`(`.state`)로 통일했고 `NowLine` · `ScrimContextBar` · `MetricList` · `FillMeter` · `DataTable`은 제거했다(패널·행·지표·표 규칙으로 흡수). STDF `Steps`(내전 흐름), `ActionSheet`(참가자·멤버 처리), `Accordion`(하드 피어리스 이력)을 도입했다. 세부 스펙은 `system.md`와 구현 코드가 우선한다.
+
 # 컴포넌트 카탈로그
 
 작성일: 2026-10-29. 선행: [디자인 시스템](system.md) · [코드 구조](architecture.md) · 다음: [페이지](pages.md)
