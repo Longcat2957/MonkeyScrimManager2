@@ -211,9 +211,7 @@
 <section class="mt-8" aria-labelledby="roster">
 	<div class="region">
 		<span class="lbl" id="roster">참가자</span>
-		<span class="count tabular">
-			신청 {detail.applicantCount} / {detail.appliedCapacity} · 선발 {detail.selectedCount} / {detail.playingCapacity}
-		</span>
+		<span class="count tabular">신청 {detail.applicantCount} / {detail.appliedCapacity}</span>
 	</div>
 
 	<RosterTable

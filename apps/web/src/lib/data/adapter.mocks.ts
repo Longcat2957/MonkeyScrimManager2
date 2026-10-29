@@ -18,7 +18,7 @@ import type {
 	ScrimSummary
 } from '#lib/data/types.ts';
 import type { GuildContext, ViewerContext } from '#lib/shell/context.ts';
-import { GUILDS, USERS, VIEWER, findGuild } from '#lib/mocks/guilds.ts';
+import { GUILDS, VIEWER, findGuild } from '#lib/mocks/guilds.ts';
 import { addAccount, getPrivacy, listAccounts, removeAccount, updatePrivacy } from '#lib/mocks/account.ts';
 import { findGames } from '#lib/mocks/games.ts';
 import type { ScrimContext } from '#lib/shell/context.ts';
@@ -83,34 +83,16 @@ export async function getGuildContext(
 export async function getGuildHome(guildId: string, scenario: Scenario = 'normal') {
 	await pause(scenario);
 
+	// 서버 홈은 "지금 진행 중인 운영"만 담당한다. 통계·전체 기록은 각 화면이 맡는다.
 	const activeScrims = SCRIMS.filter(
 		(scrim) => scrim.guildId === guildId && ['recruit', 'preparing', 'ready', 'in_progress'].includes(scrim.status)
 	).map(toSummary);
-	const recentMatches = MATCHES.filter((match) => {
-		const scrim = SCRIMS.find((item) => item.id === match.scrimId);
-		return scrim?.guildId === guildId && match.status !== 'pending';
-	}).slice(0, 4);
-
-	const scrimIds = new Set(SCRIMS.filter((scrim) => scrim.guildId === guildId).map((scrim) => scrim.id));
-	const completed = MATCHES.filter(
-		(match) => scrimIds.has(match.scrimId) && match.status === 'completed'
-	);
 
 	return {
-		// 빈 시나리오는 두 목록을 비우고, 부분 실패는 한 영역만 실패시킨다.
 		activeScrims:
 			scenario === 'error'
 				? failure<ScrimSummary[]>('진행 중 내전을 불러오지 못했어요.')
-				: ready<ScrimSummary[]>(scenario === 'empty' ? [] : activeScrims),
-		recentMatches:
-			scenario === 'error' || scenario === 'partial'
-				? failure<MatchSummary[]>('최근 경기를 불러오지 못했어요.')
-				: ready<MatchSummary[]>(scenario === 'empty' ? [] : recentMatches),
-		summary: ready({
-			completedGames: completed.reduce((sum, match) => sum + match.score[0] + match.score[1], 0),
-			players: new Set(USERS.map((user) => user.id)).size,
-			averageDurationMs: completed.length > 0 ? 1_884_000 : null
-		})
+				: ready<ScrimSummary[]>(scenario === 'empty' ? [] : activeScrims)
 	};
 }
 

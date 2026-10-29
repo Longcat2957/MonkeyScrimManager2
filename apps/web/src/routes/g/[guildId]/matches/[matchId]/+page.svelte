@@ -99,7 +99,7 @@
 	{#if game}
 		<section class="mt-5" aria-labelledby="game-title">
 			<div class="region">
-				<span class="lbl" id="game-title">{game.number}경기 절차</span>
+				<span class="lbl" id="game-title">{game.number}경기 성적</span>
 				<span class="count">
 					{game.blueTeam.name} 블루 · {game.redTeam.name} 레드
 					{#if game.winnerSide}
