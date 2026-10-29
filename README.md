@@ -47,6 +47,9 @@ pnpm dev
 
 ## 웹 공통 구조
 
+합의한 목표 라우트와 내비게이션은 [웹 구조 설계](docs/web/routing.md)를 따른다.
+해당 문서는 구현 전 설계이며, 아래는 현재 구현된 공통 화면의 상태다.
+
 웹의 서비스명은 `#lib/branding.ts`에서 가져온 `SERVICE_NAME`을 사용한다.
 프로젝트명과 서비스명 사용 규칙은 [AGENTS.md](AGENTS.md)의 Naming and Branding을 따른다.
 `pnpm check:branding`은 웹 `.svelte`·`.html`의 프로젝트명·잘못된 표기·표시명 직접 작성을 검사하며,

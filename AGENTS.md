@@ -3,6 +3,7 @@
 ## Project Documentation
 
 - `docs/purpose.md`: Project vision, goals, and constraints.
+- `docs/web/routing.md`: Agreed page routes, layout ownership, and navigation structure (design; not yet implemented).
 
 Consult the relevant documents when making product,
 feature, or architectural decisions.
