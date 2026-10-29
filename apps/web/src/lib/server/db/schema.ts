@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { bigint, boolean, check, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, check, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
 	// Discord 사용자 ID를 그대로 사용하며, 정밀도 손실을 막기 위해 문자열로 저장한다.
@@ -80,6 +80,41 @@ export const riotAccounts = pgTable('riot_accounts', {
 	index('riot_accounts_user_id_idx').on(table.userId)
 ]);
 
+// 시즌을 닫아도 이전 점수와 원장은 보존한다. 길드마다 종료되지 않은 시즌은 하나다.
+export const mmrSeasons = pgTable('mmr_seasons', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	guildId: text('guild_id').notNull().references(() => guilds.id, { onDelete: 'restrict' }),
+	name: text('name').notNull(),
+	startedAt: timestamp('started_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+	endedAt: timestamp('ended_at', { withTimezone: true, precision: 3 })
+}, (table) => [
+	unique('mmr_seasons_guild_id_id_unique').on(table.guildId, table.id),
+	uniqueIndex('mmr_seasons_active_guild_unique').on(table.guildId).where(sql`${table.endedAt} is null`),
+	check('mmr_seasons_time_order', sql`${table.endedAt} >= ${table.startedAt}`)
+]);
+
+// 서버·시즌·Discord 사용자·포지션별 MMR이다. Riot 계정이나 현재 길드 소속에 점수를 귀속하지 않는다.
+// 기본값은 1500이며 동포지션 Elo K=32를 개별 Game마다 반영한다. 계산과 원장·현재값의 원자적 갱신은 서비스에서 처리한다.
+// 원장이 생긴 뒤 시즌·사용자·포지션을 다른 대상으로 변경하지 않는다. 사용자 삭제 시 연결 해제만 예외다.
+export const userPositionMmr = pgTable('user_position_mmr', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	seasonId: uuid('season_id').notNull().references(() => mmrSeasons.id, { onDelete: 'restrict' }),
+	// 사용자 삭제 시 점수·원장은 남기고 개인 연결만 해제한다. 길드 탈퇴는 이 행을 삭제하지 않는다.
+	userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+	position: lolPosition('position').notNull(),
+	mmr: doublePrecision('mmr').default(1500).notNull(),
+	// 마지막 원장 revision과 일치해야 한다. 동시 갱신과 연속성은 서비스 트랜잭션에서 검증한다.
+	revision: integer('revision').default(0).notNull(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
+		.defaultNow().notNull().$onUpdate(() => new Date())
+}, (table) => [
+	unique('user_position_mmr_season_user_position_unique').on(table.seasonId, table.userId, table.position),
+	unique('user_position_mmr_season_id_id_unique').on(table.seasonId, table.id),
+	index('user_position_mmr_user_id_idx').on(table.userId),
+	check('user_position_mmr_finite', sql`${table.mmr} > '-Infinity'::double precision and ${table.mmr} < 'Infinity'::double precision`),
+	check('user_position_mmr_revision_nonnegative', sql`${table.revision} >= 0`)
+]);
+
 // completed는 정상 종료, ended_early는 경기 시작 후 중도 종료, cancelled는 시작 전 취소다.
 export const scrimStatus = pgEnum('scrim_status', [
 	'recruit', 'preparing', 'ready', 'in_progress', 'completed', 'ended_early', 'cancelled'
@@ -94,6 +129,9 @@ export const scrims = pgTable('scrims', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	// 내전 기록이 남은 길드는 실수로 함께 삭제되지 않도록 제한한다.
 	guildId: text('guild_id').notNull().references(() => guilds.id, { onDelete: 'restrict' }),
+	// 반영할 시즌을 내전에 고정한다. 미결정이면 MMR만 보류하며 늦은 업로드를 현재 시즌으로 자동 배정하지 않는다.
+	// 첫 MMR 반영 후 시즌 변경 금지는 서비스에서 검사한다.
+	mmrSeasonId: uuid('mmr_season_id'),
 	// 웹·봇에서 생성을 요청한 사용자이며, 사용자 삭제 후에도 내전은 보존한다.
 	createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 	title: text('title').notNull(),
@@ -102,8 +140,10 @@ export const scrims = pgTable('scrims', {
 	formationMethod: scrimFormationMethod('formation_method'),
 	// 새 Match를 만들 때 사용할 기본값이다. 실제 적용값은 Match에 복사하며 이후 변경을 전파하지 않는다.
 	isHardFearless: boolean('is_hard_fearless').default(false).notNull(),
-	// 팀당 5명 기준으로 10인은 2팀, 20인은 4팀이다. 모집 정원은 팀 수에서 계산한다.
+	// 실출전 정원은 팀 수 × 5명이다. 추가 신청 인원은 팀 수나 실출전 정원을 늘리지 않는다.
 	teamCount: integer('team_count').default(2).notNull(),
+	// 전체 신청 정원은 실출전 정원 + 추가 신청 정원이다. 신청 순서로 선발·대기를 자동 결정하지 않는다.
+	reserveCapacity: integer('reserve_capacity').default(0).notNull(),
 	// 모집 때 안내한 예정 시각이며 실제 경기 시작 시각과 구분한다.
 	expectedStartAt: timestamp('expected_start_at', { withTimezone: true, precision: 3 }),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
@@ -113,9 +153,16 @@ export const scrims = pgTable('scrims', {
 		.notNull()
 		.$onUpdate(() => new Date())
 }, (table) => [
+	unique('scrims_id_mmr_season_unique').on(table.id, table.mmrSeasonId),
+	foreignKey({
+		name: 'scrims_mmr_season_fk',
+		columns: [table.guildId, table.mmrSeasonId], foreignColumns: [mmrSeasons.guildId, mmrSeasons.id]
+	}).onDelete('restrict'),
 	index('scrims_guild_id_idx').on(table.guildId),
+	index('scrims_mmr_season_id_idx').on(table.mmrSeasonId),
 	index('scrims_created_by_user_id_idx').on(table.createdByUserId),
 	check('scrims_team_count_min', sql`${table.teamCount} >= 2`),
+	check('scrims_reserve_capacity_nonnegative', sql`${table.reserveCapacity} >= 0`),
 	check('scrims_formation_method_required', sql`${table.status} in ('recruit', 'cancelled') or ${table.formationMethod} is not null`)
 ]);
 
@@ -159,7 +206,7 @@ export const scrimParticipants = pgTable('scrim_participants', {
 	riotAccountId: uuid('riot_account_id').references(() => riotAccounts.id, { onDelete: 'restrict' }),
 	// 참가 등록 당시 표시 이름이며, 현재 사용자 프로필에서 과거 이름을 다시 계산하지 않는다.
 	displayName: text('display_name').notNull(),
-	// 모집 중에는 팀·배정 포지션이 비어 있을 수 있다. 인원수와 편성 확정 조건은 서비스에서 검사한다.
+	// 팀 편성에는 활성 신청이 selected인 참가자만 사용한다. 선발 인원수·상태·확정 조건은 서비스에서 검사한다.
 	teamId: uuid('team_id'),
 	position: lolPosition('position'),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
@@ -179,7 +226,7 @@ export const scrimParticipants = pgTable('scrim_participants', {
 ]);
 
 // 경매에 참여하는 팀의 팀장과 시작 예산을 보관한다.
-// 한 번 시작한 경매의 팀·팀장·시작 예산 변경 금지와 팀장의 실제 팀 소속은 서비스에서 검사한다.
+// selected 신청인 팀장만 지정한다. 시작 후 팀·팀장·예산 변경 금지와 팀장의 실제 소속은 서비스에서 검사한다.
 export const auctionTeams = pgTable('auction_teams', {
 	scrimId: uuid('scrim_id').notNull(),
 	auctionId: uuid('auction_id').notNull(),
@@ -216,7 +263,7 @@ export const auctionTeams = pgTable('auction_teams', {
 export const auctionLotStatus = pgEnum('auction_lot_status', ['open', 'sold', 'unsold', 'cancelled']);
 
 // 참가자가 경매에 등장한 한 번의 시도다. 유찰 후 재등장·재추첨은 이전 기록을 보존하고 새 행으로 남긴다.
-// 상태 전환과 팀장·이미 영입된 참가자의 후보 제외는 서비스에서 검사한다.
+// selected 신청만 후보로 사용하며, 상태 전환과 팀장·이미 영입된 참가자의 후보 제외는 서비스에서 검사한다.
 export const auctionLots = pgTable('auction_lots', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	scrimId: uuid('scrim_id').notNull(),
@@ -501,7 +548,7 @@ export const games = pgTable('games', {
 ]);
 
 // 실제 한 판의 출전 기록이다. 미연결 ROFL 참가자의 선별 데이터는 버전별 ROFL 하위 모델에 남긴다.
-// 팀 소속·실제 사용 계정·5인 라인업·Game 순번과 시리즈 종료 조건은 저장 시 서비스에서 검사한다.
+// selected 신청·팀 소속·실제 사용 계정·5인 라인업·Game 순번과 시리즈 종료 조건은 저장 시 서비스에서 검사한다.
 export const gameParticipants = pgTable('game_participants', {
 	scrimId: uuid('scrim_id').notNull(),
 	gameId: uuid('game_id').notNull(),
@@ -547,6 +594,109 @@ export const gameParticipants = pgTable('game_participants', {
 	index('game_participants_riot_account_id_idx').on(table.riotAccountId),
 	index('game_participants_rofl_participant_idx').on(table.roflMetadataId, table.roflParticipantIndex),
 	check('game_participants_champion_id_positive', sql`${table.championId} > 0`)
+]);
+
+// MMR 반영에 필요한 사용자·포지션·시즌이 미확정이어도 ROFL과 Game 저장은 가능하다. 그 경우 반영 행을 아직 만들지 않는다.
+// 한 반영과 출전자 원장·현재 점수 갱신은 별도의 한 트랜잭션이다. 채택 ROFL·실출전·동포지션 상대의 일치는 서비스에서 검사한다.
+export const gameMmrApplications = pgTable('game_mmr_applications', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	scrimId: uuid('scrim_id').notNull(),
+	gameId: uuid('game_id').notNull(),
+	seasonId: uuid('season_id').notNull(),
+	// 당시 계산 근거를 보존한다. 현재 Game의 채택본과 복합 FK로 묶지 않아 ROFL 교체 후에도 이전 근거가 남는다.
+	roflMetadataId: uuid('rofl_metadata_id').notNull().references(() => roflMetadata.id, { onDelete: 'restrict' }),
+	revision: integer('revision').notNull(),
+	appliedAt: timestamp('applied_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+	appliedByUserId: text('applied_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	reversedAt: timestamp('reversed_at', { withTimezone: true, precision: 3 }),
+	reversedByUserId: text('reversed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	reversalReason: text('reversal_reason')
+}, (table) => [
+	unique('game_mmr_applications_game_revision_unique').on(table.gameId, table.revision),
+	unique('game_mmr_applications_season_scrim_id_unique').on(table.seasonId, table.scrimId, table.id),
+	uniqueIndex('game_mmr_applications_active_game_unique').on(table.gameId).where(sql`${table.reversedAt} is null`),
+	foreignKey({
+		name: 'game_mmr_applications_game_fk',
+		columns: [table.scrimId, table.gameId], foreignColumns: [games.scrimId, games.id]
+	}).onDelete('restrict'),
+	foreignKey({
+		name: 'game_mmr_applications_scrim_season_fk',
+		columns: [table.scrimId, table.seasonId], foreignColumns: [scrims.id, scrims.mmrSeasonId]
+	}).onDelete('restrict'),
+	index('game_mmr_applications_rofl_metadata_idx').on(table.roflMetadataId),
+	index('game_mmr_applications_applied_by_idx').on(table.appliedByUserId),
+	index('game_mmr_applications_reversed_by_idx').on(table.reversedByUserId),
+	check('game_mmr_applications_revision_positive', sql`${table.revision} > 0`),
+	check('game_mmr_applications_time_order', sql`${table.reversedAt} >= ${table.appliedAt}`),
+	check('game_mmr_applications_reversal_details', sql`
+		(${table.reversedAt} is null and ${table.reversedByUserId} is null and ${table.reversalReason} is null)
+		or (${table.reversedAt} is not null and nullif(btrim(${table.reversalReason}), '') is not null)
+	`)
+]);
+
+export const mmrLedgerEntryKind = pgEnum('mmr_ledger_entry_kind', ['game_result', 'game_reversal', 'adjustment']);
+
+// 원장 수치는 덮어쓰지 않는다. 증감은 afterMmr - beforeMmr로 계산하고 취소는 별도 역분개 행으로 남긴다.
+// ROFL 교체 시 재생성되는 gameParticipants 대신 보존되는 참가자와 반영 회차를 참조한다.
+// 이전·이후 점수의 연결, 현재 점수·revision과의 일치, 실제 사용자·포지션 및 역분개 가능 순서는 서비스에서 검증한다.
+export const mmrLedgerEntries = pgTable('mmr_ledger_entries', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	seasonId: uuid('season_id').notNull(),
+	ratingId: uuid('rating_id').notNull(),
+	revision: integer('revision').notNull(),
+	kind: mmrLedgerEntryKind('kind').notNull(),
+	applicationId: uuid('application_id'),
+	scrimId: uuid('scrim_id'),
+	scrimParticipantId: uuid('scrim_participant_id'),
+	beforeMmr: doublePrecision('before_mmr').notNull(),
+	afterMmr: doublePrecision('after_mmr').notNull(),
+	reversesEntryId: uuid('reverses_entry_id'),
+	reason: text('reason'),
+	recordedByUserId: text('recorded_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+}, (table) => [
+	unique('mmr_ledger_entries_rating_revision_unique').on(table.ratingId, table.revision),
+	unique('mmr_ledger_entries_app_rating_kind_unique').on(table.applicationId, table.ratingId, table.kind),
+	unique('mmr_ledger_entries_app_participant_kind_unique').on(table.applicationId, table.scrimParticipantId, table.kind),
+	unique('mmr_ledger_entries_reversal_source_unique').on(table.ratingId, table.applicationId, table.scrimParticipantId, table.id),
+	unique('mmr_ledger_entries_reverses_entry_unique').on(table.reversesEntryId),
+	foreignKey({
+		name: 'mmr_ledger_entries_rating_fk',
+		columns: [table.seasonId, table.ratingId], foreignColumns: [userPositionMmr.seasonId, userPositionMmr.id]
+	}).onDelete('restrict'),
+	foreignKey({
+		name: 'mmr_ledger_entries_application_fk',
+		columns: [table.seasonId, table.scrimId, table.applicationId],
+		foreignColumns: [gameMmrApplications.seasonId, gameMmrApplications.scrimId, gameMmrApplications.id]
+	}).onDelete('restrict'),
+	foreignKey({
+		name: 'mmr_ledger_entries_participant_fk',
+		columns: [table.scrimId, table.scrimParticipantId], foreignColumns: [scrimParticipants.scrimId, scrimParticipants.id]
+	}).onDelete('restrict'),
+	// 역분개는 동일 MMR·반영 회차·참가자의 원장만 가리킬 수 있다.
+	foreignKey({
+		name: 'mmr_ledger_entries_reversal_fk',
+		columns: [table.ratingId, table.applicationId, table.scrimParticipantId, table.reversesEntryId],
+		foreignColumns: [table.ratingId, table.applicationId, table.scrimParticipantId, table.id]
+	}).onDelete('restrict'),
+	index('mmr_ledger_entries_participant_idx').on(table.scrimParticipantId),
+	index('mmr_ledger_entries_recorded_by_idx').on(table.recordedByUserId),
+	check('mmr_ledger_entries_revision_positive', sql`${table.revision} > 0`),
+	check('mmr_ledger_entries_values_finite', sql`
+		${table.beforeMmr} > '-Infinity'::double precision and ${table.beforeMmr} < 'Infinity'::double precision
+		and ${table.afterMmr} > '-Infinity'::double precision and ${table.afterMmr} < 'Infinity'::double precision
+	`),
+	check('mmr_ledger_entries_no_self_reversal', sql`${table.reversesEntryId} <> ${table.id}`),
+	check('mmr_ledger_entries_kind_details', sql`
+		(${table.kind} = 'adjustment' and ${table.applicationId} is null and ${table.scrimId} is null
+			and ${table.scrimParticipantId} is null and ${table.reversesEntryId} is null
+			and nullif(btrim(${table.reason}), '') is not null)
+		or (${table.kind} = 'game_result' and ${table.applicationId} is not null and ${table.scrimId} is not null
+			and ${table.scrimParticipantId} is not null and ${table.reversesEntryId} is null)
+		or (${table.kind} = 'game_reversal' and ${table.applicationId} is not null and ${table.scrimId} is not null
+			and ${table.scrimParticipantId} is not null and ${table.reversesEntryId} is not null
+			and nullif(btrim(${table.reason}), '') is not null)
+	`)
 ]);
 
 // 모집 시 일반 단일 라운드 또는 준결승·결승의 BO 규칙을 정한다. Match 생성 시 해당 규칙을 복사한다.
@@ -670,15 +820,22 @@ export const scrimParticipantPreferences = pgTable('scrim_participant_preference
 	check('scrim_participant_preferences_priority_range', sql`${table.priority} between 1 and 5`)
 ]);
 
-// 참가자 ID는 유지하고 참가 신청마다 한 행을 만든다. 철회한 행을 재사용하지 않아 재참가 이력이 남는다.
-// withdrawnAt이 없는 행이 현재 참가 신청이다. 참가자 생성과 첫 신청, 철회·재참가는 서비스에서 원자적으로 처리한다.
-// 정원 검사, 시작 후 철회 제한, 철회 시 미확정 팀 배정 정리는 서비스에서 처리한다.
+// 신청자는 선발 전 pending이며, 최종 선발·대기·자진 철회·운영자 제외를 구분한다.
+export const scrimRegistrationStatus = pgEnum('scrim_registration_status', [
+	'pending', 'selected', 'standby', 'withdrawn', 'excluded'
+]);
+
+// 참가자 ID는 유지하고 신청마다 새 행을 만든다. 철회·제외한 행을 재사용하지 않아 재신청 이력이 남는다.
+// withdrawnAt이 없는 신청이 현재 정원에 포함된다. 선발 수는 팀 수 × 5명, 활성 신청 수는 여기에 reserveCapacity를 더한 값으로 제한한다.
+// 정원 검사·선발 확정·시작 후 제외 제한·철회/제외 시 미확정 팀 배정 정리는 서비스 트랜잭션에서 처리한다.
 export const scrimParticipantRegistrations = pgTable('scrim_participant_registrations', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	scrimParticipantId: uuid('scrim_participant_id').notNull()
 		.references(() => scrimParticipants.id, { onDelete: 'restrict' }),
+	status: scrimRegistrationStatus('status').default('pending').notNull(),
 	joinedAt: timestamp('joined_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	joinedByUserId: text('joined_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	// 자진 철회와 운영자 제외 모두 신청을 마감하며, 행위자·사유를 남기고 참가자 행은 삭제하지 않는다.
 	withdrawnAt: timestamp('withdrawn_at', { withTimezone: true, precision: 3 }),
 	withdrawnByUserId: text('withdrawn_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 	withdrawalReason: text('withdrawal_reason')
@@ -689,6 +846,7 @@ export const scrimParticipantRegistrations = pgTable('scrim_participant_registra
 	index('scrim_participant_registrations_joined_by_idx').on(table.joinedByUserId),
 	index('scrim_participant_registrations_withdrawn_by_idx').on(table.withdrawnByUserId),
 	check('scrim_participant_registrations_time_order', sql`${table.withdrawnAt} >= ${table.joinedAt}`),
+	check('scrim_participant_registrations_status_closure', sql`(${table.status} in ('withdrawn', 'excluded')) = (${table.withdrawnAt} is not null)`),
 	check('scrim_participant_registrations_withdrawal_details', sql`${table.withdrawnAt} is not null or (${table.withdrawnByUserId} is null and ${table.withdrawalReason} is null)`)
 ]);
 
@@ -704,7 +862,11 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 	recordedAcquisitions: many(auctionAcquisitions, { relationName: 'acquisitionRecorder' }),
 	voidedAcquisitions: many(auctionAcquisitions, { relationName: 'acquisitionVoider' }),
 	joinedRegistrations: many(scrimParticipantRegistrations, { relationName: 'registrationJoinedBy' }),
-	withdrawnRegistrations: many(scrimParticipantRegistrations, { relationName: 'registrationWithdrawnBy' })
+	withdrawnRegistrations: many(scrimParticipantRegistrations, { relationName: 'registrationWithdrawnBy' }),
+	positionMmr: many(userPositionMmr),
+	appliedMmrApplications: many(gameMmrApplications, { relationName: 'mmrApplicationApplier' }),
+	reversedMmrApplications: many(gameMmrApplications, { relationName: 'mmrApplicationReverser' }),
+	recordedMmrEntries: many(mmrLedgerEntries, { relationName: 'mmrEntryRecorder' })
 }));
 
 export const userChampionPreferencesRelations = relations(userChampionPreferences, ({ one }) => ({
@@ -714,7 +876,8 @@ export const userChampionPreferencesRelations = relations(userChampionPreference
 export const guildsRelations = relations(guilds, ({ one, many }) => ({
 	discordSettings: one(guildDiscordSettings),
 	members: many(guildMembers),
-	scrims: many(scrims)
+	scrims: many(scrims),
+	mmrSeasons: many(mmrSeasons)
 }));
 
 export const guildMembersRelations = relations(guildMembers, ({ one }) => ({
@@ -730,13 +893,17 @@ export const riotAccountsRelations = relations(riotAccounts, ({ one, many }) => 
 
 export const scrimsRelations = relations(scrims, ({ one, many }) => ({
 	guild: one(guilds, { fields: [scrims.guildId], references: [guilds.id] }),
+	mmrSeason: one(mmrSeasons, {
+		fields: [scrims.guildId, scrims.mmrSeasonId], references: [mmrSeasons.guildId, mmrSeasons.id]
+	}),
 	creator: one(users, { fields: [scrims.createdByUserId], references: [users.id] }),
 	teams: many(scrimTeams),
 	participants: many(scrimParticipants),
 	matches: many(matches),
 	auction: one(auctions),
 	discordMessage: one(scrimDiscordMessages),
-	rounds: many(scrimRounds)
+	rounds: many(scrimRounds),
+	mmrApplications: many(gameMmrApplications)
 }));
 
 export const auctionsRelations = relations(auctions, ({ one, many }) => ({
@@ -826,7 +993,8 @@ export const scrimParticipantsRelations = relations(scrimParticipants, ({ one, m
 	purchases: many(auctionAcquisitions, { relationName: 'acquisitionBuyer' }),
 	preferences: many(scrimParticipantPreferences),
 	registrations: many(scrimParticipantRegistrations),
-	gameParticipations: many(gameParticipants)
+	gameParticipations: many(gameParticipants),
+	mmrEntries: many(mmrLedgerEntries)
 }));
 
 export const matchesRelations = relations(matches, ({ one, many }) => ({
@@ -848,7 +1016,8 @@ export const roflMetadataRelations = relations(roflMetadata, ({ one, many }) => 
 	uploadedBy: one(users, { fields: [roflMetadata.uploadedByUserId], references: [users.id] }),
 	game: one(games),
 	gameDataV1: one(roflGameDataV1),
-	participants: many(roflParticipants)
+	participants: many(roflParticipants),
+	mmrApplications: many(gameMmrApplications)
 }));
 
 export const roflParticipantsRelations = relations(roflParticipants, ({ one }) => ({
@@ -874,7 +1043,60 @@ export const roflParticipantDataV1Relations = relations(roflParticipantDataV1, (
 export const gamesRelations = relations(games, ({ one, many }) => ({
 	match: one(matches, { fields: [games.scrimId, games.matchId], references: [matches.scrimId, matches.id] }),
 	roflMetadata: one(roflMetadata, { fields: [games.roflMetadataId], references: [roflMetadata.id] }),
-	participants: many(gameParticipants)
+	participants: many(gameParticipants),
+	mmrApplications: many(gameMmrApplications)
+}));
+
+export const mmrSeasonsRelations = relations(mmrSeasons, ({ one, many }) => ({
+	guild: one(guilds, { fields: [mmrSeasons.guildId], references: [guilds.id] }),
+	ratings: many(userPositionMmr),
+	scrims: many(scrims)
+}));
+
+export const userPositionMmrRelations = relations(userPositionMmr, ({ one, many }) => ({
+	season: one(mmrSeasons, { fields: [userPositionMmr.seasonId], references: [mmrSeasons.id] }),
+	user: one(users, { fields: [userPositionMmr.userId], references: [users.id] }),
+	entries: many(mmrLedgerEntries)
+}));
+
+export const gameMmrApplicationsRelations = relations(gameMmrApplications, ({ one, many }) => ({
+	game: one(games, {
+		fields: [gameMmrApplications.scrimId, gameMmrApplications.gameId], references: [games.scrimId, games.id]
+	}),
+	scrim: one(scrims, {
+		fields: [gameMmrApplications.scrimId, gameMmrApplications.seasonId], references: [scrims.id, scrims.mmrSeasonId]
+	}),
+	roflMetadata: one(roflMetadata, { fields: [gameMmrApplications.roflMetadataId], references: [roflMetadata.id] }),
+	appliedBy: one(users, {
+		fields: [gameMmrApplications.appliedByUserId], references: [users.id], relationName: 'mmrApplicationApplier'
+	}),
+	reversedBy: one(users, {
+		fields: [gameMmrApplications.reversedByUserId], references: [users.id], relationName: 'mmrApplicationReverser'
+	}),
+	entries: many(mmrLedgerEntries)
+}));
+
+export const mmrLedgerEntriesRelations = relations(mmrLedgerEntries, ({ one, many }) => ({
+	rating: one(userPositionMmr, {
+		fields: [mmrLedgerEntries.seasonId, mmrLedgerEntries.ratingId], references: [userPositionMmr.seasonId, userPositionMmr.id]
+	}),
+	application: one(gameMmrApplications, {
+		fields: [mmrLedgerEntries.seasonId, mmrLedgerEntries.scrimId, mmrLedgerEntries.applicationId],
+		references: [gameMmrApplications.seasonId, gameMmrApplications.scrimId, gameMmrApplications.id]
+	}),
+	participant: one(scrimParticipants, {
+		fields: [mmrLedgerEntries.scrimId, mmrLedgerEntries.scrimParticipantId], references: [scrimParticipants.scrimId, scrimParticipants.id]
+	}),
+	recordedBy: one(users, {
+		fields: [mmrLedgerEntries.recordedByUserId], references: [users.id], relationName: 'mmrEntryRecorder'
+	}),
+	reverses: one(mmrLedgerEntries, {
+		fields: [mmrLedgerEntries.ratingId, mmrLedgerEntries.applicationId, mmrLedgerEntries.scrimParticipantId, mmrLedgerEntries.reversesEntryId],
+		references: [mmrLedgerEntries.ratingId, mmrLedgerEntries.applicationId, mmrLedgerEntries.scrimParticipantId, mmrLedgerEntries.id],
+		relationName: 'mmrEntryReversal'
+	}),
+	// 고유키로 역분개 후속 행은 최대 하나다.
+	reversals: many(mmrLedgerEntries, { relationName: 'mmrEntryReversal' })
 }));
 
 export const gameParticipantsRelations = relations(gameParticipants, ({ one }) => ({
@@ -953,6 +1175,14 @@ export type GuildMember = typeof guildMembers.$inferSelect;
 export type NewGuildMember = typeof guildMembers.$inferInsert;
 export type RiotAccount = typeof riotAccounts.$inferSelect;
 export type NewRiotAccount = typeof riotAccounts.$inferInsert;
+export type MmrSeason = typeof mmrSeasons.$inferSelect;
+export type NewMmrSeason = typeof mmrSeasons.$inferInsert;
+export type UserPositionMmr = typeof userPositionMmr.$inferSelect;
+export type NewUserPositionMmr = typeof userPositionMmr.$inferInsert;
+export type GameMmrApplication = typeof gameMmrApplications.$inferSelect;
+export type NewGameMmrApplication = typeof gameMmrApplications.$inferInsert;
+export type MmrLedgerEntry = typeof mmrLedgerEntries.$inferSelect;
+export type NewMmrLedgerEntry = typeof mmrLedgerEntries.$inferInsert;
 export type Scrim = typeof scrims.$inferSelect;
 export type NewScrim = typeof scrims.$inferInsert;
 export type Auction = typeof auctions.$inferSelect;

@@ -155,16 +155,17 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 27개 테이블과 관계, 조회·삽입 타입 정의 |
+| `apps/web/src/lib/server/db/schema.ts` | 31개 테이블과 관계, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
 DB는 `getDb()`를 처음 호출할 때 초기화한다. 주소 미설정 상태에서도 기존 화면·타입 검사·빌드는 가능하다.
 풀은 최대 10개 연결, 연결 대기는 10초로 제한한다. 실제 연결은 쿼리 실행 시 시작한다.
 
-스키마는 사용자·길드·Riot 계정, 내전·팀·참가자, 경매 이력, 라운드·대진,
-Match·Game, 버전별 ROFL 데이터, 공개 범위·Discord 설정을 포함한다.
+스키마는 사용자·길드·Riot 계정, 초과 모집·참가 선발, 내전·팀·참가자, 경매 이력, 라운드·대진,
+Match·Game, 버전별 ROFL 데이터, 포지션별 MMR과 반영 이력, 공개 범위·Discord 설정을 포함한다.
 전체 관계와 주요 제약은 [DB ERD](docs/database-erd.md)에서 확인할 수 있다.
+MMR의 계산 기준과 후속 반영 절차는 [MMR 저장 계약](docs/mmr.md)에 정리한다.
 스키마 변경을 확정한 뒤 프로젝트 루트에서 SQL을 생성하고 내용을 검토한 다음 적용한다.
 
 ```sh

@@ -1,6 +1,6 @@
 # MSM2 데이터베이스 ERD
 
-기준: [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **27개 테이블·53개 외래키**.
+기준: [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **31개 테이블·67개 외래키**.
 아래는 스키마 정의이며, 현재 DB에 이 전체 구조를 마이그레이션한 상태는 아니다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
@@ -18,6 +18,15 @@ erDiagram
     users ||--o{ user_champion_preferences : 포지션별_선호
     users ||--o| user_privacy_settings : 공개_설정
     guilds ||--o| guild_discord_settings : 게시_설정
+
+    guilds ||..o{ mmr_seasons : MMR_시즌
+    mmr_seasons ||..o{ user_position_mmr : 포지션별_점수
+    users |o..o{ user_position_mmr : MMR_소유자
+    mmr_seasons |o..o{ scrims : 반영_시즌
+    games ||..o{ game_mmr_applications : MMR_반영_회차
+    rofl_metadata ||..o{ game_mmr_applications : 반영_근거
+    user_position_mmr ||..o{ mmr_ledger_entries : 점수_원장
+    game_mmr_applications |o..o{ mmr_ledger_entries : 경기별_변경
 
     guilds ||..o{ scrims : 내전
     scrims ||..o{ scrim_teams : 팀
@@ -56,7 +65,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 실제 DB 외래키 53개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 실제 DB 외래키 67개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -106,6 +115,85 @@ erDiagram
     guilds ||--o| guild_discord_settings : guild_id
 ```
 
+## MMR 시즌·현재 점수·변동 이력
+
+```mermaid
+erDiagram
+    mmr_seasons {
+        uuid id PK
+        text guild_id FK
+        text name
+        timestamptz started_at
+        timestamptz ended_at "NULL이면 활성 시즌"
+    }
+    user_position_mmr {
+        uuid id PK
+        uuid season_id FK
+        text user_id FK "NULL 허용"
+        enum position
+        float8 mmr "기본 1500"
+        integer revision
+    }
+    scrims {
+        uuid id PK
+        text guild_id FK
+        uuid mmr_season_id FK "NULL 허용"
+    }
+    game_mmr_applications {
+        uuid id PK
+        uuid scrim_id FK
+        uuid game_id FK
+        uuid season_id FK
+        uuid rofl_metadata_id FK
+        integer revision
+        timestamptz applied_at
+        text applied_by_user_id FK "NULL 허용"
+        timestamptz reversed_at "NULL 허용"
+        text reversed_by_user_id FK "NULL 허용"
+        text reversal_reason "역분개 시 필수"
+    }
+    mmr_ledger_entries {
+        uuid id PK
+        uuid season_id FK
+        uuid rating_id FK
+        integer revision
+        enum kind
+        uuid application_id FK "조정이면 NULL"
+        uuid scrim_id FK "조정이면 NULL"
+        uuid scrim_participant_id FK "조정이면 NULL"
+        float8 before_mmr
+        float8 after_mmr
+        uuid reverses_entry_id FK, UK "역분개이면 필수"
+        text reason "조정·역분개 시 필수"
+        text recorded_by_user_id FK "NULL 허용"
+    }
+
+    guilds ||..o{ mmr_seasons : guild_id
+    mmr_seasons ||..o{ user_position_mmr : season_id
+    users |o..o{ user_position_mmr : user_id
+    mmr_seasons |o..o{ scrims : "guild_id, mmr_season_id"
+    games ||..o{ game_mmr_applications : "scrim_id, game_id"
+    scrims ||..o{ game_mmr_applications : "scrim_id, season_id"
+    rofl_metadata ||..o{ game_mmr_applications : rofl_metadata_id
+    users |o..o{ game_mmr_applications : applied_by_user_id
+    users |o..o{ game_mmr_applications : reversed_by_user_id
+    user_position_mmr ||..o{ mmr_ledger_entries : "season_id, rating_id"
+    game_mmr_applications |o..o{ mmr_ledger_entries : "season_id, scrim_id, application_id"
+    scrim_participants |o..o{ mmr_ledger_entries : "scrim_id, scrim_participant_id"
+    users |o..o{ mmr_ledger_entries : recorded_by_user_id
+    mmr_ledger_entries |o..o| mmr_ledger_entries : "rating_id, application_id, scrim_participant_id, reverses_entry_id"
+```
+
+MMR은 길드·시즌·Discord 사용자·포지션별로 관리한다. 길드 탈퇴로 점수를 지우지 않으며,
+사용자 삭제 시 개인 연결만 해제하고 원장은 보존한다. 내전에는 같은 길드의 시즌만 연결할 수 있다.
+
+길드별 활성 시즌과 Game별 유효 반영은 각각 하나다. Game 반영 회차·점수 변경 revision,
+반영별 사용자/참가자·원본당 역분개를 고유키로 구분한다. 변경 전·후 수치를 저장하고 증감은 두 값의 차로 구한다.
+원장은 ROFL 교체 때 재생성되는 출전 행 대신 보존되는 참가자·반영 회차를 참조한다.
+
+사용자·포지션·시즌 미확정으로 MMR을 보류하더라도 정상 ROFL 경기 결과는 저장할 수 있다.
+Elo 계산, 원자적 반영과 과거 경기 정정 순서는 [MMR 저장 계약](mmr.md)을 따르는 후속 서비스 작업이다.
+
 ## 모집·팀 편성
 
 ```mermaid
@@ -114,9 +202,11 @@ erDiagram
         uuid id PK
         text guild_id FK
         text created_by_user_id FK "NULL 허용"
+        uuid mmr_season_id FK "NULL 허용"
         enum status
         enum formation_method "NULL 허용"
         integer team_count
+        integer reserve_capacity
         boolean is_hard_fearless
     }
     scrim_teams {
@@ -141,10 +231,12 @@ erDiagram
     scrim_participant_registrations {
         uuid id PK
         uuid scrim_participant_id FK
+        enum status
         timestamptz joined_at
         text joined_by_user_id FK "NULL 허용"
         timestamptz withdrawn_at "NULL 허용"
         text withdrawn_by_user_id FK "NULL 허용"
+        text withdrawal_reason "NULL 허용"
     }
     scrim_discord_messages {
         uuid scrim_id PK, FK
@@ -167,7 +259,21 @@ erDiagram
 ```
 
 동일 내전에서 사용자·Riot 계정은 중복 참가할 수 없고, 팀별 배정 포지션도 중복되지 않는다.
-참가 신청은 여러 이력을 남기되 `withdrawn_at IS NULL`인 활성 신청은 참가자당 하나다.
+
+실출전 정원은 `team_count × 5`, 전체 신청 정원은 여기에 `reserve_capacity`를 더한 값이다.
+`reserve_capacity`는 기본값 0인 음이 아닌 정수다. 예를 들어 `team_count = 2`,
+`reserve_capacity = 2`이면 10명 내전에 최대 12명의 활성 신청을 받아 최종 참가자 10명을 정할 수 있다.
+신청 순서에 따른 자동 선발·대기 배정이나 자동 승급은 전제하지 않는다.
+
+신청 상태는 `pending`(선발 전), `selected`(선발), `standby`(대기), `withdrawn`(자진 철회),
+`excluded`(운영자 제외)로 구분한다. `withdrawn`·`excluded`일 때만 `withdrawn_at`을 기록하며,
+`withdrawn_at IS NULL`인 활성 신청은 참가자당 하나다. 제외 시에도 참가자·신청 행을 삭제하지 않고
+처리 시각·행위자·사유를 남긴다. 재신청은 기존 참가자에 새 신청 행을 연결하여 이전 이력을 보존한다.
+
+신청 정원은 전체 참가자 행 수가 아닌 활성 신청 수로 검사한다. 팀 편성에 들어가기 전에는
+`selected` 수가 `team_count × 5`와 일치해야 하며, 팀 배정·경매 팀장·경매 후보·게임 출전은 선발된
+참가자만 대상으로 한다. 이 인원수·상태 검사와 제외 시 미확정 팀 배정 정리는 이후 서비스에서
+같은 트랜잭션으로 처리할 조건이며, 현재 DB 제약만으로 자동 수행하지 않는다.
 
 ## 경매·구매 이력
 
