@@ -8,6 +8,10 @@
 	const scrimId = 'devScrim001';
 	const matchId = 'devMatch001';
 	const playerId = 'devPlayer001';
+	const devTools = [
+		{ label: '컴포넌트 테스트', href: resolve('/dev/components') },
+		{ label: '에러 페이지', href: resolve('/dev/error') }
+	];
 	const shortcuts = [
 		{ label: '내 정보', href: resolve('/me') },
 		{ label: '백오피스', href: resolve('/backoffice') },
@@ -42,6 +46,23 @@
 					>
 						<span class="underline underline-offset-4">{shortcut.label}</span>
 						<code class="max-w-full text-sm break-all opacity-70">{shortcut.href}</code>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	</nav>
+
+	<nav aria-label="개발 도구" class="mt-12 border-t border-border pt-6">
+		<ul class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+			{#each devTools as tool (tool.href)}
+				<li>
+					<a
+						href={tool.href}
+						data-sveltekit-preload-data="off"
+						class="inline-flex flex-col items-start gap-1 py-1 focus-visible:outline-2 focus-visible:outline-offset-4"
+					>
+						<span class="underline underline-offset-4">{tool.label}</span>
+						<code class="text-sm opacity-70">{tool.href}</code>
 					</a>
 				</li>
 			{/each}
