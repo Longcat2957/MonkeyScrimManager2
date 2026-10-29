@@ -4,6 +4,17 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// 첫 화면이 그려지기 전에 저장된 테마를 복원한다.
+			try {
+				const mode = localStorage.getItem('theme-mode');
+				if (mode === 'primary' || mode === 'dark') {
+					document.documentElement.dataset.mode = mode;
+				}
+			} catch {
+				// 브라우저가 저장소 접근을 막으면 기본 테마를 사용한다.
+			}
+		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link

@@ -15,7 +15,13 @@
 
 	function toggleTheme() {
 		isDark = document.documentElement.dataset.mode !== 'dark';
-		document.documentElement.dataset.mode = isDark ? 'dark' : 'primary';
+		const mode = isDark ? 'dark' : 'primary';
+		document.documentElement.dataset.mode = mode;
+		try {
+			localStorage.setItem('theme-mode', mode);
+		} catch {
+			// 저장이 불가능해도 현재 화면의 테마 전환은 유지한다.
+		}
 		mobileOpen = false;
 	}
 </script>
