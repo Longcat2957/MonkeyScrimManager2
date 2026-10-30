@@ -3,9 +3,11 @@
 ## Project Documentation
 
 - `docs/purpose.md`: Project vision, goals, and constraints.
-- `docs/web/routing.md`: Agreed page routes, layout ownership, and navigation structure (design; not yet implemented).
-- `docs/web/page-requirements.md`: Route index, shared interaction rules, and links to structured page requirements (design draft; includes open decisions).
-- `docs/web/ui-plan.md`: Header replacement, shared layouts, and page component placement plans using STDF (text-only design; not implemented).
+- `docs/web/README.md`: Frontend doc index, terminology, enum → UI label/`Tag` state mapping, service-wide open policies.
+- `docs/web/routing.md`: Routes, layout hierarchy, header/navigation, URL state.
+- `docs/web/design-system.md`: STDF setup, tokens, per-purpose STDF component selection table, shared service components, known STDF 3.0.0 limits. Read before writing any UI.
+- `docs/web/patterns.md`: State, form, overlay, list, responsive, and accessibility patterns plus the UI completion checklist.
+- `docs/web/pages/*.md`: Per-page purpose, data, wireframe, component composition, states, and open decisions.
 
 Consult the relevant documents when making product,
 feature, or architectural decisions.

@@ -47,16 +47,10 @@ pnpm dev
 
 ## 웹 공통 구조
 
-합의한 목표 라우트와 내비게이션은 [웹 구조 설계](docs/web/routing.md)를 따른다.
-해당 문서는 구현 전 설계이며, 아래는 현재 구현된 공통 화면의 상태다.
-페이지별 역할·접근 대상·필요 정보·상호작용·상태·미결정 사항은
-[페이지 요구사항 색인](docs/web/page-requirements.md)과 연결된 상세 문서에서 관리한다.
-기존 합의와 상호작용 초안을 구분하며, 문서에 적힌 동작이 구현 완료를 의미하지는 않는다.
-[UI 배치·컴포넌트 계획](docs/web/ui-plan.md)은 전역·서버·내전 헤더의 교체 구조와
-페이지별 데스크톱·모바일 배치, STDF 적용 근거를 다룬다. 실제 UI 구현과 구분한 문서 설계다.
-
-`/me`는 공통 레이아웃과 `내 정보` 제목만 표시하는 빈 페이지다.
-[내 정보 배치안](docs/web/ui/global.md#2-me--내-정보)은 구현된 기능이 아닌 설계 기록으로 유지한다.
+프론트엔드 설계는 [웹 프론트엔드 문서](docs/web/README.md)에서 관리한다.
+라우트·헤더는 [routing.md](docs/web/routing.md), STDF 컴포넌트 선택은 [design-system.md](docs/web/design-system.md),
+상태·폼·오버레이 패턴은 [patterns.md](docs/web/patterns.md), 페이지별 화면은 [pages/](docs/web/pages/)를 따른다.
+문서는 목표 설계이며, 아래는 현재 구현된 공통 화면의 상태다. `/me`를 포함한 대부분의 페이지는 제목만 있는 빈 페이지다.
 
 웹의 서비스명은 `#lib/branding.ts`에서 가져온 `SERVICE_NAME`을 사용한다.
 프로젝트명과 서비스명 사용 규칙은 [AGENTS.md](AGENTS.md)의 Naming and Branding을 따른다.
@@ -67,7 +61,8 @@ pnpm dev
 상단에는 64px 높이의 sticky 헤더를 두고, 본문은 최대 84rem의 중앙 영역과 좌우 경계선으로 구분한다.
 본문과 푸터는 공통 `app-frame`으로 폭과 세로 경계선을 맞춘다. 짧은 페이지에서는 푸터가 화면 하단에,
 긴 페이지에서는 콘텐츠 다음에 배치된다.
-헤더에는 홈·GitHub 링크를 제공하며, 1024px 미만에서는 접을 수 있는 모바일 메뉴를 사용한다.
+헤더는 STDF `NavBar` 기반이며 현재 범위(전역·서버·내전)에 맞는 메뉴, 오른쪽의 서버 선택·화면 모드·계정 메뉴를 제공한다.
+1024px 미만에서는 메뉴·계정·화면 모드를 오른쪽 패널로 옮긴다. 인증 연결 전에는 개발 모드에서만 목 사용자·서버로 동작한다.
 푸터는 [MSM1 푸터](https://github.com/Longcat2957/MonkeyScrimManager/blob/8847ac77b5d939c683099f381386a242fe764517/apps/web/src/lib/components/layout/AppFooter.svelte)를 참고해
 서비스 도메인과 문서·이용약관·개인정보 처리방침을 제공한다. 정책·문서 링크는 같은 탭에서
 내부 `/docs`, `/terms`, `/privacy` 페이지로 이동한다. 각 페이지의 본문은 아직 작성하지 않았다.

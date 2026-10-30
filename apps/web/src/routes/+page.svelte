@@ -7,7 +7,7 @@
 	const guildId = 'devGuild001';
 	const scrimId = 'devScrim001';
 	const matchId = 'devMatch001';
-	const playerId = 'devPlayer001';
+	const userId = 'devUser001';
 	const devTools = [
 		{ label: '컴포넌트 테스트', href: resolve('/dev/components') },
 		{ label: '에러 페이지', href: resolve('/dev/error') }
@@ -24,7 +24,7 @@
 		{ label: '대진', href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', { guildId, scrimId }) },
 		{ label: '매치 목록', href: resolve('/g/[guildId]/matches', { guildId }) },
 		{ label: '매치 상세', href: resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId }) },
-		{ label: '참가자 전적', href: resolve('/g/[guildId]/players/[playerId]', { guildId, playerId }) },
+		{ label: '참가자 전적', href: resolve('/g/[guildId]/players/[userId]', { guildId, userId }) },
 		{ label: '서버 통계', href: resolve('/g/[guildId]/stats', { guildId }) },
 		{ label: '서버 관리', href: resolve('/g/[guildId]/admin', { guildId }) }
 	];

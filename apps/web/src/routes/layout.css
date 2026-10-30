@@ -56,6 +56,10 @@
 	--color-warning: oklch(0.555 0.163 48.998);
 	--color-error: oklch(0.514 0.222 16.935);
 	--color-info: oklch(0.5 0.134 242.749);
+	/* 서버 순위 1~3위 표시. 숫자와 함께 쓰며 색만으로 순위를 전달하지 않는다. */
+	--color-medal-gold: oklch(0.84 0.15 85);
+	--color-medal-silver: oklch(0.83 0.02 255);
+	--color-medal-bronze: oklch(0.72 0.1 55);
 	--radius-box: 0.75rem;
 	--radius-form: 0.5rem;
 	--radius-small: 0.25rem;
@@ -75,6 +79,11 @@
 	html[data-mode='dark'] {
 		--color-border: color-mix(in oklch, var(--color-text-dark) 26%, var(--color-bg-base-dark));
 		--color-border-strong: color-mix(in oklch, var(--color-text-dark) 38%, var(--color-bg-base-dark));
+		/* 상태색은 밝은 바탕 기준이라 어두운 바탕에서 글자가 묻힌다. 다크 모드에서는 한 단계 밝게 쓴다. */
+		--color-success: oklch(0.765 0.153 163.2);
+		--color-warning: oklch(0.769 0.165 61.3);
+		--color-error: oklch(0.71 0.166 15.3);
+		--color-info: oklch(0.746 0.13 237.3);
 		color-scheme: dark;
 	}
 }
@@ -90,5 +99,13 @@
 		.app-frame {
 			width: calc(100% - 0.5rem);
 		}
+	}
+}
+
+@layer base {
+	/* 모든 조작 요소의 포커스 표시는 여기 한 곳에서 정한다. */
+	:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
 	}
 }

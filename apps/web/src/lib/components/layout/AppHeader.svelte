@@ -1,191 +1,193 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Button, CellGroup, NavBar, Popup } from 'stdf';
+	import type { ActionProps } from 'stdf';
+	import { goto } from '$app/navigation';
 	import { asset, resolve } from '$app/paths';
-	import { REPOSITORY_URL, SERVICE_NAME } from '#lib/branding.ts';
+	import { page } from '$app/state';
+	import { SERVICE_NAME } from '#lib/branding.ts';
+	import { overlay } from '#lib/ui/overlay.ts';
+	import { currentMode, setMode, type ThemeMode } from '#lib/ui/theme.ts';
+	import { desktop } from '#lib/ui/viewport.svelte.ts';
+	import SwitchCell from '#lib/components/common/SwitchCell.svelte';
+	import ContextNav from './ContextNav.svelte';
+	import MenuButton from './MenuButton.svelte';
+	import { guildNavItems, scrimNavItems, type NavItem } from './navigation.ts';
 
-	let mobileOpen = $state(false);
-	let isDark = $state(false);
-	let mobileMenu: HTMLDetailsElement | undefined = $state();
-	let menuButton: HTMLElement | undefined = $state();
+	let mode: ThemeMode = $state('primary');
+	let menuOpen = $state(false);
 
 	onMount(() => {
-		isDark = document.documentElement.dataset.mode === 'dark';
+		mode = currentMode();
 	});
 
-	function toggleTheme() {
-		isDark = document.documentElement.dataset.mode !== 'dark';
-		const mode = isDark ? 'dark' : 'primary';
-		document.documentElement.dataset.mode = mode;
-		try {
-			localStorage.setItem('theme-mode', mode);
-		} catch {
-			// 저장이 불가능해도 현재 화면의 테마 전환은 유지한다.
-		}
-		mobileOpen = false;
+	const user = $derived(page.data.user ?? null);
+	const guilds = $derived(page.data.guilds ?? []);
+	const guild = $derived(page.data.guild ?? null);
+	const scrim = $derived(page.data.scrim ?? null);
+	const pathname = $derived(page.url.pathname);
+
+	const guildItems = $derived(guild ? guildNavItems(guild, pathname) : []);
+	const scrimItems = $derived(guild && scrim ? scrimNavItems(guild.id, scrim, pathname) : []);
+	// 내전 범위에서는 내전 메뉴가 주 메뉴이고 서버 메뉴는 보조 메뉴로 내려간다.
+	const primaryItems = $derived(scrim ? scrimItems : guildItems);
+
+	const accountItems = $derived<NavItem[]>(
+		user
+			? [
+					{ label: '내 정보', href: resolve('/me'), current: pathname === '/me' },
+					...(user.isServiceAdmin
+						? [{ label: '백오피스', href: resolve('/backoffice'), current: pathname.startsWith('/backoffice') }]
+						: [])
+				]
+			: []
+	);
+
+	function toActions(items: NavItem[]): ActionProps[] {
+		return items.map((item) => ({ content: item.label, style: item.current ? 'theme' : 'normal' }));
+	}
+
+	// 현재 서버는 선택 표시만 하고 이동 동작을 두지 않는다.
+	const guildActions = $derived<ActionProps[]>(
+		guilds.length
+			? guilds.map((g) => ({
+					content: g.name,
+					style: g.id === guild?.id ? 'theme' : 'normal',
+					desc: g.id === guild?.id ? '현재 서버' : undefined,
+					disabled: g.id === guild?.id
+				}))
+			: [{ content: '접근 가능한 서버가 없어요', disabled: true }]
+	);
+
+	function selectGuild(index: number) {
+		const target = guilds[index];
+		if (target) goto(resolve('/g/[guildId]', { guildId: target.id }));
+	}
+
+	function toggleMode() {
+		mode = mode === 'dark' ? 'primary' : 'dark';
+		setMode(mode);
 	}
 </script>
 
-<svelte:document
-	onkeydown={(event) => {
-		if (event.key === 'Escape' && mobileOpen) {
-			mobileOpen = false;
-			menuButton?.focus();
-		}
-	}}
-	onclick={(event) => {
-		if (mobileOpen && event.target instanceof Node && !mobileMenu?.contains(event.target)) {
-			mobileOpen = false;
-		}
-	}}
-/>
+{#snippet modeIcon()}
+	<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+		{#if mode === 'dark'}
+			<circle cx="12" cy="12" r="4" />
+			<path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+		{:else}
+			<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />
+		{/if}
+	</svg>
+{/snippet}
 
-{#snippet navigationLinks()}
-	<a
-		href={REPOSITORY_URL}
-		class="nav-link"
-		target="_blank"
-		rel="noreferrer"
-		aria-label="GitHub 저장소 (새 창)"
-	>
-		GitHub <span aria-hidden="true">↗</span>
+{#snippet brand()}
+	<a href={resolve('/')} class="flex shrink-0 items-center gap-2 no-underline" aria-label={`${SERVICE_NAME} 홈`}>
+		<img src={asset('brand/logo.png')} alt="" width="32" height="32" class="size-8" />
+		{#if desktop.current}
+			<span class="font-brand text-2xl leading-none font-normal [font-synthesis:none]">{SERVICE_NAME}</span>
+		{/if}
 	</a>
 {/snippet}
 
-{#snippet themeToggle()}
-	<button
-		type="button"
-		class="nav-action"
-		onclick={toggleTheme}
-		aria-label="다크 모드"
-		aria-pressed={isDark}
-		title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
-	>
-		<svg
-			width="18"
-			height="18"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.5"
-			aria-hidden="true"
-		>
-			{#if isDark}
-				<circle cx="12" cy="12" r="4" />
-				<path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-			{:else}
-				<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />
-			{/if}
-		</svg>
-	</button>
+{#snippet guildSwitcher()}
+	{#if user}
+		<MenuButton label="서버 선택" actions={guildActions} onselect={selectGuild}>
+			<span class="max-w-40 truncate text-sm font-semibold">{guild?.name ?? '서버 선택'}</span>
+			<span aria-hidden="true">▾</span>
+		</MenuButton>
+	{/if}
 {/snippet}
 
-<header
-	class="sticky top-0 z-50 h-(--app-header-height) border-b border-border bg-bg-base dark:bg-bg-base-dark"
->
-	<div
-		class="mx-auto flex h-full max-w-(--app-header-width) items-center justify-between px-4 lg:px-8"
-	>
-		<a
-			href={resolve('/')}
-			class="flex shrink-0 items-center gap-3 font-semibold no-underline"
-			aria-label={`${SERVICE_NAME} 홈`}
-		>
-			<img src={asset('brand/logo.png')} alt="" width="32" height="32" class="size-8" />
-			<span class="font-brand text-2xl leading-none font-normal [font-synthesis:none]">
-				{SERVICE_NAME}
-			</span>
-		</a>
+{#snippet desktopMenu()}
+	<div class="flex items-center gap-1 pl-4">
+		{#if primaryItems.length}
+			<ContextNav items={primaryItems} label={scrim ? '내전 메뉴' : '서버 메뉴'} />
+		{/if}
+		{#if scrim}
+			<MenuButton label="서버 메뉴" actions={toActions(guildItems)} onselect={(i) => goto(guildItems[i].href)}>
+				<span class="text-sm font-semibold opacity-70">서버</span>
+				<span aria-hidden="true">▾</span>
+			</MenuButton>
+		{/if}
+	</div>
+{/snippet}
 
-		<nav aria-label="주 내비게이션" class="hidden items-center gap-1 lg:flex">
-			{@render navigationLinks()}
-			<span class="mx-2 h-5 border-l border-border" aria-hidden="true"></span>
-			{@render themeToggle()}
-		</nav>
-
-		<details class="relative lg:hidden" bind:this={mobileMenu} bind:open={mobileOpen}>
-			<summary class="nav-action menu-summary" bind:this={menuButton} aria-label="내비게이션 메뉴">
-				<svg
-					width="20"
-					height="20"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
+{#snippet desktopTools()}
+	<div class="flex items-center gap-1">
+		{@render guildSwitcher()}
+		<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2" onclick={toggleMode}>
+			{@render modeIcon()}
+			<span class="sr-only">{mode === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}</span>
+		</Button>
+		{#if user}
+			<MenuButton label="계정 메뉴" actions={toActions(accountItems)} onselect={(i) => goto(accountItems[i].href)}>
+				<span
+					class="flex size-8 items-center justify-center rounded-full bg-bg-highlight text-sm font-semibold dark:bg-bg-highlight-dark"
 					aria-hidden="true"
 				>
-					{#if mobileOpen}
-						<path d="m6 6 12 12M6 18 18 6" />
-					{:else}
-						<path d="M4 6h16M4 12h16M4 18h16" />
-					{/if}
-				</svg>
-			</summary>
-			<nav
-				aria-label="모바일 내비게이션"
-				class="mobile-nav absolute top-full right-0 mt-3 grid w-60 max-w-[calc(100vw-2rem)] gap-2 border border-border bg-bg-surface p-3 dark:bg-bg-surface-dark"
-			>
-				{@render navigationLinks()}
-				<div class="mt-1 flex items-center justify-between border-t border-border pt-3">
-					<span class="text-sm">화면 테마</span>
-					{@render themeToggle()}
-				</div>
-			</nav>
-		</details>
+					{user.displayName.slice(0, 1)}
+				</span>
+				<span class="sr-only">계정 메뉴: {user.displayName}</span>
+			</MenuButton>
+		{/if}
+	</div>
+{/snippet}
+
+{#snippet emptyTitle()}{/snippet}
+
+{#snippet mobileTools()}
+	<div class="flex items-center gap-1">
+	{@render guildSwitcher()}
+	<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2" onclick={() => (menuOpen = true)}>
+		<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+			<path d="M4 6h16M4 12h16M4 18h16" />
+		</svg>
+		<span class="sr-only">메뉴</span>
+	</Button>
+	</div>
+{/snippet}
+
+<header class="sticky top-0 z-50 border-b border-border bg-bg-base dark:bg-bg-base-dark">
+	<div class="mx-auto max-w-(--app-header-width) px-2 lg:px-6">
+		<NavBar
+			line={false}
+			injClass="h-(--app-header-height)! items-center bg-transparent! dark:bg-transparent! leading-normal!"
+			leftChild={brand}
+			titleChild={desktop.current ? desktopMenu : emptyTitle}
+			rightChild={desktop.current ? desktopTools : mobileTools}
+		/>
 	</div>
 </header>
 
-<style>
-	.nav-link,
-	.nav-action {
-		display: inline-flex;
-		min-height: 2.25rem;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		border: 1px solid transparent;
-		border-radius: 0;
-		padding: 0 0.75rem;
-		background: transparent;
-		color: inherit;
-		font-size: 0.875rem;
-		font-weight: 600;
-		text-decoration: none;
-		opacity: 0.72;
-		cursor: pointer;
-	}
-
-	.nav-link:hover,
-	.nav-action:hover,
-	.nav-action[aria-pressed='true'] {
-		border-color: var(--color-border);
-		opacity: 1;
-	}
-
-	a:focus-visible,
-	button:focus-visible,
-	summary:focus-visible {
-		outline: 2px solid currentColor;
-		outline-offset: 3px;
-	}
-
-	.nav-action {
-		width: 2.5rem;
-		height: 2.5rem;
-		padding: 0;
-	}
-
-	.menu-summary {
-		border-color: var(--color-border);
-		list-style: none;
-		opacity: 1;
-	}
-
-	.menu-summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.mobile-nav .nav-link {
-		justify-content: flex-start;
-		border-color: var(--color-border);
-	}
-</style>
+{#if !desktop.current}
+	<div {@attach overlay({ open: menuOpen, label: '메뉴', onclose: () => (menuOpen = false) })}>
+		<Popup bind:visible={menuOpen} position="right" size={80}>
+			<div class="flex h-full flex-col gap-6 overflow-y-auto p-4">
+				{#if primaryItems.length}
+					<ContextNav
+						items={primaryItems}
+						label={scrim ? '내전 메뉴' : '서버 메뉴'}
+						vertical
+						onnavigate={() => (menuOpen = false)}
+					/>
+				{/if}
+				{#if scrim}
+					<section class="flex flex-col gap-1">
+						<h2 class="px-3 text-xs font-semibold opacity-60">서버</h2>
+						<ContextNav items={guildItems} label="서버 메뉴" vertical onnavigate={() => (menuOpen = false)} />
+					</section>
+				{/if}
+				{#if user}
+					<section class="flex flex-col gap-1">
+						<h2 class="px-3 text-xs font-semibold opacity-60">{user.displayName}</h2>
+						<ContextNav items={accountItems} label="계정 메뉴" vertical onnavigate={() => (menuOpen = false)} />
+					</section>
+				{/if}
+				<CellGroup my="0" mx="0" shadow="none">
+					<SwitchCell title="다크 모드" active={mode === 'dark'} onchange={toggleMode} />
+				</CellGroup>
+			</div>
+		</Popup>
+	</div>
+{/if}

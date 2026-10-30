@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { SERVICE_NAME } from '#lib/branding.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 </script>
 
 <svelte:head>
-	<title>대진 | {SERVICE_NAME}</title>
+	<title>{data.scrim?.title ?? '대진'} · 대진 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<h1 class="text-2xl font-semibold">대진</h1>
+<h2 class="text-xl font-semibold">대진</h2>

@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-10-30
+
+- 서버 홈 배치 변경: 이번 주 이야기를 전체 폭 한 줄 캐러셀로, 진행 중인 내전과 최근 경기를 탭 한 카드(`ActivityBoard`)로 합쳐 서버 순위 왼쪽에 배치. 순위 카드 안의 `sr-only` 텍스트가 스크롤 영역 밖으로 빠져 푸터 아래 빈 공간을 만들던 문제를 `relative`로 수정.
+- 서버 홈을 게임 대시보드 형태로 재구성. 맨 위 "내 다음 내전" 카드(챔피언 스플래시 배경, STDF `CountDown`·`Progress`, 선발 > 대기 > 신청 > 신청 가능한 모집 순 선정), 오른쪽 열에 "이번 주 이야기" 캐러셀(연승·연패·최다 킬 등, 가로 스크롤 스냅)과 포지션별 MMR "서버 순위"(STDF `Tab`·`InfiniteScroll`, `GET /g/[guildId]/ranking`으로 10명씩, 내 순위 고정) 추가. 모든 페이지에서 발생하던 hydration 실패(서버 렌더링과 브라우저의 MediaQuery 값 차이)를 `desktop`을 마운트 후에만 반영하도록 수정하고, STDF Cell 스위치의 button 중첩을 `SwitchCell`로 교체(`/me` 공개 범위, 모바일 메뉴 다크 모드). 메달 색 토큰과 Data Dragon 스플래시 주소 함수 추가.
+- 서버 홈(`/g/[guildId]`) 구현(개발 모드 목 데이터). 진행 중인 내전·최근 경기를 `Promise.allSettled`로 따로 조회해 영역별 빈 상태·오류·다시 시도(`invalidate`)를 제공. 서버 홈·목록 페이지가 함께 쓸 `ScrimListRow`·`MatchListRow`, 날짜 상자 `DateBadge`를 추가하고 `LinkCell`을 STDF `Cell`과 같은 클래스·grid 배치(`CellGroup` 안 사용)로 재작성. STDF `Tag`가 항상 `role="button"`이라 링크·Cell 안에서 조작 요소가 중첩되던 문제를 `StatusTag`로 해결하고 기존 사용처를 교체. 다크 모드 상태색 대비를 높이고 `SectionState` 빈·오류 상태를 점선 상자로 통일, `/me` 빈 상태도 이를 사용. 일정 표기를 `10/31(토) 20:00` 형식으로 통일.
+- `/me` 구현(개발 모드 목 백엔드). 본인 식별, Riot 계정 목록(`CellGroup`·`Cell`, 행 메뉴로 대표 설정·연결 해제, 진행 중 내전 계정은 해제 불가 사유 표시), 조회→확인→연결 2단계 계정 추가 팝업, 즉시 저장되는 공개 범위 스위치. 쓰기 방식을 form action(`use:enhance`·`postAction`)으로 확정. 데스크톱 `ActionPopover`·모바일 `ActionSheet`를 묶은 `ActionMenu`를 추가하고 헤더 메뉴도 이를 사용하도록 변경(모바일 헤더 메뉴가 열리지 않던 문제 수정). `Switch` 손잡이 대비 문제를 `inside: 'state'`로 보완.
+- 프론트엔드 공통 뼈대 구현. 루트에 STDF `ConfigProvider`(ko_KR)·`Feedback` 연결, `AppHeader`를 `NavBar`·`ContextNav`·`MenuButton`(`ActionPopover`) 기반 범위별 헤더로 교체(서버 선택기는 오른쪽), 모바일 메뉴는 `Popup`. STDF 오버레이 접근성 보완 `overlay` attachment와 `confirm()` 헬퍼, 화면 모드·뷰포트 유틸 추가. 서버·내전 레이아웃(개발 모드 목 데이터), `ScrimSummary`(`Steps`), `/teams` 방식별 redirect, `[playerId]`→`[userId]` 이동, `LinkCell`·`SectionState`, `/dev/components` 검증 페이지 추가. 구현 중 확인한 STDF 제약(ActionPopover SSR, 한국어 placeholder, Popup 폭, Steps 1부터 셈 등)을 디자인 시스템 문서에 반영. 페이지 본문·인증·DB 조회는 미구현.
+- 프론트엔드 UI/UX 문서를 전면 재작성. 요구사항(`page-requirements.md`, `pages/`)과 배치 계획(`ui-plan.md`, `ui/`)으로 중복되던 문서를 `docs/web/README.md`·`routing.md`·`design-system.md`·`patterns.md`·페이지별 `pages/*.md`로 통합. STDF 3.0.0 설치 소스를 기준으로 용도별 컴포넌트 선택표·사용하지 않는 컴포넌트·제약과 대응(`overlay` attachment 등)을 정하고, 각 페이지를 데이터 형태·와이어프레임·STDF 구성·상태로 구체화. 업무 정책 미결정 사항은 페이지 끝으로 분리. 코드는 변경하지 않음.
+
 ## 2026-10-29
 
 - 사용자 요청에 따라 `/me`의 개발용 목 UI·상호작용·데이터 로더를 제거하고 `내 정보` 제목만 표시하는 빈 페이지로 복원. 전용 컴포넌트·타입·목 데이터와 이 화면만 사용하던 공통 컴포넌트·스타일·한국어 설정 연결을 정리. 기존 페이지 배치안은 구현되지 않은 설계 기록으로 유지.
