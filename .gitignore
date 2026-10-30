@@ -11,3 +11,4 @@ vite.config.*.timestamp-*
 
 # Local replay samples and analysis outputs.
 /samples/
+.tmp
