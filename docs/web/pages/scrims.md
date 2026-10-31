@@ -49,8 +49,8 @@
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
 | 모집 만들기 | `Button fill="base" size="auto"` | `can.createScrim`일 때만. 모집 생성 팝업 열기 |
-| 상태 필터 | `Tabs` + `Tab showNum` | `?status=` 변경. `active` = 편성 중·대진 준비·진행 중, `done` = 종료·중도 종료·취소 |
-| 목록 | `CellGroup` + `ScrimListRow` → `/scrims/[id]` | 서버 홈과 같은 행. 날짜 배지, 부제 = 요일·시각 · 편성 방식 · 신청/정원(모집 중) 또는 팀 수, 오른쪽 상태와 내 신청 |
+| 상태 필터 | `Tab` (라벨에 개수) | `?status=` 변경. `active` = 편성 중·대진 준비·진행 중, `done` = 종료·중도 종료·취소 |
+| 목록 | `CellGroup` + `ScrimListRow` → `/scrims/[id]` | 서버 홈과 같은 행. 날짜 배지, 부제 = 요일·시각 · 편성 방식 · 신청/정원(모집 중) 또는 팀 수, 오른쪽 상태와 내 신청. 데스크톱은 상태 왼쪽에 참가자 얼굴 `AvatarStack`(선발 우선 5명 + 남은 수) |
 | 페이지 | `Pagination pageSize={20}` | `?page=` |
 
 정렬: 예정 시각이 있는 내전은 가까운 순, 없는 내전은 생성 최신순으로 뒤에. (확정 전 제안)
@@ -71,7 +71,7 @@
 | 필드 | 컴포넌트 | 검증 |
 | --- | --- | --- |
 | 제목 | `Input maxlength={50} required` | 공백만 불가 |
-| 날짜 | `Input readonly` → `Calendar mode="single"` | 시각만 입력하면 오류 |
+| 날짜 | `Input readonly` → 아래에 펼치는 `Calendar mode="single" popup={null}` | 시각만 입력하면 오류 |
 | 시각 | `Input inputmode="numeric" placeholder="20:00"` | `HH:mm`, 날짜만 입력하면 오류 |
 | 팀 수 | `Stepper min={2} max={4}` | 상한은 미결정 |
 | 추가 신청 정원 | `Stepper min={0} max={10}` | |
@@ -89,9 +89,12 @@
 내전 하위 세 페이지(요약·팀 편성·대진) 맨 위에 한 번 표시한다. `[scrimId]/+layout.svelte`가 렌더링한다.
 
 ```text
-[h1] 6월 정기 내전   [모집 중]
-10/31(금) 20:00 · 2팀 · 수동 편성 · 하드 피어리스
-[Steps]  모집 ─ 편성 ─ 대진 ─ 진행 ─ 종료        ← current = 상태에 대응하는 단계
+┌ 어두운 카드 (배경: 활성 신청자 주 챔피언 중 가장 많은 챔피언의 스플래시) ┐
+│ [h1] 10월 정기 내전  (● 모집 중)                                          │
+│ (10/31(토) 20:00) (2팀) (수동 편성) (하드 피어리스)      ← 설정 칩       │
+└────────────────────────────────────────────────────────────────────────────┘
+  (✓)────(2)────(3)────(4)────(5)        ← STDF Steps, 전체 폭
+  모집   편성   대진   진행   종료
 ```
 
 | 상태 | `Steps current` (1부터 셈) |
@@ -101,9 +104,11 @@
 | `ready` | 3 대진 |
 | `in_progress` | 4 진행 |
 | `completed` | 6 (모든 단계 완료) |
-| `ended_early`, `cancelled` | `Steps`를 렌더링하지 않고 `Tag`만 |
+| `ended_early`, `cancelled` | `Steps`를 렌더링하지 않고 상태 표시만 |
 
-모바일은 `Steps`를 가로 그대로 두되 단계 제목만 표시(`desc` 생략).
+- 진행 단계 표시는 MSM1의 운영 단계 표시처럼 완료·현재·예정이 모양으로 구분되어야 한다. `Steps`의 단계마다 `step.bar`에 번호, `finishStep.bar`에 `✓`를 주고 `radius="full"`로 원형 막대를 쓴다(기본 점 막대는 완료와 예정이 같은 빈 원이라 쓰지 않는다).
+- `Steps`는 목록 구조와 현재 단계를 알리지 않으므로 화면용 `Steps`는 `aria-hidden`, 같은 내용을 `sr-only` `<ol>`에 `aria-current="step"`으로 둔다.
+- 어두운 카드 위에서는 `StatusTag`가 묻히므로 흰 글자 + 상태색 점으로 상태를 표시한다.
 
 ## `/g/[guildId]/scrims/[scrimId]` — 요약
 
@@ -116,58 +121,53 @@
 ```ts
 {
   scrim,                                               // 레이아웃에서
-  me: { registration: { id, status, riotAccountId, positions } | null, riotAccounts } | null,
-  participants: { registrationId, userId: string | null, displayName, riotId: string | null,
+  me: { registration: { id, status, riotAccountId, positions } | null, riotAccounts, primaryAccountId } | null,
+  participants: { registrationId, userId: string | null, displayName, iconUrl: string | null, riotId: string | null,
                   positions: LolPosition[], status, registeredAt }[],
   counts: { pending, selected, standby, withdrawn, excluded, activeCapacity, playCapacity },
-  can: { register: boolean, registerBlockedReason: string | null, manage: boolean, nextActions: Action[] }
+  settings, editable,                                  // 운영자의 설정 수정 팝업용
+  can: { register, registerBlockedReason, editRegistration, manage, select, nextAction: { key, label, blockedReason } | null }
 }
 ```
 
-**화면**
+**화면** MSM1의 모집 화면처럼 한 열로 둔다. 내 작업(내 신청·운영)은 한 상자에 한 줄씩, 그 아래 참가자 패널 하나.
 
 ```text
 ScrimSummary
-─────────────────────────────────────────────────────────────────────────────
-데스크톱 grid lg:grid-cols-[22rem_1fr]
-
-┌ Card: 내 신청 ──────────────┐   [h2] 참가자   신청 11/12명 [Progress]   [선발 관리]
-│ (미신청)                     │   [Tabs] 전체 11 | 신청 3 | 선발 8 | 대기 0 | 철회·제외 2
-│ [Input] Riot 계정 ▾          │   ─────────────────────────────────────────────
-│ [Checkbox] 희망 포지션       │   [img] 홍길동  Hide on bush#KR1   미드·탑     [선발]
-│  □탑 □정글 □미드 □원딜 □서폿 │   [img] 김철수  …                  정글        [신청]
-│              [신청하기]      │   …
-└──────────────────────────────┘
-┌ Card: 운영 (can.manage) ────┐
-│ 다음 단계: 모집 마감         │
-│ [모집 마감] ← disabled+이유  │
-│ [ActionPopover ⋯] 내전 설정 수정 · 내전 취소
-└──────────────────────────────┘
-모바일: 내 신청 → 참가자 → 운영 순서 한 열
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 내 신청 [신청] Hide on bush#KR1 (미드)(탑)                   철회  [수정] │  ← 미신청이면 오른쪽 [신청하기]
+├──────────────────────────────────────────────────────────────────────────┤
+│ 운영  선발 인원이 10명이어야 해요 (현재 8명)            [⋯] [모집 마감]  │  ← can.manage
+└──────────────────────────────────────────────────────────────────────────┘
+┌ 참가자  신청 11/12명  선발 8/10명                          [선발 관리] ┐
+│ [Tab] 전체 13 | 신청 3 | 선발 8 | 대기 0 | 철회·제외 2                  │
+│ [img] 홍길동  Hide on bush#KR1                     (미드)(탑)   [선발]  │
+│ …                                                                        │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 **구성**
 
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
-| 내 신청 — 미신청 | `Card` + `<form>`: Riot 계정 `Input readonly` → `ActionSheet`(계정 1개면 고정 텍스트), 희망 포지션 `Checkbox` 5개, `Button type="submit"` `신청하기` | 성공 시 카드가 신청 상태로 바뀜(알림 없음) |
-| 내 신청 — 신청함 | `Card`: 상태 `Tag`, 계정, 포지션. `footer`에 `수정`(`fill="lineLight"`) · `철회`(`fill="text" state="error"`) | 수정: 같은 카드가 폼으로 전환. 철회: `confirm` |
-| 내 신청 — 불가 | `Card`에 `can.registerBlockedReason` 한 줄 | 예: "모집이 마감됐어요", "Riot 계정을 연결해야 신청할 수 있어요 — 계정 메뉴의 내 정보에서 연결해요". `/me` 링크를 따로 두지 않는다 |
-| 참가자 — 정원 | 텍스트 `신청 11/12명` + `Progress` | 운영자에게는 `선발 8/10명`도 같은 줄에 |
-| 참가자 — 필터 | `Tabs showNum` | 클라이언트 필터(쿼리 없음) |
-| 참가자 — 보기 | `<ul>` + `PlayerName` + 포지션 텍스트 + `Tag` | `PlayerName`이 `/players/[userId]` 링크. `userId` 없으면 링크 없음 |
-| 참가자 — 선발 관리 | `선발 관리` `Button` → 같은 자리를 `List batchSelectable batchMode`로 전환 | `batchActions`: `선발`(success) · `대기`(info) · `제외`(error → `confirm`). `완료`로 보기 목록 복귀. 이 모드에서는 이름 링크 없음 |
-| 운영 — 다음 단계 | `Button fill="base"` 하나 (`can.nextActions[0]`) | 조건 미충족이면 `disabled` + 아래 이유. 예: "선발 인원이 10명이어야 해요 (현재 8명)" |
-| 운영 — 기타 | `Button fill="text"` `⋯` + `ActionPopover` | `내전 설정 수정`(모집 생성 팝업과 같은 폼, 단계에 따라 편집 가능 필드 제한) · `내전 취소`(`confirm`, `state="error"`) |
+| 내 신청 — 미신청 | 한 줄: 제목 + 오른쪽 `신청하기` `Button` | `RegistrationDialog`(`Popup` + `<form>`): Riot 계정 `Radio layout="v"`(계정 1개면 고정 텍스트, 기본 선택은 대표 계정), 희망 포지션 `Checkbox` 5개. 성공 시 팝업이 닫히고 줄이 신청 상태로 바뀜(알림 없음) |
+| 내 신청 — 신청함 | 한 줄: 상태 `Tag`, 계정, 포지션 칩. 오른쪽 `철회`(`fill="textState" state="error"`) · `수정`(`fill="lineLight"`) | 수정: 같은 팝업. 철회: `confirm` |
+| 내 신청 — 불가 | 한 줄에 `can.registerBlockedReason` | 예: "모집이 마감됐어요", "Riot 계정을 연결해야 신청할 수 있어요 — 계정 메뉴의 내 정보에서 연결해요". `/me` 링크를 따로 두지 않는다 |
+| 운영 — 다음 단계 | 한 줄 오른쪽 `Button` 하나 (`can.nextAction`) | 조건 미충족이면 `disabled` + 같은 줄 왼쪽에 이유. 누르면 `confirm` |
+| 운영 — 기타 | `⋯` `Button` + `ActionMenu` | `내전 설정 수정`(`ScrimSettingsDialog`, 단계에 따라 편집 가능 필드 제한) · `내전 취소`(`confirm`, `style="error"`) |
+| 참가자 — 머리 | 패널 안 제목 + `신청 11/12명`(운영자는 `선발 8/10명`도) + `선발 관리` | |
+| 참가자 — 필터 | `Tab` (데스크톱만 라벨에 개수) | 클라이언트 필터(쿼리 없음). 모바일 폭에는 숫자를 뺀다(신청·선발 수는 머리에 있음) |
+| 참가자 — 보기 | `<ul>` + `PlayerName`(주 챔피언 아이콘) + 포지션 칩(첫 포지션 강조) + `Tag` | `PlayerName`이 `/players/[userId]` 링크. `userId` 없으면 링크 없음 |
+| 참가자 — 선발 관리 | `선발 관리` → 같은 패널 본문을 `List batchSelectable batchMode`로 전환 | `batchActions`: `선발`(success) · `대기`(info) · `제외`(error → `confirm`). `완료`로 보기 목록 복귀. 이 모드에서는 이름 링크 없음 |
 
 **상태**
 
 | 상황 | 처리 |
 | --- | --- |
-| 정원 마감 | 내 신청 카드: "신청 정원이 찼어요". 신청 폼 미렌더링 |
-| 동시 신청으로 마감 | 제출 409 → 카드 안 오류 문구 + `invalidateAll()` |
+| 정원 마감 | 내 신청 줄: "신청 정원이 찼어요". 신청 버튼 미렌더링 |
+| 동시 신청으로 마감 | 제출 409 → 팝업 안 오류 문구 + `invalidateAll()` |
 | 사용자 연결이 사라진 참가 기록 | 이름만 표시, 링크 없음 |
-| 종료·중도 종료·취소 | 내 신청·운영 카드 미렌더링. 참가자 목록만 |
+| 종료·중도 종료·취소 | 내 작업 상자 미렌더링. 참가자 패널만 |
 
 **미결정** 운영 권한 부여, 계정 미연결 참가 허용, 희망 포지션 개수·순위, 신청 수정·철회 마감 시점, 제외 사유 공개, 상태 전이(다음 단계 버튼의 목록과 조건).
 

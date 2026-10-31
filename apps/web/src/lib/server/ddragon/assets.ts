@@ -14,6 +14,11 @@ export function dataDragonImageUrl(version: string, kind: keyof typeof imageDire
 	return `${DATA_DRAGON_ORIGIN}/cdn/${version}/img/${imageDirectories[kind]}/${filename}`;
 }
 
+/** 챔피언 정사각 아이콘. 버전이나 챔피언을 모르면 null을 돌려 화면이 이름 첫 글자로 대신하게 한다. */
+export function championIconUrl(version: string | null, championId: string | null): string | null {
+	return version && championId ? dataDragonImageUrl(version, 'champion', `${championId}.png`) : null;
+}
+
 /** Rune icons are unversioned paths supplied by runesReforged.json. */
 export function dataDragonRuneIconUrl(icon: string): string {
 	if (icon.length > 256 || !/^perk-images\/(?:[A-Za-z0-9_-]+\/)+[A-Za-z0-9_-]+\.png$/.test(icon)) {

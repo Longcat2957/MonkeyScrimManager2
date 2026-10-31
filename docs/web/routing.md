@@ -59,7 +59,7 @@ URL로 편성 방식을 바꾸지 않는다. 10인·20인 구분용 경로는 �
 | 사용자 전적 | `position`, `page` | 전체, `1` |
 | 서버 통계 | `range` | 미결정 (기간·시즌) |
 
-쿼리 변경은 `goto(url, { keepFocus: true, noScroll: true })`로 하고, `load`가 쿼리를 읽어 데이터를 다시 준비한다. 검색어 입력은 제출(Enter) 시에만 반영한다.
+쿼리 변경은 `goto(url, { reset: false })`로 하고, `load`가 쿼리를 읽어 데이터를 다시 준비한다. 검색어 입력은 제출(Enter) 시에만 반영한다.
 
 ## 2. 레이아웃 계층
 
@@ -132,5 +132,6 @@ routes/+layout.svelte                    ConfigProvider(ko_KR) · Feedback · Ap
 | 공통 오류 화면, `/dev/error` | 구현됨 |
 | `AppHeader`, `AppFooter`, 루트 `ConfigProvider`·`Feedback` | 구현됨 |
 | 서버·내전 레이아웃(개발 모드 목 데이터), `ScrimSummary`, `/teams` redirect, `[userId]` 경로 | 구현됨 |
-| 각 페이지 본문 | 제목만 있는 빈 페이지 |
+| 내전 목록·내전 요약 본문 | 구현됨(개발 모드 목 데이터·form action) |
+| 그 외 페이지 본문 | 제목만 있는 빈 페이지 |
 | 인증·권한·DB 조회, 로그인·로그아웃 | 미구현. 운영 모드에서는 서버·내전 문맥이 `null`이라 전역 헤더로 표시 |

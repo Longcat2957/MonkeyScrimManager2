@@ -1,9 +1,11 @@
 <script lang="ts">
+	import AvatarStack from '#lib/components/common/AvatarStack.svelte';
 	import DateBadge from '#lib/components/common/DateBadge.svelte';
 	import LinkCell from '#lib/components/common/LinkCell.svelte';
 	import StatusTag from '#lib/components/common/StatusTag.svelte';
 	import { MY_REGISTRATION, SCRIM_STATUS, formationMethodLabel, scheduleParts } from '#lib/features/labels.ts';
 	import type { ScrimListItem } from '#lib/features/scrims/types.ts';
+	import { desktop } from '#lib/ui/viewport.svelte.ts';
 
 	let { scrim, href, line = false }: { scrim: ScrimListItem; href: string; line?: boolean } = $props();
 
@@ -27,7 +29,16 @@
 		<DateBadge iso={scrim.scheduledAt} emptyText="미정" />
 	{/snippet}
 	{#snippet detailChild()}
-		<StatusTag text={status.text} state={status.state} />
+		<!-- 누가 모였는지 얼굴로 보여 준다. 모바일은 제목 자리가 좁아 생략한다. -->
+		<span class="flex items-center gap-3">
+			{#if desktop.current}
+				<AvatarStack
+					people={scrim.members.map((member) => ({ key: member.key, name: member.name, imageUrl: member.iconUrl }))}
+					total={scrim.registered}
+				/>
+			{/if}
+			<StatusTag text={status.text} state={status.state} />
+		</span>
 	{/snippet}
 	{#snippet infoChild()}
 		{#if mine}

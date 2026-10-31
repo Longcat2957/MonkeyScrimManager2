@@ -73,11 +73,12 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 설정·정보 행 목록 | `CellGroup` + `Cell` | `title`/`subTitle`/`detail`/`info`. 행 전체가 버튼이므로 **동작**(팝업 열기, 토글)에만 쓴다. 페이지 이동 행은 `LinkCell` |
 | 일괄 선택이 필요한 목록 | `List` | `batchSelectable` + `batchActions`로 다중 선택 작업(참가자 선발·대기). `onclickItem`이 없으면 행이 disabled 버튼이 되므로 보기 전용 목록에는 쓰지 않는다 |
 | 상태 표시 | `StatusTag` (STDF `Tag` `fill="light" size="sm"`) | `state`는 [README 대응표](README.md#상태-값의-화면-문구). STDF `Tag`를 직접 쓰지 않는다([7절](#7-stdf-300-제약과-대응)) |
-| 개수 표시 | `Badge` 또는 `Tab`의 `showNum` | 탭 옆 개수는 `showNum` 우선 |
-| 진행 단계 | `Steps` | 내전 운영 단계(모집→편성→대진→진행→종료), 서비스 소개의 흐름 |
+| 개수 표시 | `Badge` 또는 `Tab` 라벨 텍스트 | 탭 옆 개수는 라벨에 `전체 13`처럼 쓴다. `showNum`은 개수가 아니라 보이는 탭 칸 수다([7절](#7-stdf-300-제약과-대응)) |
+| 진행 단계 | `Steps` | 내전 운영 단계(모집→편성→대진→진행→종료), 서비스 소개의 흐름. 번호 `step.bar` + `✓` `finishStep.bar` + `radius="full"`로 완료·현재·예정을 구분하고, 보조기기용 `<ol aria-current="step">`을 함께 둔다 |
 | 비율·잔여량 | `Progress` | 신청/정원, 경매 잔여 포인트. `percentPosition={null}`로 두고 수치는 옆 텍스트로 쓴다 |
 | 구분선 | `Divider` | 텍스트 구분이 필요할 때만. 단순 경계는 `border-b border-border` |
 | 숫자 지표 칸 배치 | `Grids` + `Grid` | 통계 핵심 지표, 사용자 전적 요약 |
+| 사람 묶음 미리보기 (목록 행의 참가자 얼굴) | `AvatarStack` (STDF `AvatarGroup`) | 장식으로만 쓴다. 인원수는 옆 문구가 전달하고 보조기기에는 이름 목록만 읽힌다. 모바일 목록 행에서는 생략 |
 | 부가 이력 접기 | `Accordion` | 경매 구매 이력, 문서 FAQ. 현재 작업에 필요한 정보는 접지 않는다 |
 
 ### 4.2 입력
@@ -94,7 +95,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 다중 선택 (희망 포지션) | `Checkbox` | 그룹 라벨은 `<fieldset><legend>` |
 | 즉시 반영 on/off (공개 설정, 관리자 권한) | `SwitchCell` (STDF `Switch` `inside="state"`) | 행 전체가 label이라 어디를 눌러도 토글. `onchange`에서 저장, 실패 시 되돌리고 저장 중 `disabled`. Cell의 `right: switch`는 쓰지 않는다 |
 | 6개 이상 중 하나 (Riot 계정, 채널) | `ActionSheet` | `Input readonly`(현재 값 표시)를 눌러 연다. 선택 시 값 반영 |
-| 날짜 | `Calendar` | `mode="single"`, 팝업. 시각은 아래 `Input`으로 분리 |
+| 날짜 | `Calendar` | `mode="single"`. 입력 팝업 안에서는 `popup={null}`로 입력 아래에 펼친다(팝업 중첩 금지). `outFormat="YYYY-MM-DD"`. 시각은 아래 `Input`으로 분리 |
 | 시각 | `Input` | `HH:mm` 직접 입력 + 형식 검증. `TimePicker` 휠은 키보드로 조작할 수 없어 쓰지 않는다 |
 | 파일 (ROFL) | `ImageList` | `accept=".rofl"`, `itemChild`로 파일명·크기 표시, `status`로 파일별 업로드 상태. [7절](#7-stdf-300-제약과-대응) 확인 후 사용 |
 
@@ -102,7 +103,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 
 | 용도 | 사용 | 메모 |
 | --- | --- | --- |
-| 같은 페이지 안의 보기 전환 (상태 필터, 게임 선택, 포지션 필터, 라운드) | `Tabs`/`Tab` | `labels`, `showNum`, `onclickTab`. URL 상태면 `goto`로 동기화. **라우트 이동에는 쓰지 않는다** |
+| 같은 페이지 안의 보기 전환 (상태 필터, 게임 선택, 포지션 필터, 라운드) | `Tabs`/`Tab` | `labels`, `showNum`(칸 수, 기본 3), `onclickTab`. URL 상태면 `goto`로 동기화. **라우트 이동에는 쓰지 않는다** |
 | 2~3개의 짧은 보기 전환을 툴바 안에서 | `ButtonGroup` | 탭 줄을 둘 공간이 없을 때만 |
 | 페이지 번호 | `Pagination` | `total`, `pageSize=20`, `current`, `onchange` → `goto(?page=)`. 주소로 공유·복원해야 하는 목록용 |
 | 카드 안 긴 목록 | `InfiniteScroll` | `scrollTarget`에 카드 안 스크롤 요소. `onload`에서 **`loading = true`를 직접 켜고** 끝나면 끈다(그래야 다음 호출이 풀림). 한국어 문구가 없어 `loadingText` 등을 넘긴다. 예: 서버 순위 |
@@ -139,7 +140,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `NoticeBar` | 흐르는 공지 형식이 필요한 정보가 없다 |
 | `Tooltip` | 필요한 정보는 화면에 쓴다 |
 | `Swiper` | 슬라이드에 컴포넌트만 받고 데이터(props)를 넘길 수 없으며 키보드로 넘길 수단이 없다. 캐러셀은 가로 스크롤 스냅 + 이전/다음 `Button`(`StoryCarousel`) |
-| `CharRoll`, `Rate`, `Slider`, `ColorPicker`, `Signature`, `CodeInput`, `NumKeyboard`, `FullKeyboard`, `IndexBar`, `ImagePreview`, `AvatarGroup`, `ProgressLoop`, `Placeholder`, `Mask`(단독) | 대응하는 서비스 기능이 없다. 기능이 생기면 이 표에서 옮긴다 |
+| `CharRoll`, `Rate`, `Slider`, `ColorPicker`, `Signature`, `CodeInput`, `NumKeyboard`, `FullKeyboard`, `IndexBar`, `ImagePreview`, `ProgressLoop`, `Placeholder`, `Mask`(단독) | 대응하는 서비스 기능이 없다. 기능이 생기면 이 표에서 옮긴다 |
 
 ## 5. 서비스 공통 컴포넌트
 
@@ -148,6 +149,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 이름 | 위치 | 구성 | 책임 |
 | --- | --- | --- | --- |
 | `overlay` (attachment) | `lib/ui/overlay.ts` | 래퍼 `<div>`에 `{@attach overlay({ open, label, onclose })}` | 열릴 때 `role="dialog"`·`aria-modal`·`aria-label`, 바깥 요소 `inert`, 첫 포커스(패널이 실제로 보일 때까지 재시도), `Escape` → `onclose`, `body` 스크롤 잠금, 닫힐 때 여는 버튼으로 포커스 복귀. `Popup`·`ActionPopover`에 사용 |
+| `nonSubmitButtons` (attachment) | `lib/ui/form.ts` | `<form {@attach nonSubmitButtons}>` | STDF 선택 컨트롤의 `type` 없는 button을 `type="button"`으로 바꿔 누를 때·Enter 때 폼이 제출되지 않게 한다. `Checkbox`·`Radio`·`Stepper`가 든 모든 폼에 붙인다 |
 | `confirm` | `lib/ui/confirm.ts` | `dialog.confirm` | 확인 창. `Feedback` 내부 상태가 공개되지 않아 `overlay` 대신 호출 단위로 Escape·포커스 복귀 처리 |
 | `desktop` | `lib/ui/viewport.svelte.ts` | `MediaQuery('min-width: 1024px')` | 데스크톱·모바일 변형 전환 기준 하나 |
 | `setMode` / `currentMode` | `lib/ui/theme.ts` | `stdf/theme`의 `switchMode`·`getMode` | 화면 모드 전환과 저장 |
@@ -156,7 +158,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `ActionMenu` | `lib/components/common/` | `ActionPopover` / `ActionSheet` + `overlay` | 같은 항목을 데스크톱은 트리거 아래 inline, 모바일은 하단 시트로 연다. 마운트 후에만 렌더링 |
 | `ContextNav` | `lib/components/layout/` | `<nav><a>` | 범위 메뉴 링크. 데스크톱은 가로, 모바일 패널은 세로. 같은 항목 데이터를 쓴다 |
 | `AppFooter` | `lib/components/layout/` | 텍스트 + `<a>` | [routing.md 3.3](routing.md#33-푸터) |
-| `ScrimSummary` | `lib/components/scrims/` | 제목 `h1` + `StatusTag` + 예정 시각 + `Steps` | 내전 하위 세 페이지 위에 한 번 |
+| `ScrimSummary` | `lib/components/scrims/` | 어두운 카드(배경 아트) + 제목 `h1` + 상태 점 + 설정 칩, 아래 전체 폭 `Steps`(번호·체크 막대) | 내전 하위 세 페이지 위에 한 번. 어두운 바탕이라 `StatusTag` 대신 흰 글자 + 상태색 점을 쓴다 |
 | `LinkCell` | `lib/components/common/` | `<a>` + STDF `Cell`과 같은 클래스, `CellGroup` 안에서 사용 | 이동하는 목록 행. props: `href`, `title`/`titleChild`, `subTitle`, `detail`/`detailChild`(제목 줄 오른쪽), `info`/`infoChild`(부제 줄 오른쪽), `leftChild`, `line`(구분선). grid라 오른쪽 칸은 항상 해당 줄에 맞는다. 내부에 다른 조작을 넣지 않는다 |
 | `StatusTag` | `lib/components/common/` | STDF `Tag`를 `inert`로 감싸고 문구는 보조기기용 텍스트로 | 상태 표시. 링크·버튼 안에서도 조작 요소가 중첩되지 않는다 |
 | `DateBadge` | `lib/components/common/` | `<span>` 상자 | 목록 행 왼쪽의 `10월 / 31` 날짜 상자. 날짜가 없으면 점선 상자에 `미정`·`미확인` 등 |
@@ -168,6 +170,8 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `ScrimListRow` | `lib/components/scrims/` | `LinkCell` + `DateBadge` + `StatusTag` | 내전 목록 행(서버 홈·내전 목록). 오른쪽 아래 내 신청 상태 |
 | `MatchListRow` | `lib/components/matches/` | `LinkCell` + `DateBadge` + `StatusTag` | 경기 목록 행(서버 홈·경기 기록). 점수는 항상 보이고 팀 이름만 줄어든다. 상태 태그는 종료 외 상태만 |
 | `SectionState` | `lib/components/common/` | `Skeleton` / 점선 상자 + 문구 / 점선 상자 + 문구 + `Button` | 영역 하나의 `loading`·`empty`·`error(retry)` 표현. 목록 자리에 같은 폭으로 놓는다. 정상 상태는 렌더링하지 않는다 |
+| `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`Radio`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다 |
+| `AvatarStack` | `lib/components/common/` | STDF `AvatarGroup` | 겹친 얼굴 묶음 + 정확한 `+N`. 마운트 후 렌더링·`inert`·이미지 키 보정([7절](#7-stdf-300-제약과-대응)). 이미지가 없으면 이름 첫 글자 색 원(`lib/ui/avatar.ts`) |
 | `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, 공개 허용 시 Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
 | `TeamRoster` | `lib/components/scrims/` | `Card` + 포지션별 행 | 확정된 팀 표시. 수동 편성·경매·경기 상세에서 재사용. 편집 동작은 받지 않는다 |
 | `ChampionIcon` | `lib/components/common/` | `<img>` (Data Dragon) | 챔피언 이미지 + 이름 `alt`. 매핑 실패 시 이름 텍스트 |
@@ -204,12 +208,19 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `Toast`·`Progress`·`Loading`·`Skeleton`에 live region이 없다 | 루트에 `role="status"` 영역 하나를 두고 중요한 결과 문구를 같이 넣는다 |
 | `Tag`가 동작이 없어도 항상 `role="button" tabindex="0"`이다(끄려면 `disabled` → 흐린 모양). 링크·Cell 안에 두면 조작 요소가 중첩되고 Tab이 멈춘다 | `StatusTag`로만 쓴다 |
 | 상태색(`success` 등)이 밝은 바탕 기준이라 다크 모드에서 `Tag` 글자가 묻힌다 | `layout.css`의 다크 모드 블록에서 상태색을 한 단계 밝게 덮어쓴다. 상태색 바탕에 흰 글자를 쓰는 `fill="base"`는 다크 모드 대비를 확인한 뒤 쓴다 |
+| `AvatarGroup`은 루트 `<button>` 안에 Avatar `<button>`을 넣어 SSR HTML이 깨진다. `{#each}` 키가 `image`라 이미지가 없거나 같으면 키 중복 오류가 난다. `top="totle"`의 `+N`은 남은 수가 아니라 전체 수다 | `AvatarStack`으로만 쓴다: 마운트 후 렌더링(같은 크기 자리 확보), `inert`+`aria-hidden`, 이미지 URL에 `#키` 또는 이니셜 data URL, `top` 스니펫으로 남은 수 표시. 루트가 `w-full`이라 감싸는 요소에 너비를 준다 |
 | `Avatar`는 항상 이름 없는 `<button>`이고 `alt`는 대체 텍스트가 아니라 이미지가 없을 때 보이는 글자다 | `Avatar`를 쓰지 않는다 |
 | `ActionPopover`가 초기화 중 `document`를 읽어 SSR이 500으로 실패한다. trigger 없이는 아무것도 그리지 않는다(ring·inline 모드뿐) | `onMount` 이후에만 렌더링하고 모바일은 `ActionSheet` (`ActionMenu`) |
 | 한국어 `Input` 기본 placeholder가 "비밀번호를 입력해주세요"다 | `Input`마다 `placeholder`를 명시한다 |
 | `Popup position="center"`의 패널이 화면 전체 너비다. `px`·`py`는 안쪽 여백이 아니라 화면 가장자리와의 간격이다 | 입력 팝업은 `transparent`로 두고 내용 요소에 `max-w-lg`·배경·모서리를 준다. 안쪽 여백은 내용 요소의 `p-*` |
 | `Steps`의 `current`는 1부터 센다(0은 시작 전, 단계 수+1은 모두 완료) | `ScrimSummary`의 대응표 참고 |
+| `Steps` 기본 막대는 완료·예정 단계가 같은 빈 점이고, 목록 구조·현재 단계를 보조기기에 알리지 않는다 | 단계마다 `bar`(번호)·`finishStep.bar`(`✓`)를 주고, 화면용은 `aria-hidden` + `sr-only` `<ol>`에 `aria-current="step"` |
 | `ImageList` 등 일부 컴포넌트의 기본 아이콘이 `/fonts/symbol.svg` 스프라이트를 요청한다(없으면 404) | 스프라이트를 두기 전까지 `uploadChild` 같은 스니펫으로 아이콘을 대체 |
 | `Button size="auto"`는 가로 여백이 없다 | `injClass="px-2"`~`px-4`를 함께 준다 |
 | `NavBar` 루트가 `h-12 bg-white dark:bg-black`를 고정으로 가진다 | `injClass`에 `h-(--app-header-height)! bg-transparent!`처럼 `!` 수정자로 덮는다 |
 | 기본 언어가 중국어 | 루트 `ConfigProvider` 필수 |
+| `Checkbox`·`Radio`·`Stepper`의 항목이 `type` 없는 `<button>`이라 `<form>` 안에서 누르면 제출된다. Enter 암묵 제출도 첫 항목 버튼을 눌러 값을 바꾼다 | 폼에 `{@attach nonSubmitButtons}`. 제출 버튼은 `Button type="submit"` 명시 |
+| `Button fill="text"`는 `state`를 무시하고 항상 본문색이다 | 색이 있는 텍스트 버튼(철회 등)은 `fill="textState" state="error"` |
+| `Tab`의 `showNum`은 개수 배지가 아니라 한 번에 보이는 탭 칸 수(기본 3)다. `overflow` 모드는 ResizeObserver 루프 오류를 낸다 | 칸 수만큼 `showNum`을 주고 `overflow`는 쓰지 않는다. 좁은 화면에 다 안 들어가면 라벨을 줄인다 |
+| `List` 일괄 선택 모드는 선택 칸(40px)만큼 행을 오른쪽으로 밀어 오른쪽 끝 내용이 잘린다. `itemPx`의 `px-0`이 `itemInjClass` 여백을 덮는다 | `itemInjClass="pl-3! pr-13!"` |
+| `List batchSelectable`은 보기 모드에서도 자체 `편집` 토글을 그린다 | 보기 목록은 `<ul>`로 따로 두고, 관리 버튼을 누를 때만 `batchMode`로 `List`를 렌더링한다. `List`의 `완료`가 `batchMode`를 끄면 보기 목록으로 돌아간다 |

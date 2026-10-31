@@ -77,7 +77,7 @@
 		<div class="flex flex-wrap items-center gap-2">
 			<Button size="auto" heightOut="0" injClass="px-4">주 작업</Button>
 			<Button fill="lineLight" size="auto" heightOut="0" injClass="px-4">보조 작업</Button>
-			<Button fill="text" state="error" size="auto" heightOut="0" injClass="px-4">위험 작업</Button>
+			<Button fill="textState" state="error" size="auto" heightOut="0" injClass="px-4">위험 작업</Button>
 			<Button size="auto" heightOut="0" injClass="px-4" loading={{}}>저장 중</Button>
 			<Button size="auto" heightOut="0" injClass="px-4" disabled>비활성</Button>
 		</div>

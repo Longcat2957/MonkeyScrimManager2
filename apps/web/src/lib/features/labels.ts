@@ -24,6 +24,15 @@ export const MATCH_STATUS: Record<MatchStatus, StatusLabel> = {
 	cancelled: { text: '취소', state: 'error' }
 };
 
+// 철회는 현재 참여가 아니므로 Tag 없이 흐린 텍스트로 표시한다(state null).
+export const REGISTRATION_STATUS: Record<RegistrationStatus, { text: string; state: StatusLabel['state'] | null }> = {
+	pending: { text: '신청', state: 'theme' },
+	selected: { text: '선발', state: 'success' },
+	standby: { text: '대기', state: 'info' },
+	withdrawn: { text: '철회', state: null },
+	excluded: { text: '제외', state: 'error' }
+};
+
 // 목록에서 내 신청을 알릴 때 쓰는 문구다. 철회·제외는 현재 참여가 아니므로 표시하지 않는다.
 export const MY_REGISTRATION: Partial<Record<RegistrationStatus, string>> = {
 	pending: '신청함',
@@ -38,6 +47,11 @@ export const POSITIONS: { key: LolPosition; text: string }[] = [
 	{ key: 'bot', text: '원딜' },
 	{ key: 'support', text: '서폿' }
 ];
+
+// 신청자가 고른 순서대로 쓴다. 예: 미드·탑
+export function positionsLabel(positions: LolPosition[]) {
+	return positions.map((key) => POSITIONS.find((position) => position.key === key)?.text ?? key).join('·');
+}
 
 export function formationMethodLabel(method: FormationMethod | null) {
 	if (method === 'manual') return '수동 편성';

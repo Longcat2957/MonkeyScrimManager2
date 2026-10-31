@@ -6,7 +6,7 @@ import { listMockRecentMatches } from '#lib/mocks/matches.ts';
 import { findMockNextScrim, listMockActiveScrims } from '#lib/mocks/scrims.ts';
 import { mockMainChampion } from '#lib/mocks/session.ts';
 import { listMockStories } from '#lib/mocks/stories.ts';
-import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
+import { championIconUrl, dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { getRankingPage, latestDataDragonVersion, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
 import type { PageServerLoad } from './$types';
 
@@ -35,11 +35,12 @@ export const load: PageServerLoad = async ({ parent, params, url, depends }) => 
 	const preview = dev ? url.searchParams.get('preview') : null;
 	const version = await latestDataDragonVersion();
 	const splash = (championId: string) => (version ? dataDragonSplashUrl(championId) : null);
+	const icon = (championId: string) => championIconUrl(version, championId);
 
 	// TODO: DB 조회로 바꾼다. 각 영역은 서로 독립적으로 실패할 수 있다.
 	const [next, activeScrims, recentMatches, ranking, stories] = await Promise.allSettled([
-		findMockNextScrim(params.guildId),
-		listMockActiveScrims(params.guildId),
+		findMockNextScrim(params.guildId, icon),
+		listMockActiveScrims(params.guildId, icon),
 		listMockRecentMatches(params.guildId, { fail: preview === 'error' }).then((items) =>
 			items.slice(0, RECENT_MATCH_LIMIT)
 		),

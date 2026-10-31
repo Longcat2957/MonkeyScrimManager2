@@ -8,7 +8,8 @@
 		disabled?: boolean;
 		// 마지막 행이 아니면 STDF Cell처럼 안쪽으로 들인 구분선을 그린다.
 		line?: boolean;
-		onchange: (active: boolean) => void;
+		// 폼 안에서 값만 바인딩할 때는 생략한다.
+		onchange?: (active: boolean) => void;
 	};
 
 	let { title, subTitle = '', active = $bindable(), disabled = false, line = false, onchange }: Props = $props();
