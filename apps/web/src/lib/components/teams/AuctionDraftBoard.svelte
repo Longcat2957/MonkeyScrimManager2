@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Accordion, Button, Loading, toast } from 'stdf';
+	import { Accordion, Button, Loading, NoticeBar, toast } from 'stdf';
 	import { invalidate } from '$app/navigation';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import PositionIcon from '#lib/components/common/PositionIcon.svelte';
 	import StatusTag from '#lib/components/common/StatusTag.svelte';
 	import { POSITIONS } from '#lib/features/labels.ts';
-	import { formatMmr, TEAM_SIZE, winRate, type AuctionView } from '#lib/features/scrims/formation.ts';
+	import { formatMmr, TEAM_SIZE, winRate, type AuctionView, type Celebration, auctionStories } from '#lib/features/scrims/formation.ts';
 	import { postAction } from '#lib/ui/actions.ts';
 	import { confirm } from '#lib/ui/confirm.ts';
 	import AuctionTargetProfile from './AuctionTargetProfile.svelte';
@@ -26,11 +26,15 @@
 	let now = $state(Date.now());
 	let details = $state(false);
 	let listOpen = $state(false);
+	// 낙찰·수동 배치가 끝난 팀 패널에 잠깐 보여 줄 축하 효과다.
+	let celebration = $state<Celebration | null>(null);
+	let celebrationTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const live = $derived(auction.status === 'in_progress');
 	const controls = $derived(manager && live);
 	const open = $derived(auction.openLot);
 	const profile = $derived(auction.openProfile);
+	const stories = $derived(auctionStories(auction));
 	const canRevert = $derived(auction.history.some((entry) => !entry.voided));
 	const remainingMs = $derived(Math.max(0, TIMER_MS - (now - timerStart)));
 	const mainLane = $derived(open ? (open.positions[0] ?? profile?.mainLane ?? 'mid') : 'mid');
@@ -47,7 +51,7 @@
 			const movable = id === open?.registrationId || (!open && auction.unsold.some((player) => player.registrationId === id));
 			return Boolean(team && team.members.length < TEAM_SIZE && movable);
 		},
-		ondrop: (id, teamId) => (id === open?.registrationId ? run('assignCurrent', { teamId }) : run('assign', { registrationId: id, teamId }))
+		ondrop: (id, teamId) => (id === open?.registrationId ? assignCurrent(teamId) : assign(id, teamId))
 	});
 
 	// 후보가 바뀌거나 입찰가가 바뀌면 타이머를 다시 채운다.
@@ -60,7 +64,10 @@
 
 	onMount(() => {
 		const interval = setInterval(() => (now = Date.now()), 200);
-		return () => clearInterval(interval);
+		return () => {
+			clearInterval(interval);
+			clearTimeout(celebrationTimer);
+		};
 	});
 
 	async function run(name: string, fields: Record<string, string> = {}) {
@@ -71,8 +78,27 @@
 		return !message;
 	}
 
+	function celebrate(teamId: string, registrationId: string, label: string) {
+		clearTimeout(celebrationTimer);
+		celebration = { teamId, registrationId, label, key: Date.now() };
+		celebrationTimer = setTimeout(() => (celebration = null), 1800);
+	}
+
 	async function award(teamId: string, price: number) {
-		if (await run('award', { teamId, price: String(price) })) bids = {};
+		const target = open?.registrationId;
+		if (await run('award', { teamId, price: String(price) })) {
+			bids = {};
+			if (target) celebrate(teamId, target, `낙찰! ${price}P`);
+		}
+	}
+
+	async function assignCurrent(teamId: string) {
+		const target = open?.registrationId;
+		if ((await run('assignCurrent', { teamId })) && target) celebrate(teamId, target, '낙찰!');
+	}
+
+	async function assign(registrationId: string, teamId: string) {
+		if (await run('assign', { registrationId, teamId })) celebrate(teamId, registrationId, '낙찰!');
 	}
 
 	async function draw() {
@@ -238,8 +264,23 @@
 		<!-- 팀 패널 -->
 		<div class={['grid min-h-0 gap-px md:grid-cols-2', auction.teams.length > 2 && 'md:grid-rows-2']}>
 			{#each auction.teams as team (team.id)}
-				<AuctionTeamCard {team} bidding={controls && Boolean(open)} {busy} {drag} bind:bid={() => bids[team.id] ?? '', (value) => (bids[team.id] = value)} onaward={(price) => award(team.id, price)} />
+				<AuctionTeamCard {team} bidding={controls && Boolean(open)} {busy} {drag} bind:bid={() => bids[team.id] ?? '', (value) => (bids[team.id] = value)} celebration={celebration?.teamId === team.id ? celebration : null} onaward={(price) => award(team.id, price)} />
 			{/each}
+		</div>
+	</div>
+
+	<!--
+		경매 이야기 공지 막대. STDF NoticeBar는 마운트 때만 크기를 재므로 내용이 바뀌면 다시 만든다.
+		오른쪽에 이름 없는 빈 버튼이 항상 생겨 화면용은 inert로 숨기고, 보조기기에는 같은 내용을 목록으로 준다.
+	-->
+	<div class="relative">
+		<ul class="sr-only" aria-label="경매 이야기">
+			{#each stories as story (story)}<li>{story}</li>{/each}
+		</ul>
+		<div inert aria-hidden="true">
+			{#key stories.join('|')}
+				<NoticeBar textList={stories} vertical interval={4} rightIcon={null} />
+			{/key}
 		</div>
 	</div>
 
@@ -282,7 +323,7 @@
 		{auction}
 		{controls}
 		{busy}
-		onassign={(registrationId, teamId) => run('assign', { registrationId, teamId })}
+		onassign={assign}
 		onrestore={(registrationId) => run('restore', { registrationId })}
 	/>
 {/if}

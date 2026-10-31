@@ -78,6 +78,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 비율·잔여량 | `Progress` | 신청/정원, 경매 잔여 포인트. `percentPosition={null}`로 두고 수치는 옆 텍스트로 쓴다 |
 | 구분선 | `Divider` | 텍스트 구분이 필요할 때만. 단순 경계는 `border-b border-border` |
 | 숫자 지표 칸 배치 | `Grids` + `Grid` | 통계 핵심 지표, 사용자 전적 요약 |
+| 돌아가며 보여 주는 짧은 소식 | `NoticeBar` | `vertical`, `interval`, `rightIcon={null}`. 경매 이야기(`auctionStories`) |
 | 사람 묶음 미리보기 (목록 행의 참가자 얼굴) | `AvatarStack` (STDF `AvatarGroup`) | 장식으로만 쓴다. 인원수는 옆 문구가 전달하고 보조기기에는 이름 목록만 읽힌다. 모바일 목록 행에서는 생략 |
 | 부가 이력 접기 | `Accordion` | 경매 구매 이력, 문서 FAQ. 현재 작업에 필요한 정보는 접지 않는다 |
 
@@ -137,7 +138,6 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `TabBar` | 하단 탭바를 두지 않는다 |
 | `BottomSheet` | 드래그 단계형 시트가 필요한 화면이 없다. `Popup position="bottom"` 사용 |
 | `PullRefresh` | 웹에서 당겨서 새로고침 형태가 필요 없다. 한국어 문구도 없음 |
-| `NoticeBar` | 흐르는 공지 형식이 필요한 정보가 없다 |
 | `Tooltip` | 필요한 정보는 화면에 쓴다 |
 | `Swiper` | 슬라이드에 컴포넌트만 받고 데이터(props)를 넘길 수 없으며 키보드로 넘길 수단이 없다. 캐러셀은 가로 스크롤 스냅 + 이전/다음 `Button`(`StoryCarousel`) |
 | `CharRoll`, `Rate`, `Slider`, `ColorPicker`, `Signature`, `CodeInput`, `NumKeyboard`, `FullKeyboard`, `IndexBar`, `ImagePreview`, `ProgressLoop`, `Placeholder`, `Mask`(단독) | 대응하는 서비스 기능이 없다. 기능이 생기면 이 표에서 옮긴다 |
@@ -240,6 +240,7 @@ MSM1의 엔트리 편성·경매 화면 구성을 따른다. 둥근 카드를 �
 | `Button fill="text"`는 `state`를 무시하고 항상 본문색이다 | 색이 있는 텍스트 버튼(철회 등)은 `fill="textState" state="error"` |
 | `Input` 바깥 칸에 `px-2 py-1` 여백이 고정되어 있어 같은 줄의 다른 요소와 왼쪽 선이 어긋난다 | 줄 정렬이 필요한 곳은 감싸는 요소에 `-mx-2 -my-1` (경매 팀 패널 입찰가) |
 | `Button`이 `onclick` 외의 이벤트(`oncontextmenu` 등)를 받지 않는다 | 감싸는 `<span role="presentation">`에서 받는다. 경매 `±10`의 우클릭 −10 |
+| `NoticeBar` 오른쪽에 `rightIcon={null}`이어도 이름 없는 빈 `<button>`이 항상 생기고, 크기는 마운트 때만 잰다 | 화면용은 `inert aria-hidden` 래퍼에 넣고 같은 내용을 `sr-only` 목록으로 준다. 내용이 바뀌면 `{#key}`로 다시 만든다 |
 | `Tab`의 `showNum`은 개수 배지가 아니라 한 번에 보이는 탭 칸 수(기본 3)다. `overflow` 모드는 ResizeObserver 루프 오류를 낸다 | 칸 수만큼 `showNum`을 주고 `overflow`는 쓰지 않는다. 좁은 화면에 다 안 들어가면 라벨을 줄인다 |
 | `List` 일괄 선택 모드는 선택 칸(40px)만큼 행을 오른쪽으로 밀어 오른쪽 끝 내용이 잘린다. `itemPx`의 `px-0`이 `itemInjClass` 여백을 덮는다 | `itemInjClass="pl-3! pr-13!"` |
 | `List batchSelectable`은 보기 모드에서도 자체 `편집` 토글을 그린다 | 보기 목록은 `<ul>`로 따로 두고, 관리 버튼을 누를 때만 `batchMode`로 `List`를 렌더링한다. `List`의 `완료`가 `batchMode`를 끄면 보기 목록으로 돌아간다 |

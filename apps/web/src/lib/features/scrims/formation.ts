@@ -159,3 +159,35 @@ export type TargetProfile = {
 export function winRate(games: number, wins: number) {
 	return games ? `${Math.round((wins / games) * 100)}%` : '-';
 }
+
+/** 낙찰·수동 배치 직후 팀 패널에 보여 주는 축하 효과. key가 바뀔 때마다 효과를 다시 재생한다. */
+export type Celebration = { teamId: string; registrationId: string; label: string; key: number };
+
+/**
+ * 경매 기록과 팀 상태로 공지 막대에 흘릴 짧은 이야기를 만든다.
+ * 후보 수·유찰 수처럼 화면에 이미 있는 숫자는 반복하지 않는다.
+ */
+export function auctionStories(auction: AuctionView): string[] {
+	const sold = auction.history.filter((entry) => entry.result === 'sold' && !entry.voided && entry.price !== null);
+	const stories: string[] = [];
+	if (!sold.length) {
+		stories.push(auction.status === 'in_progress' ? '🔔 아직 첫 낙찰 전! 첫 테이프는 어느 팀이 끊을까요?' : '🔔 낙찰 기록이 없어요');
+	} else {
+		const byPrice = [...sold].sort((a, b) => b.price! - a.price!);
+		const top = byPrice[0]!;
+		const bottom = byPrice.at(-1)!;
+		const last = sold.at(-1)!;
+		stories.push(`💰 현재 최고 몸값: ${top.displayName} ${top.price}P (${top.teamName})`);
+		if (bottom.price! < top.price!) stories.push(`🛒 최고의 가성비: ${bottom.displayName} 단돈 ${bottom.price}P (${bottom.teamName})`);
+		if (last !== top) stories.push(`🔨 방금 낙찰: ${last.displayName} → ${last.teamName} ${last.price}P`);
+	}
+	const spent = auction.teams.map((team) => ({ team, spent: team.startPoints - team.remainingPoints }));
+	const bigSpender = [...spent].sort((a, b) => b.spent - a.spent)[0];
+	if (bigSpender && bigSpender.spent > 0) stories.push(`🔥 가장 화끈하게 쓴 팀: ${bigSpender.team.name} · ${bigSpender.spent}P 지출`);
+	const richest = [...auction.teams].sort((a, b) => b.remainingPoints - a.remainingPoints)[0];
+	if (richest && sold.length) stories.push(`👛 지갑이 가장 두둑한 팀: ${richest.name} · ${richest.remainingPoints}P 남음`);
+	for (const team of auction.teams) {
+		if (team.members.length >= TEAM_SIZE) stories.push(`✅ ${team.name} 로스터 완성!`);
+	}
+	return stories;
+}
