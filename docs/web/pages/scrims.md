@@ -86,10 +86,10 @@
 
 ## `[scrimId]` 공통 — `ScrimSummary`
 
-내전 하위 세 페이지(요약·팀 편성·대진) 맨 위에 한 번 표시한다. `[scrimId]/+layout.svelte`가 렌더링한다.
+내전 하위 세 페이지(요약·팀 편성·대진) 맨 위에 한 번 표시한다. `[scrimId]/+layout.svelte`가 렌더링한다. 경매 화면은 작업판을 넓게 쓰도록 `compact`로 제목·일정 한 줄만 표시한다(카드·Steps 없음).
 
 ```text
-┌ 어두운 카드 (배경: 활성 신청자 주 챔피언 중 가장 많은 챔피언의 스플래시) ┐
+┌ 어두운 카드 (배경: 전체 챔피언 중 무작위 스플래시) ────────────────────┐
 │ [h1] 10월 정기 내전  (● 모집 중)                                          │
 │ (10/31(토) 20:00) (2팀) (수동 편성) (하드 피어리스)      ← 설정 칩       │
 └────────────────────────────────────────────────────────────────────────────┘
@@ -186,65 +186,77 @@ ScrimSummary
 
 **목적** 운영자가 선발 참가자를 팀·포지션에 배정하고 확정한다. 열람자는 결과를 본다.
 
+**근거** MSM1의 엔트리 편성(`EntryDraftBoard`·`EntryTeamColumn`·`EntryCandidatePool`·`entryDraft.ts`). 팀×포지션 자리, 드래그 앤 드롭과 탭 선택 배치, 자리 교환 규칙, 미배정 목록, 배치 수 요약, 초기화, 팀 평균 MMR, 상세 보기(팀 시너지·라인 상대 전적, `EntrySynergyRail`·`EntryHeadToHeadRail`)를 따른다.
+
+**레이아웃** MSM1 작업판([design-system 5.1](../design-system.md#51-작업판-레이아웃-팀-편성경매)): 도구 줄 → 팀 열(두 팀이면 BLUE·RED, 자리마다 포지션 아이콘) → 미배정 목록이 1px 경계로 붙는다. 상세를 열면 `[1팀 시너지 | 1팀 | 라인 상대 전적 | 2팀 | 2팀 시너지]`.
+
 **데이터**
 
 ```ts
 {
-  teams: { id, name, slots: Record<LolPosition, { registrationId, displayName, userId } | null> }[],
-  unassigned: { registrationId, displayName, userId, positions: LolPosition[] }[],
-  confirmed: boolean,
-  can: { edit: boolean, confirm: boolean, confirmBlockedReason: string | null }
+  scrim,                                                // 레이아웃
+  formation: { teams: { id, name }[],
+               players: { registrationId, userId, displayName, iconUrl, positions, mmr: Record<LolPosition, number> }[],
+               assignments: Record<registrationId, `${teamId}:${LolPosition}`>,
+               confirmed: boolean,
+               pairs: Record<'a|b', { together: { plays, wins }, against: { plays, firstWins } }> } | null,  // 모집 중이면 null
+  can: { edit: boolean }                                // 운영자 + 편성 중 + 미확정
 }
 ```
 
-**화면** (`can.edit` 이고 미확정일 때)
+**화면**
 
 ```text
-ScrimSummary
-[h2] 수동 편성                                              [편성 확정]
-                                                  미배정 2명이 남았어요   ← 비활성 이유
-데스크톱 grid lg:grid-cols-[20rem_1fr]
-[h3] 미배정 2                  │ Card 1팀 [이름 변경]        Card 2팀 [이름 변경]
-CellGroup                      │  탑    홍길동  ›             탑    …
- 홍길동   미드·탑    ›         │  정글  비어 있음             정글  …
- 김철수   정글       ›         │  미드  …                     …
-                               │  원딜  …
-                               │  서폿  …
-모바일: 미배정 → 팀 카드 순서로 한 열
+[h2] 수동 편성  6/10 배치                           [상세] [초기화] [편성 확정]
+홍길동 선택됨 · 놓을 자리를 누르세요 [선택 취소]   ← 선택 중. 아니면 "미배정 4명이 남았어요"
+grid lg:grid-cols-2 (팀 수만큼)
+┌ 1팀  평균 MMR 1,565        [이름 변경] ┐
+│ 탑   [img] 개발자  탑 1,627          × │   ← 자리 MMR, 희망 포지션 밖이면 "희망 외"
+│ 정글 [   여기에 배치   ]               │   ← 선택 중이면 빈 자리·다른 사람 자리가 대상 버튼
+│ …                                      │
+└────────────────────────────────────────┘
+┌ 미배정 4명 ────────────────────────────┐
+│ [img] 강감찬 (정글)(서폿) 1,573  …     │
+└────────────────────────────────────────┘
 ```
-
-**구성**
 
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
-| 미배정 목록 | `CellGroup` + `Cell right="arrow" subTitle=희망 포지션` | 클릭 → 배정 팝업 |
-| 배정 팝업 | `Popup` + `<form>`: 팀 `Radio`, 포지션 `Radio`(이미 찬 자리는 라벨에 현재 배정자 표시) | 찬 자리를 고르면 "기존 배정자는 미배정으로 돌아가요" 한 줄. `배정` 제출 |
-| 팀 카드 | `Card` (`header`: 팀 이름 + `Button fill="text"` `이름 변경`) | 이름 변경 → `Popup` + `Input` |
-| 배정된 자리 | `Cell title=포지션 detail=이름 right="arrow"` | 클릭 → `ActionPopover`: `다른 자리로 이동`(배정 팝업) · `배정 해제` |
-| 빈 자리 | 정적 행 "비어 있음" | 동작 없음(배정은 미배정 목록 한 곳에서) |
-| 편성 확정 | `Button fill="base"` | `confirm('확정하면 팀을 바꿀 수 없어요')`. 미배정·포지션 미지정이 있으면 비활성 + 이유 |
+| 끌어 놓기 | 자리·미배정 타일 `draggable`, 자리·미배정 목록이 놓기 대상 | 자리에 놓으면 배치·교환, 미배정 목록에 놓으면 배정 해제. 놓을 수 있는 대상은 강조 |
+| 참가자 선택 | 자리·미배정 타일 `<button aria-pressed>` | 누르면 선택, 다시 누르거나 `Escape`·`선택 취소`로 해제 |
+| 배치·교환 | 선택 중의 자리 타일 `<button>` | 빈 자리면 배치. 사람이 있으면 서로 바뀜(옮기는 사람에게 원래 자리가 없으면 상대는 미배정) |
+| 배정 해제 | 자리 오른쪽 `×` `Button` | 미배정으로 |
+| 팀 이름 | `이름 변경` → `TeamNameDialog`(`Popup` + `Input`) | 최대 20자 |
+| 상세 | `상세`/`상세 닫기` `Button` | 팀 카드 아래 시너지(탑-정글·정글-미드·원딜-서폿이 같은 팀으로 뛴 전적), 두 팀이면 가운데 라인 상대 전적(왼쪽 팀 기준 승패·우위) |
+| 초기화 | `Button fill="lineLight"` → `confirm` | 모두 미배정 |
+| 편성 확정 | `Button` → `confirm('확정하면 팀을 바꿀 수 없어요')` | 미배정이 있으면 비활성 + 이유. 확정하면 내전이 대진 준비로 |
 
-배정·해제·이동은 서버에 즉시 저장하고 화면은 응답 전에 먼저 바꾼다(낙관적 갱신). 실패하면 되돌리고 `toast.error`. 드래그 앤 드롭은 제공하지 않는다.
+배정·해제·이동은 서버에 즉시 저장하고 화면은 응답 전에 먼저 바꾼다(낙관적 갱신). 실패하면 되돌리고 `toast.error`.
+확정 후·열람자는 같은 팀 카드를 조작 없이 표시하고, 확정 전 열람자에게는 미배정 목록도 보인다.
 
-확정 후 또는 `can.edit`이 없으면 `TeamRoster`를 `grid lg:grid-cols-2`로 표시만 한다.
+**상태** 모집 중: "모집이 마감되면 선발된 참가자로 팀을 편성할 수 있어요".
 
-**미결정** 저장 단위(즉시 저장으로 할지 초안 후 일괄 저장할지 — 위는 즉시 저장 기준), 확정 해제 허용, 포지션 미지정 허용, 팀 이름 규칙.
+**미결정** 저장 단위(즉시/일괄), 확정 해제 허용, 포지션 미지정 허용, 팀 이름 규칙.
 
 ## `/g/[guildId]/scrims/[scrimId]/teams/auction` — 경매
 
-**목적** 운영자가 팀장·포인트를 정하고 후보를 한 명씩 올려 낙찰·유찰을 기록한다. 열람자는 진행 상황을 본다.
+**목적** 운영자가 팀장·포인트를 정하고 후보를 한 명씩 뽑아 낙찰·유찰을 기록한다. 열람자는 진행 상황을 본다.
+
+**근거** MSM1의 `AuctionTournamentCaptainPointSetupBoard`(준비)와 `AuctionTournamentBidDraftWorkbench`(진행). 팀장 지정 순서, 팀 카드의 입찰 입력·±10·낙찰, 무작위 다음 후보, 현재 후보 상세보기, 현재·유찰 후보를 팀 카드로 끌어 수동 배치, 유찰자 다시 올리기, 대기 순서 섞기, 마지막 기록 되돌리기, 초기화, 조정 타이머(10초)를 따른다. 팀당 5명이며 팀장이 한 자리를 차지한다.
 
 **데이터**
 
 ```ts
 {
-  auction: { id, status: AuctionStatus },
-  teams: { id, name, captain: { registrationId, displayName } | null, startPoints, remainingPoints,
-           members: { registrationId, displayName, price: number | null, method: 'auction' | 'manual' }[] }[],
-  openLot: { lotId, registrationId, displayName, userId, positions, mmr?: Record<LolPosition, number> } | null,
-  remaining: { registrationId, displayName, positions, lastLotStatus: 'unsold' | null }[],
-  history: { lotId, displayName, status: AuctionLotStatus, teamName: string | null, price: number | null,
-             correctedFrom: { teamName, price } | null, at }[],
+  auction: {
+    status: AuctionStatus,
+    teams: { id, name, captainId, startPoints, remainingPoints,
+             members: { player, via: 'captain' | 'auction' | 'manual', price: number | null }[] }[],
+    players,                         // 선발 참가자 전체(준비 단계의 팀장 후보)
+    openLot: player | null, queue: player[], unsold: player[],
+    history: { id, order, displayName, result: 'sold' | 'unsold' | 'manual', teamName, price, voided }[],
+    openProfile: { summary, mainLane, championRecords, laneGames, preferredChampions, recentGames, riot } | null
+  } | null,                          // 모집 중이면 null
   can: { manage: boolean }
 }
 ```
@@ -252,52 +264,60 @@ CellGroup                      │  탑    홍길동  ›             탑    …
 ### 준비 (`setup`)
 
 ```text
-[h2] 경매 준비                                              [경매 시작]
-CellGroup (팀마다)
-  1팀 팀장       선택 안 함   ›      ← Cell → ActionSheet(선발 참가자)
-  1팀 시작 포인트  1000      ›      ← Cell → Popup(Input type=number)
-  2팀 …
+[h2] 경매 준비                                         [설정 저장] [경매 시작]
+모든 팀의 팀장을 정해야 해요                       ← 시작할 수 없는 이유 한 줄
+┌ 팀장 고르기 ────────┐  ┌ 1팀 ─────────────┐ ┌ 2팀 ──────┐
+│ [Input 검색]         │  │ [img] 김철수 팀장 │ │ 팀장 미지정│
+│ 개발자 (미드)  후보  │  │ 시작 포인트 [1000]│ │ …          │
+│ 김철수 (정글) 1팀 팀장│  └──────────────────┘ └────────────┘
 ```
 
-`경매 시작`은 모든 팀의 팀장·시작 포인트가 정해져야 활성. 비활성이면 이유 한 줄. 시작 시 `confirm('시작하면 팀장과 포인트를 바꿀 수 없어요')`.
+- 참가자를 누르는 순서대로 비어 있는 첫 팀의 팀장이 되고, 다시 누르면 해제(`aria-pressed`).
+- 시작 포인트는 `Input inputmode="numeric"`, 1 이상의 정수.
+- `경매 시작`은 저장된 설정이 완성돼야 활성. 누르면 `confirm('시작하면 팀장과 시작 포인트를 바꿀 수 없어요')`. 시작 시 남은 참가자를 무작위 순서로 대기열에 넣는다.
 
 ### 진행 (`in_progress`)
 
+**레이아웃** MSM1 입찰 진행 화면: 한 줄 내전 머리 → 상태 줄(`경매` + 상태 태그) → 크게 둔 조정 타이머 막대(남은 초, 10~7초 녹색 · 6~3초 주황 · 3초 미만 빨간색) → 작업판 `[현재 매물(라인·티어 배지, 큰 얼굴·이름·MMR, 승률·승패·최근) / 후보 현황(후보 목록·순서 섞기·초기화 + 현재·대기·유찰 수) | 팀 패널 2×2]`. 현재 매물 머리에 `되돌리기`·`상세보기`·`다음 후보`. 유찰자 배치·다시 올리기는 `후보 목록` 팝업에서.
+
 ```text
-데스크톱 grid lg:grid-cols-[1fr_20rem]
-┌ Card: 현재 후보 ─────────────────────────┐   [h3] 남은 후보 12
-│ [img] 홍길동   미드·탑                     │   CellGroup (정적)
-│ MMR  미드 1620 · 탑 1540                  │    김철수   정글
-│                       [유찰] [낙찰 기록]  │    박영희   서폿   (유찰 1회)
-└───────────────────────────────────────────┘    …
-(후보 없음) 다음 후보를 올려 주세요  [후보 올리기]
-[h3] 팀
-Grids cols=2 (모바일 1)
- Card 1팀 · 팀장 이몽룡
-   잔여 640 / 1000  [Progress]
-   영입 2/4: 홍길동 220 · 김철수 140
- Card 2팀 …
-[Accordion] 낙찰 이력 (12)
-모바일: 현재 후보 → 팀 → 남은 후보 → 이력
+경매 내전  11/2(월) 21:00                    ← compact 내전 머리
+[h2] 경매 (진행 중)
+[████████████████████████░░░░░░░░ 6초]       ← 조정 타이머, 녹색→주황→빨강
+xl:grid-cols-[24rem_1fr]
+┌ 현재 후보 ──────────┐   ┌ 1팀 · 김철수      980P ┐ ┌ 2팀 … ┐
+│                      │   │ 시작 1000P  인원 2/5    │
+│      [img]           │   │ ▮▮▯▯▯                    │
+│      황진이 (정글)   │   │ [입찰가] [±10][낙찰]     │
+│ 탑 정글 미드 원딜 서폿│   │ 김철수 팀장 / 김유신 20P │
+│ [유찰]               │   └──────────────────────────┘
+└──────────────────────┘
+┌ 유찰 1명: 황진이 [1팀 배치][2팀 배치]… [다시 올리기] ┐
+┌ 대기 12명: 이름 칩(이름순) ┐
+[Accordion] 경매 기록 (n)  → <table> 순서·후보·결과·팀·가격, 되돌린 기록은 취소선 + "(되돌림)"
 ```
 
 | 영역 | 사용 | 동작 (운영자) |
 | --- | --- | --- |
-| 현재 후보 | `Card` | `footer`: `유찰`(`fill="lineLight"`) · `낙찰 기록`(`fill="base"`) |
-| 낙찰 기록 팝업 | `Popup` + `<form>`: 팀 `Radio`(라벨에 잔여 포인트), 가격 `Input type="number"` | 가격 ≤ 선택 팀 잔여, 팀 인원 미달 검증. 성공 시 팝업 닫힘 → 팀 카드 갱신(알림 없음) |
-| 후보 없음 | 문구 + `후보 올리기` `Button` | `Popup` + `Radio`(남은 후보) → `올리기`. 선정 방식이 정해지면 바뀔 수 있음 |
-| 팀 현황 | `Grids` + `Card` + `Progress` | 잔여/시작 포인트를 텍스트로도 |
-| 남은 후보 | `CellGroup` 정적 행 | 유찰 횟수 `info` |
-| 이력 | `Accordion` 하나, 펼치면 `<table>` | 열: 순서·후보·결과·팀·가격. 정정은 "220 → 180 (정정)"처럼 원래 값과 함께 |
+| 현재 후보 | 카드: `PlayerFace` 큰 얼굴, 포지션 칩, 포지션별 MMR 5칸(희망 포지션 강조) | `유찰`. 후보가 없으면 `다음 후보 뽑기`(대기열에서 무작위). 얼굴 영역을 팀 카드로 끌면 가격 없는 수동 배치 |
+| 상세보기 | `AuctionTargetProfile` | 내전 전적·주력 챔피언·라인별 MMR과 게임 수·선호 챔피언·최근 게임·Riot 전적. 열면 위의 MMR 5칸은 숨긴다 |
+| 조정 타이머 | 토큰 막대 + 남은 초 | 작업판 위 전체 폭. 후보·입찰가가 바뀌면 10초로 다시 참. 10~7초 `success`, 6~3초 `warning`, 3초 미만 `error` 색. 결과를 강제하지 않는 안내 |
+| 입찰가 조정 | `Button` `±10` | 좌클릭 +10, 우클릭 −10(감싸는 요소의 `contextmenu`). 키보드는 입찰가 직접 입력 |
+| 팀 카드 | 남은 포인트, 인원 막대 5칸, 입찰 `Input` + `−10`·`+10` + `낙찰` | 가격 ≤ 남은 포인트, 정원 미만. 0점 낙찰 허용 |
+| 유찰 | 팀별 `○팀 배치`(가격 없는 수동 배치) · `다시 올리기`(현재 후보로), 팀 카드로 끌어 놓기 | 진행 중인 후보가 있으면 비활성 |
+| 대기 | 이름 칩 + `순서 섞기` | 다음 후보는 대기열 앞에서 뽑는다 |
+| 되돌리기 | `마지막 기록 되돌리기` → `confirm` | 마지막 기록을 무효로 남기고 그 후보를 다시 현재 후보로. 기존 현재 후보는 대기열 맨 앞 |
+| 초기화 | `Button fill="textState" state="error"` → `confirm` | 모든 기록을 무효로, 팀장·시작 포인트만 남김 |
 
-모든 작업은 서버 확인 후 갱신한다(경매는 낙관적 갱신을 하지 않는다). 다른 운영자가 먼저 처리했으면 409 → `toast.error` + `invalidateAll()`.
-열람자 화면의 최신화 방식(폴링·SSE)은 미결정이며, 정해지기 전에는 `현재 후보` 카드 제목 옆에 `invalidateAll()`을 부르는 `새로고침` 아이콘 버튼 하나를 둔다.
+모든 작업은 서버 확인 후 갱신한다(낙관적 갱신 없음). 충돌하면 `toast.error` + 최신값.
+열람자에게는 조작 대신 `새로고침`(`invalidate('app:auction')`)을 둔다. 실시간 갱신 방식은 미결정.
+모든 팀 정원이 차면 자동으로 완료되고 내전은 대진 준비로 넘어간다.
 
 ### 완료·취소
 
-완료: `TeamRoster` 그리드 + 이력 `Accordion`. 취소: 상태 `Tag` + 이력. 경매 취소를 내전 취소로 표시하지 않는다.
+완료: 상태 줄 + 팀 카드(조작 없음) + 기록 `Accordion`. 경매 취소를 내전 취소로 표시하지 않는다.
 
-**미결정** 시작 포인트·가격 단위, 후보 선정 방식(수동 선택/무작위), 유찰자 재등장 규칙, 수동 배정 허용, 구매 정정 권한·시점, 시작 전 팀장 교체, 열람자 실시간 갱신 방식, MMR 노출 여부.
+**미결정** 시작 포인트·가격 단위, 유찰자 재등장 규칙, 구매 정정 권한·시점, 시작 전 팀장 교체, 열람자 실시간 갱신 방식, MMR 노출 여부, 최소 입찰 단위.
 
 ## `/g/[guildId]/scrims/[scrimId]/bracket` — 대진
 

@@ -4,9 +4,9 @@ import type { GuildRanking, GuildStory, NextScrim } from '#lib/features/guild/ty
 import { mapSection, toSection } from '#lib/features/section.ts';
 import { listMockRecentMatches } from '#lib/mocks/matches.ts';
 import { findMockNextScrim, listMockActiveScrims } from '#lib/mocks/scrims.ts';
-import { mockMainChampion } from '#lib/mocks/session.ts';
 import { listMockStories } from '#lib/mocks/stories.ts';
 import { championIconUrl, dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
+import { randomChampionSplash } from '#lib/server/ddragon/champions.ts';
 import { getRankingPage, latestDataDragonVersion, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
 import type { PageServerLoad } from './$types';
 
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ parent, params, url, depends }) => 
 	]);
 
 	const nextScrim: NextScrim | null =
-		next.status === 'fulfilled' && next.value ? { ...next.value, artUrl: splash(mockMainChampion) } : null;
+		next.status === 'fulfilled' && next.value ? { ...next.value, artUrl: await randomChampionSplash(version) } : null;
 
 	return {
 		guild,

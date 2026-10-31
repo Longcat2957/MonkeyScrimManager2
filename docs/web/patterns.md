@@ -107,7 +107,7 @@
 - 같은 DOM을 재배치하는 것이 기본(`flex-col lg:flex-row`, `grid lg:grid-cols-[2fr_1fr]`).
 - 데스크톱·모바일 변형이 다른 컴포넌트여야 하면(헤더 메뉴, 팝업 위치) `lib/ui/viewport.svelte.ts`의 `desktop.current`로 **하나만 렌더링**한다. CSS `hidden`으로 두 벌을 동시에 두지 않는다. `desktop.current`는 루트 레이아웃 마운트 전에는 항상 `false`라 서버 HTML과 hydration이 어긋나지 않는다(MediaQuery를 직접 쓰지 않는다).
 - SSR 첫 렌더는 모바일 기준이다. 데스크톱 변형은 hydrate 후 바뀌어도 레이아웃이 크게 흔들리지 않게 헤더 높이를 고정한다.
-- 가로 스크롤은 표 컨테이너에서만. 드래그만으로 할 수 있는 조작을 만들지 않는다.
+- 가로 스크롤은 표 컨테이너에서만.
 
 ## 7. 접근성
 
@@ -115,7 +115,7 @@
 - 포커스 표시: 전역 `:focus-visible { outline: 2px solid currentColor; outline-offset: 2px }`를 `layout.css`에 한 번. 컴포넌트별로 다시 쓰지 않는다.
 - 터치 대상 높이 최소 44px(`Button heightIn`, 행 `py-3`).
 - 상태는 색 + 문구(`Tag text`). 승패는 "승"/"패" 글자.
-- 키보드만으로 모든 작업 완료. 특히 편성 배정은 드래그 없이 팝업으로.
+- 버튼·링크·입력은 키보드로 조작할 수 있게 둔다.
 - `prefers-reduced-motion`이면 STDF `transition`/`duration` prop을 0 또는 null로.
 
 ## 8. 완료 체크리스트

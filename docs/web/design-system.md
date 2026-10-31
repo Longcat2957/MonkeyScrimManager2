@@ -9,7 +9,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 1. **STDF 컴포넌트** — [4절 선택표](#4-용도별-컴포넌트-선택표)에서 고른다.
 2. **STDF 함수형 API** — `toast`, `dialog`, `loading` (루트의 `<Feedback />`가 렌더링).
 3. **서비스 공통 컴포넌트** — STDF를 조합한 것. [5절](#5-서비스-공통-컴포넌트)에 있는 것만 만든다.
-4. **네이티브 HTML** — [6절](#6-네이티브-html을-쓰는-곳)의 다섯 경우만.
+4. **네이티브 HTML** — [6절](#6-네이티브-html을-쓰는-곳)의 경우만.
 
 금지:
 
@@ -116,7 +116,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 
 | 용도 | 사용 | 메모 |
 | --- | --- | --- |
-| 입력 작업 팝업 (모집 생성, 계정 추가, 편성 배정, 낙찰 기록, ROFL 업로드) | `Popup` | 데스크톱 `position="center"`, 모바일 `position="bottom"`. `maskClosable`은 입력이 없을 때만 true |
+| 입력 작업 팝업 (모집 생성, 계정 추가, 참가 신청, 팀 이름, ROFL 업로드) | `Popup` | 데스크톱 `position="center"`, 모바일 `position="bottom"`. `maskClosable`은 입력이 없을 때만 true |
 | 작은 메뉴 (서버 선택, 계정 메뉴, 행 작업 메뉴) | `ActionMenu` (데스크톱 `ActionPopover` + `triggerRef`, 모바일 `ActionSheet`) | `ActionPopover`에는 하단 시트 모드가 없다. 비활성 항목은 `desc`로 이유를 쓴다 |
 | 모바일 작업 목록 | `ActionSheet` | `ActionMenu`가 모바일에서 사용. `showCancel`로 취소 버튼을 둔다 |
 | 모바일 상세 보기 (게임 참가자 상세) | `Popup position="bottom"` | 데스크톱은 같은 `Popup`을 `position="right"`로 |
@@ -173,8 +173,23 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`Radio`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다 |
 | `AvatarStack` | `lib/components/common/` | STDF `AvatarGroup` | 겹친 얼굴 묶음 + 정확한 `+N`. 마운트 후 렌더링·`inert`·이미지 키 보정([7절](#7-stdf-300-제약과-대응)). 이미지가 없으면 이름 첫 글자 색 원(`lib/ui/avatar.ts`) |
 | `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, 공개 허용 시 Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
-| `TeamRoster` | `lib/components/scrims/` | `Card` + 포지션별 행 | 확정된 팀 표시. 수동 편성·경매·경기 상세에서 재사용. 편집 동작은 받지 않는다 |
+| `PlayerFace` | `lib/components/common/` | `<img>` 또는 이름 첫 글자 색 원 | 사람 얼굴 하나(`sm`·`md`·`lg`). `PlayerName`·편성·경매 타일이 같이 쓴다 |
+| `FormationTeamCard` · `FormationPool` | `lib/components/teams/` | 팀×포지션 자리 / 미배정 타일 | 수동 편성의 선택·배치·교환. `interactive`가 없으면 확정 결과 표시로 재사용 |
+| `AuctionTeamCard` | `lib/components/teams/` | 남은 포인트·인원 막대·입찰 입력·팀원 목록 | 경매 진행·완료 화면 |
+| `PositionIcon` | `lib/components/common/` | `<img>` (`static/riot/positions/*.svg`, MSM1에서 가져온 Riot 라인 아이콘) | 포지션 표시 장식. 이름은 옆 텍스트·`sr-only`로 |
+| `FormationSynergyRail` · `FormationHeadToHead` | `lib/components/teams/` | 팀 열 옆 레일(자리 줄 높이에 맞춤) | 수동 편성 상세 보기의 시너지·라인 상대 전적 |
+| `CandidateListDialog` | `lib/components/teams/` | `Popup` | 경매 후보 목록(현재·대기 순서·유찰 + 유찰자 팀 배치·다시 올리기) |
+| `DragState` | `lib/components/teams/drag.svelte.ts` | HTML5 드래그 상태(끄는 대상·놓을 대상·허용 여부) | 수동 편성과 경매의 끌어 놓기. 탭 선택·버튼 조작과 함께 둔다 |
 | `ChampionIcon` | `lib/components/common/` | `<img>` (Data Dragon) | 챔피언 이미지 + 이름 `alt`. 매핑 실패 시 이름 텍스트 |
+
+### 5.1 작업판 레이아웃 (팀 편성·경매)
+
+MSM1의 엔트리 편성·경매 화면 구성을 따른다. 둥근 카드를 띄워 놓지 않고 영역을 1px 경계로 붙인 한 덩어리로 만든다.
+
+- 바깥 상자: `rounded-(--radius-box) border border-border bg-border overflow-hidden`, 안의 영역은 `grid gap-px` + 각 영역 `bg-bg-surface`(다크 `bg-bg-surface-dark`). 경계색이 1px 틈으로 비쳐 구분선이 된다.
+- 맨 위 도구 줄: 왼쪽 작은 분류 제목 + 굵은 요약(예: `6/10 배치 · 미배정 4명`), 오른쪽 작업 버튼.
+- 자리·팀 패널은 고정 높이 줄(`grid-rows-[repeat(5,4.75rem)]`), 경매 작업판은 데스크톱 고정 높이(`xl:h-[52rem]`) 안에서 각 영역이 스크롤한다.
+- 좁은 화면에서 열이 줄어들지 않게 최소 폭을 주고 판 안에서 가로로 넘긴다(`relative overflow-x-auto`, `sr-only` 제약 때문에 `relative` 필수).
 
 ## 6. 네이티브 HTML을 쓰는 곳
 
@@ -182,11 +197,12 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | --- | --- | --- |
 | 페이지 이동 | `<a href>` (`LinkCell`, `ContextNav`, 본문 링크) | STDF는 링크를 렌더링하지 않는다. 새 탭·주소 복사·프리로드를 위해 이동은 링크로 |
 | 다열 수치 데이터 | `<table>` + `<caption>` + `<th scope>` | STDF에 `Table`이 없다. 모바일에서는 핵심 열만 두고 `overflow-x-auto` 컨테이너 |
+| 선택형 타일 (편성 자리, 미배정·팀장 후보) | `<button aria-pressed>` | 얼굴·이름·칩·MMR을 담고 눌림 상태를 알려야 한다. STDF `Cell`·`List`는 눌림 상태가 없고 행 안에 다른 버튼(배정 해제)을 둘 수 없다. 토큰·`rounded-(--radius-form)`만 쓴다 |
 | 폼 경계 | `<form>`, `<fieldset>`, `<legend>` | Enter 제출과 그룹 라벨. 안의 컨트롤은 STDF |
 | 정적 이미지 | `<img>` | `Avatar`는 항상 버튼 |
 | 문서 본문 | `h1~h3`, `p`, `ol/ul`, `dl` | 약관·문서·소개 문구 |
 
-이 다섯 경우의 스타일도 토큰과 Tailwind 유틸리티로 쓰고, STDF와 같은 모서리·간격·포커스 표시를 맞춘다.
+이 경우들의 스타일도 토큰과 Tailwind 유틸리티로 쓰고, STDF와 같은 모서리·간격·포커스 표시를 맞춘다.
 
 ## 7. STDF 3.0.0 제약과 대응
 
@@ -219,8 +235,11 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `Button size="auto"`는 가로 여백이 없다 | `injClass="px-2"`~`px-4`를 함께 준다 |
 | `NavBar` 루트가 `h-12 bg-white dark:bg-black`를 고정으로 가진다 | `injClass`에 `h-(--app-header-height)! bg-transparent!`처럼 `!` 수정자로 덮는다 |
 | 기본 언어가 중국어 | 루트 `ConfigProvider` 필수 |
+| `Accordion` 머리 버튼에 `aria-expanded`가 없다 | 펼침 여부가 중요한 정보에는 쓰지 않는다. 경매 기록처럼 부가 이력에만 쓴다 |
 | `Checkbox`·`Radio`·`Stepper`의 항목이 `type` 없는 `<button>`이라 `<form>` 안에서 누르면 제출된다. Enter 암묵 제출도 첫 항목 버튼을 눌러 값을 바꾼다 | 폼에 `{@attach nonSubmitButtons}`. 제출 버튼은 `Button type="submit"` 명시 |
 | `Button fill="text"`는 `state`를 무시하고 항상 본문색이다 | 색이 있는 텍스트 버튼(철회 등)은 `fill="textState" state="error"` |
+| `Input` 바깥 칸에 `px-2 py-1` 여백이 고정되어 있어 같은 줄의 다른 요소와 왼쪽 선이 어긋난다 | 줄 정렬이 필요한 곳은 감싸는 요소에 `-mx-2 -my-1` (경매 팀 패널 입찰가) |
+| `Button`이 `onclick` 외의 이벤트(`oncontextmenu` 등)를 받지 않는다 | 감싸는 `<span role="presentation">`에서 받는다. 경매 `±10`의 우클릭 −10 |
 | `Tab`의 `showNum`은 개수 배지가 아니라 한 번에 보이는 탭 칸 수(기본 3)다. `overflow` 모드는 ResizeObserver 루프 오류를 낸다 | 칸 수만큼 `showNum`을 주고 `overflow`는 쓰지 않는다. 좁은 화면에 다 안 들어가면 라벨을 줄인다 |
 | `List` 일괄 선택 모드는 선택 칸(40px)만큼 행을 오른쪽으로 밀어 오른쪽 끝 내용이 잘린다. `itemPx`의 `px-0`이 `itemInjClass` 여백을 덮는다 | `itemInjClass="pl-3! pr-13!"` |
 | `List batchSelectable`은 보기 모드에서도 자체 `편집` 토글을 그린다 | 보기 목록은 `<ul>`로 따로 두고, 관리 버튼을 누를 때만 `batchMode`로 `List`를 렌더링한다. `List`의 `완료`가 `batchMode`를 끄면 보기 목록으로 돌아간다 |

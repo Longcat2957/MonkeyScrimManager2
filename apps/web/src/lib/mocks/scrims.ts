@@ -26,9 +26,14 @@ export type MockFailure = { status: number; message: string };
 export type IconResolver = (championId: string) => string | null;
 const noIcon: IconResolver = () => null;
 
-type MockParticipant = Omit<ScrimParticipant, 'iconUrl'> & { riotAccountId: string; championId: string };
+// mmr은 현재 시즌의 포지션별 값이다(초기값 1500). 팀 편성·경매 화면이 사용한다.
+export type MockParticipant = Omit<ScrimParticipant, 'iconUrl'> & {
+	riotAccountId: string;
+	championId: string;
+	mmr: Record<LolPosition, number>;
+};
 
-type MockScrim = ScrimSettings & {
+export type MockScrim = ScrimSettings & {
 	guildId: string;
 	id: string;
 	status: ScrimStatus;
@@ -56,8 +61,22 @@ function participants(scrimId: string, statuses: RegistrationStatus[]): MockPart
 		riotAccountId: `${scrimId}-acc${index + 1}`,
 		positions: POSITION_SETS[index % POSITION_SETS.length]!,
 		status,
-		registeredAt: new Date(Date.UTC(2026, 9, 20, 3, index * 7)).toISOString()
+		registeredAt: new Date(Date.UTC(2026, 9, 20, 3, index * 7)).toISOString(),
+		mmr: mockMmr(index)
 	}));
+}
+
+const MMR_POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
+
+// 사람마다 주 포지션은 높고 나머지는 낮게, 같은 입력이면 항상 같은 값이 나오게 만든다.
+function mockMmr(index: number): Record<LolPosition, number> {
+	const main = POSITION_SETS[index % POSITION_SETS.length]!;
+	return Object.fromEntries(
+		MMR_POSITIONS.map((position, order) => [
+			position,
+			1500 + (main.includes(position) ? 120 : -60) + (((index + 3) * (order + 7) * 37) % 140) - 70
+		])
+	) as Record<LolPosition, number>;
 }
 
 const repeat = (status: RegistrationStatus, count: number): RegistrationStatus[] => Array(count).fill(status);
@@ -175,6 +194,20 @@ const scrims: MockScrim[] = [
 		createdAt: '2026-10-26T00:00:00Z',
 		participants: participants('devScrim006', [...repeat('selected', 6), ...repeat('pending', 4)])
 	},
+	{
+		guildId: 'devGuild001',
+		id: 'devScrim007',
+		title: '수동 편성 내전',
+		status: 'preparing',
+		scheduledAt: '2026-11-03T11:00:00Z',
+		teamCount: 2,
+		reserveCapacity: 0,
+		formationMethod: 'manual',
+		hardFearless: false,
+		canManage: true,
+		createdAt: '2026-10-27T00:00:00Z',
+		participants: withMe(participants('devScrim007', repeat('selected', 10)), 'selected')
+	},
 	// 목록의 종료 필터와 쪽 나눔을 확인하기 위한 지난 내전이다.
 	...Array.from({ length: 19 }, (_, index): MockScrim => {
 		const scheduled = new Date(Date.UTC(2026, 9, 17 - index * 3, 11));
@@ -206,6 +239,11 @@ const FILTER: Record<Exclude<ScrimStatusFilter, 'all'>, ScrimStatus[]> = {
 	active: ['preparing', 'ready', 'in_progress'],
 	done: DONE
 };
+
+// 팀 편성·경매 목(teams.ts)이 같은 저장소를 고쳐 쓰도록 원본 기록을 돌려준다.
+export function findMockScrimRecord(guildId: string, scrimId: string) {
+	return find(guildId, scrimId);
+}
 
 function find(guildId: string, scrimId: string) {
 	return scrims.find((scrim) => scrim.guildId === guildId && scrim.id === scrimId) ?? null;
@@ -327,16 +365,6 @@ export async function findMockNextScrim(guildId: string, icon: IconResolver = no
 }
 
 // 내전 머리의 배경으로 쓸 챔피언이다. 활성 신청자의 주 챔피언 중 가장 많은 것을, 신청자가 없으면 null을 준다.
-export function findMockScrimArtChampion(guildId: string, scrimId: string): string | null {
-	const scrim = find(guildId, scrimId);
-	if (!scrim) return null;
-	const tally = new Map<string, number>();
-	for (const participant of activeRegistrations(scrim)) {
-		tally.set(participant.championId, (tally.get(participant.championId) ?? 0) + 1);
-	}
-	return [...tally].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-}
-
 export function getMockScrimSettings(guildId: string, scrimId: string): ScrimSettings | null {
 	const scrim = find(guildId, scrimId);
 	if (!scrim) return null;
@@ -400,7 +428,7 @@ export async function getMockScrimDetail(guildId: string, scrimId: string, userI
 		: null;
 	return {
 		participants: scrim.participants.map(
-			({ riotAccountId: _, championId, ...participant }): ScrimParticipant => ({ ...participant, iconUrl: icon(championId) })
+			({ riotAccountId: _, championId, mmr: __, ...participant }): ScrimParticipant => ({ ...participant, iconUrl: icon(championId) })
 		),
 		counts: counts(scrim),
 		myRegistration,
@@ -455,7 +483,8 @@ export async function registerMock(guildId: string, scrimId: string, input: Regi
 		riotAccountId: input.riotAccountId,
 		positions: input.positions,
 		status: 'pending',
-		registeredAt: new Date().toISOString()
+		registeredAt: new Date().toISOString(),
+		mmr: mockMmr(0)
 	});
 	return null;
 }

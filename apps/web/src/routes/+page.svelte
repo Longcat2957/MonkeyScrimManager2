@@ -6,6 +6,9 @@
 	// 빈 상세 페이지로 이동하기 위한 임시 경로 값이다.
 	const guildId = 'devGuild001';
 	const scrimId = 'devScrim001';
+	// 편성 화면은 편성 방식이 맞는 준비 단계 내전으로 연결한다.
+	const manualScrimId = 'devScrim007';
+	const auctionScrimId = 'devScrim002';
 	const matchId = 'devMatch001';
 	const userId = 'devUser001';
 	const devTools = [
@@ -19,8 +22,8 @@
 		{ label: '내전 목록', href: resolve('/g/[guildId]/scrims', { guildId }) },
 		{ label: '내전 상세', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },
 		{ label: '팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId, scrimId }) },
-		{ label: '수동 팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/manual', { guildId, scrimId }) },
-		{ label: '경매', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/auction', { guildId, scrimId }) },
+		{ label: '수동 팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/manual', { guildId, scrimId: manualScrimId }) },
+		{ label: '경매', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/auction', { guildId, scrimId: auctionScrimId }) },
 		{ label: '대진', href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', { guildId, scrimId }) },
 		{ label: '매치 목록', href: resolve('/g/[guildId]/matches', { guildId }) },
 		{ label: '매치 상세', href: resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId }) },
