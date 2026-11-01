@@ -132,6 +132,6 @@ routes/+layout.svelte                    ConfigProvider(ko_KR) · Feedback · Ap
 | 공통 오류 화면, `/dev/error` | 구현됨 |
 | `AppHeader`, `AppFooter`, 루트 `ConfigProvider`·`Feedback` | 구현됨 |
 | 서버·내전 레이아웃(개발 모드 목 데이터), `ScrimSummary`, `/teams` redirect, `[userId]` 경로 | 구현됨 |
-| 내전 목록·내전 요약·수동 편성·경매 본문 | 구현됨(개발 모드 목 데이터·form action) |
-| 그 외 페이지 본문 | 제목만 있는 빈 페이지 |
+| 내전 목록·내전 요약·수동 편성·경매·대진, 경기 기록·경기 상세(ROFL 업로드), 사용자 전적, 서버 통계, 서버 관리 본문 | 구현됨(개발 모드 목 데이터·form action) |
+| 서비스 소개, 이용 안내, 약관·개인정보(준비 중 안내), 백오피스(제목 + 운영자 권한 검사) | 구현됨 |
 | 인증·권한·DB 조회, 로그인·로그아웃 | 미구현. 운영 모드에서는 서버·내전 문맥이 `null`이라 전역 헤더로 표시 |

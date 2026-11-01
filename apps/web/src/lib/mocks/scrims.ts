@@ -208,6 +208,21 @@ const scrims: MockScrim[] = [
 		createdAt: '2026-10-27T00:00:00Z',
 		participants: withMe(participants('devScrim007', repeat('selected', 10)), 'selected')
 	},
+	{
+		guildId: 'devGuild001',
+		id: 'devScrim008',
+		title: '4팀 내전',
+		status: 'ready',
+		scheduledAt: '2026-11-04T11:00:00Z',
+		teamCount: 4,
+		reserveCapacity: 0,
+		formationMethod: 'manual',
+		hardFearless: true,
+		canManage: true,
+		createdAt: '2026-10-28T00:00:00Z',
+		// 팀 편성을 확정해 대진 자리 배치부터 직접 조작할 수 있다.
+		participants: withMe(participants('devScrim008', repeat('selected', 20)), 'selected')
+	},
 	// 목록의 종료 필터와 쪽 나눔을 확인하기 위한 지난 내전이다.
 	...Array.from({ length: 19 }, (_, index): MockScrim => {
 		const scheduled = new Date(Date.UTC(2026, 9, 17 - index * 3, 11));

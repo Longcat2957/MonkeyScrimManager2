@@ -25,7 +25,7 @@ const fixedPlayers: MockPlayer[] = [
 	{ userId: 'u12', displayName: '쌀숭이', records: { jungle: { mmr: 1702, games: 19, wins: 12, championId: 'Kindred' }, support: { mmr: 1622, games: 15, wins: 8, championId: 'Nautilus' }, top: { mmr: 1650, games: 11, wins: 6, championId: 'Ornn' } } }
 ];
 
-const CHAMPIONS: Record<LolPosition, string[]> = {
+export const CHAMPIONS: Record<LolPosition, string[]> = {
 	top: ['Jax', 'Garen', 'Malphite', 'Sett', 'Renekton', 'Shen'],
 	jungle: ['Vi', 'Graves', 'Khazix', 'Ekko', 'Hecarim', 'Warwick'],
 	mid: ['Annie', 'Veigar', 'Katarina', 'Akali', 'Viktor', 'Galio'],
@@ -59,6 +59,10 @@ const generatedPlayers: MockPlayer[] = Array.from({ length: 48 }, (_, index) => 
 });
 
 const players = [...fixedPlayers, ...generatedPlayers];
+
+/** 전적·통계 목 데이터가 같은 사용자 목록을 쓰도록 공개한다. */
+export const mockPlayers: readonly MockPlayer[] = players;
+export type { MockPlayer };
 
 function rankPosition(position: LolPosition, userId: string | null): MockRankingEntry[] {
 	return players

@@ -90,26 +90,21 @@ lg: 2열 같은 폭
 ```text
 [h1] 서버 관리
 
-[h2] 게시 채널                                        ← 봇 게시 기능 확정 시에만
+[h2] 관리자                                   관리자 2명
+[Input type=search 멤버 이름 검색]
 [CellGroup]
-  모집 공지 채널      #내전-모집   ›                   ← Cell → ActionSheet(채널 목록)
-  결과 게시 채널      설정 안 함   ›
-
-[h2] 관리자
-[Input type=search 멤버 검색]
-[CellGroup]
-  [img] 홍길동                             [Switch]   ← 관리자 여부
-  [img] 김철수                             [Switch]
-[Pagination]
+  [img] 개발자   자신의 권한은 바꿀 수 없어요   [Switch 고정]
+  [img] 바나나우유                               [Switch]
+  [img] 미드갱좀                                 [Switch]
+[Pagination]                                    ← 20명씩, 관리자 먼저 → 이름 순
 ```
 
-**구성**
+게시 채널 설정은 봇 게시 기능이 확정되면 이 위에 추가한다.
 
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
-| 게시 채널 | `Cell right="arrow" detail=현재 채널명` → `ActionSheet` | 선택 즉시 저장. 첫 항목 `설정 안 함`. 저장 성공은 `detail` 변경으로 확인되므로 알림 없음 |
-| 멤버 검색 | `Input type="search"` | 이름으로 필터(쿼리 `q`) |
-| 관리자 권한 | `Cell right={{ type: 'switch' }}` | 켜기는 즉시 저장. 끄기는 `confirm('{이름}님의 관리자 권한을 회수할까요?')` 후 저장. 자신·마지막 관리자는 `switchActive` 고정 + `subTitle`에 이유 |
+| 멤버 검색 | `<form role="search">` + `Input type="search"` | `?q=`. 폼에 `nonSubmitButtons` |
+| 관리자 권한 | `SwitchCell`(`leftChild`에 사진) | 켜기는 즉시 저장. 끄기는 `confirm('{이름}님의 관리자 권한을 회수할까요?')` 후 저장. 취소·실패하면 서버 값으로 되돌린다. 자신·마지막 관리자는 비활성 + `subTitle`에 이유 |
 
 멤버 초대·추방·Discord 역할 변경은 제공하지 않는다.
 
@@ -117,8 +112,8 @@ lg: 2열 같은 폭
 
 | 상황 | 처리 |
 | --- | --- |
-| 채널 목록 조회 실패 (봇 권한 등) | `Cell detail`에 "채널을 불러오지 못했어요", 클릭 시 재조회 |
-| 다른 관리자가 먼저 변경 | 공통 충돌 처리([patterns.md 1절](../patterns.md#1-상태-표현)) |
-| 작업 중 내 관리자 권한 회수됨 | 다음 저장이 403 → `invalidateAll()` → 페이지 403 |
+| 관리자가 아님 | `load`에서 403 |
+| 검색 결과 없음 | "'{q}'에 맞는 멤버가 없어요" |
+| 작업 중 내 관리자 권한 회수됨 | 다음 저장이 403 → 오류 알림 |
 
 **미결정** 최초 관리자 지정 방식, 자신·마지막 관리자 회수 규칙, 봇 게시 기능 제공 시점, 이 페이지에서 편집할 다른 설정(MMR 시즌 등).

@@ -323,54 +323,66 @@ xl:grid-cols-[24rem_1fr]
 
 ## `/g/[guildId]/scrims/[scrimId]/bracket` — 대진
 
-**목적** 운영자가 라운드와 대진을 구성하고, 모두가 시리즈 진행을 본다. 게임 결과 등록은 경기 상세가 담당한다.
+**목적** 운영자가 확정된 팀을 정해진 대진 자리에 배치하고 대진을 확정한다. 확정 후에는 같은 화면에서 경기별 점수와 진출 팀을 본다. 게임 결과 등록은 경기 상세가 담당한다.
 
-**데이터**
+**근거** [MSM1](https://github.com/Longcat2957/MonkeyScrimManager)의 [대진 설정 보드](../../../../MonkeyScrimManager/apps/web/src/lib/components/workflow/AuctionTournamentBracketMatchSetupBoard.svelte)와 [운영 계약](../../../../MonkeyScrimManager/docs/routing/frontend.md)을 참고한다. 로컬 기준 파일은 `/home/min/workspace/MonkeyScrimManager/apps/web/src/lib/components/workflow/AuctionTournamentBracketMatchSetupBoard.svelte`다. 미배정 팀 풀 → 클릭·끌어 놓기로 자리 배치 → 대진 확정 흐름을 적용하며, 라운드·경기를 하나씩 만들거나 다음 경기의 승자 연결을 직접 입력하는 편집기는 제공하지 않는다.
+
+**권한** 서버가 `can.edit`(운영자 + 대진 준비 + 미확정)일 때만 배치·경기 방식 변경·확정을, `can.unlock`(운영자 + 대진 준비 + 확정)일 때만 `다시 편성`을 허용한다. 경기가 시작되면 둘 다 없다.
+
+**데이터** (`lib/features/scrims/bracket.ts`)
 
 ```ts
-{
-  rounds: { id, order, bestOf,
-            matches: { id: string | null, slotA: Slot, slotB: Slot, scoreA, scoreB, status, winner: 'a' | 'b' | null }[] }[],
-  can: { manage: boolean }
-}
-// Slot = { kind: 'team', teamName } | { kind: 'winnerOf', label: '1라운드 1경기' } | { kind: 'empty' }
+bracket: {
+  teams: { id, name, members: { id, displayName, iconUrl, position: LolPosition | null }[] }[],
+  matches: { key, label, stage: 'semi' | 'final',
+             a: Side, b: Side, scoreA, scoreB, status: MatchStatus, winner: 'a' | 'b' | null,
+             matchId: string | null }[],          // 준결승 → 결승 순서
+  bestOf: { semi?: 1 | 3 | 5, final: 1 | 3 | 5 },
+  confirmed: boolean,
+  can: { edit: boolean, unlock: boolean }
+} | null                                          // 팀 편성 전
+// Side = { seat: string | null, from: string | null, teamId: string | null }
+//   seat: 운영자가 팀을 놓는 자리 키, from: 승자가 올라오는 앞 경기 키
 ```
 
-**화면**
+틀은 `bracketTemplate(팀 수)`가 만든다. **2팀** 결승, **3팀** 준결승 + `결승 직행` 자리, **4팀** 준결승 A·B + 승자끼리 결승. 결승 직행은 운영자가 정하는 시드이며 자동 승리·점수를 기록하지 않는다. 앞 경기 승자는 `resolveWinners`가 종료된 경기에서만 다음 자리로 올린다.
+
+**화면** (`BracketBoard` 작업판, [5.1 작업판 레이아웃](../design-system.md#51-작업판-레이아웃-팀-편성경매대진))
 
 ```text
-데스크톱: 라운드를 가로 열로 (grid-flow-col auto-cols-[18rem] overflow-x-auto)
-[h2] 대진                                                   [라운드 추가]
- 1라운드 · BO3                     결승 · BO5
- ┌ Card 1경기 ───────[편집]┐      ┌ Card 결승 ──────────┐
- │ <a> 1팀       2   승    │      │ 1경기 승자    -     │
- │     2팀       1         │      │ 2경기 승자    -     │
- └─────────────────────────┘      └─────────────────────┘
- ┌ Card 2경기 ─────────────┐
- │ <a> 3팀  …              │
- └─────────────────────────┘
- [경기 추가]                        [경기 추가]
-
-모바일: [Tabs] 1라운드 | 결승   → 선택한 라운드의 카드만 한 열
+4팀 내전  11/4(수) 20:00                         ← compact 내전 머리
+┌ 대진 · 4팀 · 2/4 배치                 [초기화] [대진 확정] ┐
+├ 팀 풀 ─────────┬ 준결승  (단판 3전2선승 5전3선승) ┬ 결승 (…) ───┤
+│ [3팀 ●●●●●]    │ ┌ 준결승 A ──────────┐          │ ┌ 결승 ────┐ │
+│ [4팀 ●●●●●]    │ │ 1팀  ●●●●●      ×  │          │ │준결승 A 승자│ │
+│                │ │ 2팀  ●●●●●      ×  │          │ │준결승 B 승자│ │
+│                │ └────────────────────┘          │ └──────────┘ │
+│                │ ┌ 준결승 B: 비어 있음 ×2 ┐        │              │
+└────────────────┴──────────────────────────────────┴──────────────┘
+모바일: 팀 풀 → 준결승 → 결승을 세로로 쌓는다.
 ```
 
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
-| 라운드 열 제목 | `h3` "1라운드 · BO3" | 운영자: 제목 옆 `⋯` `ActionPopover` → `BO 변경`(시작 전만) · `라운드 삭제`(빈 라운드만) |
-| 경기 카드 | `Card` (`onclick` 없음) | 본문의 두 팀 행 전체가 `<a href="/matches/[id]">`. Match가 아직 없으면 링크 없음 |
-| 팀 행 | 팀 이름 + 점수(`tabular-nums`) + 승자에 "승" 글자 | 미정 자리: "1경기 승자" 또는 "미정"을 흐린 텍스트로 |
-| 카드 편집 | `header`의 `Button fill="text"` `편집` (운영자) | `Popup` + `<form>`: A·B 자리 각각 `Radio` [팀 지정 / 이전 경기 승자] + `ActionSheet`(팀 또는 경기). 순환·중복 검증 |
-| 라운드 추가 | `Button fill="lineLight"` | `Popup`: BO `Radio` (1·3·5) |
-| 경기 추가 | 라운드 열 아래 `Button fill="text"` | 빈 카드 생성 후 편집 팝업 열기 |
-| 라운드 전환 (모바일) | `Tabs` | 클라이언트 상태 |
+| 도구 줄 | 분류 제목 + 요약(`4팀 · 2/4 배치`) + `Button` | 편집: `초기화`(배치만 풀로, 경기 방식 유지, `confirm`)·`대진 확정`(빈 자리가 없을 때만, `confirm`). 확정 후: `다시 편성` |
+| 선택 줄 | `aria-live` 한 줄 | 팀을 골랐을 때만 "OO 선택됨 · 놓을 자리를…" + `선택 취소`. Escape로도 취소 |
+| 팀 풀 | 선택형 네이티브 타일 | 미배치 팀. 누르면 선택, 끌어서 자리에 놓으면 배치. 배치된 팀을 풀로 끌면 배치 해제 |
+| 경기 방식 | `BracketFormatControl`(`Radio`) | 라운드 열 머리. 준결승·결승 각각 단판·3전 2선승·5전 3선승. 확정 후에는 글자로만 |
+| 경기 칸 | `BracketMatchBox` | 편집: 자리마다 팀 타일(끌기·선택) + `×` 배치 해제, 팀 선택 중에는 `여기에 배치`/`교체` 버튼. 다른 자리의 팀을 놓으면 옮기고, 자리에 있던 팀은 풀로 돌아간다. 확정 후: 팀·점수·승자, 진행 중은 경고색 테두리, `matchId`가 있으면 경기 상세 링크 |
+| 끌어 놓기 | `DragState`(수동 편성·경매와 공용) | HTML5 드래그. 터치에서는 탭 선택으로 같은 동작 |
 
 **상태**
 
 | 상황 | 처리 |
 | --- | --- |
-| 팀 미확정 | "팀 편성이 끝나면 대진을 만들 수 있어요". 라운드 추가 미렌더링 |
-| 대진 없음 | 운영자: `라운드 추가`만. 열람자: "아직 대진이 없어요" |
-| 한 팀만 정해짐 | 자동 승리로 표시하지 않는다 |
-| 중도 종료·취소 시리즈 | 상태 `Tag`, 승자 표시 없음 |
+| 팀 미확정 | `bracket: null` → "팀 편성이 끝나면 대진을 만들 수 있어요" |
+| 첫 진입 | 팀 수에 맞는 빈 틀 + 팀 풀. 확정 비활성 |
+| 모두 배치 | 팀 풀에 "모든 팀을 배치했어요", 확정 활성 |
+| 확정·열람자 | 팀 풀·배치 조작 없이 대진 표시 |
+| 진행·종료 | 점수·승자·상태 태그. 승자는 다음 경기 자리에 올라간다 |
 
-**미결정** 지원 대진 형식, 자동 생성 여부, 승자 자동 반영 시점, Match 생성 시점, 부전승·순위 결정전, 부분 완료 후 수정 범위.
+개발용 목: `devScrim008`(4팀·운영자)에서 배치 → 확정 → 다시 편성, `devScrim005` 종료된 4팀 대진, `devScrim004` 진행 중 2팀 결승. 테스트는 `tests/bracket.test.ts`.
+
+밴픽·픽 순서·경기 중 진행 입력은 이 화면에 추가하지 않는다. 결과는 ROFL 최종 데이터 검증으로 기록한다.
+
+**미결정** 실제 Match 생성·ROFL 등록과의 연결 시점, 순위 결정전 등 추가 대진 형식.

@@ -1,0 +1,506 @@
+{
+	"gameVersion": "16.21.829.8620",
+	"gameLengthMs": 1863187,
+	"participants": [
+		{
+			"riotId": {
+				"gameName": "개발자",
+				"tagLine": "KR1"
+			},
+			"champion": "Renekton",
+			"teamId": 100,
+			"win": false,
+			"stats": {
+				"kills": 2,
+				"deaths": 10,
+				"assists": 1,
+				"minionsKilled": 235,
+				"neutralMinionsKilled": 0,
+				"damageDealtToChampions": 26047,
+				"damageTaken": 40283,
+				"goldEarned": 10677,
+				"visionScore": 24,
+				"wardsPlaced": 9,
+				"wardsKilled": 0,
+				"controlWardsBought": 1,
+				"level": 17,
+				"totalHeal": 7202,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 0,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 0
+			},
+			"loadout": {
+				"itemIds": [
+					1037,
+					3071,
+					3123,
+					3047,
+					2021,
+					6692,
+					3340
+				],
+				"summonerSpellIds": [
+					4,
+					14
+				],
+				"primaryRuneStyleId": 8000,
+				"secondaryRuneStyleId": 8400,
+				"keystoneId": 8010
+			},
+			"userId": "devUser001"
+		},
+		{
+			"riotId": {
+				"gameName": "바나나우유",
+				"tagLine": "KR1"
+			},
+			"champion": "Sylas",
+			"teamId": 100,
+			"win": false,
+			"stats": {
+				"kills": 5,
+				"deaths": 9,
+				"assists": 5,
+				"minionsKilled": 14,
+				"neutralMinionsKilled": 117,
+				"damageDealtToChampions": 15167,
+				"damageTaken": 35934,
+				"goldEarned": 10272,
+				"visionScore": 31,
+				"wardsPlaced": 8,
+				"wardsKilled": 4,
+				"controlWardsBought": 6,
+				"level": 14,
+				"totalHeal": 12362,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 1,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 2
+			},
+			"loadout": {
+				"itemIds": [
+					3147,
+					3157,
+					3152,
+					0,
+					3111,
+					3108,
+					3364
+				],
+				"summonerSpellIds": [
+					4,
+					11
+				],
+				"primaryRuneStyleId": 8000,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8010
+			},
+			"userId": "u02"
+		},
+		{
+			"riotId": {
+				"gameName": "정글은차이",
+				"tagLine": "KR1"
+			},
+			"champion": "Orianna",
+			"teamId": 100,
+			"win": false,
+			"stats": {
+				"kills": 11,
+				"deaths": 7,
+				"assists": 4,
+				"minionsKilled": 259,
+				"neutralMinionsKilled": 0,
+				"damageDealtToChampions": 40461,
+				"damageTaken": 20966,
+				"goldEarned": 16694,
+				"visionScore": 33,
+				"wardsPlaced": 14,
+				"wardsKilled": 5,
+				"controlWardsBought": 1,
+				"level": 17,
+				"totalHeal": 2236,
+				"damageShieldedOnTeammates": 2476,
+				"doubleKills": 1,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 4
+			},
+			"loadout": {
+				"itemIds": [
+					4645,
+					3157,
+					2503,
+					1058,
+					4629,
+					3175,
+					3340
+				],
+				"summonerSpellIds": [
+					4,
+					3
+				],
+				"primaryRuneStyleId": 8200,
+				"secondaryRuneStyleId": 8400,
+				"keystoneId": 8214
+			},
+			"userId": "u03"
+		},
+		{
+			"riotId": {
+				"gameName": "원딜은억울해",
+				"tagLine": "KR1"
+			},
+			"champion": "Caitlyn",
+			"teamId": 100,
+			"win": false,
+			"stats": {
+				"kills": 5,
+				"deaths": 8,
+				"assists": 4,
+				"minionsKilled": 258,
+				"neutralMinionsKilled": 0,
+				"damageDealtToChampions": 26224,
+				"damageTaken": 20463,
+				"goldEarned": 13821,
+				"visionScore": 27,
+				"wardsPlaced": 11,
+				"wardsKilled": 4,
+				"controlWardsBought": 2,
+				"level": 15,
+				"totalHeal": 5607,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 0,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 3
+			},
+			"loadout": {
+				"itemIds": [
+					1086,
+					3031,
+					3094,
+					3095,
+					2055,
+					6670,
+					3363
+				],
+				"summonerSpellIds": [
+					7,
+					4
+				],
+				"primaryRuneStyleId": 8000,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8008
+			},
+			"userId": "u04"
+		},
+		{
+			"riotId": {
+				"gameName": "서폿장인 몽키",
+				"tagLine": "KR1"
+			},
+			"champion": "Thresh",
+			"teamId": 100,
+			"win": false,
+			"stats": {
+				"kills": 2,
+				"deaths": 8,
+				"assists": 12,
+				"minionsKilled": 45,
+				"neutralMinionsKilled": 0,
+				"damageDealtToChampions": 7576,
+				"damageTaken": 27454,
+				"goldEarned": 9236,
+				"visionScore": 108,
+				"wardsPlaced": 47,
+				"wardsKilled": 11,
+				"controlWardsBought": 20,
+				"level": 14,
+				"totalHeal": 3349,
+				"damageShieldedOnTeammates": 1831,
+				"doubleKills": 0,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 0
+			},
+			"loadout": {
+				"itemIds": [
+					3190,
+					1011,
+					3009,
+					3109,
+					3067,
+					3876,
+					3364
+				],
+				"summonerSpellIds": [
+					3,
+					4
+				],
+				"primaryRuneStyleId": 8400,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8439
+			},
+			"userId": "u05"
+		},
+		{
+			"riotId": {
+				"gameName": "탑신병자",
+				"tagLine": "KR1"
+			},
+			"champion": "Zaahen",
+			"teamId": 200,
+			"win": true,
+			"stats": {
+				"kills": 10,
+				"deaths": 4,
+				"assists": 5,
+				"minionsKilled": 204,
+				"neutralMinionsKilled": 4,
+				"damageDealtToChampions": 34409,
+				"damageTaken": 47939,
+				"goldEarned": 12887,
+				"visionScore": 31,
+				"wardsPlaced": 8,
+				"wardsKilled": 3,
+				"controlWardsBought": 0,
+				"level": 19,
+				"totalHeal": 16254,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 0,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 6
+			},
+			"loadout": {
+				"itemIds": [
+					1120,
+					6631,
+					3078,
+					3076,
+					3111,
+					2517,
+					3364
+				],
+				"summonerSpellIds": [
+					12,
+					4
+				],
+				"primaryRuneStyleId": 8400,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8437
+			},
+			"userId": "u06"
+		},
+		{
+			"riotId": {
+				"gameName": "미드갱좀",
+				"tagLine": "KR1"
+			},
+			"champion": "Taliyah",
+			"teamId": 200,
+			"win": true,
+			"stats": {
+				"kills": 4,
+				"deaths": 4,
+				"assists": 21,
+				"minionsKilled": 58,
+				"neutralMinionsKilled": 215,
+				"damageDealtToChampions": 26987,
+				"damageTaken": 22625,
+				"goldEarned": 15556,
+				"visionScore": 41,
+				"wardsPlaced": 6,
+				"wardsKilled": 12,
+				"controlWardsBought": 4,
+				"level": 18,
+				"totalHeal": 11655,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 0,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 2
+			},
+			"loadout": {
+				"itemIds": [
+					3116,
+					3020,
+					2503,
+					4645,
+					3041,
+					3165,
+					3364
+				],
+				"summonerSpellIds": [
+					11,
+					4
+				],
+				"primaryRuneStyleId": 8100,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8128
+			},
+			"userId": "u07"
+		},
+		{
+			"riotId": {
+				"gameName": "와드박는기계",
+				"tagLine": "KR1"
+			},
+			"champion": "Locke",
+			"teamId": 200,
+			"win": true,
+			"stats": {
+				"kills": 20,
+				"deaths": 7,
+				"assists": 4,
+				"minionsKilled": 170,
+				"neutralMinionsKilled": 6,
+				"damageDealtToChampions": 35368,
+				"damageTaken": 34348,
+				"goldEarned": 15464,
+				"visionScore": 25,
+				"wardsPlaced": 5,
+				"wardsKilled": 4,
+				"controlWardsBought": 4,
+				"level": 16,
+				"totalHeal": 16736,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 2,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 5
+			},
+			"loadout": {
+				"itemIds": [
+					3089,
+					3175,
+					3137,
+					4645,
+					0,
+					3100,
+					3364
+				],
+				"summonerSpellIds": [
+					14,
+					4
+				],
+				"primaryRuneStyleId": 8100,
+				"secondaryRuneStyleId": 8400,
+				"keystoneId": 8112
+			},
+			"userId": "u08"
+		},
+		{
+			"riotId": {
+				"gameName": "홍길동",
+				"tagLine": "KR1"
+			},
+			"champion": "Xayah",
+			"teamId": 200,
+			"win": true,
+			"stats": {
+				"kills": 6,
+				"deaths": 2,
+				"assists": 10,
+				"minionsKilled": 226,
+				"neutralMinionsKilled": 8,
+				"damageDealtToChampions": 17919,
+				"damageTaken": 18967,
+				"goldEarned": 13349,
+				"visionScore": 15,
+				"wardsPlaced": 4,
+				"wardsKilled": 6,
+				"controlWardsBought": 0,
+				"level": 16,
+				"totalHeal": 8945,
+				"damageShieldedOnTeammates": 0,
+				"doubleKills": 1,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 6
+			},
+			"loadout": {
+				"itemIds": [
+					1086,
+					6675,
+					3032,
+					3031,
+					3035,
+					1018,
+					3363
+				],
+				"summonerSpellIds": [
+					21,
+					4
+				],
+				"primaryRuneStyleId": 8000,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8008
+			},
+			"userId": "u09"
+		},
+		{
+			"riotId": {
+				"gameName": "아주아주긴닉네임을쓰는사람",
+				"tagLine": "KR1"
+			},
+			"champion": "Blitzcrank",
+			"teamId": 200,
+			"win": true,
+			"stats": {
+				"kills": 2,
+				"deaths": 8,
+				"assists": 20,
+				"minionsKilled": 20,
+				"neutralMinionsKilled": 0,
+				"damageDealtToChampions": 8478,
+				"damageTaken": 26291,
+				"goldEarned": 9191,
+				"visionScore": 97,
+				"wardsPlaced": 40,
+				"wardsKilled": 6,
+				"controlWardsBought": 15,
+				"level": 13,
+				"totalHeal": 5070,
+				"damageShieldedOnTeammates": 940,
+				"doubleKills": 0,
+				"tripleKills": 0,
+				"quadraKills": 0,
+				"pentaKills": 0,
+				"largestKillingSpree": 0
+			},
+			"loadout": {
+				"itemIds": [
+					3869,
+					3109,
+					3190,
+					2524,
+					3009,
+					0,
+					3364
+				],
+				"summonerSpellIds": [
+					14,
+					4
+				],
+				"primaryRuneStyleId": 8400,
+				"secondaryRuneStyleId": 8300,
+				"keystoneId": 8439
+			},
+			"userId": "u10"
+		}
+	]
+}

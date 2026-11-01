@@ -158,11 +158,11 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `ActionMenu` | `lib/components/common/` | `ActionPopover` / `ActionSheet` + `overlay` | 같은 항목을 데스크톱은 트리거 아래 inline, 모바일은 하단 시트로 연다. 마운트 후에만 렌더링 |
 | `ContextNav` | `lib/components/layout/` | `<nav><a>` | 범위 메뉴 링크. 데스크톱은 가로, 모바일 패널은 세로. 같은 항목 데이터를 쓴다 |
 | `AppFooter` | `lib/components/layout/` | 텍스트 + `<a>` | [routing.md 3.3](routing.md#33-푸터) |
-| `ScrimSummary` | `lib/components/scrims/` | 어두운 카드(배경 아트) + 제목 `h1` + 상태 점 + 설정 칩, 아래 전체 폭 `Steps`(번호·체크 막대) | 내전 하위 세 페이지 위에 한 번. 어두운 바탕이라 `StatusTag` 대신 흰 글자 + 상태색 점을 쓴다 |
+| `ScrimSummary` | `lib/components/scrims/` | 어두운 카드(배경 아트) + 제목 `h1` + 상태 점 + 설정 칩, 아래 전체 폭 `Steps`(번호·체크 막대) | 내전 하위 페이지 위에 한 번. 경매·대진 작업판은 `compact`로 제목·일정 한 줄만 표시한다. 큰 요약 카드는 `StatusTag` 대신 흰 글자 + 상태색 점을 쓴다 |
 | `LinkCell` | `lib/components/common/` | `<a>` + STDF `Cell`과 같은 클래스, `CellGroup` 안에서 사용 | 이동하는 목록 행. props: `href`, `title`/`titleChild`, `subTitle`, `detail`/`detailChild`(제목 줄 오른쪽), `info`/`infoChild`(부제 줄 오른쪽), `leftChild`, `line`(구분선). grid라 오른쪽 칸은 항상 해당 줄에 맞는다. 내부에 다른 조작을 넣지 않는다 |
 | `StatusTag` | `lib/components/common/` | STDF `Tag`를 `inert`로 감싸고 문구는 보조기기용 텍스트로 | 상태 표시. 링크·버튼 안에서도 조작 요소가 중첩되지 않는다 |
 | `DateBadge` | `lib/components/common/` | `<span>` 상자 | 목록 행 왼쪽의 `10월 / 31` 날짜 상자. 날짜가 없으면 점선 상자에 `미정`·`미확인` 등 |
-| `SwitchCell` | `lib/components/common/` | `<label>` + STDF `Switch`, Cell과 같은 클래스 | 즉시 반영 on/off 행. STDF Cell의 스위치는 button 안에 button이 들어가 HTML이 깨지므로 쓰지 않는다 |
+| `SwitchCell` | `lib/components/common/` | `<label>` + STDF `Switch`, Cell과 같은 클래스 | 즉시 반영 on/off 행. 제목 왼쪽 장식은 `leftChild`(관리자 목록의 사진). STDF Cell의 스위치는 button 안에 button이 들어가 HTML이 깨지므로 쓰지 않는다 |
 | `ActivityBoard` | `lib/components/guild/` | `Tab` + `ScrimListRow` / `MatchListRow` | 서버 홈 "내전 현황": 진행 중인 내전과 최근 경기를 한 카드의 탭으로 |
 | `NextScrimHero` | `lib/components/guild/` | 어두운 카드 + `CountDown` + `Progress` + 링크 버튼 | 서버 홈 맨 위 "내 다음 내전" |
 | `StoryCarousel` | `lib/components/guild/` | 가로 스크롤 스냅 + `Button` | 서버 홈 "이번 주 이야기" |
@@ -179,17 +179,22 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `PositionIcon` | `lib/components/common/` | `<img>` (`static/riot/positions/*.svg`, MSM1에서 가져온 Riot 라인 아이콘) | 포지션 표시 장식. 이름은 옆 텍스트·`sr-only`로 |
 | `FormationSynergyRail` · `FormationHeadToHead` | `lib/components/teams/` | 팀 열 옆 레일(자리 줄 높이에 맞춤) | 수동 편성 상세 보기의 시너지·라인 상대 전적 |
 | `CandidateListDialog` | `lib/components/teams/` | `Popup` | 경매 후보 목록(현재·대기 순서·유찰 + 유찰자 팀 배치·다시 올리기) |
-| `DragState` | `lib/components/teams/drag.svelte.ts` | HTML5 드래그 상태(끄는 대상·놓을 대상·허용 여부) | 수동 편성과 경매의 끌어 놓기. 탭 선택·버튼 조작과 함께 둔다 |
+| `DragState` | `lib/components/teams/drag.svelte.ts` | HTML5 드래그 상태(끄는 대상·놓을 대상·허용 여부) | 수동 편성·경매·대진의 끌어 놓기. 터치에서는 탭 선택으로 같은 동작을 한다 |
+| `BracketMatchBox` · `BracketTeamContent` | `lib/components/bracket/` | 경기 칸(편집 자리·결과 줄) / 팀 이름·팀원·얼굴 | 대진 작업판의 경기와 팀 표시. 팀 풀과 자리가 `BracketTeamContent`를 같이 쓴다 |
+| `GameHero` · `GameTeamTable` · `GamePlayerDialog` · `RoflUploadDialog` · `LoadoutIcon` | `lib/components/matches/` | 게임 머리(어두운 카드) / 진영 표 / 선수 상세 `Popup` / ROFL 업로드 `Popup`+`ImageList` / 아이템·주문·룬 한 칸 | 경기 상세 |
+| `DuoList` | `lib/components/players/` | 링크 카드 목록 | 사용자 전적의 베스트·워스트 듀오 |
+| `LeaderboardTable` | `lib/components/stats/` | `<table>` + 열 머리 정렬 버튼(`aria-sort`) + `Pagination` | 서버 통계 리더보드 |
 | `ChampionIcon` | `lib/components/common/` | `<img>` (Data Dragon) | 챔피언 이미지 + 이름 `alt`. 매핑 실패 시 이름 텍스트 |
 
-### 5.1 작업판 레이아웃 (팀 편성·경매)
+### 5.1 작업판 레이아웃 (팀 편성·경매·대진)
 
-MSM1의 엔트리 편성·경매 화면 구성을 따른다. 둥근 카드를 띄워 놓지 않고 영역을 1px 경계로 붙인 한 덩어리로 만든다.
+MSM1의 엔트리 편성·경매·대진 화면 구성을 참고해, 사용자가 선택할 대상과 놓을 자리를 같은 작업판에 둔다. 팀 편성·경매는 영역을 1px 경계로 붙인 한 덩어리로 만든다.
 
 - 바깥 상자: `rounded-(--radius-box) border border-border bg-border overflow-hidden`, 안의 영역은 `grid gap-px` + 각 영역 `bg-bg-surface`(다크 `bg-bg-surface-dark`). 경계색이 1px 틈으로 비쳐 구분선이 된다.
 - 맨 위 도구 줄: 왼쪽 작은 분류 제목 + 굵은 요약(예: `6/10 배치 · 미배정 4명`), 오른쪽 작업 버튼.
 - 자리·팀 패널은 고정 높이 줄(`grid-rows-[repeat(5,4.75rem)]`), 경매 작업판은 데스크톱 고정 높이(`xl:h-[52rem]`) 안에서 각 영역이 스크롤한다.
 - 좁은 화면에서 열이 줄어들지 않게 최소 폭을 주고 판 안에서 가로로 넘긴다(`relative overflow-x-auto`, `sr-only` 제약 때문에 `relative` 필수).
+- 대진은 같은 작업판에 `[팀 풀 | 준결승 열 | 결승 열]`을 둔다. 모바일에서는 세로로 쌓는다. 경기 방식은 라운드 열 머리의 `Radio`, 확정은 도구 줄의 `Button` 하나. 자리별 편집 팝업·라운드 추가 조작은 두지 않는다. 경매·대진 위의 내전 요약은 `compact`.
 
 ## 6. 네이티브 HTML을 쓰는 곳
 
@@ -197,7 +202,7 @@ MSM1의 엔트리 편성·경매 화면 구성을 따른다. 둥근 카드를 �
 | --- | --- | --- |
 | 페이지 이동 | `<a href>` (`LinkCell`, `ContextNav`, 본문 링크) | STDF는 링크를 렌더링하지 않는다. 새 탭·주소 복사·프리로드를 위해 이동은 링크로 |
 | 다열 수치 데이터 | `<table>` + `<caption>` + `<th scope>` | STDF에 `Table`이 없다. 모바일에서는 핵심 열만 두고 `overflow-x-auto` 컨테이너 |
-| 선택형 타일 (편성 자리, 미배정·팀장 후보) | `<button aria-pressed>` | 얼굴·이름·칩·MMR을 담고 눌림 상태를 알려야 한다. STDF `Cell`·`List`는 눌림 상태가 없고 행 안에 다른 버튼(배정 해제)을 둘 수 없다. 토큰·`rounded-(--radius-form)`만 쓴다 |
+| 선택형 타일 (편성 자리, 미배정·팀장 후보, 대진 팀 풀·배치 자리) | `<button aria-pressed>` | 얼굴·이름·칩·MMR 또는 팀 구성원과 선택 상태를 담고 클릭·드래그를 함께 제공한다. STDF `Cell`·`List`는 눌림 상태가 없고 행 안에 다른 버튼(배정 해제)을 둘 수 없다. 배정 해제 버튼은 타일 버튼의 형제로 둔다. 토큰·`rounded-(--radius-form)`만 쓴다 |
 | 폼 경계 | `<form>`, `<fieldset>`, `<legend>` | Enter 제출과 그룹 라벨. 안의 컨트롤은 STDF |
 | 정적 이미지 | `<img>` | `Avatar`는 항상 버튼 |
 | 문서 본문 | `h1~h3`, `p`, `ol/ul`, `dl` | 약관·문서·소개 문구 |
@@ -240,6 +245,9 @@ MSM1의 엔트리 편성·경매 화면 구성을 따른다. 둥근 카드를 �
 | `Button fill="text"`는 `state`를 무시하고 항상 본문색이다 | 색이 있는 텍스트 버튼(철회 등)은 `fill="textState" state="error"` |
 | `Input` 바깥 칸에 `px-2 py-1` 여백이 고정되어 있어 같은 줄의 다른 요소와 왼쪽 선이 어긋난다 | 줄 정렬이 필요한 곳은 감싸는 요소에 `-mx-2 -my-1` (경매 팀 패널 입찰가) |
 | `Button`이 `onclick` 외의 이벤트(`oncontextmenu` 등)를 받지 않는다 | 감싸는 `<span role="presentation">`에서 받는다. 경매 `±10`의 우클릭 −10 |
+| `Grids`에 `injClass`가 없어 반응형 열 수를 클래스로 줄 수 없다 | `cols={desktop.current ? '4' : '2'}`. SSR은 모바일 열 수로 그린다 |
+| 가로 `Steps`는 `desc`를 그리지 않는다 | 설명이 필요하면 `vertical` |
+| `ImageList`가 파일 입력을 그리지 않는다. 업로드 칸은 `onclickUpload`만 부른다 | 숨긴 `<input type="file">`을 `onclickUpload`로 열고 `bind:this`한 `ImageList`의 `addFiles()`로 넘긴다(`RoflUploadDialog`) |
 | `NoticeBar` 오른쪽에 `rightIcon={null}`이어도 이름 없는 빈 `<button>`이 항상 생기고, 크기는 마운트 때만 잰다 | 화면용은 `inert aria-hidden` 래퍼에 넣고 같은 내용을 `sr-only` 목록으로 준다. 내용이 바뀌면 `{#key}`로 다시 만든다 |
 | `Tab`의 `showNum`은 개수 배지가 아니라 한 번에 보이는 탭 칸 수(기본 3)다. `overflow` 모드는 ResizeObserver 루프 오류를 낸다 | 칸 수만큼 `showNum`을 주고 `overflow`는 쓰지 않는다. 좁은 화면에 다 안 들어가면 라벨을 줄인다 |
 | `List` 일괄 선택 모드는 선택 칸(40px)만큼 행을 오른쪽으로 밀어 오른쪽 끝 내용이 잘린다. `itemPx`의 `px-0`이 `itemInjClass` 여백을 덮는다 | `itemInjClass="pl-3! pr-13!"` |

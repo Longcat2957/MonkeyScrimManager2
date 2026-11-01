@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { Switch } from 'stdf';
 
 	type Props = {
@@ -8,11 +9,13 @@
 		disabled?: boolean;
 		// 마지막 행이 아니면 STDF Cell처럼 안쪽으로 들인 구분선을 그린다.
 		line?: boolean;
+		// 제목 왼쪽의 사진 등 장식.
+		leftChild?: Snippet;
 		// 폼 안에서 값만 바인딩할 때는 생략한다.
 		onchange?: (active: boolean) => void;
 	};
 
-	let { title, subTitle = '', active = $bindable(), disabled = false, line = false, onchange }: Props = $props();
+	let { title, subTitle = '', active = $bindable(), disabled = false, line = false, leftChild, onchange }: Props = $props();
 </script>
 
 <!--
@@ -27,7 +30,8 @@
 			line && 'border-b border-text-primary/5 dark:border-text-dark/5'
 		]}
 	>
-		<span class="flex min-w-0 flex-col">
+		{#if leftChild}<span class="shrink-0">{@render leftChild()}</span>{/if}
+		<span class="flex min-w-0 flex-1 flex-col">
 			<span class="font-medium">{title}<span class="sr-only">, {active ? '켜짐' : '꺼짐'}</span></span>
 			{#if subTitle}
 				<span class="text-xs text-gray-500 dark:text-gray-400">{subTitle}</span>
