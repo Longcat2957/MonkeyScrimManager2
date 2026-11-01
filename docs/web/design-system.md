@@ -139,7 +139,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `BottomSheet` | 드래그 단계형 시트가 필요한 화면이 없다. `Popup position="bottom"` 사용 |
 | `PullRefresh` | 웹에서 당겨서 새로고침 형태가 필요 없다. 한국어 문구도 없음 |
 | `Tooltip` | 필요한 정보는 화면에 쓴다 |
-| `Swiper` | 슬라이드에 컴포넌트만 받고 데이터(props)를 넘길 수 없으며 키보드로 넘길 수단이 없다. 캐러셀은 가로 스크롤 스냅 + 이전/다음 `Button`(`StoryCarousel`) |
+| `Swiper` | 슬라이드에 컴포넌트만 받고 데이터(props)를 넘길 수 없으며 키보드로 넘길 수단이 없다. 캐러셀은 가로 스크롤 스냅 + 이전/다음 `Button`(`StoryCarousel`), 또는 한 장씩 바꾸는 카드 + 이전/다음 `Button` + 점 버튼(`AchievementCarousel`) |
 | `CharRoll`, `Rate`, `Slider`, `ColorPicker`, `Signature`, `CodeInput`, `NumKeyboard`, `FullKeyboard`, `IndexBar`, `ImagePreview`, `ProgressLoop`, `Placeholder`, `Mask`(단독) | 대응하는 서비스 기능이 없다. 기능이 생기면 이 표에서 옮긴다 |
 
 ## 5. 서비스 공통 컴포넌트
@@ -183,7 +183,11 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `BracketMatchBox` · `BracketTeamContent` | `lib/components/bracket/` | 경기 칸(편집 자리·결과 줄) / 팀 이름·팀원·얼굴 | 대진 작업판의 경기와 팀 표시. 팀 풀과 자리가 `BracketTeamContent`를 같이 쓴다 |
 | `GameHero` · `GameTeamTable` · `GamePlayerDialog` · `RoflUploadDialog` · `LoadoutIcon` | `lib/components/matches/` | 게임 머리(어두운 카드) / 진영 표 / 선수 상세 `Popup` / ROFL 업로드 `Popup`+`ImageList` / 아이템·주문·룬 한 칸 | 경기 상세 |
 | `DuoList` | `lib/components/players/` | 링크 카드 목록 | 사용자 전적의 베스트·워스트 듀오 |
-| `LeaderboardTable` | `lib/components/stats/` | `<table>` + 열 머리 정렬 버튼(`aria-sort`) + `Pagination` | 서버 통계 리더보드 |
+| `LeaderboardTable` | `lib/components/stats/` | `<table>` + 열 머리 정렬 버튼(`aria-sort`) + `Pagination` | 서버 통계 리더보드. 이름 옆 업적 배지 |
+| `AchievementCarousel` | `lib/components/stats/` | 카드 + `Button` + 점 버튼 | 서버 통계 업적 1위를 한 장씩. 양옆 카드는 `inert` 장식 |
+| `AchievementRankingDialog` | `lib/components/stats/` | `Popup` + 칩 버튼(`aria-pressed`) | 업적별 상위 10명 |
+| `StatTile` | `lib/components/common/` | 칸 + 선택 아이콘 snippet | 서버 통계·사용자 전적의 지표 칸. `tone`(neutral·info·success·warning·error)은 지표 묶음 구분용 장식 |
+| `RadarChart` | `lib/components/players/` | 인라인 SVG | 사용자 전적 플레이 성향. 한 사람 값만 그려 범례 없이 축 이름만, 축 목록 `sr-only` |
 | `ChampionIcon` | `lib/components/common/` | `<img>` (Data Dragon) | 챔피언 이미지 + 이름 `alt`. 매핑 실패 시 이름 텍스트 |
 
 ### 5.1 작업판 레이아웃 (팀 편성·경매·대진)

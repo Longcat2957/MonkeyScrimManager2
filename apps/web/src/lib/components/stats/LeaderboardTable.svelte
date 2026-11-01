@@ -2,9 +2,10 @@
 	import { Pagination } from 'stdf';
 	import { resolve } from '$app/paths';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
+	import type { AchievementBadge } from '#lib/features/players/achievements.ts';
 	import type { PlayerSummary } from '#lib/features/players/types.ts';
 
-	type Row = PlayerSummary & { userId: string; displayName: string; iconUrl: string | null };
+	type Row = PlayerSummary & { userId: string; displayName: string; iconUrl: string | null; badges: AchievementBadge[] };
 	type SortKey = 'games' | 'kda' | 'winRate' | 'csPerMin' | 'damagePerMin' | 'visionPerGame' | 'killParticipation';
 
 	// 사용자별 지표 표. 열 머리를 누르면 그 지표로 정렬하고, 다시 누르면 방향을 바꾼다.
@@ -21,6 +22,7 @@
 	];
 
 	const PAGE_SIZE = 20;
+	const PODIUM = ['bg-warning/15', 'bg-text-primary/5 dark:bg-text-dark/10', 'bg-warning/5'];
 	let sortKey = $state<SortKey>('kda');
 	let descending = $state(true);
 	let current = $state(1);
@@ -67,13 +69,25 @@
 		<tbody>
 			{#each sorted.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as row, offset (row.userId)}
 				{@const index = (current - 1) * PAGE_SIZE + offset}
-				<tr class={['border-b border-border last:border-b-0', index === 0 && 'bg-warning/10']}>
+				<!-- 1~3위는 행 바탕으로 구분하고, 순위 숫자로도 같은 정보를 준다. -->
+				<tr class={['border-b border-border last:border-b-0', PODIUM[index]]}>
 					<td class="px-3 py-2.5 text-right font-semibold tabular-nums">{index + 1}</td>
 					<td class="w-full max-w-0 px-3 py-2.5">
-						<a href={resolve('/g/[guildId]/players/[userId]', { guildId, userId: row.userId })} class="flex min-w-0 items-center gap-3 hover:underline">
-							<PlayerFace name={row.displayName} imageUrl={row.iconUrl} />
-							<span class="truncate font-semibold">{row.displayName}</span>
-						</a>
+						<div class="flex min-w-0 items-center gap-2">
+							<a href={resolve('/g/[guildId]/players/[userId]', { guildId, userId: row.userId })} class="flex min-w-0 items-center gap-3 hover:underline">
+								<PlayerFace name={row.displayName} imageUrl={row.iconUrl} />
+								<span class="truncate font-semibold">{row.displayName}</span>
+							</a>
+							{#if row.badges.length}
+								<ul aria-label="1위 업적" class="flex shrink-0 gap-1">
+									{#each row.badges as badge (badge.id)}
+										<li title={badge.title} class="flex size-6 items-center justify-center rounded-(--radius-small) bg-bg-highlight text-sm dark:bg-bg-highlight-dark">
+											<span aria-hidden="true">{badge.emoji}</span><span class="sr-only">{badge.title}</span>
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
 					</td>
 					<td class="px-3 py-2.5 text-right tabular-nums">{row.games}</td>
 					<td class="px-3 py-2.5 text-right tabular-nums">

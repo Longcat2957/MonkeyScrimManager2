@@ -164,7 +164,7 @@ export async function listMockMatches(guildId: string, options: { status: MatchS
 	};
 }
 
-// 점수가 앞선 쪽에 MVP·ACE를 주기 위한 임시 성과 점수다. 화면에 숫자로 보여 주지 않는다.
+// 경기 평점과 MVP·ACE에 쓰는 임시 성과 점수다. 평점 기준이 정해지면 바꾼다.
 function performance(player: RawGame['participants'][number], teamKills: number, teamDamage: number) {
 	const { kills = 0, deaths = 0, assists = 0, damageDealtToChampions = 0 } = player.stats as Record<string, number>;
 	const participation = teamKills ? (kills + assists) / teamKills : 0;
@@ -212,6 +212,7 @@ function toGame(match: StoredMatch, game: StoredGame, resolvers: GameResolvers, 
 				spells: raw.loadout.summonerSpellIds.map(resolvers.spell),
 				keystone: resolvers.rune(raw.loadout.keystoneId),
 				secondaryStyle: resolvers.rune(raw.loadout.secondaryRuneStyleId),
+				score: Math.round(score * 100) / 100,
 				badge: score === best ? (winnerSlot === slot ? 'mvp' : 'ace') : null,
 				fearlessViolation: match.hardFearless && earlier[slot].has(championId)
 			};

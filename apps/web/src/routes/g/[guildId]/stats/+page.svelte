@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { Grid, Grids, Pagination, Stepper, Tab } from 'stdf';
+	import { Button, Grid, Grids, Pagination, Stepper, Switch, Tab } from 'stdf';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
 	import { SERVICE_NAME } from '#lib/branding.ts';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
+	import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
+	import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
+	import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
 	import LeaderboardTable from '#lib/components/stats/LeaderboardTable.svelte';
 	import type { LolPosition } from '#lib/features/guild/types.ts';
 	import { POSITIONS } from '#lib/features/labels.ts';
@@ -21,16 +24,24 @@
 	const guildId = $derived(page.params.guildId!);
 	const changing = $derived(navigating.to?.route.id === page.route.id);
 	let championPage = $state(1);
+	let achievementIndex = $state(0);
+	let rankingOpen = $state(false);
 	let minGames = $state(5);
 	$effect(() => {
 		if (data.empty) return;
 		minGames = data.minGames;
 		void data.position;
+		void data.recent;
 		championPage = 1;
+		achievementIndex = 0;
 	});
 
-	function navigate(params: { position?: LolPosition | 'all'; min?: number }) {
+	function navigate(params: { position?: LolPosition | 'all'; min?: number; recent?: boolean }) {
 		const url = new URL(page.url.href);
+		if (params.recent !== undefined) {
+			if (params.recent) url.searchParams.set('recent', '1');
+			else url.searchParams.delete('recent');
+		}
 		if (params.position !== undefined) {
 			if (params.position === 'all') url.searchParams.delete('position');
 			else url.searchParams.set('position', params.position);
@@ -50,24 +61,22 @@
 	{#if data.empty}
 		<SectionState state="empty" message="아직 기록된 게임이 없어요" />
 	{:else}
-		{@const kpis = [
-			['총 게임', String(data.kpis.games), '기록된 게임'],
-			['참가자', String(data.kpis.players), '한 게임 이상 뛴 사람'],
-			['평균 게임 시간', formatDuration(data.kpis.averageDurationSec), null],
-			['분당 킬', data.kpis.killsPerMinute.toFixed(2), '게임 1분당 나온 킬'],
-			['평균 KDA', data.kpis.kda.toFixed(2), '(킬+어시스트) / 데스'],
-			['사용한 챔피언', String(data.kpis.champions), '이 서버에서 나온 챔피언']
+		{@const kpis: [string, string, string | null, StatTone, string][] = [
+			['총 게임', String(data.kpis.games), '기록된 게임', 'info', 'm14.5 17.5-11-11V3h3.5l11 11m-5 5 6-6m-3 3 4 4m1-1-2 2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4m-2-1-3 3m-1-1 2 2'],
+			['참가자', String(data.kpis.players), '한 게임 이상 뛴 사람', 'neutral', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.87m-3-12a4 4 0 0 1 0 7.75'],
+			['평균 게임 시간', formatDuration(data.kpis.averageDurationSec), null, 'info', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-16v6l4 2'],
+			['분당 킬', data.kpis.killsPerMinute.toFixed(2), '게임 1분당 나온 킬', 'success', 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22m7-7.34V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z'],
+			['평균 KDA', data.kpis.kda.toFixed(2), '(킬+어시스트) / 데스', 'warning', 'M13 2 3 14h9l-1 8 10-12h-9z'],
+			['사용한 챔피언', String(data.kpis.champions), '이 서버에서 나온 챔피언', 'error', 'M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z']
 		]}
 		<section aria-labelledby="kpis">
 			<h2 id="kpis" class="sr-only">핵심 지표</h2>
 			<Grids cols={desktop.current ? '6' : '2'} gap="2" mx="0" my="0">
-				{#each kpis as [label, value, note] (label)}
+				{#each kpis as [label, value, note, tone, path] (label)}
 					<Grid>
-						<div class="flex h-full flex-col gap-1 rounded-(--radius-box) border border-border bg-bg-surface p-4 dark:bg-bg-surface-dark">
-							<p class="text-xs font-semibold opacity-60">{label}</p>
-							<p class="text-3xl font-black tabular-nums">{value}</p>
-							{#if note}<p class="text-xs opacity-60">{note}</p>{/if}
-						</div>
+						<StatTile {label} {value} {note} {tone}>
+							{#snippet icon()}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={path} /></svg>{/snippet}
+						</StatTile>
 					</Grid>
 				{/each}
 			</Grids>
@@ -81,30 +90,26 @@
 		</div>
 
 		<div class={['flex flex-col gap-8 transition-opacity', changing && 'opacity-50']}>
-			{#if data.achievements.length}
-				<section aria-labelledby="achievements" class="flex flex-col gap-3">
+			<section aria-labelledby="achievements" class="flex flex-col gap-3">
+				<div class="flex flex-wrap items-center justify-between gap-3">
 					<h2 id="achievements" class="text-lg font-semibold">업적</h2>
-					<!-- 모바일에서는 가로로 넘기고, 넓은 화면에서는 격자로 모두 보여 준다. -->
-					<ul class="flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] sm:grid sm:grid-cols-2 sm:overflow-visible xl:grid-cols-3 [&::-webkit-scrollbar]:hidden">
-						{#each data.achievements as item (item.id)}
-							<li class="w-[80%] shrink-0 snap-start sm:w-auto">
-								<a
-									href={resolve('/g/[guildId]/players/[userId]', { guildId, userId: item.userId })}
-									class="flex h-full items-center gap-4 rounded-(--radius-box) border border-warning/30 bg-bg-base-dark p-4 text-text-dark ring-1 ring-white/5 hover:border-warning/60"
-								>
-									<PlayerFace name={item.displayName} imageUrl={item.iconUrl} size="lg" />
-									<span class="flex min-w-0 flex-col gap-0.5">
-										<span class="text-lg font-black text-warning">{item.title}</span>
-										<span class="truncate text-xs text-white/60">{item.description}</span>
-										<span class="truncate font-semibold">{item.displayName}</span>
-										<span class="text-sm text-white/80 tabular-nums">{item.value} · {item.games}게임</span>
-									</span>
-								</a>
-							</li>
-						{/each}
-					</ul>
-				</section>
-			{/if}
+					<div class="flex items-center gap-4 text-sm">
+						<label class="flex cursor-pointer items-center gap-2">
+							<span>최근 10게임만<span class="sr-only">, {data.recent ? '켜짐' : '꺼짐'}</span></span>
+							<Switch active={data.recent} inside="state" radius="full" onchange={(active) => navigate({ recent: active })} />
+						</label>
+						{#if data.achievements.length}
+							<Button fill="lineLight" size="auto" heightOut="0" heightIn="1" injClass="px-3 text-sm" onclick={() => (rankingOpen = true)}>업적별 순위</Button>
+						{/if}
+					</div>
+				</div>
+				{#if data.achievements.length}
+					<AchievementCarousel items={data.achievements} {guildId} bind:current={achievementIndex} />
+					<p class="text-center text-xs opacity-60">{data.achievementMinGames}게임 이상 뛴 사람부터 집계해요</p>
+				{:else}
+					<SectionState state="empty" message={`${data.achievementMinGames}게임 이상 뛴 사람이 없어요`} />
+				{/if}
+			</section>
 
 			<section aria-labelledby="leaderboard" class="flex flex-col gap-3">
 				<div class="flex flex-wrap items-end justify-between gap-3">
@@ -164,3 +169,7 @@
 		</div>
 	{/if}
 </div>
+
+{#if !data.empty && data.achievements.length}
+	<AchievementRankingDialog bind:open={rankingOpen} items={data.achievements} {guildId} bind:current={achievementIndex} />
+{/if}

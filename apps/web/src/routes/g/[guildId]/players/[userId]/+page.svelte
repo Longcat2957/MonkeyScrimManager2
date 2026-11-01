@@ -8,8 +8,11 @@
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import PositionIcon from '#lib/components/common/PositionIcon.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
+	import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
 	import StatusTag from '#lib/components/common/StatusTag.svelte';
 	import DuoList from '#lib/components/players/DuoList.svelte';
+	import RadarChart from '#lib/components/players/RadarChart.svelte';
+	import type { RankedMetric } from '#lib/features/players/stats.ts';
 	import { formatShortDate, POSITIONS } from '#lib/features/labels.ts';
 	import type { LolPosition } from '#lib/features/guild/types.ts';
 	import { desktop } from '#lib/ui/viewport.svelte.ts';
@@ -33,20 +36,43 @@
 	const percent = (value: number) => `${Math.round(value * 100)}%`;
 	const gameHref = (matchId: string, gameId: string) => `${resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId })}?game=${gameId}`;
 
-	const tiles = $derived(
-		data.summary
-			? [
-					['게임', `${data.summary.games}`, `${data.summary.wins}승 ${data.summary.games - data.summary.wins}패`],
-					['승률', percent(data.summary.wins / data.summary.games), null],
-					['KDA', data.summary.kda.toFixed(2), `${data.summary.kills.toFixed(1)} / ${data.summary.deaths.toFixed(1)} / ${data.summary.assists.toFixed(1)}`],
-					['킬 관여', percent(data.summary.killParticipation), null],
-					['분당 CS', data.summary.csPerMin.toFixed(1), null],
-					['분당 피해량', Math.round(data.summary.damagePerMin).toLocaleString('ko-KR'), null],
-					['게임당 시야', data.summary.visionPerGame.toFixed(1), null],
-					['주 포지션', data.summary.mainPosition ? laneText(data.summary.mainPosition) : '-', null]
-				]
-			: []
-	);
+	const thousands = (value: number) => Math.round(value).toLocaleString('ko-KR');
+	const top = (key: RankedMetric) => (data.percents ? `상위 ${data.percents[key]}%` : null);
+	const tiles = $derived.by((): [string, string, string | null, StatTone][] => {
+		const s = data.summary;
+		if (!s) return [];
+		return [
+			['승률', percent(s.wins / s.games), top('winRate'), 'info'],
+			['KDA', s.kda.toFixed(2), top('kda'), 'warning'],
+			['킬 관여', percent(s.killParticipation), top('killParticipation'), 'success'],
+			['최장 연승', `${s.winStreak}연승`, top('winStreak'), 'success'],
+			['최장 연패', `${s.lossStreak}연패`, null, 'error'],
+			['평균 킬', s.kills.toFixed(1), top('kills'), 'error'],
+			['평균 데스', s.deaths.toFixed(1), top('deaths'), 'neutral'],
+			['평균 어시스트', s.assists.toFixed(1), top('assists'), 'info'],
+			['최다 킬', `${s.maxKills}킬`, top('maxKills'), 'error'],
+			['챔피언 폭', `${s.champions}개`, top('champions'), 'neutral'],
+			['분당 CS', s.csPerMin.toFixed(1), top('csPerMin'), 'success'],
+			['분당 골드', thousands(s.goldPerMin), top('goldPerMin'), 'warning'],
+			['분당 피해량', thousands(s.damagePerMin), top('damagePerMin'), 'error'],
+			['분당 받은 피해', thousands(s.damageTakenPerMin), top('damageTakenPerMin'), 'neutral'],
+			['게임당 시야', s.visionPerGame.toFixed(1), top('visionPerGame'), 'info']
+		];
+	});
+	// 성향 그래프는 상위 %를 0~1 점수로 바꿔 그린다. 바깥쪽일수록 서버에서 앞선다.
+	const RADAR_AXES = [
+		['전투', 'kda'],
+		['성장', 'goldPerMin'],
+		['시야', 'visionPerGame'],
+		['생존', 'deaths'],
+		['챔프 폭', 'champions'],
+		['킬 관여', 'killParticipation']
+	] as const;
+	const radar = $derived.by(() => {
+		const percents = data.percents;
+		return percents ? RADAR_AXES.map(([label, key]) => ({ label, value: (101 - percents[key]) / 100, detail: `상위 ${percents[key]}%` })) : null;
+	});
+	const overall = $derived(data.positions.reduce((sum, item) => sum + item.games, 0));
 
 	function navigate(params: { position?: LolPosition | 'all'; page?: number }) {
 		const url = new URL(page.url.href);
@@ -72,9 +98,23 @@
 		<div class="flex items-center gap-4">
 			<PlayerFace name={data.player.displayName} imageUrl={data.player.iconUrl} size="lg" />
 			<div class="flex min-w-0 flex-col gap-1">
-				<h1 class="truncate text-2xl font-semibold">{data.player.displayName}</h1>
+				<div class="flex min-w-0 flex-wrap items-center gap-2">
+					<h1 class="truncate text-2xl font-semibold">{data.player.displayName}</h1>
+					{#if data.badges.length}
+						<ul aria-label="1위 업적" class="flex gap-1">
+							{#each data.badges as badge (badge.id)}
+								<li title={badge.title} class="flex size-7 items-center justify-center rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark">
+									<span aria-hidden="true">{badge.emoji}</span><span class="sr-only">{badge.title}</span>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 				{#if data.player.riotIds.length}
 					<p class="truncate text-sm opacity-60">{data.player.riotIds.join(' · ')}</p>
+				{/if}
+				{#if data.recordWins !== null}
+					<p class="text-sm font-semibold tabular-nums"><span class="text-info dark:text-dark">{data.recordWins}승</span> · <span class="text-error">{overall - data.recordWins}패</span> · {overall}게임</p>
 				{/if}
 			</div>
 		</div>
@@ -111,15 +151,9 @@
 			<div class="flex min-w-0 flex-col gap-8">
 				<section aria-labelledby="summary" class="flex flex-col gap-3">
 					<h2 id="summary" class="text-lg font-semibold">핵심 지표</h2>
-					<Grids cols={desktop.current ? '4' : '2'} gap="2" mx="0" my="0">
-						{#each tiles as [label, value, note] (label)}
-							<Grid>
-								<div class="flex h-full flex-col gap-1 rounded-(--radius-box) border border-border bg-bg-surface p-4 dark:bg-bg-surface-dark">
-									<p class="text-xs opacity-60">{label}</p>
-									<p class="text-2xl font-bold tabular-nums">{value}</p>
-									{#if note}<p class="text-xs opacity-60 tabular-nums">{note}</p>{/if}
-								</div>
-							</Grid>
+					<Grids cols={desktop.current ? '5' : '2'} gap="2" mx="0" my="0">
+						{#each tiles as [label, value, note, tone] (label)}
+							<Grid><StatTile {label} {value} {note} {tone} /></Grid>
 						{/each}
 					</Grids>
 				</section>
@@ -189,6 +223,12 @@
 			</div>
 
 			<aside class="flex flex-col gap-8">
+				{#if radar}
+					<section aria-labelledby="style" class="flex flex-col gap-3">
+						<h2 id="style" class="text-lg font-semibold">플레이 성향</h2>
+						<RadarChart title="서버 내 상위 % 기준 플레이 성향" axes={radar} />
+					</section>
+				{/if}
 				<section aria-labelledby="mmr" class="flex flex-col gap-3">
 					<h2 id="mmr" class="text-lg font-semibold">포지션별 MMR</h2>
 					<table class="w-full overflow-hidden rounded-(--radius-box) border border-border bg-bg-surface text-sm dark:bg-bg-surface-dark">

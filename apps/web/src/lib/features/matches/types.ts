@@ -49,7 +49,8 @@ export type GamePlayer = {
 	spells: (LoadoutIcon | null)[];
 	keystone: LoadoutIcon | null;
 	secondaryStyle: LoadoutIcon | null;
-	// 임시 성과 점수로 정한 승리 팀 1위(MVP)·패배 팀 1위(ACE).
+	// 임시 성과 점수(평점)와, 그 점수로 정한 승리 팀 1위(MVP)·패배 팀 1위(ACE).
+	score: number;
 	badge: 'mvp' | 'ace' | null;
 	fearlessViolation: boolean;
 };

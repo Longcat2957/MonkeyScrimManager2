@@ -17,6 +17,8 @@ export type PlayerGame = {
 	assists: number;
 	cs: number;
 	damage: number;
+	damageTaken: number;
+	gold: number;
 	visionScore: number;
 	teamKills: number;
 	durationSec: number;
@@ -32,8 +34,17 @@ export type PlayerSummary = {
 	kda: number;
 	csPerMin: number;
 	damagePerMin: number;
+	goldPerMin: number;
+	damageTakenPerMin: number;
 	visionPerGame: number;
 	killParticipation: number;
+	/** 플레이한 챔피언 수. */
+	champions: number;
+	/** 한 게임 최다 킬. */
+	maxKills: number;
+	/** 가장 긴 연승·연패. */
+	winStreak: number;
+	lossStreak: number;
 	mainPosition: LolPosition | null;
 };
 

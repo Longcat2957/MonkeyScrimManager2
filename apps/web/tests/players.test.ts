@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { championRecords, duoRecords, summarize } from '../src/lib/features/players/stats.ts';
+import { achievementBadges, rankAchievements } from '../src/lib/features/players/achievements.ts';
+import { championRecords, duoRecords, summarize, topPercents } from '../src/lib/features/players/stats.ts';
 import type { PlayerGame } from '../src/lib/features/players/types.ts';
 import { findMockPlayer, listMockPlayerGames } from '../src/lib/mocks/players.ts';
 
 const champion = (id: string) => ({ id, name: id, iconUrl: null });
 const game = (overrides: Partial<PlayerGame>): PlayerGame => ({
 	matchId: 'm', gameId: 'g', scrimTitle: 's', playedAt: '2026-10-01T00:00:00Z', win: true, champion: champion('Ahri'), position: 'mid',
-	kills: 5, deaths: 2, assists: 5, cs: 200, damage: 20000, visionScore: 20, teamKills: 20, durationSec: 1200, teammates: [], ...overrides
+	kills: 5, deaths: 2, assists: 5, cs: 200, damage: 20000, damageTaken: 15000, gold: 9000, visionScore: 20, teamKills: 20, durationSec: 1200, teammates: [], ...overrides
 });
 
 test('요약 지표를 게임 기준으로 계산하고 게임이 없으면 null이다', () => {
@@ -41,4 +42,30 @@ test('목 사용자 기록은 순위 기록의 포지션·승률을 따르고 �
 	assert.deepEqual(games, listMockPlayerGames(player, champion));
 	assert.ok(games.every((item) => item.position === 'jungle'));
 	assert.equal(findMockPlayer('devGuild002', 'u03'), null);
+});
+
+test('연승·연패와 최다 킬을 세고, 상위 %는 동점을 같은 순위로 본다', () => {
+	const summary = summarize([game({ kills: 9 }), game({}), game({ win: false }), game({}), game({}), game({})])!;
+	assert.equal(summary.winStreak, 3);
+	assert.equal(summary.lossStreak, 1);
+	assert.equal(summary.maxKills, 9);
+	const weaker = summarize([game({ win: false, kills: 1, deaths: 5 })])!;
+	const percents = topPercents(summary, [summary, summary, weaker, weaker]);
+	assert.equal(percents.winRate, 25);
+	assert.equal(topPercents(weaker, [summary, summary, weaker, weaker]).deaths, 75);
+});
+
+test('업적은 최소 게임 수를 넘긴 사람만 줄 세우고 1위에게 배지를 준다', () => {
+	const many = Array.from({ length: 4 }, () => game({ kills: 2, deaths: 1 }));
+	const candidates = [
+		{ userId: 'a', displayName: 'a', iconUrl: null, summary: summarize(many) },
+		{ userId: 'b', displayName: 'b', iconUrl: null, summary: summarize(many.map((item) => ({ ...item, kills: 8, deaths: 6 }))) },
+		{ userId: 'c', displayName: 'c', iconUrl: null, summary: summarize([game({ kills: 30 })]) }
+	];
+	const rankings = rankAchievements(candidates, 4);
+	const of = (id: string) => rankings.find((item) => item.id === id)!.entries.map((entry) => entry.userId);
+	assert.deepEqual(of('slayer'), ['b', 'a']);
+	assert.deepEqual(of('survivor'), ['a', 'b']);
+	assert.ok(achievementBadges(rankings).get('b')!.some((badge) => badge.id === 'slayer'));
+	assert.equal(achievementBadges(rankings).has('c'), false);
 });

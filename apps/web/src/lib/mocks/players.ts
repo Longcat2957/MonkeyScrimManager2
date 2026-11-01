@@ -10,13 +10,13 @@ const MATCHES = [
 	{ matchId: 'devMatch003', scrimTitle: '10월 3주차 정기 내전' },
 	{ matchId: 'devMatch004', scrimTitle: '10월 2주차 정기 내전' }
 ];
-// 포지션별 분당 CS·피해량·시야 기준값.
-const BASE: Record<LolPosition, { cs: number; damage: number; vision: number }> = {
-	top: { cs: 7.2, damage: 780, vision: 22 },
-	jungle: { cs: 5.6, damage: 620, vision: 34 },
-	mid: { cs: 7.8, damage: 900, vision: 24 },
-	bot: { cs: 8.4, damage: 960, vision: 20 },
-	support: { cs: 1.3, damage: 380, vision: 72 }
+// 포지션별 분당 CS·피해량·받은 피해량·골드와 게임당 시야 기준값.
+const BASE: Record<LolPosition, { cs: number; damage: number; taken: number; gold: number; vision: number }> = {
+	top: { cs: 7.2, damage: 780, taken: 1150, gold: 410, vision: 22 },
+	jungle: { cs: 5.6, damage: 620, taken: 1250, gold: 390, vision: 34 },
+	mid: { cs: 7.8, damage: 900, taken: 760, gold: 420, vision: 24 },
+	bot: { cs: 8.4, damage: 960, taken: 640, gold: 440, vision: 20 },
+	support: { cs: 1.3, damage: 380, taken: 700, gold: 260, vision: 72 }
 };
 const MAX_GAMES_PER_POSITION = 30;
 
@@ -51,6 +51,8 @@ function buildGames(player: MockPlayer, champion: (id: string) => ChampionRef): 
 				assists: Math.min(assists, teamKills),
 				cs: Math.round(base.cs * minutes * (0.8 + random() * 0.4)),
 				damage: Math.round(base.damage * minutes * (0.7 + random() * 0.6)),
+				damageTaken: Math.round(base.taken * minutes * (0.7 + random() * 0.6)),
+				gold: Math.round(base.gold * minutes * (0.85 + random() * 0.3) + (win ? 1500 : 0)),
 				visionScore: Math.round(base.vision * (0.7 + random() * 0.6)),
 				teamKills,
 				durationSec,
@@ -83,4 +85,12 @@ export function findMockPlayer(guildId: string, userId: string) {
 /** 사용자의 전체 게임 기록(최근 순). 챔피언 이름·아이콘은 서버가 넘겨준 함수로 채운다. */
 export function listMockPlayerGames(player: MockPlayer, champion: (id: string) => ChampionRef): PlayerGame[] {
 	return buildGames(player, champion);
+}
+
+/** 서버 전체 사용자의 게임 기록. 얼굴은 가장 많이 뛴 포지션의 주 챔피언이다. */
+export function listMockGuildPlayers(champion: (id: string) => ChampionRef) {
+	return mockPlayers.map((player) => {
+		const main = Object.values(player.records).sort((a, b) => b.games - a.games)[0];
+		return { userId: player.userId, displayName: player.displayName, championId: main?.championId ?? null, iconUrl: main ? champion(main.championId).iconUrl : null, games: buildGames(player, champion) };
+	});
 }

@@ -37,6 +37,7 @@
 		<thead class="text-xs opacity-60">
 			<tr class="border-b border-border">
 				<th scope="col" class="px-4 py-2 text-left font-medium">선수</th>
+				<th scope="col" class="hidden px-2 py-2 font-medium sm:table-cell">평점</th>
 				<th scope="col" class="px-2 py-2 font-medium">KDA</th>
 				<th scope="col" class="hidden px-2 py-2 font-medium lg:table-cell">딜량 · 받은 피해</th>
 				<th scope="col" class="hidden px-2 py-2 font-medium lg:table-cell">시야</th>
@@ -85,6 +86,7 @@
 							</span>
 						</div>
 					</td>
+					<td class={['hidden px-2 py-2.5 text-center text-base font-semibold tabular-nums sm:table-cell', player.badge === 'mvp' && 'text-warning', player.badge === 'ace' && 'text-primary dark:text-dark']}>{player.score.toFixed(2)}</td>
 					<td class="px-2 py-2.5 text-center tabular-nums">
 						<span class="block font-semibold whitespace-nowrap">{player.kills} / <span class="text-error">{player.deaths}</span> / {player.assists}</span>
 						<span class="block text-xs opacity-60">{kdaRatio(player)} : 1</span>

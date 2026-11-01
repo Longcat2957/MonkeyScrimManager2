@@ -13,6 +13,13 @@ export function summarize(games: PlayerGame[]): PlayerSummary | null {
 	const assists = sum(games, (game) => game.assists);
 	const positions = new Map<LolPosition, number>();
 	for (const game of games) positions.set(game.position, (positions.get(game.position) ?? 0) + 1);
+	const streaks = { win: 0, loss: 0 };
+	let run = 0;
+	for (const [index, game] of games.entries()) {
+		run = index > 0 && games[index - 1]!.win === game.win ? run + 1 : 1;
+		if (game.win) streaks.win = Math.max(streaks.win, run);
+		else streaks.loss = Math.max(streaks.loss, run);
+	}
 	return {
 		games: games.length,
 		wins: games.filter((game) => game.win).length,
@@ -22,8 +29,14 @@ export function summarize(games: PlayerGame[]): PlayerSummary | null {
 		kda: ratio(kills, deaths, assists),
 		csPerMin: sum(games, (game) => game.cs) / minutes,
 		damagePerMin: sum(games, (game) => game.damage) / minutes,
+		goldPerMin: sum(games, (game) => game.gold) / minutes,
+		damageTakenPerMin: sum(games, (game) => game.damageTaken) / minutes,
 		visionPerGame: sum(games, (game) => game.visionScore) / games.length,
 		killParticipation: (kills + assists) / Math.max(1, sum(games, (game) => game.teamKills)),
+		champions: new Set(games.map((game) => game.champion.id)).size,
+		maxKills: Math.max(...games.map((game) => game.kills)),
+		winStreak: streaks.win,
+		lossStreak: streaks.loss,
 		mainPosition: [...positions].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 	};
 }
@@ -64,4 +77,37 @@ export function duoRecords(games: PlayerGame[], minGames = 3, limit = 2): { best
 		.sort((a, b) => rate(a) - rate(b) || b.games - a.games)
 		.slice(0, limit);
 	return { best, worst };
+}
+
+/** 상위 %를 매기는 지표. ascending이면 낮을수록 앞선다. */
+export const RANKED_METRICS = {
+	winRate: { value: (s: PlayerSummary) => s.wins / s.games },
+	kda: { value: (s: PlayerSummary) => s.kda },
+	kills: { value: (s: PlayerSummary) => s.kills },
+	deaths: { value: (s: PlayerSummary) => s.deaths, ascending: true },
+	assists: { value: (s: PlayerSummary) => s.assists },
+	killParticipation: { value: (s: PlayerSummary) => s.killParticipation },
+	csPerMin: { value: (s: PlayerSummary) => s.csPerMin },
+	goldPerMin: { value: (s: PlayerSummary) => s.goldPerMin },
+	damagePerMin: { value: (s: PlayerSummary) => s.damagePerMin },
+	damageTakenPerMin: { value: (s: PlayerSummary) => s.damageTakenPerMin },
+	visionPerGame: { value: (s: PlayerSummary) => s.visionPerGame },
+	champions: { value: (s: PlayerSummary) => s.champions },
+	maxKills: { value: (s: PlayerSummary) => s.maxKills },
+	winStreak: { value: (s: PlayerSummary) => s.winStreak }
+} satisfies Record<string, { value: (summary: PlayerSummary) => number; ascending?: boolean }>;
+
+export type RankedMetric = keyof typeof RANKED_METRICS;
+
+/**
+ * 지표마다 서버 사람들 중 상위 몇 %인지 센다. 자신보다 앞선 사람 수로 세어 동점은 같은 순위가 된다.
+ * others에는 자신도 들어 있어야 한다.
+ */
+export function topPercents(summary: PlayerSummary, others: PlayerSummary[]): Record<RankedMetric, number> {
+	const entries = Object.entries(RANKED_METRICS).map(([key, metric]) => {
+		const mine = metric.value(summary);
+		const ahead = others.filter((other) => ('ascending' in metric ? metric.value(other) < mine : metric.value(other) > mine)).length;
+		return [key, Math.max(1, Math.ceil(((ahead + 1) / Math.max(1, others.length)) * 100))];
+	});
+	return Object.fromEntries(entries) as Record<RankedMetric, number>;
 }
