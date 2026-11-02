@@ -88,7 +88,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 
 | 용도 | 사용 | 메모 |
 | --- | --- | --- |
-| 한 줄 텍스트 (제목, Riot ID, 팀 이름) | `Input` | `title`(라벨, `titlePosition="out"`), `placeholder`, `maxlength`, `state="error"` + `tip`(오류 문구), `required` |
+| 한 줄 텍스트 (제목, Riot ID) | `Input` | `title`(라벨, `titlePosition="out"`), `placeholder`, `maxlength`, `state="error"` + `tip`(오류 문구), `required` |
 | 검색 | `Input` | `type="search"`, `label1`에 검색 아이콘, `clear`. Enter로 제출 |
 | 숫자 직접 입력 (낙찰가, 포인트) | `Input` | `type="number"`(실제로는 `inputmode`만 바뀌고 값은 문자열). 범위 검증은 직접 |
 | 작은 범위 정수 (팀 수 2~4, 추가 정원 0~10) | `Stepper` | `min`·`max`·`step`. 값 칸은 편집 불가이므로 범위가 넓으면 `Input` |
@@ -117,7 +117,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 
 | 용도 | 사용 | 메모 |
 | --- | --- | --- |
-| 입력 작업 팝업 (모집 생성, 계정 추가, 참가 신청, 팀 이름, ROFL 업로드) | `Popup` | 데스크톱 `position="center"`, 모바일 `position="bottom"`. `maskClosable`은 입력이 없을 때만 true |
+| 입력 작업 팝업 (모집 생성, 모집 마감·편성 방식, 계정 추가, 참가 신청, ROFL 업로드) | `Popup` | 데스크톱 `position="center"`, 모바일 `position="bottom"`. `maskClosable`은 입력이 없을 때만 true |
 | 작은 메뉴 (서버 선택, 계정 메뉴, 행 작업 메뉴) | `ActionMenu` (데스크톱 `ActionPopover` + `triggerRef`, 모바일 `ActionSheet`) | `ActionPopover`에는 하단 시트 모드가 없다. 비활성 항목은 `desc`로 이유를 쓴다 |
 | 모바일 작업 목록 | `ActionSheet` | `ActionMenu`가 모바일에서 사용. `showCancel`로 취소 버튼을 둔다 |
 | 모바일 상세 보기 (게임 참가자 상세) | `Popup position="bottom"` | 데스크톱은 같은 `Popup`을 `position="right"`로 |
@@ -170,7 +170,9 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `ScrimListRow` | `lib/components/scrims/` | `LinkCell` + `DateBadge` + `StatusTag` | 내전 목록 행(서버 홈·내전 목록). 오른쪽 아래 내 신청 상태 |
 | `MatchListRow` | `lib/components/matches/` | `LinkCell` + `DateBadge` + `StatusTag` | 경기 목록 행(서버 홈·경기 기록). 점수는 항상 보이고 팀 이름만 줄어든다. 상태 태그는 종료 외 상태만 |
 | `SectionState` | `lib/components/common/` | `Skeleton` / 점선 상자 + 문구 / 점선 상자 + 문구 + `Button` | 영역 하나의 `loading`·`empty`·`error(retry)` 표현. 목록 자리에 같은 폭으로 놓는다. 정상 상태는 렌더링하지 않는다 |
-| `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`Radio`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다 |
+| `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다. 편성 방식은 받지 않는다 |
+| `CloseRecruitDialog` | `lib/components/scrims/` | `Popup` + `Radio`(수동 편성·경매) | 요약 운영 줄의 `모집 마감`. 편성 방식을 고르며 마감한다 |
+| `ScrimOperationsBar` | `lib/components/scrims/` | 한 줄 + `Button` + `ActionMenu` | 요약 운영 줄. 다음 단계 버튼 하나와, 단계에 맞는 설정 수정·되돌리기·중도 종료·취소 메뉴 |
 | `AvatarStack` | `lib/components/common/` | STDF `AvatarGroup` | 겹친 얼굴 묶음 + 정확한 `+N`. 마운트 후 렌더링·`inert`·이미지 키 보정([7절](#7-stdf-300-제약과-대응)). 이미지가 없으면 이름 첫 글자 색 원(`lib/ui/avatar.ts`) |
 | `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, 공개 허용 시 Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
 | `PlayerFace` | `lib/components/common/` | `<img>` 또는 이름 첫 글자 색 원 | 사람 얼굴 하나(`sm`·`md`·`lg`). `PlayerName`·편성·경매 타일이 같이 쓴다 |

@@ -11,6 +11,7 @@ import {
 } from '#lib/features/scrims/bracket.ts';
 import { parseSlot } from '#lib/features/scrims/formation.ts';
 import { findMockScrimRecord, type IconResolver, type MockFailure, type MockScrim } from './scrims.ts';
+import { setMockMatchStatus } from './matches.ts';
 import { getMockAuction, getMockManualFormation } from './teams.ts';
 
 type BracketState = { matches: BracketMatch[]; bestOf: Partial<Record<BracketStage, BestOf>>; confirmed: boolean };
@@ -158,4 +159,41 @@ export function unlockMockBracket(guildId: string, scrimId: string) {
 		},
 		true
 	);
+}
+
+// ─── 내전 단계와 함께 바뀌는 대진 ─────────────────────────────
+
+// 팀 편성을 다시 하면 팀이 달라질 수 있으므로 대진을 지운다. 다시 확정하면 빈 틀부터 시작한다.
+export function dropMockBracket(guildId: string, scrimId: string) {
+	states.delete(`${guildId}/${scrimId}`);
+}
+
+/** 내전 단계 판단에 쓰는 대진 요약. 대진이 없으면 null이다. */
+export async function getMockBracketProgress(guildId: string, scrimId: string) {
+	const target = await load(guildId, scrimId, noIcon);
+	if (!target?.state) return null;
+	const matches = target.state.matches;
+	return {
+		confirmed: target.state.confirmed,
+		// 게임이 하나라도 기록됐거나 진행 중인 경기가 있으면 시작된 대진이다.
+		started: matches.some((item) => item.status !== 'pending' || item.scoreA + item.scoreB > 0),
+		finished: matches.every((item) => item.status === 'completed')
+	};
+}
+
+/**
+ * 내전을 중도 종료하면 진행 중인 경기는 지금 점수로 중도 종료, 시작하지 않은 경기는 취소한다.
+ * 되돌리면 반대로 연다. 기록된 게임과 점수는 어느 쪽에서도 지우지 않는다.
+ */
+export async function setMockBracketEnded(guildId: string, scrimId: string, ended: boolean) {
+	const target = await load(guildId, scrimId, noIcon);
+	if (!target?.state) return;
+	for (const item of target.state.matches) {
+		const next = ended
+			? item.status === 'in_progress' ? 'ended_early' : item.status === 'pending' ? 'cancelled' : null
+			: item.status === 'ended_early' ? 'in_progress' : item.status === 'cancelled' ? 'pending' : null;
+		if (!next) continue;
+		item.status = next;
+		if (item.matchId) setMockMatchStatus(guildId, item.matchId, next);
+	}
 }

@@ -16,9 +16,10 @@ const guildId = 'devGuild001';
 // 팀 편성이 끝난(대진 준비) 내전을 만든다. 참가자는 devScrim008에서 빌린다.
 async function readyScrim(teamCount: number) {
 	const scrimId = await createMockScrim(guildId, {
-		title: `대진 테스트 ${teamCount}팀`, scheduledAt: null, teamCount, reserveCapacity: 0, formationMethod: 'manual', hardFearless: false
+		title: `대진 테스트 ${teamCount}팀`, scheduledAt: null, teamCount, reserveCapacity: 0, hardFearless: false
 	});
 	const scrim = findMockScrimRecord(guildId, scrimId)!;
+	scrim.formationMethod = 'manual';
 	scrim.status = 'ready';
 	scrim.participants = findMockScrimRecord(guildId, 'devScrim008')!.participants.slice(0, teamCount * 5).map((participant, index) => ({
 		...participant, registrationId: `${scrimId}-r${index}`, userId: `${scrimId}-u${index}`

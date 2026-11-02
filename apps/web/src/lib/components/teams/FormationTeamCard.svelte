@@ -30,10 +30,9 @@
 		onselect: (registrationId: string) => void;
 		onplace: (slot: SlotKey) => void;
 		onremove: (registrationId: string) => void;
-		onrename?: () => void;
 	};
 
-	let { team, players, assignments, side, selectedId, interactive, drag, details, onselect, onplace, onremove, onrename }: Props = $props();
+	let { team, players, assignments, side, selectedId, interactive, drag, details, onselect, onplace, onremove }: Props = $props();
 
 	const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
 	const playerOf = (id: string | null) => (id ? (players.find((player) => player.registrationId === id) ?? null) : null);
@@ -51,9 +50,6 @@
 			{/if}
 		</div>
 		<div class="flex shrink-0 items-center gap-1">
-			{#if onrename && interactive}
-				<Button fill="text" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-xs" onclick={onrename}>이름 변경</Button>
-			{/if}
 			{#if side}
 				<span
 					class={[

@@ -16,8 +16,8 @@ test('검색·상태 필터·쪽 나눔으로 경기를 고른다', async () => 
 	const all = await listMockMatches(guildId, { status: 'all', q: '', page: 1, pageSize: 20 });
 	assert.equal(all.matches.length, 20);
 	assert.equal(all.counts.all, all.counts.in_progress + all.counts.done);
-	const searched = await listMockMatches(guildId, { status: 'all', q: '긴 팀', page: 1, pageSize: 20 });
-	assert.deepEqual(searched.matches.map((match) => match.id), ['devMatch003']);
+	const searched = await listMockMatches(guildId, { status: 'all', q: '칼바람', page: 1, pageSize: 20 });
+	assert.deepEqual(searched.matches.map((match) => match.id), ['devMatch001']);
 	const live = await listMockMatches(guildId, { status: 'in_progress', q: '', page: 1, pageSize: 20 });
 	assert.ok(live.matches.every((match) => match.status === 'in_progress'));
 });

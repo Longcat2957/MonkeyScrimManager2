@@ -70,8 +70,7 @@
 							class={[
 								'rounded-full px-2 py-0.5',
 								scrim.myRegistration === 'selected' && 'bg-success/20 text-success',
-								scrim.myRegistration === 'standby' && 'bg-info/20 text-info',
-								scrim.myRegistration === 'pending' && 'bg-white/10 text-text-dark'
+								scrim.myRegistration === 'standby' && 'bg-info/20 text-info'
 							]}
 						>
 							{mine}

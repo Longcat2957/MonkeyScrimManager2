@@ -24,7 +24,6 @@
 		scheduledAt: null,
 		teamCount: TEAM_COUNT.min,
 		reserveCapacity: 2,
-		formationMethod: null,
 		hardFearless: false
 	};
 	// 새 모집은 모집 단계이므로 모든 설정을 입력받는다.

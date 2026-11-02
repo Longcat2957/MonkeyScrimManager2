@@ -27,7 +27,8 @@
 
 	const teamOf = (id: string | null) => teams.find((team) => team.id === id) ?? null;
 	const selectedName = $derived(teamOf(selectedId)?.name ?? '');
-	const scored = $derived(match.status !== 'pending');
+	// 치르지 않고 취소된 경기는 점수 대신 –를 쓴다. 상태 태그는 시작 전 경기에만 생략한다.
+	const scored = $derived(match.status !== 'pending' && match.status !== 'cancelled');
 </script>
 
 {#snippet seatRow(side: BracketSide, seat: string)}
@@ -117,7 +118,7 @@
 >
 	<header class="flex min-h-9 items-center justify-between gap-2 border-b border-border bg-bg-highlight/40 px-3 dark:bg-bg-highlight-dark/40">
 		<h4 class="text-xs font-semibold opacity-70">{match.label}</h4>
-		{#if scored}<StatusTag {...MATCH_STATUS[match.status]} />{/if}
+		{#if match.status !== 'pending'}<StatusTag {...MATCH_STATUS[match.status]} />{/if}
 	</header>
 	{#if match.matchId}
 		<a href={resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.matchId })} class="block divide-y divide-border hover:bg-bg-highlight/40 dark:hover:bg-bg-highlight-dark/40">

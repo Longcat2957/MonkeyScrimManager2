@@ -7,6 +7,7 @@ import type {
 	MatchStatusFilter
 } from '#lib/features/matches/types.ts';
 import sample from './fixtures/rofl-sample.json' with { type: 'json' };
+import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
 import type { MockFailure } from './scrims.ts';
 
 /** ROFL 투영에서 게임 화면에 필요한 값만 남긴 형태. 업로드한 파일도 같은 형태로 저장한다. */
@@ -100,19 +101,19 @@ const base = (
 	games: sampleGames(id, winners, playedAt)
 });
 
-// 진행 중·종료·중도 종료와 경기 시각 미확인, 긴 팀 이름을 한 번씩 포함한다.
+// 진행 중·종료·중도 종료와 경기 시각 미확인을 한 번씩 포함한다. 팀 이름은 내전 팀 순서대로 붙는 이름을 쓴다.
 const matches: StoredMatch[] = [
-	base('devMatch001', 'devScrim004', '금요일 칼바람 나락 내전 (초보 환영, 즐겜 위주)', '바나나 공장', '정글 차이', 3, 'in_progress', '2026-10-30T12:10:00Z', ['a', 'b']),
-	base('devMatch002', 'devScrim005', '10월 3주차 정기 내전', '몽키 레드', '몽키 블루', 3, 'completed', '2026-10-24T11:20:00Z', ['a', 'a']),
-	base('devMatch003', 'devScrim005', '10월 3주차 정기 내전', '홍길동과 아이들의 아주 긴 팀 이름', '미드 차이', 3, 'completed', '2026-10-24T13:05:00Z', ['b', 'a', 'b']),
-	base('devMatch004', 'devScrim005', '10월 2주차 정기 내전', '1팀', '2팀', 3, 'ended_early', '2026-10-17T11:30:00Z', ['a']),
-	{ ...base('devMatch005', 'devScrim005', '10월 2주차 정기 내전', '3팀', '4팀', 5, 'completed', null, []), fixedScore: [3, 2] },
+	base('devMatch001', 'devScrim004', '금요일 칼바람 나락 내전 (초보 환영, 즐겜 위주)', '포로팀', '칼날부리팀', 3, 'in_progress', '2026-10-30T12:10:00Z', ['a', 'b']),
+	base('devMatch002', 'devScrim005', '10월 3주차 정기 내전', '포로팀', '칼날부리팀', 3, 'completed', '2026-10-24T11:20:00Z', ['a', 'a']),
+	base('devMatch003', 'devScrim005', '10월 3주차 정기 내전', '돌거북팀', '바위게팀', 3, 'completed', '2026-10-24T13:05:00Z', ['b', 'a', 'b']),
+	base('devMatch004', 'devScrim005', '10월 2주차 정기 내전', '포로팀', '칼날부리팀', 3, 'ended_early', '2026-10-17T11:30:00Z', ['a']),
+	{ ...base('devMatch005', 'devScrim005', '10월 2주차 정기 내전', '돌거북팀', '바위게팀', 5, 'completed', null, []), fixedScore: [3, 2] },
 	// 목록의 검색·필터·쪽 나눔을 확인하기 위한 지난 경기다. 게임 기록은 점수만 둔다.
 	...Array.from({ length: 22 }, (_, index): StoredMatch => {
 		const week = Math.floor(index / 2);
 		const played = new Date(Date.UTC(2026, 9, 10 - week * 7, 11 + (index % 2) * 2)).toISOString();
 		return {
-			...base(`devMatchOld${index + 1}`, 'devScrim005', `${9 - Math.floor(week / 4)}월 ${(week % 4) + 1}주차 정기 내전`, `${(index % 2) * 2 + 1}팀`, `${(index % 2) * 2 + 2}팀`, index % 3 === 0 ? 5 : 3, index === 7 ? 'cancelled' : 'completed', played, []),
+			...base(`devMatchOld${index + 1}`, 'devScrim005', `${9 - Math.floor(week / 4)}월 ${(week % 4) + 1}주차 정기 내전`, TEAM_NAMES[(index % 2) * 2]!, TEAM_NAMES[(index % 2) * 2 + 1]!, index % 3 === 0 ? 5 : 3, index === 7 ? 'cancelled' : 'completed', played, []),
 			fixedScore: index === 7 ? [0, 0] : index % 3 === 0 ? [3, index % 2 ? 1 : 2] : [index % 2 ? 0 : 2, index % 2 ? 2 : 1]
 		};
 	})
@@ -287,4 +288,10 @@ export async function recordMockGame(guildId: string, matchId: string, raw: RawG
 	const [a, b] = score(match);
 	if (Math.max(a, b) > match.bestOf / 2) match.status = 'completed';
 	return { order };
+}
+
+/** 내전 중도 종료·되돌리기에 맞춰 경기 상태만 바꾼다. 기록된 게임은 그대로 둔다. */
+export function setMockMatchStatus(guildId: string, matchId: string, status: MatchListItem['status']) {
+	const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
+	if (match) match.status = status;
 }

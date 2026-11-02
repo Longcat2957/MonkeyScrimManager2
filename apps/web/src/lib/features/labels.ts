@@ -26,7 +26,6 @@ export const MATCH_STATUS: Record<MatchStatus, StatusLabel> = {
 
 // 철회는 현재 참여가 아니므로 Tag 없이 흐린 텍스트로 표시한다(state null).
 export const REGISTRATION_STATUS: Record<RegistrationStatus, { text: string; state: StatusLabel['state'] | null }> = {
-	pending: { text: '신청', state: 'theme' },
 	selected: { text: '선발', state: 'success' },
 	standby: { text: '대기', state: 'info' },
 	withdrawn: { text: '철회', state: null },
@@ -35,7 +34,6 @@ export const REGISTRATION_STATUS: Record<RegistrationStatus, { text: string; sta
 
 // 목록에서 내 신청을 알릴 때 쓰는 문구다. 철회·제외는 현재 참여가 아니므로 표시하지 않는다.
 export const MY_REGISTRATION: Partial<Record<RegistrationStatus, string>> = {
-	pending: '신청함',
 	selected: '선발됨',
 	standby: '대기 중'
 };
@@ -53,10 +51,9 @@ export function positionsLabel(positions: LolPosition[]) {
 	return positions.map((key) => POSITIONS.find((position) => position.key === key)?.text ?? key).join('·');
 }
 
-export function formationMethodLabel(method: FormationMethod | null) {
-	if (method === 'manual') return '수동 편성';
-	if (method === 'auction') return '경매';
-	return '편성 방식 미정';
+// 편성 방식은 모집을 마감할 때 정하므로 미정(null)은 따로 표시하지 않는다.
+export function formationMethodLabel(method: FormationMethod) {
+	return method === 'manual' ? '수동 편성' : '경매';
 }
 
 // 표시 시간대는 미결정이므로 우선 한국 시간으로 고정한다.

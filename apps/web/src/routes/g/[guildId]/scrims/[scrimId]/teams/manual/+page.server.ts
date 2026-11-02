@@ -3,12 +3,10 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
 import type { SlotKey } from '#lib/features/scrims/formation.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
-import { confirmMockManual, getMockManualFormation, moveMockManualPlayer, renameMockTeam, resetMockManual } from '#lib/mocks/teams.ts';
+import { confirmMockManual, getMockManualFormation, moveMockManualPlayer, resetMockManual } from '#lib/mocks/teams.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import type { Actions, PageServerLoad } from './$types';
-
-const TEAM_NAME_MAX = 20;
 
 // TODO: DB 조회와 운영 권한 확인으로 바꾼다.
 function requireDev() {
@@ -50,15 +48,6 @@ export const actions: Actions = {
 	reset: async ({ params }) => {
 		requireDev();
 		return failWith(await resetMockManual(params.guildId, params.scrimId));
-	},
-
-	rename: async ({ request, params }) => {
-		requireDev();
-		const data = await request.formData();
-		const name = String(data.get('name') ?? '').trim();
-		if (!name) return fail(400, { nameError: '팀 이름을 입력해 주세요' });
-		if (name.length > TEAM_NAME_MAX) return fail(400, { nameError: `팀 이름은 ${TEAM_NAME_MAX}자까지 쓸 수 있어요` });
-		return failWith(await renameMockTeam(params.guildId, params.scrimId, String(data.get('teamId') ?? ''), name));
 	},
 
 	confirm: async ({ params }) => {

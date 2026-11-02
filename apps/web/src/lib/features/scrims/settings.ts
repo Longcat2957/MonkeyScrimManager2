@@ -12,7 +12,6 @@ export type ScrimSettingsInput = {
 	time: string;
 	teamCount: number;
 	reserveCapacity: number;
-	formationMethod: FormationMethod | null;
 	hardFearless: boolean;
 };
 
@@ -68,7 +67,6 @@ export function toScrimSettings(input: ScrimSettingsInput): ScrimSettings {
 		scheduledAt: date && time ? new Date(`${date}T${time}:00${OFFSET}`).toISOString() : null,
 		teamCount: input.teamCount,
 		reserveCapacity: input.reserveCapacity,
-		formationMethod: input.formationMethod,
 		hardFearless: input.hardFearless
 	};
 }
@@ -79,14 +77,12 @@ export function inRange(value: number, range: { min: number; max: number }) {
 
 // form action이 받은 FormData를 입력값으로 읽는다. 클라이언트는 enhance 콜백에서 같은 이름으로 넣는다.
 export function readScrimSettingsForm(data: FormData): ScrimSettingsInput {
-	const method = String(data.get('formationMethod') ?? '');
 	return {
 		title: String(data.get('title') ?? ''),
 		date: String(data.get('date') ?? ''),
 		time: String(data.get('time') ?? ''),
 		teamCount: Number(data.get('teamCount')),
 		reserveCapacity: Number(data.get('reserveCapacity')),
-		formationMethod: method === 'manual' || method === 'auction' ? method : null,
 		hardFearless: data.get('hardFearless') === 'true'
 	};
 }
@@ -97,16 +93,23 @@ export function writeScrimSettingsForm(data: FormData, input: ScrimSettingsInput
 	data.set('time', input.time);
 	data.set('teamCount', String(input.teamCount));
 	data.set('reserveCapacity', String(input.reserveCapacity));
-	data.set('formationMethod', input.formationMethod ?? '');
 	data.set('hardFearless', String(input.hardFearless));
 }
 
-const ALL_FIELDS: ScrimSettingsField[] = ['title', 'scheduledAt', 'teamCount', 'reserveCapacity', 'formationMethod', 'hardFearless'];
+const ALL_FIELDS: ScrimSettingsField[] = ['title', 'scheduledAt', 'teamCount', 'reserveCapacity', 'hardFearless'];
 
-// 단계마다 바꿀 수 있는 설정이다. 모집이 끝나면 정원·편성 방식을, 경기가 시작되면 피어리스를 고정한다.
+// 단계마다 바꿀 수 있는 설정이다. 모집이 끝나면 정원을, 경기가 시작되면 피어리스를 고정한다.
 export function editableFields(status: ScrimStatus): ScrimSettingsField[] {
 	if (status === 'recruit') return ALL_FIELDS;
 	if (status === 'preparing' || status === 'ready') return ['title', 'scheduledAt', 'hardFearless'];
 	if (status === 'in_progress') return ['title', 'scheduledAt'];
 	return [];
 }
+
+// 모집을 마감할 때 고르는 편성 방식이다. 모집 마감 action이 같은 값만 받는다.
+export function readFormationMethod(value: FormDataEntryValue | null): FormationMethod | null {
+	return value === 'manual' || value === 'auction' ? value : null;
+}
+
+// 팀 이름은 운영자가 입력하지 않고 팀 순서대로 이 목록에서 붙인다. 팀 수 상한(TEAM_COUNT.max)만큼 둔다.
+export const TEAM_NAMES = ['포로팀', '칼날부리팀', '돌거북팀', '바위게팀'];

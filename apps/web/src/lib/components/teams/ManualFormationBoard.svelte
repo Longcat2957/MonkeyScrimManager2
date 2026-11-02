@@ -16,7 +16,6 @@
 	import FormationPool from './FormationPool.svelte';
 	import FormationSynergyRail from './FormationSynergyRail.svelte';
 	import FormationTeamCard from './FormationTeamCard.svelte';
-	import TeamNameDialog from './TeamNameDialog.svelte';
 
 	type Props = {
 		teams: FormationTeam[];
@@ -34,8 +33,6 @@
 	let optimistic = $state<Assignments | null>(null);
 	let pending = $state(0);
 	let busy = $state(false);
-	let renaming = $state<FormationTeam | null>(null);
-	let renameOpen = $state(false);
 	let details = $state(false);
 
 	// 끌어 놓기: 자리에 놓으면 배치·교환, 미배정 목록에 놓으면 배정 해제다.
@@ -81,11 +78,11 @@
 	}
 
 	async function confirmFormation() {
-		if (await confirm('확정하면 팀을 바꿀 수 없어요. 확정할까요?', '편성 확정')) await run('confirm');
+		if (await confirm('확정하면 대진 준비로 넘어가요. 확정할까요?', '편성 확정')) await run('confirm');
 	}
 
 	function onkeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && selectedId && !renameOpen) selectedId = null;
+		if (event.key === 'Escape' && selectedId) selectedId = null;
 	}
 </script>
 
@@ -157,7 +154,6 @@
 			onselect={select}
 			onplace={(slot) => selectedId && move(selectedId, slot)}
 			onremove={(id) => move(id, null)}
-			onrename={() => ((renaming = team), (renameOpen = true))}
 		/>
 	{/snippet}
 
@@ -194,6 +190,3 @@
 	{/if}
 </section>
 
-{#if editable}
-	<TeamNameDialog bind:open={renameOpen} team={renaming} />
-{/if}

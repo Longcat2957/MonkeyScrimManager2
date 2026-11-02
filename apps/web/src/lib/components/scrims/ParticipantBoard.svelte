@@ -24,20 +24,19 @@
 
 	const FILTERS: { text: string; statuses: RegistrationStatus[] | null }[] = [
 		{ text: '전체', statuses: null },
-		{ text: '신청', statuses: ['pending'] },
 		{ text: '선발', statuses: ['selected'] },
 		{ text: '대기', statuses: ['standby'] },
 		{ text: '철회·제외', statuses: ['withdrawn', 'excluded'] }
 	];
-	const ACTIVE: RegistrationStatus[] = ['pending', 'selected', 'standby'];
+	const ACTIVE: RegistrationStatus[] = ['selected', 'standby'];
 
 	let filter = $state(0);
 	let managing = $state(false);
 	let selected = $state<(string | number)[]>([]);
 	let pending = $state(false);
 
-	const active = $derived(counts.pending + counts.selected + counts.standby);
-	// 모바일 폭에는 다섯 칸에 숫자까지 들어가지 않는다. 신청·선발 수는 위 정원 줄에 있으므로 숫자를 뺀다.
+	const active = $derived(counts.selected + counts.standby);
+	// 모바일 폭에는 네 칸에 숫자까지 넣지 않는다. 신청·선발 수는 위 정원 줄에 있으므로 숫자를 뺀다.
 	const labels = $derived(
 		FILTERS.map(({ text, statuses }) => ({
 			text: desktop.current
@@ -53,7 +52,7 @@
 	const selectable = $derived(participants.filter((participant) => ACTIVE.includes(participant.status)));
 
 	async function apply(ids: (string | number)[], status: 'selected' | 'standby' | 'excluded') {
-		if (status === 'excluded' && !(await confirm(`${ids.length}명을 제외할까요? 제외한 신청은 되돌릴 수 없어요.`, '참가자 제외'))) {
+		if (status === 'excluded' && !(await confirm(`${ids.length}명을 제외할까요? 제외한 신청은 되돌릴 수 없고, 빈 선발 자리는 먼저 신청한 대기자가 채워요.`, '참가자 제외'))) {
 			return;
 		}
 		pending = true;
@@ -151,11 +150,11 @@
 			<p class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">아직 신청한 사람이 없어요</p>
 		{:else}
 			<div role="group" aria-label="상태 필터" class="border-b border-text-primary/5 px-2 py-1 dark:border-text-dark/5">
-				<!-- 다섯 칸을 한 줄에 둔다. STDF Tab의 overflow 모드는 ResizeObserver 루프를 일으켜 쓰지 않는다. -->
+				<!-- 네 칸을 한 줄에 둔다. STDF Tab의 overflow 모드는 ResizeObserver 루프를 일으켜 쓰지 않는다. -->
 				<Tab
 					{labels}
 					active={filter}
-					showNum={5}
+					showNum={4}
 					tabInjClass="whitespace-nowrap px-0! text-sm"
 					onclickTab={(index) => (filter = index)}
 				/>

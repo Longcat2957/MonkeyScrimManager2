@@ -8,9 +8,9 @@
 
 	let { data }: PageProps = $props();
 
-	// 종료·중도 종료·취소된 내전은 참가자 목록만 남긴다.
+	// 끝난 내전에는 내 신청 줄을 두지 않는다. 운영 줄은 종료·중도 종료를 되돌릴 수 있게 취소된 내전에서만 뺀다.
 	const showRegistration = $derived(!data.finished && data.me !== null);
-	const showOperations = $derived(!data.finished && data.can.manage && data.settings !== null);
+	const showOperations = $derived(data.scrim.status !== 'cancelled' && data.can.manage && data.settings !== null);
 </script>
 
 <svelte:head>
@@ -34,7 +34,14 @@
 				/>
 			{/if}
 			{#if showOperations && data.settings}
-				<ScrimOperationsBar nextAction={data.can.nextAction} settings={data.settings} editable={data.editable} />
+				<ScrimOperationsBar
+					nextAction={data.can.nextAction}
+					revert={data.can.revert}
+					endEarly={data.can.endEarly}
+					cancellable={!data.finished}
+					settings={data.settings}
+					editable={data.editable}
+				/>
 			{/if}
 		</div>
 	{/if}

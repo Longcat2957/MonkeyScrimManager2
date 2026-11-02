@@ -136,13 +136,13 @@ export const scrims = pgTable('scrims', {
 	createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 	title: text('title').notNull(),
 	status: scrimStatus('status').default('recruit').notNull(),
-	// 모집 중에는 미정일 수 있지만 팀 편성을 시작하기 전에는 방식을 결정한다.
+	// 모집 중에는 비워 두고 모집을 마감할 때 정한다. 모집을 다시 열면 다시 비운다.
 	formationMethod: scrimFormationMethod('formation_method'),
 	// 새 Match를 만들 때 사용할 기본값이다. 실제 적용값은 Match에 복사하며 이후 변경을 전파하지 않는다.
 	isHardFearless: boolean('is_hard_fearless').default(false).notNull(),
 	// 실출전 정원은 팀 수 × 5명이다. 추가 신청 인원은 팀 수나 실출전 정원을 늘리지 않는다.
 	teamCount: integer('team_count').default(2).notNull(),
-	// 전체 신청 정원은 실출전 정원 + 추가 신청 정원이다. 신청 순서로 선발·대기를 자동 결정하지 않는다.
+	// 전체 신청 정원은 실출전 정원 + 추가 신청 정원이다. 신청 순서대로 실출전 정원까지 선발하고 나머지는 대기다.
 	reserveCapacity: integer('reserve_capacity').default(0).notNull(),
 	// 모집 때 안내한 예정 시각이며 실제 경기 시작 시각과 구분한다.
 	expectedStartAt: timestamp('expected_start_at', { withTimezone: true, precision: 3 }),
@@ -189,6 +189,7 @@ export const auctions = pgTable('auctions', {
 export const scrimTeams = pgTable('scrim_teams', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	scrimId: uuid('scrim_id').notNull().references(() => scrims.id, { onDelete: 'restrict' }),
+	// 팀을 만들 때 정해진 이름 목록(포로팀·칼날부리팀…)에서 순서대로 붙이며 운영자가 따로 입력하지 않는다.
 	name: text('name').notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
@@ -820,19 +821,19 @@ export const scrimParticipantPreferences = pgTable('scrim_participant_preference
 	check('scrim_participant_preferences_priority_range', sql`${table.priority} between 1 and 5`)
 ]);
 
-// 신청자는 선발 전 pending이며, 최종 선발·대기·자진 철회·운영자 제외를 구분한다.
+// 신청하면 선발 정원이 남아 있을 때 선발, 찼으면 대기가 된다. 자진 철회·운영자 제외는 신청을 마감한다.
 export const scrimRegistrationStatus = pgEnum('scrim_registration_status', [
-	'pending', 'selected', 'standby', 'withdrawn', 'excluded'
+	'selected', 'standby', 'withdrawn', 'excluded'
 ]);
 
 // 참가자 ID는 유지하고 신청마다 새 행을 만든다. 철회·제외한 행을 재사용하지 않아 재신청 이력이 남는다.
 // withdrawnAt이 없는 신청이 현재 정원에 포함된다. 선발 수는 팀 수 × 5명, 활성 신청 수는 여기에 reserveCapacity를 더한 값으로 제한한다.
-// 정원 검사·선발 확정·시작 후 제외 제한·철회/제외 시 미확정 팀 배정 정리는 서비스 트랜잭션에서 처리한다.
+// 정원 검사·자동 선발·선발자 철회/제외 시 가장 먼저 신청한 대기자 승급·시작 후 제외 제한·미확정 팀 배정 정리는 서비스 트랜잭션에서 처리한다.
 export const scrimParticipantRegistrations = pgTable('scrim_participant_registrations', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	scrimParticipantId: uuid('scrim_participant_id').notNull()
 		.references(() => scrimParticipants.id, { onDelete: 'restrict' }),
-	status: scrimRegistrationStatus('status').default('pending').notNull(),
+	status: scrimRegistrationStatus('status').notNull(),
 	joinedAt: timestamp('joined_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	joinedByUserId: text('joined_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 	// 자진 철회와 운영자 제외 모두 신청을 마감하며, 행위자·사유를 남기고 참가자 행은 삭제하지 않는다.

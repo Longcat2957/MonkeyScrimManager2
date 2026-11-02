@@ -5,6 +5,7 @@ import { POSITIONS } from '#lib/features/labels.ts';
 import {
 	editableFields,
 	inRange,
+	readFormationMethod,
 	readScrimSettingsForm,
 	RESERVE_CAPACITY,
 	TEAM_COUNT,
@@ -14,7 +15,6 @@ import {
 import type { RegistrationAccount } from '#lib/features/scrims/types.ts';
 import { getMockMe } from '#lib/mocks/me.ts';
 import {
-	advanceMockScrim,
 	cancelMockScrim,
 	findMockScrim,
 	getMockScrimDetail,
@@ -26,6 +26,7 @@ import {
 	withdrawMock,
 	type MockFailure
 } from '#lib/mocks/scrims.ts';
+import { advanceMockScrim, endMockScrimEarly, getMockScrimOperations, revertMockScrim } from '#lib/mocks/workflow.ts';
 import { mockUser } from '#lib/mocks/session.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
@@ -55,10 +56,11 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 		championIconUrl(version, championId)
 	);
 	if (!detail) error(404, '내전을 찾을 수 없습니다.');
+	const operations = await getMockScrimOperations(params.guildId, params.scrimId);
 
 	const accounts = user ? myAccounts() : [];
 	const primary = user ? getMockMe(null).riotAccounts.find((account) => account.isPrimary) : undefined;
-	const active = detail.counts.pending + detail.counts.selected + detail.counts.standby;
+	const active = detail.counts.selected + detail.counts.standby;
 	const registerBlockedReason = detail.myRegistration
 		? null
 		: scrim.status !== 'recruit'
@@ -90,7 +92,7 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 			editRegistration: Boolean(detail.myRegistration) && scrim.status === 'recruit',
 			manage: scrim.canManage,
 			select: scrim.canManage && scrim.status === 'recruit',
-			nextAction: detail.nextAction
+			...operations
 		}
 	};
 };
@@ -158,8 +160,23 @@ export const actions: Actions = {
 		requireDev();
 		const denied = requireManager(params.guildId, params.scrimId);
 		if (denied) return denied;
-		const key = String((await request.formData()).get('key') ?? '');
-		return failWith(await advanceMockScrim(params.guildId, params.scrimId, key));
+		const data = await request.formData();
+		const key = String(data.get('key') ?? '');
+		return failWith(await advanceMockScrim(params.guildId, params.scrimId, key, readFormationMethod(data.get('formationMethod'))));
+	},
+
+	revert: async ({ params }) => {
+		requireDev();
+		const denied = requireManager(params.guildId, params.scrimId);
+		if (denied) return denied;
+		return failWith(await revertMockScrim(params.guildId, params.scrimId));
+	},
+
+	endEarly: async ({ params }) => {
+		requireDev();
+		const denied = requireManager(params.guildId, params.scrimId);
+		if (denied) return denied;
+		return failWith(await endMockScrimEarly(params.guildId, params.scrimId));
 	},
 
 	cancel: async ({ params }) => {

@@ -15,6 +15,7 @@ import {
 	type FormationTeam,
 	type SlotKey
 } from '#lib/features/scrims/formation.ts';
+import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
 import { findMockScrimRecord, type IconResolver, type MockFailure, type MockScrim } from './scrims.ts';
 
 // 수동 편성·경매의 개발용 저장소다. 내전 목(scrims.ts)의 선발 참가자를 대상으로 하며 개발 서버를 재시작하면 처음 상태로 돌아간다.
@@ -39,7 +40,7 @@ function toPlayers(scrim: MockScrim, icon: IconResolver): FormationPlayer[] {
 }
 
 function defaultTeams(scrim: MockScrim): FormationTeam[] {
-	return Array.from({ length: scrim.teamCount }, (_, index) => ({ id: `${scrim.id}-t${index + 1}`, name: `${index + 1}팀` }));
+	return Array.from({ length: scrim.teamCount }, (_, index) => ({ id: `${scrim.id}-t${index + 1}`, name: TEAM_NAMES[index]! }));
 }
 
 // 같은 입력이면 항상 같은 값을 주는 간단한 해시다. 개발용 전적을 만들 때만 쓴다.
@@ -177,16 +178,6 @@ export async function resetMockManual(guildId: string, scrimId: string) {
 	const target = editableManual(guildId, scrimId);
 	if ('status' in target) return target;
 	target.state.assignments = {};
-	return null;
-}
-
-export async function renameMockTeam(guildId: string, scrimId: string, teamId: string, name: string) {
-	await wait();
-	const target = editableManual(guildId, scrimId);
-	if ('status' in target) return target;
-	const team = target.state.teams.find((item) => item.id === teamId);
-	if (!team) return { status: 404, message: '팀을 찾을 수 없어요' };
-	team.name = name;
 	return null;
 }
 
@@ -483,4 +474,22 @@ export async function shuffleMockQueue(guildId: string, scrimId: string) {
 	if ('status' in target) return target;
 	target.state.queue = shuffle(target.state.queue);
 	return null;
+}
+
+// ─── 단계 되돌리기 ───────────────────────────────────────────
+
+// 모집을 다시 열 때 편성·경매 기록을 지운다. 다시 마감하면 처음부터 편성한다.
+export function dropMockFormation(scrimId: string) {
+	manualStates.delete(scrimId);
+	auctionStates.delete(scrimId);
+}
+
+// 확정한 팀 편성을 다시 고칠 수 있게 연다. 수동 편성은 확정만 풀고, 끝난 경매는 진행 중으로 돌려 마지막 기록부터 되돌릴 수 있게 한다.
+// 상태를 바꾸기 전에 불러야 지금까지의 배정이 그대로 남는다.
+export function reopenMockFormation(scrim: MockScrim) {
+	if (scrim.formationMethod === 'manual') manualState(scrim).confirmed = false;
+	if (scrim.formationMethod === 'auction') {
+		const state = auctionState(scrim);
+		if (state.status === 'completed') state.status = 'in_progress';
+	}
 }

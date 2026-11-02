@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Button, Calendar, Input, Popup, Radio, Stepper } from 'stdf';
+	import { Button, Calendar, Input, Popup, Stepper } from 'stdf';
 	import { enhance, type SubmitFunction } from '$app/forms';
 	import SwitchCell from '#lib/components/common/SwitchCell.svelte';
 	import {
@@ -14,7 +14,7 @@
 		type ScrimSettingsErrors,
 		type ScrimSettingsInput
 	} from '#lib/features/scrims/settings.ts';
-	import type { FormationMethod, ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
+	import type { ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
 	import { confirm } from '#lib/ui/confirm.ts';
 	import { nonSubmitButtons } from '#lib/ui/form.ts';
 	import { overlay } from '#lib/ui/overlay.ts';
@@ -34,15 +34,9 @@
 
 	let { open = $bindable(false), title, submitText, action, initial, editable, onsaved }: Props = $props();
 
-	const METHODS = [
-		{ name: 'none', label: '미정' },
-		{ name: 'manual', label: '수동' },
-		{ name: 'auction', label: '경매' }
-	];
 	const LOCKED_LABELS: Partial<Record<ScrimSettingsField, string>> = {
 		teamCount: '팀 수',
 		reserveCapacity: '추가 신청 정원',
-		formationMethod: '편성 방식',
 		hardFearless: '하드 피어리스'
 	};
 
@@ -74,7 +68,6 @@
 			.filter(([field]) => !can(field as ScrimSettingsField))
 			.map(([, label]) => label)
 	);
-	const method = $derived(input.formationMethod ?? 'none');
 	const capacityLine = $derived(
 		`실출전 ${playCapacity(input.teamCount)}명 · 최대 신청 ${playCapacity(input.teamCount) + input.reserveCapacity}명`
 	);
@@ -224,18 +217,6 @@
 						</div>
 						<p class="text-sm opacity-70" aria-live="polite">{capacityLine}</p>
 					</div>
-				{/if}
-
-				{#if can('formationMethod')}
-					<fieldset class="flex flex-col gap-2">
-						<legend class="mb-2 text-sm font-medium">편성 방식</legend>
-						<Radio
-							data={METHODS}
-							value={method}
-							layout="h"
-							onchange={(value) => (input.formationMethod = value === 'none' ? null : (value as FormationMethod))}
-						/>
-					</fieldset>
 				{/if}
 
 				{#if can('hardFearless')}

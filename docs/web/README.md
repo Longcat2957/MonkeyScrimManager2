@@ -50,12 +50,12 @@
 ## 상태 값의 화면 문구
 
 DB enum과 화면 문구를 한 곳에서 대응시킨다. 구현은 `lib/features/labels.ts`에 있고 `StatusTag`의 `state`도 함께 둔다.
-목록에서 **내** 신청 상태는 따로 `신청함`·`선발됨`·`대기 중`(`MY_REGISTRATION`)으로 쓰고 철회·제외는 표시하지 않는다.
+목록에서 **내** 신청 상태는 따로 `선발됨`·`대기 중`(`MY_REGISTRATION`)으로 쓰고 철회·제외는 표시하지 않는다.
 
 | enum | 값 → 문구 · `Tag state` |
 | --- | --- |
 | `scrim_status` | `recruit` 모집 중 · theme / `preparing` 편성 중 · info / `ready` 대진 준비 · info / `in_progress` 진행 중 · warning / `completed` 종료 · success / `ended_early` 중도 종료 · error / `cancelled` 취소 · error |
-| `scrim_registration_status` | `pending` 신청 · theme / `selected` 선발 · success / `standby` 대기 · info / `withdrawn` 철회 · (Tag 없이 흐린 텍스트) / `excluded` 제외 · error |
+| `scrim_registration_status` | `selected` 선발 · success / `standby` 대기 · info / `withdrawn` 철회 · (Tag 없이 흐린 텍스트) / `excluded` 제외 · error |
 | `match_status` | `pending` 대기 · theme / `in_progress` 진행 중 · warning / `completed` 종료 · success / `ended_early` 중도 종료 · error / `cancelled` 취소 · error |
 | `auction_status` | `setup` 준비 · theme / `in_progress` 진행 중 · warning / `completed` 완료 · success / `cancelled` 취소 · error |
 | `auction_lot_status` | `open` 진행 중 / `sold` 낙찰 / `unsold` 유찰 / `cancelled` 취소 |

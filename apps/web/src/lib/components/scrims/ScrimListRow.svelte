@@ -46,8 +46,7 @@
 				class={[
 					'text-xs',
 					scrim.myRegistration === 'selected' && 'font-medium text-success',
-					scrim.myRegistration === 'standby' && 'text-info',
-					scrim.myRegistration === 'pending' && 'text-gray-500 dark:text-gray-400'
+					scrim.myRegistration === 'standby' && 'text-info'
 				]}
 			>
 				{mine}

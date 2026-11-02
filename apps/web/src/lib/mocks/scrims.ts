@@ -1,12 +1,12 @@
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import { playCapacity } from '#lib/features/scrims/settings.ts';
 import type {
+	FormationMethod,
 	MyRegistration,
 	RegistrationStatus,
 	ScrimContext,
 	ScrimListItem,
 	ScrimMember,
-	ScrimNextAction,
 	ScrimParticipant,
 	ScrimRegistrationCounts,
 	ScrimSettings,
@@ -33,7 +33,9 @@ export type MockParticipant = Omit<ScrimParticipant, 'iconUrl'> & {
 	mmr: Record<LolPosition, number>;
 };
 
+// 편성 방식은 모집을 마감할 때 정해지고 모집을 다시 열면 비워진다.
 export type MockScrim = ScrimSettings & {
+	formationMethod: FormationMethod | null;
 	guildId: string;
 	id: string;
 	status: ScrimStatus;
@@ -109,19 +111,14 @@ const scrims: MockScrim[] = [
 		scheduledAt: '2026-10-31T11:00:00Z',
 		teamCount: 2,
 		reserveCapacity: 2,
-		formationMethod: 'manual',
+		formationMethod: null,
 		hardFearless: true,
 		canManage: true,
 		createdAt: '2026-10-20T00:00:00Z',
-		// 신청 3 · 선발 8 · 철회 1 · 제외 1 → 활성 11/12명, 선발 8/10명
+		// 선발 10 · 대기 1 · 철회 1 · 제외 1 → 활성 11/12명. 선발이 다 차서 바로 모집을 마감할 수 있다.
 		participants: withMe(
-			participants('devScrim001', [
-				...repeat('pending', 3),
-				...repeat('selected', 8),
-				'withdrawn',
-				'excluded'
-			]),
-			'pending'
+			participants('devScrim001', [...repeat('selected', 10), 'standby', 'withdrawn', 'excluded']),
+			'selected'
 		)
 	},
 	{
@@ -150,7 +147,7 @@ const scrims: MockScrim[] = [
 		hardFearless: false,
 		canManage: false,
 		createdAt: '2026-10-29T00:00:00Z',
-		participants: participants('devScrim003', repeat('pending', 3))
+		participants: participants('devScrim003', repeat('selected', 3))
 	},
 	{
 		guildId: 'devGuild001',
@@ -162,9 +159,10 @@ const scrims: MockScrim[] = [
 		reserveCapacity: 2,
 		formationMethod: 'manual',
 		hardFearless: false,
-		canManage: false,
+		// 결승 1:1에서 중도 종료·되돌리기를 확인할 수 있게 운영 권한을 둔다.
+		canManage: true,
 		createdAt: '2026-10-25T00:00:00Z',
-		participants: withMe(participants('devScrim004', [...repeat('selected', 10), ...repeat('standby', 2)]), 'standby').reverse()
+		participants: withMe(participants('devScrim004', ['standby', ...repeat('selected', 10), 'standby']), 'standby').reverse()
 	},
 	{
 		guildId: 'devGuild001',
@@ -188,11 +186,11 @@ const scrims: MockScrim[] = [
 		scheduledAt: '2026-11-01T10:00:00Z',
 		teamCount: 2,
 		reserveCapacity: 0,
-		formationMethod: 'manual',
+		formationMethod: null,
 		hardFearless: false,
 		canManage: false,
 		createdAt: '2026-10-26T00:00:00Z',
-		participants: participants('devScrim006', [...repeat('selected', 6), ...repeat('pending', 4)])
+		participants: participants('devScrim006', repeat('selected', 10))
 	},
 	{
 		guildId: 'devGuild001',
@@ -247,7 +245,7 @@ const scrims: MockScrim[] = [
 
 const ACTIVE: ScrimStatus[] = ['recruit', 'preparing', 'ready', 'in_progress'];
 const DONE: ScrimStatus[] = ['completed', 'ended_early', 'cancelled'];
-const ACTIVE_REGISTRATION: RegistrationStatus[] = ['pending', 'selected', 'standby'];
+const ACTIVE_REGISTRATION: RegistrationStatus[] = ['selected', 'standby'];
 
 const FILTER: Record<Exclude<ScrimStatusFilter, 'all'>, ScrimStatus[]> = {
 	recruit: ['recruit'],
@@ -285,7 +283,7 @@ export function findMockScrim(guildId: string, scrimId: string): ScrimContext | 
 }
 
 const MEMBER_PREVIEW = 5;
-const MEMBER_ORDER: RegistrationStatus[] = ['selected', 'pending', 'standby'];
+const MEMBER_ORDER: RegistrationStatus[] = ['selected', 'standby'];
 
 // 목록 행의 얼굴 묶음은 선발된 사람부터 보여 준다.
 function members(scrim: MockScrim, icon: IconResolver): ScrimMember[] {
@@ -358,9 +356,9 @@ export async function listMockActiveScrims(guildId: string, icon: IconResolver =
 	return activeScrims(guildId).map((scrim) => toListItem(scrim, icon));
 }
 
-const MY_PRIORITY: RegistrationStatus[] = ['selected', 'standby', 'pending'];
+const MY_PRIORITY: RegistrationStatus[] = ['selected', 'standby'];
 
-// 내가 참여하는 내전(선발 > 대기 > 신청, 같으면 진행 중 > 가까운 일정)을, 없으면 신청할 수 있는 가장 가까운 모집을 고른다.
+// 내가 참여하는 내전(선발 > 대기, 같으면 진행 중 > 가까운 일정)을, 없으면 신청할 수 있는 가장 가까운 모집을 고른다.
 export async function findMockNextScrim(guildId: string, icon: IconResolver = noIcon) {
 	const active = activeScrims(guildId).map((scrim) => ({ scrim, mine: myParticipant(scrim, mockUser.userId)?.status ?? null }));
 	const mine = active
@@ -379,18 +377,16 @@ export async function findMockNextScrim(guildId: string, icon: IconResolver = no
 	return { kind: mine ? ('mine' as const) : ('open' as const), scrim: toListItem(picked, icon), hardFearless: picked.hardFearless };
 }
 
-// 내전 머리의 배경으로 쓸 챔피언이다. 활성 신청자의 주 챔피언 중 가장 많은 것을, 신청자가 없으면 null을 준다.
 export function getMockScrimSettings(guildId: string, scrimId: string): ScrimSettings | null {
 	const scrim = find(guildId, scrimId);
 	if (!scrim) return null;
-	const { title, scheduledAt, teamCount, reserveCapacity, formationMethod, hardFearless } = scrim;
-	return { title, scheduledAt, teamCount, reserveCapacity, formationMethod, hardFearless };
+	const { title, scheduledAt, teamCount, reserveCapacity, hardFearless } = scrim;
+	return { title, scheduledAt, teamCount, reserveCapacity, hardFearless };
 }
 
-function counts(scrim: MockScrim): ScrimRegistrationCounts {
+export function counts(scrim: MockScrim): ScrimRegistrationCounts {
 	const count = (status: RegistrationStatus) => scrim.participants.filter((participant) => participant.status === status).length;
 	return {
-		pending: count('pending'),
 		selected: count('selected'),
 		standby: count('standby'),
 		withdrawn: count('withdrawn'),
@@ -400,38 +396,17 @@ function counts(scrim: MockScrim): ScrimRegistrationCounts {
 	};
 }
 
-// 상태 전이 정책은 미결정이다. 지금은 단계마다 다음 단계 하나와 화면에서 확인할 수 있는 조건만 둔다.
-function nextAction(scrim: MockScrim): ScrimNextAction | null {
-	const { selected, playCapacity } = counts(scrim);
-	switch (scrim.status) {
-		case 'recruit':
-			return {
-				key: 'close',
-				label: '모집 마감',
-				blockedReason:
-					selected !== playCapacity
-						? `선발 인원이 ${playCapacity}명이어야 해요 (현재 ${selected}명)`
-						: !scrim.formationMethod
-							? '내전 설정에서 편성 방식을 정해야 해요'
-							: null
-			};
-		case 'preparing':
-			return { key: 'ready', label: '대진 준비로', blockedReason: '팀 편성을 확정해야 해요' };
-		case 'ready':
-			return { key: 'start', label: '내전 시작', blockedReason: null };
-		case 'in_progress':
-			return { key: 'complete', label: '내전 종료', blockedReason: null };
-		default:
-			return null;
+// 선발 자리가 비면 가장 먼저 신청한 대기자부터 채운다. 신청·철회·제외·정원 변경 뒤에 부른다.
+function fillSelected(scrim: MockScrim) {
+	const limit = playCapacity(scrim.teamCount);
+	const standby = scrim.participants
+		.filter((participant) => participant.status === 'standby')
+		.toSorted((a, b) => a.registeredAt.localeCompare(b.registeredAt));
+	for (const participant of standby) {
+		if (counts(scrim).selected >= limit) break;
+		participant.status = 'selected';
 	}
 }
-
-const NEXT_STATUS: Record<ScrimNextAction['key'], ScrimStatus> = {
-	close: 'preparing',
-	ready: 'ready',
-	start: 'in_progress',
-	complete: 'completed'
-};
 
 export async function getMockScrimDetail(guildId: string, scrimId: string, userId: string | null, icon: IconResolver = noIcon) {
 	await wait();
@@ -446,8 +421,7 @@ export async function getMockScrimDetail(guildId: string, scrimId: string, userI
 			({ riotAccountId: _, championId, mmr: __, ...participant }): ScrimParticipant => ({ ...participant, iconUrl: icon(championId) })
 		),
 		counts: counts(scrim),
-		myRegistration,
-		nextAction: scrim.canManage ? nextAction(scrim) : null
+		myRegistration
 	};
 }
 
@@ -456,6 +430,7 @@ export async function createMockScrim(guildId: string, settings: ScrimSettings) 
 	const id = `devScrim${Date.now().toString(36)}`;
 	scrims.push({
 		...settings,
+		formationMethod: null,
 		guildId,
 		id,
 		status: 'recruit',
@@ -474,6 +449,7 @@ export async function updateMockScrimSettings(guildId: string, scrimId: string, 
 		return { status: 409, message: '선발 인원보다 실출전 정원을 작게 바꿀 수 없어요' };
 	}
 	Object.assign(scrim, settings);
+	if (scrim.status === 'recruit') fillSelected(scrim);
 	return null;
 }
 
@@ -497,7 +473,8 @@ export async function registerMock(guildId: string, scrimId: string, input: Regi
 		riotId: input.riotId,
 		riotAccountId: input.riotAccountId,
 		positions: input.positions,
-		status: 'pending',
+		// 선발 자리가 남아 있으면 바로 선발, 찼으면 대기다.
+		status: counts(scrim).selected < playCapacity(scrim.teamCount) ? 'selected' : 'standby',
 		registeredAt: new Date().toISOString(),
 		mmr: mockMmr(0)
 	});
@@ -525,6 +502,7 @@ export async function withdrawMock(guildId: string, scrimId: string, userId: str
 	if (!scrim || !mine) return { status: 404, message: '이미 철회된 신청이에요' };
 	if (scrim.status !== 'recruit') return { status: 409, message: '모집이 마감되어 철회할 수 없어요' };
 	mine.status = 'withdrawn';
+	fillSelected(scrim);
 	return null;
 }
 
@@ -546,17 +524,8 @@ export async function setMockParticipantStatus(
 		if (after > limit) return { status: 409, message: `선발 인원은 ${limit}명을 넘을 수 없어요 (선택 후 ${after}명)` };
 	}
 	for (const participant of targets) participant.status = status;
-	return null;
-}
-
-export async function advanceMockScrim(guildId: string, scrimId: string, key: string): Promise<MockFailure | null> {
-	await wait();
-	const scrim = find(guildId, scrimId);
-	if (!scrim) return { status: 404, message: '내전을 찾을 수 없어요' };
-	const action = nextAction(scrim);
-	if (!action || action.key !== key) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
-	if (action.blockedReason) return { status: 409, message: action.blockedReason };
-	scrim.status = NEXT_STATUS[action.key];
+	// 운영자가 대기로 돌린 사람은 그대로 두고, 제외로 빈 자리만 대기자가 채운다.
+	if (status === 'excluded') fillSelected(scrim);
 	return null;
 }
 

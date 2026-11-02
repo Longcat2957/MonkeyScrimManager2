@@ -43,12 +43,12 @@ export type ScrimListItem = {
 export type ScrimStatusFilter = 'all' | 'recruit' | 'active' | 'done';
 
 // 모집 생성·내전 설정 수정 팝업이 주고받는 값이다. scheduledAt이 null이면 일정 미정이다.
+// 편성 방식은 설정이 아니라 모집을 마감할 때 고른다.
 export type ScrimSettings = {
 	title: string;
 	scheduledAt: string | null;
 	teamCount: number;
 	reserveCapacity: number;
-	formationMethod: FormationMethod | null;
 	hardFearless: boolean;
 };
 
@@ -81,14 +81,22 @@ export type MyRegistration = {
 };
 
 // 운영자가 다음 단계로 넘기는 작업이다. blockedReason이 있으면 버튼을 비활성으로 두고 이유를 보여 준다.
+// close(모집 마감)는 편성 방식을 함께 고른다.
 export type ScrimNextAction = {
 	key: 'close' | 'ready' | 'start' | 'complete';
 	label: string;
 	blockedReason: string | null;
 };
 
+// 운영 메뉴의 이전 단계 되돌리기다. 단계마다 문구가 다르고, blockedReason이 있으면 메뉴 항목을 비활성으로 둔다.
+export type ScrimRevertAction = {
+	label: string;
+	message: string;
+	blockedReason: string | null;
+};
+
 export type ScrimRegistrationCounts = Record<RegistrationStatus, number> & {
-	// 활성 신청(신청·선발·대기)의 정원과 실출전 정원이다.
+	// 활성 신청(선발·대기)의 정원과 실출전 정원이다.
 	activeCapacity: number;
 	playCapacity: number;
 };
