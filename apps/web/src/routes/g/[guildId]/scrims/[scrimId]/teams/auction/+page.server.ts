@@ -1,6 +1,7 @@
 import { dev } from '$app/env';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
+import { formationPath } from '#lib/features/scrims/paths.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
 import {
 	assignMockCurrent,
@@ -28,11 +29,11 @@ function requireDev() {
 	if (!dev) error(404, '내전을 찾을 수 없습니다.');
 }
 
-// 실제 편성 방식과 다른 경로로 들어오면 공통 진입점으로 보내 올바른 경로를 다시 정한다.
+// 실제 편성 방식과 다른 경로로 들어오면 그 방식의 작업판으로, 방식이 아직 없으면 방식을 고르는 요약으로 보낸다.
 export const load: PageServerLoad = async ({ parent, params, depends }) => {
 	const { scrim } = await parent();
 	if (scrim && scrim.formationMethod !== 'auction') {
-		redirect(307, resolve('/g/[guildId]/scrims/[scrimId]/teams', params));
+		redirect(307, formationPath(params, scrim.formationMethod) ?? resolve('/g/[guildId]/scrims/[scrimId]', params));
 	}
 	requireDev();
 	if (!scrim) error(404, '내전을 찾을 수 없습니다.');

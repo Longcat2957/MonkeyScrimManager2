@@ -1,5 +1,6 @@
 import { resolve } from '$app/paths';
 import type { GuildContext } from '#lib/features/guild/types.ts';
+import { formationPath } from '#lib/features/scrims/paths.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
 
 export type NavItem = { label: string; href: string; current: boolean };
@@ -23,10 +24,11 @@ export function guildNavItems(guild: GuildContext, pathname: string): NavItem[] 
 
 export function scrimNavItems(guildId: string, scrim: ScrimContext, pathname: string): NavItem[] {
 	const params = { guildId, scrimId: scrim.id };
+	// 팀 편성은 방식을 고른 뒤에만 그 방식의 작업판을 가리킨다. 방식은 요약에서 고른다.
+	const teams = formationPath(params, scrim.formationMethod);
 	const items = [
 		{ label: '요약', href: resolve('/g/[guildId]/scrims/[scrimId]', params), exact: true },
-		// 팀 편성은 공통 진입점 하나를 가리키고 manual·auction 하위 경로에서도 현재 항목이다.
-		{ label: '팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams', params) },
+		...(teams ? [{ label: '팀 편성', href: teams }] : []),
 		{ label: '대진', href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', params) }
 	];
 	return items.map(({ label, href, exact }) => ({ label, href, current: isCurrent(pathname, href, exact) }));

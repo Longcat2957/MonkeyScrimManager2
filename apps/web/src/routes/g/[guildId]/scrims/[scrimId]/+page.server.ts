@@ -8,6 +8,7 @@ import {
 	readScrimSettingsForm,
 	RESERVE_CAPACITY,
 	TEAM_COUNT,
+	readFormationMethod,
 	toScrimSettings,
 	validateScrimSettings
 } from '#lib/features/scrims/settings.ts';
@@ -25,7 +26,13 @@ import {
 	withdrawMock,
 	type MockFailure
 } from '#lib/mocks/scrims.ts';
-import { advanceMockScrim, endMockScrimEarly, getMockScrimOperations, revertMockScrim } from '#lib/mocks/workflow.ts';
+import {
+	advanceMockScrim,
+	chooseMockFormationMethod,
+	endMockScrimEarly,
+	getMockScrimOperations,
+	revertMockScrim
+} from '#lib/mocks/workflow.ts';
 import { mockUser } from '#lib/mocks/session.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
@@ -161,6 +168,15 @@ export const actions: Actions = {
 		if (denied) return denied;
 		const data = await request.formData();
 		return failWith(await advanceMockScrim(params.guildId, params.scrimId, String(data.get('key') ?? '')));
+	},
+
+	// 고른 뒤 화면이 방식별 작업판으로 이동한다.
+	chooseMethod: async ({ request, params }) => {
+		requireDev();
+		const denied = requireManager(params.guildId, params.scrimId);
+		if (denied) return denied;
+		const method = readFormationMethod((await request.formData()).get('method'));
+		return failWith(await chooseMockFormationMethod(params.guildId, params.scrimId, method));
 	},
 
 	revert: async ({ params }) => {

@@ -37,7 +37,6 @@
 		{ label: '서버 홈', href: resolve('/g/[guildId]', { guildId }) },
 		{ label: '내전 목록', href: resolve('/g/[guildId]/scrims', { guildId }) },
 		{ label: '내전 상세', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },
-		{ label: '팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId, scrimId }) },
 		{ label: '수동 팀 편성', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/manual', { guildId, scrimId: manualScrimId }) },
 		{ label: '경매', href: resolve('/g/[guildId]/scrims/[scrimId]/teams/auction', { guildId, scrimId: auctionScrimId }) },
 		{ label: '대진 운영', href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', { guildId, scrimId: bracketScrimId }) },

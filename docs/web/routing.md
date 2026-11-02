@@ -13,7 +13,7 @@
 └── g/[guildId]                          서버 홈
     ├── scrims                           내전 목록 + 모집 생성
     │   └── [scrimId]                    모집·참가자·운영 요약
-    │       ├── teams                    편성 방식에 따라 manual/auction으로 redirect
+    │       ├── teams                    페이지 없음(하위 경로만). 편성 방식은 요약에서 고른다
     │       │   ├── manual               수동 편성
     │       │   └── auction              경매
     │       └── bracket                  대진
@@ -41,11 +41,11 @@
 
 | 상황 | 결과 |
 | --- | --- |
-| `/teams` + 방식 `manual`/`auction` | 해당 하위 경로로 `redirect(307)` |
-| `/teams` + 방식 미정(모집 중·편성 중·취소) | 편성 방식 선택 페이지를 렌더링. 편성 중 운영자만 고를 수 있고, 나머지는 같은 칸을 비활성으로 보여 준다 |
+| `/teams` | 페이지가 없다(404). 편성 방식은 요약(`/scrims/[scrimId]`)에서 고른다 |
 | `/teams/manual`인데 방식이 `auction` (또는 반대) | 실제 방식 경로로 `redirect(307)` |
+| `/teams/manual`·`/teams/auction` + 방식 미정 | 요약으로 `redirect(307)` |
 
-URL로 편성 방식을 바꾸지 않는다. 방식은 모집 마감 때 정하고, 모집을 다시 열면 비워진다. 10인·20인 구분용 경로는 없다.
+URL로 편성 방식을 바꾸지 않는다. 방식은 요약에서 모집 중·편성 중에 정하거나 바꾸고, 작업판의 `방식 다시 고르기`로 비워진다. 10인·20인 구분용 경로는 없다.
 
 ### 1.3 URL 상태
 
@@ -104,7 +104,7 @@ routes/+layout.svelte                    ConfigProvider(ko_KR) · Feedback · Ap
 ### 3.2 규칙
 
 - 홈 이동은 로고 한 곳. 헤더·푸터에 별도 "홈" 링크를 두지 않는다. GitHub 링크는 제품 화면에서 제거한다.
-- 범위 메뉴 항목은 `<a>`이고 현재 항목에 `aria-current="page"`를 둔다. 팀 편성 메뉴는 `/teams`를 가리키고 `/teams/manual`·`/teams/auction`에서도 현재 항목으로 표시한다.
+- 범위 메뉴 항목은 `<a>`이고 현재 항목에 `aria-current="page"`를 둔다. 팀 편성 메뉴는 편성 방식을 고른 뒤에만 보이고 그 방식의 작업판(`/teams/manual`·`/teams/auction`, `formationPath`)을 가리킨다.
 - 서버 선택기에서 현재 서버는 선택 표시만 하고 이동 동작을 두지 않는다. 서버 선택은 그 서버의 홈(`/g/[id]`)으로 이동한다.
 - 계정 메뉴: `내 정보`(`/me`) · `백오피스`(서비스 운영자만) · `로그아웃`(인증 구현 후). 비로그인이면 계정 메뉴 대신 `Discord로 로그인` 버튼 하나(인증 구현 후). 서버 선택기는 로그인했을 때만 표시.
 - 화면 모드 전환은 데스크톱은 헤더 아이콘 버튼, 모바일은 메뉴 패널의 Cell+Switch 한 곳. 두 변형은 같은 시점에 렌더링하지 않는다.
@@ -131,7 +131,7 @@ routes/+layout.svelte                    ConfigProvider(ko_KR) · Feedback · Ap
 | --- | --- |
 | 공통 오류 화면, `/dev/error` | 구현됨 |
 | `AppHeader`, `AppFooter`, 루트 `ConfigProvider`·`Feedback` | 구현됨 |
-| 서버·내전 레이아웃(개발 모드 목 데이터), `ScrimSummary`, `/teams` redirect, `[userId]` 경로 | 구현됨 |
+| 서버·내전 레이아웃(개발 모드 목 데이터), `ScrimSummary`, 작업판 방식 redirect, `[userId]` 경로 | 구현됨 |
 | 내전 목록·내전 요약·수동 편성·경매·대진, 경기 기록·경기 상세(ROFL 업로드), 사용자 전적, 서버 통계, 서버 관리 본문 | 구현됨(개발 모드 목 데이터·form action) |
 | 서비스 소개, 이용 안내, 약관·개인정보(준비 중 안내), 백오피스(제목 + 운영자 권한 검사) | 구현됨 |
 | 인증·권한·DB 조회, 로그인·로그아웃 | 미구현. 운영 모드에서는 서버·내전 문맥이 `null`이라 전역 헤더로 표시 |

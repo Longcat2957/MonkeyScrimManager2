@@ -47,19 +47,19 @@ test('신청하면 선발 자리가 남았을 때 선발, 찼으면 대기가 �
 	assert.equal(statusOf(scrimId, 'late2'), 'selected');
 });
 
-test('모집을 마감한 뒤 편성 방식을 고르고, 되돌리면 방식과 편성이 지워진다', async () => {
+test('편성 방식은 모집 중·편성 중에 고르고, 모집을 다시 열어도 방식은 남는다', async () => {
 	const { scrimId, scrim } = await nearlyFullScrim();
+	// 모집 중에도 고르고 바꿀 수 있다.
+	assert.equal((await chooseMockFormationMethod(guildId, scrimId, null))?.status, 400);
+	assert.equal(await chooseMockFormationMethod(guildId, scrimId, 'auction'), null);
+	assert.equal(await chooseMockFormationMethod(guildId, scrimId, 'manual'), null);
+	assert.equal(scrim.formationMethod, 'manual');
+
 	assert.equal((await advanceMockScrim(guildId, scrimId, 'close'))?.status, 409);
 	await register(scrimId, 'tenth');
 	assert.equal(await advanceMockScrim(guildId, scrimId, 'close'), null);
 	assert.equal(scrim.status, 'preparing');
-	assert.equal(scrim.formationMethod, null);
-	assert.equal((await getMockScrimOperations(guildId, scrimId)).nextAction?.blockedReason, '편성 방식을 골라야 해요');
-
-	assert.equal((await chooseMockFormationMethod(guildId, scrimId, null))?.status, 400);
-	assert.equal(await chooseMockFormationMethod(guildId, scrimId, 'manual'), null);
-	assert.equal(scrim.formationMethod, 'manual');
-	assert.equal((await chooseMockFormationMethod(guildId, scrimId, 'auction'))?.status, 409);
+	assert.equal((await getMockScrimOperations(guildId, scrimId)).nextAction?.blockedReason, '팀 편성을 확정해야 해요');
 
 	const formation = (await getMockManualFormation(guildId, scrimId))!;
 	assert.deepEqual(formation.teams.map((team) => team.name), ['포로팀', '칼날부리팀']);
@@ -67,7 +67,17 @@ test('모집을 마감한 뒤 편성 방식을 고르고, 되돌리면 방식과
 	assert.equal((await getMockScrimOperations(guildId, scrimId)).revert?.label, '모집 다시 열기');
 	assert.equal(await revertMockScrim(guildId, scrimId), null);
 	assert.equal(scrim.status, 'recruit');
+	assert.equal(scrim.formationMethod, 'manual');
+});
+
+test('방식을 고르지 않고 마감하면 단계 버튼 없이 방식 선택을 기다린다', async () => {
+	const { scrimId, scrim } = await nearlyFullScrim();
+	await register(scrimId, 'tenth');
+	assert.equal(await advanceMockScrim(guildId, scrimId, 'close'), null);
 	assert.equal(scrim.formationMethod, null);
+	assert.equal((await getMockScrimOperations(guildId, scrimId)).nextAction, null);
+	assert.equal(await chooseMockFormationMethod(guildId, scrimId, 'auction'), null);
+	assert.equal(scrim.formationMethod, 'auction');
 });
 
 test('수동 편성·진행 중인 경매에서 방식 선택으로 되돌리면 편성 기록이 지워진다', async () => {

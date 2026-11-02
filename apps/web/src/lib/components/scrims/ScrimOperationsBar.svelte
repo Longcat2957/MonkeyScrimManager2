@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { Button, toast } from 'stdf';
 	import type { ActionProps } from 'stdf';
-	import { goto, invalidateAll } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
 	import ActionMenu from '#lib/components/common/ActionMenu.svelte';
 	import type { ScrimNextAction, ScrimRevertAction, ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
 	import { postAction } from '#lib/ui/actions.ts';
@@ -40,7 +38,7 @@
 	});
 
 	const CONFIRM: Record<ScrimNextAction['key'], string> = {
-		close: '모집을 마감할까요? 마감하면 팀 편성에서 편성 방식을 골라요.',
+		close: '모집을 마감할까요?',
 		ready: '대진 준비로 넘어갈까요?',
 		start: '내전을 시작할까요?',
 		complete: '내전을 종료할까요?'
@@ -54,8 +52,6 @@
 		const message = await postAction('advance', { key });
 		advancing = false;
 		if (message) toast.error(message);
-		// 마감한 다음 할 일은 편성 방식 고르기라 팀 편성으로 바로 간다.
-		else if (key === 'close') await goto(resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId: page.params.guildId!, scrimId: page.params.scrimId! }));
 	}
 
 	async function run(name: string, message: string, title: string) {

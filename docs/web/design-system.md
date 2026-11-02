@@ -170,7 +170,8 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `MatchListRow` | `lib/components/matches/` | `LinkCell` + `DateBadge` + `StatusTag` | 경기 목록 행(서버 홈·경기 기록). 점수는 항상 보이고 팀 이름만 줄어든다. 상태 태그는 종료 외 상태만 |
 | `SectionState` | `lib/components/common/` | `Skeleton` / 점선 상자 + 문구 / 점선 상자 + 문구 + `Button` | 영역 하나의 `loading`·`empty`·`error(retry)` 표현. 목록 자리에 같은 폭으로 놓는다. 정상 상태는 렌더링하지 않는다 |
 | `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다. 편성 방식은 받지 않는다 |
-| `ChangeMethodButton` | `lib/components/teams/` | `Button` + `confirm` | 수동 편성·경매 작업판의 `방식 다시 고르기`. 편성을 지우고 `/teams` 방식 선택으로 |
+| `ChangeMethodButton` | `lib/components/teams/` | `Button` + `confirm` | 수동 편성·경매 작업판의 `방식 다시 고르기`. 편성을 지우고 요약의 방식 선택으로 |
+| `FormationMethodChooser` | `lib/components/scrims/` | `<button>` 두 칸 | 요약 작업 상자의 `편성 방식`(수동 편성·경매, 고른 방식 표시·변경) |
 | `ScrimOperationsBar` | `lib/components/scrims/` | 한 줄 + `Button` + `ActionMenu` | 요약 운영 줄. 다음 단계 버튼 하나와, 단계에 맞는 설정 수정·되돌리기·중도 종료·취소 메뉴 |
 | `AvatarStack` | `lib/components/common/` | STDF `AvatarGroup` | 겹친 얼굴 묶음 + 정확한 `+N`. 마운트 후 렌더링·`inert`·이미지 키 보정([7절](#7-stdf-300-제약과-대응)). 이미지가 없으면 이름 첫 글자 색 원(`lib/ui/avatar.ts`) |
 | `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, 공개 허용 시 Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
