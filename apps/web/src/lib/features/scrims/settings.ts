@@ -106,7 +106,7 @@ export function editableFields(status: ScrimStatus): ScrimSettingsField[] {
 	return [];
 }
 
-// 모집을 마감할 때 고르는 편성 방식이다. 모집 마감 action이 같은 값만 받는다.
+// 팀 편성 화면에서 고르는 편성 방식이다. 방식 선택 action이 같은 값만 받는다.
 export function readFormationMethod(value: FormDataEntryValue | null): FormationMethod | null {
 	return value === 'manual' || value === 'auction' ? value : null;
 }

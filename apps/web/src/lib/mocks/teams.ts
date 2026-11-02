@@ -453,6 +453,16 @@ export async function resetMockAuction(guildId: string, scrimId: string) {
 	return null;
 }
 
+// 진행 중인 경매를 팀장·시작 포인트 설정으로 되돌린다. 낙찰·유찰 기록은 지우고, 지금 설정은 고치기 쉽게 남긴다.
+export async function reopenMockAuctionSetup(guildId: string, scrimId: string) {
+	await wait();
+	const target = auctionTarget(guildId, scrimId, 'in_progress');
+	if ('status' in target) return target;
+	const { state } = target;
+	Object.assign(state, { status: 'setup', queue: [], open: null, unsold: [], lots: [] });
+	return null;
+}
+
 // 현재 후보를 가격 없이 팀에 넣는다. 팀 카드로 끌어 놓을 때 쓴다.
 export async function assignMockCurrent(guildId: string, scrimId: string, teamId: string) {
 	await wait();

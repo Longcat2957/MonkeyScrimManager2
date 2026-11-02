@@ -9,6 +9,7 @@ import {
 	drawMockLot,
 	getMockAuction,
 	passMockLot,
+	reopenMockAuctionSetup,
 	resetMockAuction,
 	restoreMockUnsold,
 	revertMockLot,
@@ -16,6 +17,7 @@ import {
 	shuffleMockQueue,
 	startMockAuction
 } from '#lib/mocks/teams.ts';
+import { clearMockFormationMethod } from '#lib/mocks/workflow.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
@@ -107,5 +109,15 @@ export const actions: Actions = {
 	reset: async ({ params }) => {
 		requireDev();
 		return failWith(await resetMockAuction(params.guildId, params.scrimId));
+	},
+	reopenSetup: async ({ params }) => {
+		requireDev();
+		return failWith(await reopenMockAuctionSetup(params.guildId, params.scrimId));
+	},
+
+	// 방식 선택으로 되돌린다. 다시 불러오면 load가 공통 진입점으로 보낸다.
+	changeMethod: async ({ params }) => {
+		requireDev();
+		return failWith(await clearMockFormationMethod(params.guildId, params.scrimId));
 	}
 };

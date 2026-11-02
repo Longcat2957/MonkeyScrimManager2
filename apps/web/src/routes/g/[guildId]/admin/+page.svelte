@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { CellGroup, Input, Pagination, toast } from 'stdf';
+	import { CellGroup, Input, toast } from 'stdf';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { SERVICE_NAME } from '#lib/branding.ts';
+	import PageNav from '#lib/components/common/PageNav.svelte';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
 	import SwitchCell from '#lib/components/common/SwitchCell.svelte';
@@ -71,6 +72,7 @@
 			role="search"
 			aria-label="멤버 검색"
 			{@attach nonSubmitButtons}
+			class="-mx-2 -my-1"
 			onsubmit={(event) => {
 				event.preventDefault();
 				navigate({ q: query });
@@ -105,10 +107,6 @@
 			</CellGroup>
 		{/if}
 
-		{#if data.total > data.pageSize}
-			<nav aria-label="쪽 이동" class="flex justify-center pt-2">
-				<Pagination total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
-			</nav>
-		{/if}
+		<PageNav total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
 	</section>
 </div>

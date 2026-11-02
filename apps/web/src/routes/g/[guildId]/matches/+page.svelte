@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { CellGroup, Input, Loading, Pagination, Tab } from 'stdf';
+	import { CellGroup, Input, Loading, Tab } from 'stdf';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
 	import { SERVICE_NAME } from '#lib/branding.ts';
+	import PageNav from '#lib/components/common/PageNav.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
 	import MatchListRow from '#lib/components/matches/MatchListRow.svelte';
 	import type { MatchStatusFilter } from '#lib/features/matches/types.ts';
@@ -52,12 +53,12 @@
 	{:else}
 		<section aria-labelledby="match-list" class="flex flex-col gap-3">
 			<h2 id="match-list" class="sr-only">{FILTERS[active]?.text} 경기</h2>
-			<div class="flex flex-col gap-2 md:flex-row md:items-end">
+			<div class="flex flex-col gap-2 md:flex-row md:items-center">
 				<form
 					role="search"
 					aria-label="경기 검색"
 					{@attach nonSubmitButtons}
-					class="md:w-80"
+					class="-mx-2 -my-1 md:w-80"
 					onsubmit={(event) => {
 						event.preventDefault();
 						navigate({ q: query });
@@ -90,11 +91,7 @@
 				</div>
 			{/if}
 
-			{#if data.total > data.pageSize}
-				<nav aria-label="쪽 이동" class="flex justify-center pt-2">
-					<Pagination total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
-				</nav>
-			{/if}
+			<PageNav total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
 		</section>
 	{/if}
 </div>

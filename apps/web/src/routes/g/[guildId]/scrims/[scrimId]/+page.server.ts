@@ -5,7 +5,6 @@ import { POSITIONS } from '#lib/features/labels.ts';
 import {
 	editableFields,
 	inRange,
-	readFormationMethod,
 	readScrimSettingsForm,
 	RESERVE_CAPACITY,
 	TEAM_COUNT,
@@ -161,8 +160,7 @@ export const actions: Actions = {
 		const denied = requireManager(params.guildId, params.scrimId);
 		if (denied) return denied;
 		const data = await request.formData();
-		const key = String(data.get('key') ?? '');
-		return failWith(await advanceMockScrim(params.guildId, params.scrimId, key, readFormationMethod(data.get('formationMethod'))));
+		return failWith(await advanceMockScrim(params.guildId, params.scrimId, String(data.get('key') ?? '')));
 	},
 
 	revert: async ({ params }) => {

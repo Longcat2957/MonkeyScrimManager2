@@ -8,7 +8,7 @@
 </script>
 
 {#if icon?.iconUrl}
-	<img src={icon.iconUrl} alt={icon.name} title={icon.name} loading="lazy" class={['shrink-0 bg-bg-highlight object-cover dark:bg-bg-highlight-dark', SIZE[size], round ? 'rounded-full' : 'rounded-(--radius-small)']} />
+	<img src={icon.iconUrl} alt={icon.name} title={icon.name} loading="lazy" class={['max-w-none shrink-0 bg-bg-highlight object-cover dark:bg-bg-highlight-dark', SIZE[size], round ? 'rounded-full' : 'rounded-(--radius-small)']} />
 {:else if icon}
 	<span title={icon.name} class={['flex shrink-0 items-center justify-center rounded-(--radius-small) bg-bg-highlight text-[0.5rem] dark:bg-bg-highlight-dark', SIZE[size]]}>{icon.name.slice(0, 2)}</span>
 {:else}

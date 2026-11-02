@@ -43,7 +43,7 @@ export type ScrimListItem = {
 export type ScrimStatusFilter = 'all' | 'recruit' | 'active' | 'done';
 
 // 모집 생성·내전 설정 수정 팝업이 주고받는 값이다. scheduledAt이 null이면 일정 미정이다.
-// 편성 방식은 설정이 아니라 모집을 마감할 때 고른다.
+// 편성 방식은 설정이 아니라 모집을 마감한 뒤 팀 편성 화면에서 고른다.
 export type ScrimSettings = {
 	title: string;
 	scheduledAt: string | null;

@@ -78,11 +78,11 @@
 								{#if controls}
 									<span class="flex flex-wrap justify-end gap-1">
 										{#each auction.teams as team (team.id)}
-											<Button fill="lineLight" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-xs" disabled={busy || Boolean(auction.openLot) || team.members.length >= TEAM_SIZE} onclick={() => onassign(player.registrationId, team.id)}>
+											<Button fill="lineLight" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-xs" disabled={busy || Boolean(auction.openLot) || team.members.length >= TEAM_SIZE} onclick={() => onassign(player.registrationId, team.id)}>
 												{team.name} 배치<span class="sr-only">, {player.displayName}</span>
 											</Button>
 										{/each}
-										<Button fill="text" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-xs" disabled={busy || Boolean(auction.openLot)} onclick={() => onrestore(player.registrationId)}>
+										<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-xs" disabled={busy || Boolean(auction.openLot)} onclick={() => onrestore(player.registrationId)}>
 											다시 올리기<span class="sr-only">, {player.displayName}</span>
 										</Button>
 									</span>

@@ -96,7 +96,7 @@
 | 수치 비교 (게임 결과, 통계 순위) | `<table>`. 숫자는 `tabular-nums text-right`. 모바일은 핵심 3~4열, 나머지는 행 상세 팝업 |
 | 필터 | 목록 위 `Tabs`. 선택은 URL 쿼리 |
 | 검색 | `Input type="search"`. Enter 제출, 쿼리 `q` |
-| 페이지 | 목록 아래 `Pagination`, 페이지당 20. 결과가 한 페이지면 렌더링하지 않는다 |
+| 페이지 | 목록 아래 `PageNav`, 페이지당 20. 결과가 한 페이지면 렌더링하지 않는다 |
 
 - 목록에 이미 있는 정보(제목, 상태)를 상세 영역에 다시 요약 카드로 만들지 않는다.
 - 같은 대상(같은 내전)으로 가는 링크는 화면에 하나만. 서버 홈에서 한 내전이 "진행 중"과 "최근"에 둘 다 해당하면 한쪽에만 둔다.
@@ -113,7 +113,7 @@
 
 - 본문 바로가기 링크(이미 있음), 페이지마다 `h1` 하나, 영역마다 `h2`.
 - 포커스 표시: 전역 `:focus-visible { outline: 2px solid currentColor; outline-offset: 2px }`를 `layout.css`에 한 번. 컴포넌트별로 다시 쓰지 않는다.
-- 터치 대상 높이 최소 44px(`Button heightIn`, 행 `py-3`).
+- 터치 대상 높이 최소 44px(`Button heightIn`, 행 `py-3`). 도구 줄의 작은 버튼도 `heightIn="2"`(40px) 아래로 줄이지 않는다. 캐러셀 점·푸터 링크처럼 작은 표시는 감싸는 버튼·링크에 여백을 주어 누를 자리를 넓힌다.
 - 상태는 색 + 문구(`Tag text`). 승패는 "승"/"패" 글자.
 - 버튼·링크·입력은 키보드로 조작할 수 있게 둔다.
 - `prefers-reduced-motion`이면 STDF `transition`/`duration` prop을 0 또는 null로.

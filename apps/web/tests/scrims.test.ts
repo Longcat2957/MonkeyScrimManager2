@@ -2,8 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getMockBracket } from '../src/lib/mocks/bracket.ts';
 import { createMockScrim, findMockScrimRecord, registerMock, setMockParticipantStatus, withdrawMock } from '../src/lib/mocks/scrims.ts';
-import { getMockManualFormation } from '../src/lib/mocks/teams.ts';
-import { advanceMockScrim, endMockScrimEarly, getMockScrimOperations, revertMockScrim } from '../src/lib/mocks/workflow.ts';
+import { getMockAuction, getMockManualFormation, moveMockManualPlayer, reopenMockAuctionSetup, saveMockAuctionSetup, startMockAuction } from '../src/lib/mocks/teams.ts';
+import {
+	advanceMockScrim,
+	chooseMockFormationMethod,
+	clearMockFormationMethod,
+	endMockScrimEarly,
+	getMockScrimOperations,
+	revertMockScrim
+} from '../src/lib/mocks/workflow.ts';
 
 const guildId = 'devGuild001';
 
@@ -40,15 +47,19 @@ test('신청하면 선발 자리가 남았을 때 선발, 찼으면 대기가 �
 	assert.equal(statusOf(scrimId, 'late2'), 'selected');
 });
 
-test('모집 마감 때 편성 방식을 고르고, 되돌리면 방식과 편성이 지워진다', async () => {
+test('모집을 마감한 뒤 편성 방식을 고르고, 되돌리면 방식과 편성이 지워진다', async () => {
 	const { scrimId, scrim } = await nearlyFullScrim();
-	assert.equal(scrim.formationMethod, null);
-	assert.equal((await advanceMockScrim(guildId, scrimId, 'close', 'manual'))?.status, 409);
+	assert.equal((await advanceMockScrim(guildId, scrimId, 'close'))?.status, 409);
 	await register(scrimId, 'tenth');
-	assert.equal((await advanceMockScrim(guildId, scrimId, 'close', null))?.status, 400);
-	assert.equal(await advanceMockScrim(guildId, scrimId, 'close', 'manual'), null);
+	assert.equal(await advanceMockScrim(guildId, scrimId, 'close'), null);
 	assert.equal(scrim.status, 'preparing');
+	assert.equal(scrim.formationMethod, null);
+	assert.equal((await getMockScrimOperations(guildId, scrimId)).nextAction?.blockedReason, '편성 방식을 골라야 해요');
+
+	assert.equal((await chooseMockFormationMethod(guildId, scrimId, null))?.status, 400);
+	assert.equal(await chooseMockFormationMethod(guildId, scrimId, 'manual'), null);
 	assert.equal(scrim.formationMethod, 'manual');
+	assert.equal((await chooseMockFormationMethod(guildId, scrimId, 'auction'))?.status, 409);
 
 	const formation = (await getMockManualFormation(guildId, scrimId))!;
 	assert.deepEqual(formation.teams.map((team) => team.name), ['포로팀', '칼날부리팀']);
@@ -57,6 +68,54 @@ test('모집 마감 때 편성 방식을 고르고, 되돌리면 방식과 편�
 	assert.equal(await revertMockScrim(guildId, scrimId), null);
 	assert.equal(scrim.status, 'recruit');
 	assert.equal(scrim.formationMethod, null);
+});
+
+test('수동 편성·진행 중인 경매에서 방식 선택으로 되돌리면 편성 기록이 지워진다', async () => {
+	const { scrimId, scrim } = await nearlyFullScrim();
+	await register(scrimId, 'tenth');
+	await advanceMockScrim(guildId, scrimId, 'close');
+
+	await chooseMockFormationMethod(guildId, scrimId, 'manual');
+	const initial = (await getMockManualFormation(guildId, scrimId))!;
+	const first = initial.players[0]!;
+	assert.equal(await moveMockManualPlayer(guildId, scrimId, first.registrationId, null), null);
+	assert.equal(await clearMockFormationMethod(guildId, scrimId), null);
+	assert.equal(scrim.formationMethod, null);
+	assert.equal((await clearMockFormationMethod(guildId, scrimId))?.status, 409);
+
+	await chooseMockFormationMethod(guildId, scrimId, 'manual');
+	// 새로 만든 편성이라 처음 상태와 같다.
+	assert.deepEqual((await getMockManualFormation(guildId, scrimId))!.assignments, initial.assignments);
+
+	assert.equal(await clearMockFormationMethod(guildId, scrimId), null);
+	await chooseMockFormationMethod(guildId, scrimId, 'auction');
+	const players = (await getMockAuction(guildId, scrimId))!.players;
+	assert.equal(await saveMockAuctionSetup(guildId, scrimId, [{ captainId: players[0]!.registrationId, startPoints: 1000 }, { captainId: players[1]!.registrationId, startPoints: 1000 }]), null);
+	assert.equal(await startMockAuction(guildId, scrimId), null);
+	assert.equal(await clearMockFormationMethod(guildId, scrimId), null);
+	await chooseMockFormationMethod(guildId, scrimId, 'auction');
+	const auction = (await getMockAuction(guildId, scrimId))!;
+	assert.equal(auction.status, 'setup');
+	assert.deepEqual(auction.teams.map((team) => team.captainId), [null, null]);
+});
+
+test('진행 중인 경매를 팀장 설정으로 되돌리면 기록을 지우고 설정은 남긴다', async () => {
+	const { scrimId } = await nearlyFullScrim();
+	await register(scrimId, 'tenth');
+	await advanceMockScrim(guildId, scrimId, 'close');
+	await chooseMockFormationMethod(guildId, scrimId, 'auction');
+	const players = (await getMockAuction(guildId, scrimId))!.players;
+	const captains = [players[0]!.registrationId, players[1]!.registrationId];
+	await saveMockAuctionSetup(guildId, scrimId, captains.map((captainId) => ({ captainId, startPoints: 500 })));
+	assert.equal((await reopenMockAuctionSetup(guildId, scrimId))?.status, 409);
+	await startMockAuction(guildId, scrimId);
+
+	assert.equal(await reopenMockAuctionSetup(guildId, scrimId), null);
+	const auction = (await getMockAuction(guildId, scrimId))!;
+	assert.equal(auction.status, 'setup');
+	assert.deepEqual([auction.queue.length, auction.history.length], [0, 0]);
+	assert.deepEqual(auction.teams.map((team) => [team.captainId, team.startPoints]), captains.map((id) => [id, 500]));
+	assert.equal(await startMockAuction(guildId, scrimId), null);
 });
 
 test('결승 1:1에서 중도 종료하면 점수를 남기고, 되돌리면 다시 진행 중이 된다', async () => {

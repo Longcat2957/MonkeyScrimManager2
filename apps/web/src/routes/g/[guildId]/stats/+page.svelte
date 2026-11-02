@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Button, Grid, Grids, Pagination, Stepper, Switch, Tab } from 'stdf';
+	import { Button, Grid, Grids, Stepper, Switch, Tab } from 'stdf';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
 	import { SERVICE_NAME } from '#lib/branding.ts';
+	import PageNav from '#lib/components/common/PageNav.svelte';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
 	import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
@@ -99,7 +100,7 @@
 							<Switch active={data.recent} inside="state" radius="full" onchange={(active) => navigate({ recent: active })} />
 						</label>
 						{#if data.achievements.length}
-							<Button fill="lineLight" size="auto" heightOut="0" heightIn="1" injClass="px-3 text-sm" onclick={() => (rankingOpen = true)}>업적별 순위</Button>
+							<Button fill="lineLight" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" onclick={() => (rankingOpen = true)}>업적별 순위</Button>
 						{/if}
 					</div>
 				</div>
@@ -160,11 +161,7 @@
 						</tbody>
 					</table>
 				</div>
-				{#if data.champions.length > CHAMPION_PAGE}
-					<nav aria-label="챔피언 쪽 이동" class="flex justify-center pt-2">
-						<Pagination total={data.champions.length} pageSize={CHAMPION_PAGE} current={championPage} onchange={(current) => (championPage = current)} />
-					</nav>
-				{/if}
+				<PageNav total={data.champions.length} pageSize={CHAMPION_PAGE} current={championPage} onchange={(current) => (championPage = current)} label="챔피언 쪽 이동" />
 			</section>
 		</div>
 	{/if}

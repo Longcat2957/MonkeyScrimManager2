@@ -54,13 +54,3 @@ export type GuildRanking = {
 	positions: Record<LolPosition, RankingPage>;
 };
 
-// 서버 홈 스토리 카드. 연승·연패·기록처럼 최근 경기에서 뽑은 이야기다.
-export type GuildStory = {
-	id: string;
-	kind: 'win_streak' | 'loss_streak' | 'most_kills' | 'first_win' | 'comeback';
-	userId: string;
-	displayName: string;
-	headline: string;
-	detail: string;
-	artUrl: string | null;
-};

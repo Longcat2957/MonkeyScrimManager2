@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Button, CellGroup, Loading, Pagination, Tab } from 'stdf';
+	import { Button, CellGroup, Loading, Tab } from 'stdf';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
 	import { SERVICE_NAME } from '#lib/branding.ts';
+	import PageNav from '#lib/components/common/PageNav.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
 	import ScrimListRow from '#lib/components/scrims/ScrimListRow.svelte';
 	import ScrimSettingsDialog from '#lib/components/scrims/ScrimSettingsDialog.svelte';
@@ -106,16 +107,7 @@
 				</div>
 			{/if}
 
-			{#if data.total > data.pageSize}
-				<nav aria-label="쪽 이동" class="flex justify-center pt-2">
-					<Pagination
-						total={data.total}
-						pageSize={data.pageSize}
-						current={data.page}
-						onchange={(current) => navigate({ page: current })}
-					/>
-				</nav>
-			{/if}
+			<PageNav total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
 		</section>
 	{/if}
 </div>

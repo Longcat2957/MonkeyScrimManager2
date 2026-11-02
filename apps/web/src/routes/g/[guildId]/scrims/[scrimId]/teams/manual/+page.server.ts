@@ -4,6 +4,7 @@ import { resolve } from '$app/paths';
 import type { SlotKey } from '#lib/features/scrims/formation.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
 import { confirmMockManual, getMockManualFormation, moveMockManualPlayer, resetMockManual } from '#lib/mocks/teams.ts';
+import { clearMockFormationMethod } from '#lib/mocks/workflow.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -53,5 +54,11 @@ export const actions: Actions = {
 	confirm: async ({ params }) => {
 		requireDev();
 		return failWith(await confirmMockManual(params.guildId, params.scrimId));
+	},
+
+	// 방식 선택으로 되돌린다. 다시 불러오면 load가 공통 진입점으로 보낸다.
+	changeMethod: async ({ params }) => {
+		requireDev();
+		return failWith(await clearMockFormationMethod(params.guildId, params.scrimId));
 	}
 };

@@ -42,7 +42,7 @@
 				<th scope="col" class="hidden px-2 py-2 font-medium lg:table-cell">딜량 · 받은 피해</th>
 				<th scope="col" class="hidden px-2 py-2 font-medium lg:table-cell">시야</th>
 				<th scope="col" class="hidden px-2 py-2 font-medium md:table-cell">CS</th>
-				<th scope="col" class="hidden px-2 py-2 font-medium xl:table-cell">아이템</th>
+				<th scope="col" class="hidden px-2 py-2 font-medium md:table-cell">아이템</th>
 				<th scope="col" class="w-14 px-2 py-2"><span class="sr-only">상세</span></th>
 			</tr>
 		</thead>
@@ -107,8 +107,9 @@
 						<span class="block">{player.cs ?? '-'}</span>
 						<span class="block text-xs opacity-60">{perMinute(player.cs, durationSec)}/분</span>
 					</td>
-					<td class="hidden px-2 py-2.5 xl:table-cell">
-						<span class="flex gap-0.5">
+					<!-- 넓은 화면은 한 줄, 그보다 좁으면 4칸씩 두 줄로 접어 열 폭을 줄인다. -->
+					<td class="hidden px-2 py-2.5 md:table-cell">
+						<span class="grid grid-cols-[repeat(4,auto)] gap-0.5 xl:grid-cols-[repeat(7,auto)]">
 							{#each player.items as item, index (index)}<LoadoutIcon icon={item} />{/each}
 						</span>
 					</td>

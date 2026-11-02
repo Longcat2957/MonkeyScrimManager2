@@ -3,6 +3,9 @@ import type { PlayerSummary } from './types.ts';
 // 업적은 서버 사람들의 요약 지표를 한 기준으로 줄 세워 1위에게 준다.
 // 기준과 이름은 임시이며 업적 정책이 정해지면 바꾼다.
 
+// 업적은 표본이 너무 작은 사람을 빼고 고른다. 서버 홈과 서버 통계가 같은 기준을 쓴다.
+export const ACHIEVEMENT_MIN_GAMES = 4;
+
 type Definition = {
 	id: string;
 	emoji: string;

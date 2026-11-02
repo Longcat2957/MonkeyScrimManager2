@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { Button, toast } from 'stdf';
 	import type { ActionProps } from 'stdf';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import ActionMenu from '#lib/components/common/ActionMenu.svelte';
 	import type { ScrimNextAction, ScrimRevertAction, ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
 	import { postAction } from '#lib/ui/actions.ts';
 	import { confirm } from '#lib/ui/confirm.ts';
-	import CloseRecruitDialog from './CloseRecruitDialog.svelte';
 	import ScrimSettingsDialog from './ScrimSettingsDialog.svelte';
 
 	type Props = {
@@ -25,7 +26,6 @@
 
 	let menuOpen = $state(false);
 	let editing = $state(false);
-	let closing = $state(false);
 	let advancing = $state(false);
 	let trigger = $state<HTMLElement | null>(null);
 
@@ -39,8 +39,8 @@
 		return items;
 	});
 
-	// 모집 마감은 편성 방식을 함께 고르므로 확인 대신 팝업을 연다.
-	const CONFIRM: Record<Exclude<ScrimNextAction['key'], 'close'>, string> = {
+	const CONFIRM: Record<ScrimNextAction['key'], string> = {
+		close: '모집을 마감할까요? 마감하면 팀 편성에서 편성 방식을 골라요.',
 		ready: '대진 준비로 넘어갈까요?',
 		start: '내전을 시작할까요?',
 		complete: '내전을 종료할까요?'
@@ -48,15 +48,14 @@
 
 	async function advance() {
 		if (!nextAction) return;
-		if (nextAction.key === 'close') {
-			closing = true;
-			return;
-		}
-		if (!(await confirm(CONFIRM[nextAction.key], nextAction.label))) return;
+		const key = nextAction.key;
+		if (!(await confirm(CONFIRM[key], nextAction.label))) return;
 		advancing = true;
-		const message = await postAction('advance', { key: nextAction.key });
+		const message = await postAction('advance', { key });
 		advancing = false;
 		if (message) toast.error(message);
+		// 마감한 다음 할 일은 편성 방식 고르기라 팀 편성으로 바로 간다.
+		else if (key === 'close') await goto(resolve('/g/[guildId]/scrims/[scrimId]/teams', { guildId: page.params.guildId!, scrimId: page.params.scrimId! }));
 	}
 
 	async function run(name: string, message: string, title: string) {
@@ -110,9 +109,6 @@
 	</div>
 
 	<ActionMenu bind:open={menuOpen} label="운영 메뉴" actions={menu.map((item) => item.action)} {trigger} {onselect} />
-	{#if nextAction?.key === 'close'}
-		<CloseRecruitDialog bind:open={closing} />
-	{/if}
 	{#if editable.length}
 		<ScrimSettingsDialog
 			bind:open={editing}

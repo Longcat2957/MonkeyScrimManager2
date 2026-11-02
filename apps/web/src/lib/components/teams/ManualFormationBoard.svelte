@@ -11,6 +11,7 @@
 	} from '#lib/features/scrims/formation.ts';
 	import { postAction } from '#lib/ui/actions.ts';
 	import { confirm } from '#lib/ui/confirm.ts';
+	import ChangeMethodButton from './ChangeMethodButton.svelte';
 	import { DragState } from './drag.svelte.ts';
 	import FormationHeadToHead from './FormationHeadToHead.svelte';
 	import FormationPool from './FormationPool.svelte';
@@ -46,7 +47,7 @@
 	const unassigned = $derived(players.filter((player) => !current[player.registrationId]));
 	const placed = $derived(players.length - unassigned.length);
 	const selectedName = $derived(players.find((player) => player.registrationId === selectedId)?.displayName ?? '');
-	const confirmBlocked = $derived(unassigned.length ? `미배정 ${unassigned.length}명이 남았어요` : null);
+	const confirmBlocked = $derived(unassigned.length ? '모든 참가자를 배치해야 확정할 수 있어요' : null);
 
 	function select(registrationId: string) {
 		selectedId = selectedId === registrationId ? null : registrationId;
@@ -121,6 +122,7 @@
 				{details ? '상세 닫기' : '상세'}
 			</Button>
 			{#if editable}
+				<ChangeMethodButton disabled={busy || pending > 0} />
 				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" disabled={placed === 0 || busy} onclick={reset}>초기화</Button>
 				<Button size="auto" heightOut="0" heightIn="2" injClass="px-4 text-sm" disabled={Boolean(confirmBlocked) || busy || pending > 0} onclick={confirmFormation}>
 					편성 확정
@@ -134,7 +136,7 @@
 		<p class="flex min-h-10 flex-wrap items-center gap-2 bg-bg-surface px-4 text-sm dark:bg-bg-surface-dark" aria-live="polite">
 			{#if selectedId}
 				<span><strong>{selectedName}</strong> 선택됨 · 놓을 자리를 누르거나 끌어 놓으세요</span>
-				<Button fill="text" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" onclick={() => (selectedId = null)}>선택 취소</Button>
+				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" onclick={() => (selectedId = null)}>선택 취소</Button>
 			{:else}
 				<span class="opacity-70">{confirmBlocked}</span>
 			{/if}

@@ -1,7 +1,7 @@
 import { dev } from '$app/env';
 import { error } from '@sveltejs/kit';
 import type { LolPosition } from '#lib/features/guild/types.ts';
-import { achievementBadges, rankAchievements } from '#lib/features/players/achievements.ts';
+import { ACHIEVEMENT_MIN_GAMES, achievementBadges, rankAchievements } from '#lib/features/players/achievements.ts';
 import { championRecords, summarize } from '#lib/features/players/stats.ts';
 import type { PlayerGame } from '#lib/features/players/types.ts';
 import { listMockGuildPlayers } from '#lib/mocks/players.ts';
@@ -11,8 +11,6 @@ import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import type { PageServerLoad } from './$types';
 
 const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
-// 업적은 표본이 너무 작은 사람을 빼고 고른다.
-const ACHIEVEMENT_MIN_GAMES = 4;
 // 최근 기록만 볼 때 사용자마다 최근 몇 게임을 쓰는지.
 const RECENT_GAMES = 10;
 const DEFAULT_MIN_GAMES = 5;

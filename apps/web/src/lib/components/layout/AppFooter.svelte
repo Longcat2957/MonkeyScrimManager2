@@ -27,11 +27,11 @@
 			</span>
 		</div>
 
-		<nav aria-label="서비스 정책 및 안내" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+		<nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-xs">
 			{#each footerLinks as link (link.path)}
 				<a
 					href={resolve(link.path)}
-					class={['footer-link', { 'font-semibold': link.path === '/privacy' }]}
+					class={['inline-flex min-h-9 items-center px-2 underline-offset-4 hover:underline', { 'font-semibold': link.path === '/privacy' }]}
 				>
 					{link.label}
 				</a>
@@ -40,18 +40,3 @@
 	</div>
 </footer>
 
-<style>
-	.footer-link {
-		text-decoration: none;
-		text-underline-offset: 0.25em;
-	}
-
-	.footer-link:hover {
-		text-decoration: underline;
-	}
-
-	a:focus-visible {
-		outline: 2px solid currentColor;
-		outline-offset: 4px;
-	}
-</style>

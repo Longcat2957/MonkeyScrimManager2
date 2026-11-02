@@ -6,7 +6,7 @@
 
 구현됨(개발 모드 목 데이터). 서비스의 진입 화면이라 **게임 대시보드 톤**으로 만든다. `routes/g/[guildId]/+page.server.ts`, `+page.svelte`, `ranking/+server.ts`.
 
-**목적** 들어온 사람이 "내가 지금 할 일"(다음 내전·신청)을 바로 보고, 서버의 볼거리(이야기·순위)와 최근 결과로 이어진다.
+**목적** 들어온 사람이 "내가 지금 할 일"(다음 내전·신청)을 바로 보고, 서버의 볼거리(업적·순위)와 최근 결과로 이어진다.
 
 **권한** 서버 열람 권한. 레이아웃이 서버 문맥을 주지 못하면 `load`에서 404.
 
@@ -19,7 +19,7 @@
   activeScrims: SectionResult<ScrimListItem[]>,    // nextScrim으로 보여 준 내전은 뺀다
   recentMatches: SectionResult<MatchListItem[]>,   // 최근 5개, 진행 중 포함
   ranking: SectionResult<GuildRanking | null>,     // 포지션별 첫 10명 + 내 기록. 시즌이 없으면 null
-  stories: GuildStory[]                            // 실패하면 빈 배열(영역 숨김)
+  achievements: (AchievementRanking & { splashUrl })[] // 서버 통계 업적과 같음. 실패하면 빈 배열(영역 숨김)
 }
 ```
 
@@ -37,11 +37,11 @@
 │ (모집 중이면 신청 현황 Progress)                                                     │
 │ [내전 보기 →]                               ← 모집이면 "신청하러 가기"              │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-이번 주 이야기 [<][>]   (StoryCarousel, 전체 폭 한 줄. 데스크톱 카드 20rem씩 여러 장)
+업적 (AchievementCarousel, 전체 폭. 1위 카드 한 장 + 양옆 흐린 카드, 이전/다음·점 버튼)
 lg: 2열 같은 폭
 내전 현황 [진행 중 n | 최근 경기]  (ActivityBoard)    서버 순위 [탑|정글|미드|원딜|서폿]  (RankingBoard)
                                                        카드 안 스크롤 + 더 불러오기, 내 순위 아래 고정
-모바일: hero → 이번 주 이야기 → 내전 현황 → 서버 순위
+모바일: hero → 업적 → 내전 현황 → 서버 순위
 ```
 
 **구성**
@@ -50,7 +50,7 @@ lg: 2열 같은 폭
 | --- | --- | --- |
 | 다음 내전 | `NextScrimHero`: STDF `CountDown`·`Progress` + 링크 버튼 | 카운트다운은 마운트 후에만(SSR과 시각이 달라서), 보조기기에는 읽히지 않게 하고 시작 시각은 메타 문구로 전달. 없으면 "지금 참가할 내전이 없어요" |
 | 내전 현황 | `ActivityBoard`: STDF `Tab`(`진행 중 n` · `최근 경기`) + `ScrimListRow` / `MatchListRow` | 한 카드에 두 목록을 탭으로. 진행 중 내전이 없으면 최근 경기 탭부터. hero의 내전은 진행 중 목록에서 제외("다른 진행 중인 내전이 없어요") |
-| 이번 주 이야기 | `StoryCarousel` | 연승·연패·최다 킬·역전승·첫 승 카드. 카드는 선수 전적 링크. 가로 스크롤 스냅 + 이전/다음 STDF `Button`. 실제 데이터: 연승·연패·역전은 게임 결과, 킬 수는 ROFL 통계 |
+| 업적 | `AchievementCarousel` (서버 통계와 같은 컴포넌트) | 서버 통계의 업적을 전체 포지션·전체 게임 기준으로 보여 준다. 집계 기준(`ACHIEVEMENT_MIN_GAMES`)도 같다. 필터·`업적별 순위`·집계 기준 안내는 서버 통계에만 둔다 |
 | 서버 순위 | `RankingBoard`: STDF `Tab` + `InfiniteScroll` + `LinkCell` | 포지션별 MMR. 1~3위 메달 색(`--color-medal-*`)과 숫자, 주 챔피언 아이콘, `n전 n승 · 승률`. 카드 안(최대 26rem)에서 스크롤하면 `GET /g/[guildId]/ranking?position=&offset=`로 10명씩. 내 순위는 아직 불러오지 않은 구간에 있을 때만 카드 아래 고정 |
 
 `전체 보기` 링크·모집 생성 버튼은 두지 않는다(헤더 메뉴와 내전 목록이 담당).
@@ -96,7 +96,7 @@ lg: 2열 같은 폭
   [img] 개발자   자신의 권한은 바꿀 수 없어요   [Switch 고정]
   [img] 바나나우유                               [Switch]
   [img] 미드갱좀                                 [Switch]
-[Pagination]                                    ← 20명씩, 관리자 먼저 → 이름 순
+[PageNav]                                    ← 20명씩, 관리자 먼저 → 이름 순
 ```
 
 게시 채널 설정은 봇 게시 기능이 확정되면 이 위에 추가한다.

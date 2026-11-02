@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { Button, CellGroup, Grid, Grids, Pagination, Tab } from 'stdf';
+	import { Button, CellGroup, Grid, Grids, Tab } from 'stdf';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { SERVICE_NAME } from '#lib/branding.ts';
 	import LinkCell from '#lib/components/common/LinkCell.svelte';
+	import PageNav from '#lib/components/common/PageNav.svelte';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import PositionIcon from '#lib/components/common/PositionIcon.svelte';
 	import SectionState from '#lib/components/common/SectionState.svelte';
@@ -214,11 +215,7 @@
 							{/each}
 						</ul>
 					</CellGroup>
-					{#if data.total > data.pageSize}
-						<nav aria-label="쪽 이동" class="flex justify-center pt-2">
-							<Pagination total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
-						</nav>
-					{/if}
+					<PageNav total={data.total} pageSize={data.pageSize} current={data.page} onchange={(current) => navigate({ page: current })} />
 				</section>
 			</div>
 
