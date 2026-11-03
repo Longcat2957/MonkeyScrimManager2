@@ -26,7 +26,8 @@ async function nextAction(scrim: MockScrim): Promise<ScrimNextAction | null> {
 				blockedReason: selected !== capacity ? `선발 인원이 ${capacity}명이어야 해요 (현재 ${selected}명)` : null
 			};
 		case 'preparing':
-			return { key: 'ready', label: '대진 준비로', blockedReason: '팀 편성을 확정해야 해요' };
+			// 방식을 고르기 전에는 요약의 방식 선택이 다음 할 일이라 단계 버튼을 두지 않는다.
+			return scrim.formationMethod ? { key: 'ready', label: '대진 준비로', blockedReason: '팀 편성을 확정해야 해요' } : null;
 		case 'ready':
 			return { key: 'start', label: '내전 시작', blockedReason: bracket?.confirmed ? null : '대진을 확정해야 해요' };
 		case 'in_progress':
@@ -40,7 +41,7 @@ async function nextAction(scrim: MockScrim): Promise<ScrimNextAction | null> {
 async function revertAction(scrim: MockScrim): Promise<ScrimRevertAction | null> {
 	switch (scrim.status) {
 		case 'preparing':
-			return { label: '모집 다시 열기', message: '편성 방식과 지금까지의 팀 편성이 지워지고 다시 신청을 받아요.', blockedReason: null };
+			return { label: '모집 다시 열기', message: '지금까지의 팀 편성이 지워지고 다시 신청을 받아요. 편성 방식은 그대로예요.', blockedReason: null };
 		case 'ready':
 			return { label: '팀 편성 다시 하기', message: '대진 배치가 지워지고 팀 편성을 다시 고칠 수 있어요.', blockedReason: null };
 		case 'in_progress': {
@@ -77,18 +78,14 @@ function target(guildId: string, scrimId: string): MockScrim | MockFailure {
 	return scrim;
 }
 
-/** 다음 단계로 넘긴다. 모집 마감(close)은 편성 방식을 함께 받는다. */
-export async function advanceMockScrim(guildId: string, scrimId: string, key: string, method: FormationMethod | null): Promise<MockFailure | null> {
+/** 다음 단계로 넘긴다. 모집을 마감하면 편성 방식은 비어 있고 팀 편성 화면에서 고른다. */
+export async function advanceMockScrim(guildId: string, scrimId: string, key: string): Promise<MockFailure | null> {
 	await wait();
 	const scrim = target(guildId, scrimId);
 	if ('message' in scrim) return scrim;
 	const action = await nextAction(scrim);
 	if (!action || action.key !== key) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
 	if (action.blockedReason) return { status: 409, message: action.blockedReason };
-	if (action.key === 'close') {
-		if (!method) return { status: 400, message: '편성 방식을 골라 주세요' };
-		scrim.formationMethod = method;
-	}
 	scrim.status = NEXT_STATUS[action.key];
 	return null;
 }
@@ -104,7 +101,6 @@ export async function revertMockScrim(guildId: string, scrimId: string): Promise
 	switch (scrim.status) {
 		case 'preparing':
 			dropMockFormation(scrim.id);
-			scrim.formationMethod = null;
 			scrim.status = 'recruit';
 			break;
 		case 'ready':
@@ -123,6 +119,30 @@ export async function revertMockScrim(guildId: string, scrimId: string): Promise
 			scrim.status = 'in_progress';
 			break;
 	}
+	return null;
+}
+
+/** 편성 방식을 정하거나 바꾼다. 모집 중과 편성 중에만 고를 수 있고, 바꾸면 지금까지의 편성 기록을 지운다. */
+export async function chooseMockFormationMethod(guildId: string, scrimId: string, method: FormationMethod | null): Promise<MockFailure | null> {
+	await wait();
+	const scrim = target(guildId, scrimId);
+	if ('message' in scrim) return scrim;
+	if (!method) return { status: 400, message: '편성 방식을 골라 주세요' };
+	if (!['recruit', 'preparing'].includes(scrim.status)) return { status: 409, message: '편성 방식은 팀 편성을 확정하기 전에만 바꿀 수 있어요' };
+	if (scrim.formationMethod === method) return null;
+	dropMockFormation(scrim.id);
+	scrim.formationMethod = method;
+	return null;
+}
+
+/** 편성 중인 내전을 방식 선택으로 되돌린다. 지금까지의 수동 배치·경매 기록은 지운다. */
+export async function clearMockFormationMethod(guildId: string, scrimId: string): Promise<MockFailure | null> {
+	await wait();
+	const scrim = target(guildId, scrimId);
+	if ('message' in scrim) return scrim;
+	if (scrim.status !== 'preparing' || !scrim.formationMethod) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
+	dropMockFormation(scrim.id);
+	scrim.formationMethod = null;
 	return null;
 }
 

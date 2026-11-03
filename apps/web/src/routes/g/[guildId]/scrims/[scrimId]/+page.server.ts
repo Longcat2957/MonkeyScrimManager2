@@ -5,10 +5,10 @@ import { POSITIONS } from '#lib/features/labels.ts';
 import {
 	editableFields,
 	inRange,
-	readFormationMethod,
 	readScrimSettingsForm,
 	RESERVE_CAPACITY,
 	TEAM_COUNT,
+	readFormationMethod,
 	toScrimSettings,
 	validateScrimSettings
 } from '#lib/features/scrims/settings.ts';
@@ -26,7 +26,13 @@ import {
 	withdrawMock,
 	type MockFailure
 } from '#lib/mocks/scrims.ts';
-import { advanceMockScrim, endMockScrimEarly, getMockScrimOperations, revertMockScrim } from '#lib/mocks/workflow.ts';
+import {
+	advanceMockScrim,
+	chooseMockFormationMethod,
+	endMockScrimEarly,
+	getMockScrimOperations,
+	revertMockScrim
+} from '#lib/mocks/workflow.ts';
 import { mockUser } from '#lib/mocks/session.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
@@ -68,7 +74,7 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 			: !user
 				? '로그인하면 신청할 수 있어요'
 				: accounts.length === 0
-					? 'Riot 계정을 연결해야 신청할 수 있어요 — 계정 메뉴의 내 정보에서 연결해요'
+					? 'Riot 계정이 연결돼야 신청할 수 있어요 — 서버 운영자에게 연결을 요청해 주세요'
 					: active >= detail.counts.activeCapacity
 						? '신청 정원이 찼어요'
 						: null;
@@ -161,8 +167,16 @@ export const actions: Actions = {
 		const denied = requireManager(params.guildId, params.scrimId);
 		if (denied) return denied;
 		const data = await request.formData();
-		const key = String(data.get('key') ?? '');
-		return failWith(await advanceMockScrim(params.guildId, params.scrimId, key, readFormationMethod(data.get('formationMethod'))));
+		return failWith(await advanceMockScrim(params.guildId, params.scrimId, String(data.get('key') ?? '')));
+	},
+
+	// 고른 뒤 화면이 방식별 작업판으로 이동한다.
+	chooseMethod: async ({ request, params }) => {
+		requireDev();
+		const denied = requireManager(params.guildId, params.scrimId);
+		if (denied) return denied;
+		const method = readFormationMethod((await request.formData()).get('method'));
+		return failWith(await chooseMockFormationMethod(params.guildId, params.scrimId, method));
 	},
 
 	revert: async ({ params }) => {

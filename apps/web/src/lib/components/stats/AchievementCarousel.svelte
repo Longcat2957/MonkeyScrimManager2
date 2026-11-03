@@ -7,7 +7,7 @@
 	type Item = AchievementRanking & { splashUrl: string | null };
 
 	// 업적 1위를 한 장씩 크게 보여 준다. 넓은 화면에서는 앞뒤 업적을 양옆에 흐리게 깔아 넘길 수 있음을 알린다.
-	let { items, guildId, current = $bindable(0) }: { items: Item[]; guildId: string; current: number } = $props();
+	let { items, guildId, current = $bindable(0) }: { items: Item[]; guildId: string; current?: number } = $props();
 
 	const at = (offset: number) => items[(current + offset + items.length) % items.length]!;
 	const move = (offset: number) => (current = (current + offset + items.length) % items.length);
@@ -72,7 +72,7 @@
 		{#if items.length > 1}
 			{#each [-1, 1] as offset (offset)}
 				<span class={['absolute top-1/2 -translate-y-1/2', offset < 0 ? 'left-1 lg:left-4' : 'right-1 lg:right-4']}>
-					<Button fill="base" size="auto" heightOut="0" heightIn="2" radius="full" injClass="size-10 bg-black/60! text-white! backdrop-blur-sm" onclick={() => move(offset)}>
+					<Button fill="base" size="auto" heightOut="0" heightIn="2" radius="full" injClass="size-11! justify-center bg-black/60! text-white! backdrop-blur-sm" onclick={() => move(offset)}>
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d={offset < 0 ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} /></svg>
 						<span class="sr-only">{offset < 0 ? '이전 업적' : '다음 업적'}</span>
 					</Button>
@@ -81,12 +81,12 @@
 		{/if}
 	</div>
 	{#if items.length > 1}
-		<ol class="flex flex-wrap justify-center gap-1">
+		<ol class="flex flex-wrap justify-center">
 			{#each items as item, index (item.id)}
 				<li>
 					<button
 						type="button"
-						class="flex h-6 items-center px-0.5"
+						class="flex h-8 items-center px-1.5"
 						aria-label={item.title}
 						aria-current={index === current ? 'true' : undefined}
 						onclick={() => (current = index)}

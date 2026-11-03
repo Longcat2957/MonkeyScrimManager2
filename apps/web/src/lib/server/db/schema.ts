@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import { bigint, boolean, check, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
+// Discord 봇에서 참가 신청하거나 웹에 로그인하면 자동으로 만든다. 별도 가입 절차는 없다.
 export const users = pgTable('users', {
 	// Discord 사용자 ID를 그대로 사용하며, 정밀도 손실을 막기 위해 문자열로 저장한다.
 	id: text('id').primaryKey(),
@@ -49,7 +50,8 @@ export const guilds = pgTable('guilds', {
 export const guildMembers = pgTable('guild_members', {
 	guildId: text('guild_id').notNull().references(() => guilds.id, { onDelete: 'cascade' }),
 	userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-	// 해당 길드의 서비스 관리자 여부이며 Discord 자체 권한과는 별도로 관리한다.
+	// 해당 길드의 서버 관리자 여부. 웹에서 직접 바꾸지 않고, 봇이 Discord 서버 관리 권한이나
+	// guild_discord_settings.operator_role_id 역할 보유 여부로 동기화한다.
 	isAdmin: boolean('is_admin').default(false).notNull(),
 	// 서비스에 연결을 저장한 시각이며 Discord 서버 가입 시각과는 구분한다.
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
@@ -58,6 +60,7 @@ export const guildMembers = pgTable('guild_members', {
 	index('guild_members_user_id_idx').on(table.userId)
 ]);
 
+// Riot 계정 연결은 사용자가 직접 하지 않고 길드 운영자가 수동으로 지정한다. 지정한 사람과 시각을 남긴다.
 export const riotAccounts = pgTable('riot_accounts', {
 	// 경기 등 서비스 내부 참조에는 이 ID를 사용하고, 외부 API 식별자는 별도로 보관한다.
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -65,6 +68,11 @@ export const riotAccounts = pgTable('riot_accounts', {
 	puuid: text('puuid').notNull().unique(),
 	// 한 사용자에게 여러 계정을 연결할 수 있다. 사용자 삭제 시 계정은 보존하고 연결만 해제한다.
 	userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+	// 신청할 때 기본으로 고르는 대표 계정이다. 사용자마다 하나이며 연결이 없으면 false다.
+	isPrimary: boolean('is_primary').default(false).notNull(),
+	// 연결을 지정한 운영자와 시각이다. 연결을 해제하면 대표 여부와 함께 비운다.
+	linkedByUserId: text('linked_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	linkedAt: timestamp('linked_at', { withTimezone: true, precision: 3 }),
 	// 변경 가능한 표시 정보이며 계정 식별에 사용하지 않는다. API 응답에서 생략될 수 있다.
 	gameName: text('game_name'),
 	tagLine: text('tag_line'),
@@ -77,7 +85,10 @@ export const riotAccounts = pgTable('riot_accounts', {
 		.notNull()
 		.$onUpdate(() => new Date())
 }, (table) => [
-	index('riot_accounts_user_id_idx').on(table.userId)
+	index('riot_accounts_user_id_idx').on(table.userId),
+	index('riot_accounts_linked_by_user_id_idx').on(table.linkedByUserId),
+	// 사용자 삭제 시 user_id가 SET NULL로 비므로 대표·연결 정보 정리는 CHECK 대신 서비스에서 함께 처리한다.
+	uniqueIndex('riot_accounts_primary_user_unique').on(table.userId).where(sql`${table.isPrimary}`)
 ]);
 
 // 시즌을 닫아도 이전 점수와 원장은 보존한다. 길드마다 종료되지 않은 시즌은 하나다.
@@ -136,7 +147,8 @@ export const scrims = pgTable('scrims', {
 	createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 	title: text('title').notNull(),
 	status: scrimStatus('status').default('recruit').notNull(),
-	// 모집 중에는 비워 두고 모집을 마감할 때 정한다. 모집을 다시 열면 다시 비운다.
+	// 운영자가 모집 중·편성 중에 정하거나 바꾼다. 비어 있어도 모집을 마감할 수 있고, 대진 준비부터는 반드시 있다.
+	// 편성 중에 바꾸거나 비우면 기존 수동 배정·경매 기록을 무효화한다.
 	formationMethod: scrimFormationMethod('formation_method'),
 	// 새 Match를 만들 때 사용할 기본값이다. 실제 적용값은 Match에 복사하며 이후 변경을 전파하지 않는다.
 	isHardFearless: boolean('is_hard_fearless').default(false).notNull(),
@@ -163,13 +175,14 @@ export const scrims = pgTable('scrims', {
 	index('scrims_created_by_user_id_idx').on(table.createdByUserId),
 	check('scrims_team_count_min', sql`${table.teamCount} >= 2`),
 	check('scrims_reserve_capacity_nonnegative', sql`${table.reserveCapacity} >= 0`),
-	check('scrims_formation_method_required', sql`${table.status} in ('recruit', 'cancelled') or ${table.formationMethod} is not null`)
+	check('scrims_formation_method_required', sql`${table.status} in ('recruit', 'preparing', 'cancelled') or ${table.formationMethod} is not null`)
 ]);
 
 // 경매는 시작 전후에 취소할 수 있으며, 내전 경기의 중도 종료와는 구분한다.
 export const auctionStatus = pgEnum('auction_status', ['setup', 'in_progress', 'completed', 'cancelled']);
 
 // 내전 하나에 경매 하나를 연결한다. 준비 단계로 되돌려도 같은 경매와 이력을 유지한다.
+// 편성 방식을 경매가 아닌 것으로 바꾸면 cancelled로 두고, 다시 경매를 고르면 같은 행을 setup으로 되돌린다.
 // 경매 방식의 Scrim인지와 상태 전환 조건은 서비스에서 검증한다.
 export const auctions = pgTable('auctions', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -227,7 +240,8 @@ export const scrimParticipants = pgTable('scrim_participants', {
 ]);
 
 // 경매에 참여하는 팀의 팀장과 시작 예산을 보관한다.
-// selected 신청인 팀장만 지정한다. 시작 후 팀·팀장·예산 변경 금지와 팀장의 실제 소속은 서비스에서 검사한다.
+// selected 신청인 팀장만 지정한다. 팀장·예산은 준비(setup) 상태에서만 바꾼다. 진행 중에 바꾸려면 유효 영입을 무효화하고
+// 열린 후보를 취소해 준비로 되돌린다. 이 상태 조건과 팀장의 실제 소속은 서비스에서 검사한다.
 export const auctionTeams = pgTable('auction_teams', {
 	scrimId: uuid('scrim_id').notNull(),
 	auctionId: uuid('auction_id').notNull(),
@@ -700,7 +714,7 @@ export const mmrLedgerEntries = pgTable('mmr_ledger_entries', {
 	`)
 ]);
 
-// 모집 시 일반 단일 라운드 또는 준결승·결승의 BO 규칙을 정한다. Match 생성 시 해당 규칙을 복사한다.
+// 단일 결승 또는 준결승·결승의 BO 규칙이다. 운영자가 대진 화면에서 정하고, Match 생성 시 해당 규칙을 복사한다.
 // Match 생성 후 라운드 규칙 변경은 서비스에서 제한한다.
 export const scrimRounds = pgTable('scrim_rounds', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -777,27 +791,44 @@ export const scrimBracketSlots = pgTable('scrim_bracket_slots', {
 	check('scrim_bracket_slots_not_self', sql`${table.sourceNodeId} <> ${table.nodeId}`)
 ]);
 
-// 설정이 없으면 비공개 기본값을 적용한다. 과거 경기의 Riot ID 스냅샷 표시에도 현재 공개 설정을 적용한다.
-// 이 설정은 공개 범위만 결정하며 길드 내부 경기 기록을 삭제하거나 통계에서 제외하지 않는다.
-export const userPrivacySettings = pgTable('user_privacy_settings', {
-	userId: text('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
-	publicProfileEnabled: boolean('public_profile_enabled').default(false).notNull(),
-	showRiotIds: boolean('show_riot_ids').default(false).notNull(),
-	allowExternalRecordSearch: boolean('allow_external_record_search').default(false).notNull(),
-	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
-		.defaultNow().notNull().$onUpdate(() => new Date())
-});
-
-// 채널이 해당 길드에 속하는지와 봇의 게시 권한은 Discord 연동 시 확인한다.
+// 서버 관리에서 고르는 Discord 연동 설정이다. 선택지는 봇이 동기화한 역할·채널 목록이며, 저장할 때 목록에 있는지와 봇의 게시 권한을 확인한다.
 export const guildDiscordSettings = pgTable('guild_discord_settings', {
 	guildId: text('guild_id').primaryKey().references(() => guilds.id, { onDelete: 'cascade' }),
+	// 이 역할을 가진 멤버가 서버 관리자다. 비어 있으면 Discord 서버 관리 권한이 있는 멤버만 관리자다.
+	operatorRoleId: text('operator_role_id'),
 	recruitmentChannelId: text('recruitment_channel_id'),
+	// 팀 편성이 확정되면 팀 구성을 올려 밸런스를 확인하는 채널이다.
+	entryChannelId: text('entry_channel_id'),
 	resultChannelId: text('result_channel_id'),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
 		.defaultNow().notNull().$onUpdate(() => new Date())
 });
+
+// 봇이 Discord에서 동기화하는 역할 목록이다. @everyone과 봇 관리 역할은 넣지 않는다. Discord에서 지워지면 행도 지운다.
+export const guildDiscordRoles = pgTable('guild_discord_roles', {
+	guildId: text('guild_id').notNull().references(() => guilds.id, { onDelete: 'cascade' }),
+	roleId: text('role_id').notNull(),
+	name: text('name').notNull(),
+	// Discord 역할 순서. 선택지는 높은 역할부터 보여 준다.
+	position: integer('position').notNull(),
+	syncedAt: timestamp('synced_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+}, (table) => [
+	primaryKey({ columns: [table.guildId, table.roleId] })
+]);
+
+// 봇이 Discord에서 동기화하는 글 채널 목록이다. 게시 권한은 동기화 시점 기준이며 실제 게시 실패는 따로 처리한다.
+export const guildDiscordChannels = pgTable('guild_discord_channels', {
+	guildId: text('guild_id').notNull().references(() => guilds.id, { onDelete: 'cascade' }),
+	channelId: text('channel_id').notNull(),
+	name: text('name').notNull(),
+	categoryName: text('category_name'),
+	position: integer('position').notNull(),
+	botCanPost: boolean('bot_can_post').notNull(),
+	syncedAt: timestamp('synced_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+}, (table) => [
+	primaryKey({ columns: [table.guildId, table.channelId] })
+]);
 
 // 웹 변경과 봇 재시작 후에도 같은 모집 카드를 갱신하도록 실제 게시물의 위치를 보관한다.
 export const scrimDiscordMessages = pgTable('scrim_discord_messages', {
@@ -853,9 +884,9 @@ export const scrimParticipantRegistrations = pgTable('scrim_participant_registra
 
 // 조회용 관계와 위의 DB 외래키 제약을 함께 유지한다.
 export const usersRelations = relations(users, ({ one, many }) => ({
-	privacySettings: one(userPrivacySettings),
 	memberships: many(guildMembers),
-	riotAccounts: many(riotAccounts),
+	riotAccounts: many(riotAccounts, { relationName: 'riotAccountOwner' }),
+	linkedRiotAccounts: many(riotAccounts, { relationName: 'riotAccountLinker' }),
 	createdScrims: many(scrims),
 	championPreferences: many(userChampionPreferences),
 	scrimParticipations: many(scrimParticipants),
@@ -876,6 +907,8 @@ export const userChampionPreferencesRelations = relations(userChampionPreference
 
 export const guildsRelations = relations(guilds, ({ one, many }) => ({
 	discordSettings: one(guildDiscordSettings),
+	discordRoles: many(guildDiscordRoles),
+	discordChannels: many(guildDiscordChannels),
 	members: many(guildMembers),
 	scrims: many(scrims),
 	mmrSeasons: many(mmrSeasons)
@@ -887,7 +920,8 @@ export const guildMembersRelations = relations(guildMembers, ({ one }) => ({
 }));
 
 export const riotAccountsRelations = relations(riotAccounts, ({ one, many }) => ({
-	user: one(users, { fields: [riotAccounts.userId], references: [users.id] }),
+	user: one(users, { fields: [riotAccounts.userId], references: [users.id], relationName: 'riotAccountOwner' }),
+	linkedBy: one(users, { fields: [riotAccounts.linkedByUserId], references: [users.id], relationName: 'riotAccountLinker' }),
 	scrimParticipations: many(scrimParticipants),
 	gameParticipations: many(gameParticipants)
 }));
@@ -1140,12 +1174,16 @@ export const scrimBracketSlotsRelations = relations(scrimBracketSlots, ({ one })
 	})
 }));
 
-export const userPrivacySettingsRelations = relations(userPrivacySettings, ({ one }) => ({
-	user: one(users, { fields: [userPrivacySettings.userId], references: [users.id] })
-}));
-
 export const guildDiscordSettingsRelations = relations(guildDiscordSettings, ({ one }) => ({
 	guild: one(guilds, { fields: [guildDiscordSettings.guildId], references: [guilds.id] })
+}));
+
+export const guildDiscordRolesRelations = relations(guildDiscordRoles, ({ one }) => ({
+	guild: one(guilds, { fields: [guildDiscordRoles.guildId], references: [guilds.id] })
+}));
+
+export const guildDiscordChannelsRelations = relations(guildDiscordChannels, ({ one }) => ({
+	guild: one(guilds, { fields: [guildDiscordChannels.guildId], references: [guilds.id] })
 }));
 
 export const scrimDiscordMessagesRelations = relations(scrimDiscordMessages, ({ one }) => ({
@@ -1220,10 +1258,12 @@ export type NewScrimBracketNode = typeof scrimBracketNodes.$inferInsert;
 export type ScrimBracketSlot = typeof scrimBracketSlots.$inferSelect;
 export type NewScrimBracketSlot = typeof scrimBracketSlots.$inferInsert;
 
-export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;
-export type NewUserPrivacySettings = typeof userPrivacySettings.$inferInsert;
 export type GuildDiscordSettings = typeof guildDiscordSettings.$inferSelect;
 export type NewGuildDiscordSettings = typeof guildDiscordSettings.$inferInsert;
+export type GuildDiscordRole = typeof guildDiscordRoles.$inferSelect;
+export type NewGuildDiscordRole = typeof guildDiscordRoles.$inferInsert;
+export type GuildDiscordChannel = typeof guildDiscordChannels.$inferSelect;
+export type NewGuildDiscordChannel = typeof guildDiscordChannels.$inferInsert;
 export type ScrimDiscordMessage = typeof scrimDiscordMessages.$inferSelect;
 export type NewScrimDiscordMessage = typeof scrimDiscordMessages.$inferInsert;
 export type ScrimParticipantPreference = typeof scrimParticipantPreferences.$inferSelect;

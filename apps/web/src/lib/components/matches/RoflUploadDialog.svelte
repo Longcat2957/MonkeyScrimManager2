@@ -22,6 +22,8 @@
 	let lastOrder: number | null = null;
 	let touched = false;
 	const waiting = $derived(files.filter((item) => item.status !== 'success'));
+	// 고른 파일이 없으면 선택 칸 하나를 전체 폭으로 펼치고, 고른 뒤에는 3열 목록 끝에 둔다.
+	const empty = $derived(files.length === 0);
 
 	async function send(item: ImageListItemProps) {
 		if (!item.file) return;
@@ -79,6 +81,8 @@
 					{max}
 					maxSize={64}
 					columns={3}
+					injClass={empty ? 'grid-cols-1!' : ''}
+					aspectRatio={empty ? [3, 1] : [1, 1]}
 					radius="md"
 					previewable={false}
 					disabled={uploading}
@@ -89,6 +93,7 @@
 					{#snippet uploadChild()}
 						<span class="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs font-semibold">
 							<span aria-hidden="true" class="text-xl leading-none">+</span>ROFL 선택
+							{#if empty}<span class="font-normal opacity-60">최대 {max}개 · 파일당 64MB</span>{/if}
 						</span>
 					{/snippet}
 					{#snippet itemChild(item)}

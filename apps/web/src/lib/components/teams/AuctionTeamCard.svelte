@@ -21,7 +21,8 @@
 
 	let { team, bidding, busy, drag, bid = $bindable(''), celebration, onaward }: Props = $props();
 
-	const STEP = 10;
+	// 입찰가 조정 단위. 좌클릭은 올리고 우클릭은 내린다.
+	const STEPS = [10, 50];
 	const full = $derived(team.members.length >= TEAM_SIZE);
 	const price = $derived(/^\d+$/.test(bid.trim()) ? Number(bid) : null);
 	const overBudget = $derived(price !== null && price > team.remainingPoints);
@@ -95,9 +96,10 @@
 	</div>
 
 	{#if bidding && !full}
-		<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1">
-			<!-- STDF Input 바깥 칸의 고정 여백(px-2 py-1)을 상쇄해 팀 패널 왼쪽 선에 맞춘다. -->
-			<div class="-mx-2 -my-1 min-w-0">
+		<!-- 입찰 줄은 경매 중 가장 자주 누르는 곳이라 다른 조작보다 크게 둔다. -->
+		<div class="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1">
+			<!-- STDF Input 바깥 칸의 고정 여백(px-2 py-1)을 상쇄해 팀 패널 왼쪽 선에 맞춘다. 입력 글자 크기는 옵션이 없어 감싸는 요소에서 키운다. -->
+			<div class="-mx-2 -my-1 min-w-0 [&_input]:text-lg [&_input]:font-semibold">
 				<Input
 					placeholder="입찰가"
 					inputmode="numeric"
@@ -107,20 +109,22 @@
 					py="1"
 				/>
 			</div>
-			<!-- 좌클릭은 올리고 우클릭은 내린다. STDF Button이 contextmenu를 받지 않아 감싸는 요소에서 받는다. -->
-			<span
-				role="presentation"
-				title="좌클릭 +{STEP} / 우클릭 −{STEP}"
-				oncontextmenu={(event) => {
-					event.preventDefault();
-					if (!busy) adjust(-STEP);
-				}}
-			>
-				<Button fill="lineLight" size="auto" heightOut="0" heightIn="3" injClass="px-2.5 text-sm font-semibold" disabled={busy} onclick={() => adjust(STEP)}>
-					±{STEP}<span class="sr-only"> {team.name} 입찰가 {STEP} 올리기, 우클릭은 내리기</span>
-				</Button>
-			</span>
-			<Button size="auto" heightOut="0" heightIn="3" injClass="px-3 text-sm" disabled={busy || price === null || overBudget} onclick={() => price !== null && onaward(price)}>
+			<!-- STDF Button이 contextmenu를 받지 않아 감싸는 요소에서 받는다. -->
+			{#each STEPS as step (step)}
+				<span
+					role="presentation"
+					title="좌클릭 +{step} / 우클릭 −{step}"
+					oncontextmenu={(event) => {
+						event.preventDefault();
+						if (!busy) adjust(-step);
+					}}
+				>
+					<Button fill="lineLight" size="auto" heightOut="0" heightIn="3" injClass="min-h-14 px-2.5 text-lg font-semibold" disabled={busy} onclick={() => adjust(step)}>
+						±{step}<span class="sr-only"> {team.name} 입찰가 {step} 올리기, 우클릭은 내리기</span>
+					</Button>
+				</span>
+			{/each}
+			<Button size="auto" heightOut="0" heightIn="3" injClass="min-h-14 px-3.5 text-lg" disabled={busy || price === null || overBudget} onclick={() => price !== null && onaward(price)}>
 				낙찰<span class="sr-only"> {team.name}</span>
 			</Button>
 		</div>

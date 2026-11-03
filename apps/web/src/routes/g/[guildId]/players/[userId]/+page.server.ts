@@ -15,7 +15,7 @@ const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
 const COMPARE_MIN_GAMES = 4;
 
 export const load: PageServerLoad = async ({ parent, params, url }) => {
-	// TODO: DB 조회, 서버 열람 권한과 대상의 공개 설정 확인으로 바꾼다.
+	// TODO: DB 조회와 서버 열람 권한 확인으로 바꾼다.
 	if (!dev) error(404, '사용자를 찾을 수 없습니다.');
 	const { guild } = await parent();
 	if (!guild) error(404, '서버를 찾을 수 없습니다.');
@@ -47,7 +47,7 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
 			userId: player.userId,
 			displayName: player.displayName,
 			iconUrl: main ? champion(main.championId).iconUrl : null,
-			// TODO: 공개 설정이 허용한 Riot ID만 넘긴다.
+			// TODO: 연결된 Riot 계정 목록으로 바꾼다.
 			riotIds: [`${player.displayName}#KR1`]
 		},
 		recordWins: games.length ? games.filter((game) => game.win).length : null,

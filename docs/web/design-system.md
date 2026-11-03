@@ -55,7 +55,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 경계 | `border-border`, `border-border-strong` | 구분선·표 |
 | 상태색 | `success` `warning` `error` `info` | `Tag`·`Button state`·오류 문구. 반드시 문구와 함께 |
 | 모서리 | `--radius-box`(0.75rem) · `--radius-form`(0.5rem) · `--radius-small`(0.25rem) | STDF `radius` prop 기본값이 이 토큰을 쓴다 |
-| 글꼴 | `font-sans`(Noto Sans KR), `font-brand`(Jersey 10, 워드마크 전용) | |
+| 글꼴 | `font-sans`(Noto Sans KR), `font-brand`(Jersey 10, 워드마크 전용) | 줄바꿈은 `html`의 `word-break: keep-all`(어절 단위)과 `overflow-wrap: anywhere`(띄어쓰기 없는 긴 이름만 끊음) |
 | 폭 | `--app-content-width` 84rem(본문), 읽기 화면 `max-w-3xl`(48rem) | |
 | 헤더 | `--app-header-height` 4rem | |
 
@@ -94,11 +94,11 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 작은 범위 정수 (팀 수 2~4, 추가 정원 0~10) | `Stepper` | `min`·`max`·`step`. 값 칸은 편집 불가이므로 범위가 넓으면 `Input` |
 | 상호 배타 선택 2~5개 (편성 방식, 팀, 포지션) | `Radio` | `layout="h"`, 그룹 라벨은 감싸는 `<fieldset><legend>` |
 | 다중 선택 (희망 포지션) | `Checkbox` | 그룹 라벨은 `<fieldset><legend>` |
-| 즉시 반영 on/off (공개 설정, 관리자 권한) | `SwitchCell` (STDF `Switch` `inside="state"`) | 행 전체가 label이라 어디를 눌러도 토글. `onchange`에서 저장, 실패 시 되돌리고 저장 중 `disabled`. Cell의 `right: switch`는 쓰지 않는다 |
+| 즉시 반영 on/off (모집 설정의 하드 피어리스 등) | `SwitchCell` (STDF `Switch` `inside="state"`) | 행 전체가 label이라 어디를 눌러도 토글. `onchange`에서 저장, 실패 시 되돌리고 저장 중 `disabled`. Cell의 `right: switch`는 쓰지 않는다 |
 | 6개 이상 중 하나 (Riot 계정, 채널) | `ActionSheet` | `Input readonly`(현재 값 표시)를 눌러 연다. 선택 시 값 반영 |
 | 날짜 | `Calendar` | `mode="single"`. 입력 팝업 안에서는 `popup={null}`로 입력 아래에 펼친다(팝업 중첩 금지). `outFormat="YYYY-MM-DD"`. 시각은 아래 `Input`으로 분리 |
 | 시각 | `Input` | `HH:mm` 직접 입력 + 형식 검증. `TimePicker` 휠은 키보드로 조작할 수 없어 쓰지 않는다 |
-| 파일 (ROFL) | `ImageList` | `accept=".rofl"`, `itemChild`로 파일명·크기 표시, `status`로 파일별 업로드 상태. [7절](#7-stdf-300-제약과-대응) 확인 후 사용 |
+| 파일 (ROFL) | `ImageList` | `accept=".rofl"`, `itemChild`로 파일명·크기 표시, `status`로 파일별 업로드 상태. 고른 파일이 없으면 `injClass="grid-cols-1!"` + `aspectRatio={[3, 1]}`로 선택 칸을 전체 폭으로 펼친다(`columns`는 3~5만 받음). [7절](#7-stdf-300-제약과-대응) 확인 후 사용 |
 
 ### 4.3 탐색·전환
 
@@ -106,7 +106,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | --- | --- | --- |
 | 같은 페이지 안의 보기 전환 (상태 필터, 게임 선택, 포지션 필터, 라운드) | `Tabs`/`Tab` | `labels`, `showNum`(칸 수, 기본 3), `onclickTab`. URL 상태면 `goto`로 동기화. **라우트 이동에는 쓰지 않는다** |
 | 2~3개의 짧은 보기 전환을 툴바 안에서 | `ButtonGroup` | 탭 줄을 둘 공간이 없을 때만 |
-| 페이지 번호 | `Pagination` | `total`, `pageSize=20`, `current`, `onchange` → `goto(?page=)`. 주소로 공유·복원해야 하는 목록용 |
+| 페이지 번호 | `PageNav` (STDF `Pagination`) | `total`, `pageSize=20`, `current`, `onchange` → `goto(?page=)`. 주소로 공유·복원해야 하는 목록용. `Pagination`을 직접 쓰지 않는다([7절](#7-stdf-300-제약과-대응)) |
 | 카드 안 긴 목록 | `InfiniteScroll` | `scrollTarget`에 카드 안 스크롤 요소. `onload`에서 **`loading = true`를 직접 켜고** 끝나면 끈다(그래야 다음 호출이 풀림). 한국어 문구가 없어 `loadingText` 등을 넘긴다. 예: 서버 순위 |
 | 남은 시간 | `CountDown` | 브라우저 시각 기준이라 마운트 후에만 렌더링. 매초 바뀌므로 `aria-hidden` |
 | 페이지 간 이동 | `<a>` / `LinkCell` | STDF에 링크 컴포넌트가 없다([6절](#6-네이티브-html을-쓰는-곳)) |
@@ -139,7 +139,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `BottomSheet` | 드래그 단계형 시트가 필요한 화면이 없다. `Popup position="bottom"` 사용 |
 | `PullRefresh` | 웹에서 당겨서 새로고침 형태가 필요 없다. 한국어 문구도 없음 |
 | `Tooltip` | 필요한 정보는 화면에 쓴다 |
-| `Swiper` | 슬라이드에 컴포넌트만 받고 데이터(props)를 넘길 수 없으며 키보드로 넘길 수단이 없다. 캐러셀은 가로 스크롤 스냅 + 이전/다음 `Button`(`StoryCarousel`), 또는 한 장씩 바꾸는 카드 + 이전/다음 `Button` + 점 버튼(`AchievementCarousel`) |
+| `Swiper` | 슬라이드에 컴포넌트만 받고 데이터(props)를 넘길 수 없으며 키보드로 넘길 수단이 없다. 캐러셀은 한 장씩 바꾸는 카드 + 이전/다음 `Button` + 점 버튼(`AchievementCarousel`) |
 | `CharRoll`, `Rate`, `Slider`, `ColorPicker`, `Signature`, `CodeInput`, `NumKeyboard`, `FullKeyboard`, `IndexBar`, `ImagePreview`, `ProgressLoop`, `Placeholder`, `Mask`(단독) | 대응하는 서비스 기능이 없다. 기능이 생기면 이 표에서 옮긴다 |
 
 ## 5. 서비스 공통 컴포넌트
@@ -165,16 +165,19 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `SwitchCell` | `lib/components/common/` | `<label>` + STDF `Switch`, Cell과 같은 클래스 | 즉시 반영 on/off 행. 제목 왼쪽 장식은 `leftChild`(관리자 목록의 사진). STDF Cell의 스위치는 button 안에 button이 들어가 HTML이 깨지므로 쓰지 않는다 |
 | `ActivityBoard` | `lib/components/guild/` | `Tab` + `ScrimListRow` / `MatchListRow` | 서버 홈 "내전 현황": 진행 중인 내전과 최근 경기를 한 카드의 탭으로 |
 | `NextScrimHero` | `lib/components/guild/` | 어두운 카드 + `CountDown` + `Progress` + 링크 버튼 | 서버 홈 맨 위 "내 다음 내전" |
-| `StoryCarousel` | `lib/components/guild/` | 가로 스크롤 스냅 + `Button` | 서버 홈 "이번 주 이야기" |
 | `RankingBoard` | `lib/components/guild/` | `Tab` + `InfiniteScroll` + `LinkCell` | 서버 홈 포지션별 MMR 순위 |
 | `ScrimListRow` | `lib/components/scrims/` | `LinkCell` + `DateBadge` + `StatusTag` | 내전 목록 행(서버 홈·내전 목록). 오른쪽 아래 내 신청 상태 |
 | `MatchListRow` | `lib/components/matches/` | `LinkCell` + `DateBadge` + `StatusTag` | 경기 목록 행(서버 홈·경기 기록). 점수는 항상 보이고 팀 이름만 줄어든다. 상태 태그는 종료 외 상태만 |
 | `SectionState` | `lib/components/common/` | `Skeleton` / 점선 상자 + 문구 / 점선 상자 + 문구 + `Button` | 영역 하나의 `loading`·`empty`·`error(retry)` 표현. 목록 자리에 같은 폭으로 놓는다. 정상 상태는 렌더링하지 않는다 |
 | `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다. 편성 방식은 받지 않는다 |
-| `CloseRecruitDialog` | `lib/components/scrims/` | `Popup` + `Radio`(수동 편성·경매) | 요약 운영 줄의 `모집 마감`. 편성 방식을 고르며 마감한다 |
+| `ChangeMethodButton` | `lib/components/teams/` | `Button` + `confirm` | 수동 편성·경매 작업판의 `방식 다시 고르기`. 편성을 지우고 요약의 방식 선택으로 |
+| `MemberRiotAccountsDialog` | `lib/components/admin/` | `Popup` + `Input` + `enhance` | 서버 관리에서 운영자가 멤버의 Riot 계정을 조회·연결·해제하고 대표를 정한다 |
+| `MatchTable` | `lib/components/matches/` | 네이티브 `<section>`·`<ul>`·`<a>` + `StatusTag` | 경기 기록의 진행 중·종료 표. 머리 줄(제목·개수), 데스크톱 열 제목, 행 전체 링크. 모바일은 두 줄 카드 |
+| `DiscordSettingRow` | `lib/components/admin/` | `Button` + `ActionMenu` | 서버 관리 Discord 연동의 한 항목(운영자 역할·모집·엔트리·결과 채널). 현재 값 버튼으로 선택지를 열고 고르면 바로 저장한다 |
+| `FormationMethodChooser` | `lib/components/scrims/` | `<button>` 두 칸 | 요약 작업 상자의 `편성 방식`(수동 편성·경매, 고른 방식 표시·변경) |
 | `ScrimOperationsBar` | `lib/components/scrims/` | 한 줄 + `Button` + `ActionMenu` | 요약 운영 줄. 다음 단계 버튼 하나와, 단계에 맞는 설정 수정·되돌리기·중도 종료·취소 메뉴 |
 | `AvatarStack` | `lib/components/common/` | STDF `AvatarGroup` | 겹친 얼굴 묶음 + 정확한 `+N`. 마운트 후 렌더링·`inert`·이미지 키 보정([7절](#7-stdf-300-제약과-대응)). 이미지가 없으면 이름 첫 글자 색 원(`lib/ui/avatar.ts`) |
-| `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, 공개 허용 시 Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
+| `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
 | `PlayerFace` | `lib/components/common/` | `<img>` 또는 이름 첫 글자 색 원 | 사람 얼굴 하나(`sm`·`md`·`lg`). `PlayerName`·편성·경매 타일이 같이 쓴다 |
 | `FormationTeamCard` · `FormationPool` | `lib/components/teams/` | 팀×포지션 자리 / 미배정 타일 | 수동 편성의 선택·배치·교환. `interactive`가 없으면 확정 결과 표시로 재사용 |
 | `AuctionTeamCard` | `lib/components/teams/` | 남은 포인트·인원 막대·입찰 입력·팀원 목록 | 경매 진행·완료 화면 |
@@ -186,8 +189,9 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `GameHero` · `GameTeamTable` · `GamePlayerDialog` · `RoflUploadDialog` · `LoadoutIcon` | `lib/components/matches/` | 게임 머리(어두운 카드) / 진영 표 / 선수 상세 `Popup` / ROFL 업로드 `Popup`+`ImageList` / 아이템·주문·룬 한 칸 | 경기 상세 |
 | `DuoList` | `lib/components/players/` | 링크 카드 목록 | 사용자 전적의 베스트·워스트 듀오 |
 | `LeaderboardTable` | `lib/components/stats/` | `<table>` + 열 머리 정렬 버튼(`aria-sort`) + `Pagination` | 서버 통계 리더보드. 이름 옆 업적 배지 |
-| `AchievementCarousel` | `lib/components/stats/` | 카드 + `Button` + 점 버튼 | 서버 통계 업적 1위를 한 장씩. 양옆 카드는 `inert` 장식 |
+| `AchievementCarousel` | `lib/components/stats/` | 카드 + `Button` + 점 버튼 | 서버 홈·서버 통계 업적 1위를 한 장씩. 양옆 카드는 `inert` 장식 |
 | `AchievementRankingDialog` | `lib/components/stats/` | `Popup` + 칩 버튼(`aria-pressed`) | 업적별 상위 10명 |
+| `PageNav` | `lib/components/common/` | `<nav>` + STDF `Pagination type="block"` | 목록 아래 쪽 번호. 한 쪽뿐이면 그리지 않는다. 칸 수에 맞춘 폭으로 칸마다 44px 이상, 이전·다음 한국어 이름, 현재 쪽 `aria-current` |
 | `StatTile` | `lib/components/common/` | 칸 + 선택 아이콘 snippet | 서버 통계·사용자 전적의 지표 칸. `tone`(neutral·info·success·warning·error)은 지표 묶음 구분용 장식 |
 | `RadarChart` | `lib/components/players/` | 인라인 SVG | 사용자 전적 플레이 성향. 한 사람 값만 그려 범례 없이 축 이름만, 축 목록 `sr-only` |
 | `ChampionIcon` | `lib/components/common/` | `<img>` (Data Dragon) | 챔피언 이미지 + 이름 `alt`. 매핑 실패 시 이름 텍스트 |
@@ -225,7 +229,7 @@ MSM1의 엔트리 편성·경매·대진 화면 구성을 참고해, 사용자�
 | `sr-only`는 `position: absolute`라 가까운 positioned 조상이 없으면 `overflow` 스크롤 영역 밖으로 빠져 문서 높이를 늘린다(푸터 아래 빈 공간) | 행·스크롤 영역에 `relative`를 둔다(`LinkCell`, 순위 스크롤 영역) |
 | 오버레이에 dialog 역할·포커스 가두기·Escape·스크롤 잠금이 없다. 마스크가 이름 없는 `<button>`이다 | `overlay` attachment. `Popup`이 제자리에 렌더링되므로(포털 없음) 래퍼 `<div>`로 보완한다. 확인 창은 `confirm()` 헬퍼 |
 | 어떤 컴포넌트도 `aria-*`·`id`·`class`를 전달받지 않는다 | 접근 가능한 이름이 필요하면 감싸는 요소(`<fieldset>`, 래퍼 `<div role>`)나 보이는 텍스트로 준다. 아이콘 전용 버튼은 `Button` 안에 `<span class="sr-only">` 이름을 넣는다 |
-| `Switch`·`Radio`·`Checkbox` 항목이 상태 ARIA 없는 `<button>`이다 | 그룹은 `<fieldset><legend>`. 상태가 문구로 드러나야 하는 곳(공개 설정)은 `Cell`의 `detail`에 현재 값 텍스트를 쓴다 |
+| `Switch`·`Radio`·`Checkbox` 항목이 상태 ARIA 없는 `<button>`이다 | 그룹은 `<fieldset><legend>`. 상태가 문구로 드러나야 하는 곳은 `Cell`의 `detail`에 현재 값 텍스트를 쓴다 |
 | `Tabs`에 `tablist`/`aria-selected`가 없다 | 탭 묶음을 `<div role="group" aria-label>`로 감싸고, 선택된 내용 영역 제목에 현재 선택을 쓴다 |
 | `Button size="md" \| "sm"`은 정의된 CSS가 없어 패딩이 사라진다 | `size`는 `full`·`big`·`auto`만. 작은 버튼은 `size="auto"` + `heightIn`/`heightOut` |
 | `Button disabledLoading` 기본값이 `true` | `loading` 중에는 자동 비활성. 의도된 동작이므로 그대로 쓴다 |
@@ -250,11 +254,12 @@ MSM1의 엔트리 편성·경매·대진 화면 구성을 참고해, 사용자�
 | `Checkbox`·`Radio`·`Stepper`의 항목이 `type` 없는 `<button>`이라 `<form>` 안에서 누르면 제출된다. Enter 암묵 제출도 첫 항목 버튼을 눌러 값을 바꾼다 | 폼에 `{@attach nonSubmitButtons}`. 제출 버튼은 `Button type="submit"` 명시 |
 | `Button fill="text"`는 `state`를 무시하고 항상 본문색이다 | 색이 있는 텍스트 버튼(철회 등)은 `fill="textState" state="error"` |
 | `Input` 바깥 칸에 `px-2 py-1` 여백이 고정되어 있어 같은 줄의 다른 요소와 왼쪽 선이 어긋난다 | 줄 정렬이 필요한 곳은 감싸는 요소에 `-mx-2 -my-1` (경매 팀 패널 입찰가) |
-| `Button`이 `onclick` 외의 이벤트(`oncontextmenu` 등)를 받지 않는다 | 감싸는 `<span role="presentation">`에서 받는다. 경매 `±10`의 우클릭 −10 |
+| `Button`이 `onclick` 외의 이벤트(`oncontextmenu` 등)를 받지 않는다 | 감싸는 `<span role="presentation">`에서 받는다. 경매 `±10`·`±50`의 우클릭 감소 |
 | `Grids`에 `injClass`가 없어 반응형 열 수를 클래스로 줄 수 없다 | `cols={desktop.current ? '4' : '2'}`. SSR은 모바일 열 수로 그린다 |
 | 가로 `Steps`는 `desc`를 그리지 않는다 | 설명이 필요하면 `vertical` |
 | `ImageList`가 파일 입력을 그리지 않는다. 업로드 칸은 `onclickUpload`만 부른다 | 숨긴 `<input type="file">`을 `onclickUpload`로 열고 `bind:this`한 `ImageList`의 `addFiles()`로 넘긴다(`RoflUploadDialog`) |
 | `NoticeBar` 오른쪽에 `rightIcon={null}`이어도 이름 없는 빈 `<button>`이 항상 생기고, 크기는 마운트 때만 잰다 | 화면용은 `inert aria-hidden` 래퍼에 넣고 같은 내용을 `sr-only` 목록으로 준다. 내용이 바뀌면 `{#key}`로 다시 만든다 |
+| `Pagination`의 칸이 모두 `flex-1`이라 감싸는 요소가 내용 폭으로 줄면 번호 칸이 10px까지 좁아진다. 이전·다음 버튼의 `aria-label`이 `pre`/`next`이고 현재 쪽 표시가 색뿐이다 | `PageNav`로만 쓴다: 칸 수 × 3.25rem 폭, 이름·`aria-current` 보정 |
 | `Tab`의 `showNum`은 개수 배지가 아니라 한 번에 보이는 탭 칸 수(기본 3)다. `overflow` 모드는 ResizeObserver 루프 오류를 낸다 | 칸 수만큼 `showNum`을 주고 `overflow`는 쓰지 않는다. 좁은 화면에 다 안 들어가면 라벨을 줄인다 |
 | `List` 일괄 선택 모드는 선택 칸(40px)만큼 행을 오른쪽으로 밀어 오른쪽 끝 내용이 잘린다. `itemPx`의 `px-0`이 `itemInjClass` 여백을 덮는다 | `itemInjClass="pl-3! pr-13!"` |
 | `List batchSelectable`은 보기 모드에서도 자체 `편집` 토글을 그린다 | 보기 목록은 `<ul>`로 따로 두고, 관리 버튼을 누를 때만 `batchMode`로 `List`를 렌더링한다. `List`의 `완료`가 `batchMode`를 끄면 보기 목록으로 돌아간다 |

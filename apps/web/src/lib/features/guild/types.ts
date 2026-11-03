@@ -54,13 +54,24 @@ export type GuildRanking = {
 	positions: Record<LolPosition, RankingPage>;
 };
 
-// 서버 홈 스토리 카드. 연승·연패·기록처럼 최근 경기에서 뽑은 이야기다.
-export type GuildStory = {
+
+// 봇이 Discord에서 동기화한 서버의 역할·채널 목록이다. 서버 관리의 Discord 연동 선택지로 쓴다.
+export type DiscordRole = { id: string; name: string };
+
+export type DiscordChannel = {
 	id: string;
-	kind: 'win_streak' | 'loss_streak' | 'most_kills' | 'first_win' | 'comeback';
-	userId: string;
-	displayName: string;
-	headline: string;
-	detail: string;
-	artUrl: string | null;
+	name: string;
+	// 채널이 속한 카테고리 이름. 없으면 null이다.
+	category: string | null;
+	// 봇이 이 채널에 글을 쓸 수 있는지. 쓸 수 없으면 게시 채널로 고르지 못한다.
+	botCanPost: boolean;
 };
+
+export type GuildDiscordSettings = {
+	operatorRoleId: string | null;
+	recruitmentChannelId: string | null;
+	entryChannelId: string | null;
+	resultChannelId: string | null;
+};
+
+export type GuildDiscordSettingKey = keyof GuildDiscordSettings;

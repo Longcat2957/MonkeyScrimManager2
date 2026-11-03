@@ -6,7 +6,6 @@
 	import type { ScrimNextAction, ScrimRevertAction, ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
 	import { postAction } from '#lib/ui/actions.ts';
 	import { confirm } from '#lib/ui/confirm.ts';
-	import CloseRecruitDialog from './CloseRecruitDialog.svelte';
 	import ScrimSettingsDialog from './ScrimSettingsDialog.svelte';
 
 	type Props = {
@@ -25,7 +24,6 @@
 
 	let menuOpen = $state(false);
 	let editing = $state(false);
-	let closing = $state(false);
 	let advancing = $state(false);
 	let trigger = $state<HTMLElement | null>(null);
 
@@ -39,8 +37,8 @@
 		return items;
 	});
 
-	// 모집 마감은 편성 방식을 함께 고르므로 확인 대신 팝업을 연다.
-	const CONFIRM: Record<Exclude<ScrimNextAction['key'], 'close'>, string> = {
+	const CONFIRM: Record<ScrimNextAction['key'], string> = {
+		close: '모집을 마감할까요?',
 		ready: '대진 준비로 넘어갈까요?',
 		start: '내전을 시작할까요?',
 		complete: '내전을 종료할까요?'
@@ -48,13 +46,10 @@
 
 	async function advance() {
 		if (!nextAction) return;
-		if (nextAction.key === 'close') {
-			closing = true;
-			return;
-		}
-		if (!(await confirm(CONFIRM[nextAction.key], nextAction.label))) return;
+		const key = nextAction.key;
+		if (!(await confirm(CONFIRM[key], nextAction.label))) return;
 		advancing = true;
-		const message = await postAction('advance', { key: nextAction.key });
+		const message = await postAction('advance', { key });
 		advancing = false;
 		if (message) toast.error(message);
 	}
@@ -84,7 +79,7 @@
 				<span class="text-sm opacity-70">{nextAction.blockedReason}</span>
 			{/if}
 		</div>
-		<div class="flex shrink-0 items-center gap-2">
+		<div class="ml-auto flex shrink-0 items-center gap-2">
 			{#if menu.length}
 				<span bind:this={trigger}>
 					<Button fill="lineLight" size="auto" heightOut="0" heightIn="2" injClass="px-3" onclick={() => (menuOpen = true)}>
@@ -94,25 +89,25 @@
 				</span>
 			{/if}
 			{#if nextAction}
+				<!-- 다음 단계는 내전을 앞으로 넘기는 유일한 버튼이라 관리 메뉴와 선으로 나누고 화살표를 붙여 구분한다. -->
+				{#if menu.length}<span aria-hidden="true" class="mx-1 h-6 w-px bg-border"></span>{/if}
 				<Button
 					size="auto"
 					heightOut="0"
 					heightIn="2"
-					injClass="px-4 text-sm"
+					injClass="gap-2 px-5 text-sm font-semibold shadow-sm"
 					disabled={Boolean(nextAction.blockedReason)}
 					loading={advancing ? {} : null}
 					onclick={advance}
 				>
 					{nextAction.label}
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
 				</Button>
 			{/if}
 		</div>
 	</div>
 
 	<ActionMenu bind:open={menuOpen} label="운영 메뉴" actions={menu.map((item) => item.action)} {trigger} {onselect} />
-	{#if nextAction?.key === 'close'}
-		<CloseRecruitDialog bind:open={closing} />
-	{/if}
 	{#if editable.length}
 		<ScrimSettingsDialog
 			bind:open={editing}

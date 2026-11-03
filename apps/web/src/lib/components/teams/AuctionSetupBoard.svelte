@@ -7,6 +7,7 @@
 	import { bestMmr, formatMmr, type AuctionTeamView, type FormationPlayer } from '#lib/features/scrims/formation.ts';
 	import { postAction } from '#lib/ui/actions.ts';
 	import { confirm } from '#lib/ui/confirm.ts';
+	import ChangeMethodButton from './ChangeMethodButton.svelte';
 
 	type Props = {
 		teams: AuctionTeamView[];
@@ -68,7 +69,7 @@
 	}
 
 	async function start() {
-		if (!(await confirm('시작하면 팀장과 시작 포인트를 바꿀 수 없어요. 시작할까요?', '경매 시작'))) return;
+		if (!(await confirm('경매를 시작할까요?', '경매 시작'))) return;
 		busy = true;
 		const message = await postAction('start', {});
 		busy = false;
@@ -124,11 +125,14 @@
 	{/if}
 
 	<section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] bg-bg-surface dark:bg-bg-surface-dark">
-		<div class="border-b border-border px-4 py-3">
-			<h2 id="auction-setup" class="text-base font-semibold">경매 준비</h2>
-			{#if editable}
-				<p class="mt-1 text-xs opacity-60">{startBlocked ?? '설정이 완성됐어요. 시작하면 팀장과 시작 포인트를 바꿀 수 없어요.'}</p>
-			{/if}
+		<div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+			<div class="min-w-0">
+				<h2 id="auction-setup" class="text-base font-semibold">경매 준비</h2>
+				{#if editable}
+					<p class="mt-1 text-xs opacity-60">{startBlocked ?? '설정이 완성됐어요. 시작한 뒤에는 경매 기록을 지워야 팀장과 시작 포인트를 바꿀 수 있어요.'}</p>
+				{/if}
+			</div>
+			{#if editable}<ChangeMethodButton disabled={busy} />{/if}
 		</div>
 		<div class="grid min-h-0 content-start gap-2 overflow-y-auto p-3 md:grid-cols-2">
 			{#each teams as team, index (team.id)}

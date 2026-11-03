@@ -1,5 +1,6 @@
 import { dev } from '$app/env';
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
+import { bracketPath, hasResult } from '#lib/features/scrims/paths.ts';
 import {
 	confirmMockBracket,
 	getMockBracket,
@@ -22,6 +23,8 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 	requireDev();
 	const { scrim } = await parent();
 	if (!scrim) error(404, '내전을 찾을 수 없습니다.');
+	// 끝난 내전은 결과 화면에서 본다.
+	if (hasResult(scrim.status)) redirect(307, bracketPath(params, scrim.status));
 	const version = await latestDataDragonVersion();
 	const bracket = await getMockBracket(params.guildId, params.scrimId, (id) => championIconUrl(version, id));
 	return { scrim, bracket };

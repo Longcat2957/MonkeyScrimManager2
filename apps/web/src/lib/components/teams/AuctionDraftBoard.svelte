@@ -12,6 +12,7 @@
 	import AuctionTargetProfile from './AuctionTargetProfile.svelte';
 	import AuctionTeamCard from './AuctionTeamCard.svelte';
 	import CandidateListDialog from './CandidateListDialog.svelte';
+	import ChangeMethodButton from './ChangeMethodButton.svelte';
 	import { DragState } from './drag.svelte.ts';
 
 	let { auction, manager }: { auction: AuctionView; manager: boolean } = $props();
@@ -113,6 +114,10 @@
 		if (await confirm('낙찰·유찰·수동 배치를 모두 되돌리고 팀장과 시작 포인트만 남긴 처음 상태로 돌아갈까요?', '경매 초기화')) await run('reset');
 	}
 
+	async function reopenSetup() {
+		if (await confirm('낙찰·유찰·수동 배치를 모두 지우고 팀장·시작 포인트 설정으로 돌아갈까요?', '팀장 다시 정하기')) await run('reopenSetup');
+	}
+
 	async function refresh() {
 		refreshing = true;
 		await invalidate('app:auction');
@@ -121,15 +126,22 @@
 </script>
 
 <section aria-labelledby="auction-board" aria-busy={busy || refreshing} class="flex w-full min-w-0 flex-col gap-2">
-	<div class="flex min-h-8 items-center justify-between gap-3">
-		<div class="flex items-center gap-2">
+	<div class="flex min-h-8 flex-wrap items-center justify-between gap-x-3">
+		<div class="flex shrink-0 items-center gap-2">
 			<h2 id="auction-board" class="text-base font-semibold">경매</h2>
 			<StatusTag text={STATUS[auction.status].text} state={STATUS[auction.status].state} />
 			{#if busy || refreshing}<Loading type="1_0" height="6" width="6" />{/if}
 		</div>
 		{#if live && !manager}
 			<!-- 실시간 갱신 방식이 정해지기 전까지 열람자는 직접 새로 불러온다. -->
-			<Button fill="text" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" disabled={refreshing} onclick={refresh}>새로고침</Button>
+			<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" disabled={refreshing} onclick={refresh}>새로고침</Button>
+		{/if}
+		{#if controls}
+			<!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 둘 다 지금까지의 경매 기록을 지운다. -->
+			<div class="-mr-3 flex flex-wrap justify-end">
+				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" disabled={busy} onclick={reopenSetup}>팀장 다시 정하기</Button>
+				<ChangeMethodButton disabled={busy} />
+			</div>
 		{/if}
 	</div>
 
@@ -160,13 +172,13 @@
 						</div>
 						<div class="flex flex-wrap items-center justify-end gap-0.5">
 							{#if controls && canRevert}
-								<Button fill="textState" state="warning" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" disabled={busy} onclick={revert}>되돌리기</Button>
+								<Button fill="textState" state="warning" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" disabled={busy} onclick={revert}>되돌리기</Button>
 							{/if}
 							{#if open}
-								<Button fill={details ? 'lineLight' : 'text'} size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" onclick={() => (details = !details)}>상세보기</Button>
+								<Button fill={details ? 'lineLight' : 'text'} size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" onclick={() => (details = !details)}>상세보기</Button>
 							{/if}
 							{#if controls}
-								<Button fill="text" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" disabled={busy || Boolean(open) || auction.queue.length === 0} onclick={draw}>다음 후보</Button>
+								<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" disabled={busy || Boolean(open) || auction.queue.length === 0} onclick={draw}>다음 후보</Button>
 							{/if}
 						</div>
 					</div>
@@ -231,7 +243,7 @@
 					{#if controls && open}
 						<!-- 유찰은 현재 매물 칸 하단에 고정해 카드 길이와 상관없이 같은 자리에 둔다. -->
 						<div class="flex justify-end px-3 pb-3">
-							<Button fill="textState" state="warning" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" disabled={busy} onclick={() => run('pass')}>유찰</Button>
+							<Button fill="textState" state="warning" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" disabled={busy} onclick={() => run('pass')}>유찰</Button>
 						</div>
 					{/if}
 				</section>

@@ -100,7 +100,7 @@
 		{#if editing && selectedId}
 			<p class="flex min-h-10 flex-wrap items-center gap-2 bg-bg-surface px-4 text-sm dark:bg-bg-surface-dark" aria-live="polite">
 				<span><strong>{selectedName}</strong> 선택됨 · 놓을 자리를 누르거나 끌어 놓으세요</span>
-				<Button fill="text" size="auto" heightOut="0" heightIn="1" injClass="px-2 text-sm" onclick={() => (selectedId = null)}>선택 취소</Button>
+				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" onclick={() => (selectedId = null)}>선택 취소</Button>
 			</p>
 		{/if}
 

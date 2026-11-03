@@ -46,7 +46,7 @@
 			{:else}
 				<span class="text-xs opacity-60">{status.text}</span>
 			{/if}
-			<span class="truncate text-sm text-gray-600 dark:text-gray-300">{account?.riotId ?? '연결이 해제된 계정'}</span>
+			<span class="truncate text-sm opacity-70">{account?.riotId ?? '연결이 해제된 계정'}</span>
 			<PositionChips positions={registration.positions as LolPosition[]} />
 		{:else if blockedReason}
 			<span class="text-sm opacity-70">{blockedReason}</span>
@@ -54,7 +54,7 @@
 	</div>
 
 	{#if registration && canEdit}
-		<div class="flex shrink-0 gap-2">
+		<div class="ml-auto flex shrink-0 gap-2">
 			<Button fill="textState" state="error" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" loading={withdrawing ? {} : null} onclick={withdraw}>
 				철회
 			</Button>
@@ -63,7 +63,7 @@
 			</Button>
 		</div>
 	{:else if canRegister}
-		<span class="shrink-0">
+		<span class="ml-auto shrink-0">
 			<Button size="auto" heightOut="0" heightIn="2" injClass="px-4 text-sm" onclick={() => (dialogOpen = true)}>신청하기</Button>
 		</span>
 	{/if}
