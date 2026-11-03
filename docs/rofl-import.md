@@ -129,7 +129,10 @@ ROFL PUUID를 Riot API 계정 식별자로 간주하거나, 팀 값에서 블루
 
 이 함수는 DB·파일 시스템에 쓰지 않으며, DB 스키마는 타입으로만 참조한다.
 `registration`과 `links`는 결과를 서비스 경기에 연결하기 위한 문맥이다.
-업로드 API·자동 참가자 연결·`Game`·`GameParticipant` 저장·시리즈 집계는 아직 구현하지 않았다.
+이 적재 모델을 사용하는 운영 업로드 경로·자동 참가자 연결·`Game`·`GameParticipant`의 DB 저장은 아직 구현하지 않았다.
+개발 모드의 경기 상세 `upload` action은 `projectRoflGame`을 직접 호출해 목 저장소에 등록하고 시리즈 점수를 계산한다.
+그 경로는 `prepareRoflImport`를 호출하지 않으며, 위 파일 해시·서비스 연결 검증을 구현한 것으로 간주하지 않는다.
+개발용 등록의 실제 제한은 [경기 화면 문서](web/pages/records.md)를 따른다.
 원본 바이트나 전체 메타데이터를 반환값에 남기지 않는다.
 
 ## 검증

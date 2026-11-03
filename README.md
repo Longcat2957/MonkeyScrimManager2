@@ -14,7 +14,7 @@
 - 봇: discord.js 14, TypeScript 6, tsx
 - 디자인 프레임워크: [STDF 3](https://stdf.dev/), Tailwind CSS 4
 - 운영 서버: VPS에서 `@sveltejs/adapter-node`로 실행
-- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 연결 설정만 준비했으며 테이블은 아직 정의하지 않았다.
+- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 32개 테이블을 정의했으며, 전체 스키마의 마이그레이션과 업무 화면의 DB 연결은 아직 하지 않았다.
 
 프로젝트 루트에서 실행한다.
 
@@ -24,7 +24,24 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-기본 개발 주소는 `http://localhost:5173`이다. 대부분의 업무 페이지는 공통 레이아웃과 제목만 갖춘 상태다.
+기본 개발 주소는 `http://localhost:5173`이다. 홈의 개발 바로가기에서 내전·팀 편성·대진·경기 기록·통계·서버 관리 화면을 열 수 있다.
+업무 화면은 개발용 목 저장소로 동작하며, 저장한 변경은 프로세스 재시작이나 관련 모듈의 HMR로 초기화될 수 있다.
+
+## 현재 구현 범위
+
+2026-11-03 코드 기준이다. 화면의 서비스 소개와 향후 저장 모델을 현재 운영 연동과 구분한다.
+
+| 영역 | 현재 동작 |
+| --- | --- |
+| 모집·편성·대진 | 개발 모드에서 신청·선발·수동 편성·경매·대진 배치·단계 되돌리기·중도 종료를 목 저장소에 반영한다. 편성은 `/manual`·`/auction`, 종료된 내전은 `/result`로 이동한다 |
+| 경기·전적·통계 | 경기 상세는 샘플 데이터와 메모리에 등록한 ROFL 결과를 표시한다. 개인 전적·서버 통계는 별도의 합성 데이터이며, 업로드 결과와 연결되지 않는다 |
+| Riot 계정·서버 관리 | `/me`는 계정 조회만 제공한다. 서버 관리에서 계정 연결·해제·대표 지정, Discord 역할·채널 선택을 목 저장소에 반영한다 |
+| 외부 조회 | Riot 조회 API와 Data Dragon 조회가 구현돼 있다. 화면의 챔피언·아이템·룬 이미지 등은 실제 Data Dragon을 사용하지만 Riot 계정 연결 화면의 조회는 목이다 |
+| 백오피스 | 목 로그인 사용자의 서비스 운영자 여부를 확인한 뒤 실제 DB `select 1`과 설정한 봇 상태 주소를 조회한다 |
+| 인증·영속 저장 | Discord OAuth·세션 복원·실제 서버 소속/권한 검사·업무 데이터 DB 저장은 미구현이다. 개발 외 모드의 업무 화면은 경로에 따라 빈 상태 또는 401/403/404를 반환한다 |
+
+대진 확정/내전 시작이 실제 Match를 만들거나 ROFL 결과를 대진·MMR로 전파하지는 않는다.
+화면별 구현과 제한은 [웹 문서](docs/web/README.md)를 기준으로 확인한다.
 
 ## 진입점
 
@@ -47,10 +64,10 @@ pnpm dev
 
 ## 웹 공통 구조
 
-프론트엔드 설계는 [웹 프론트엔드 문서](docs/web/README.md)에서 관리한다.
+프론트엔드의 현재 구현은 [웹 프론트엔드 문서](docs/web/README.md)에서 관리한다.
 라우트·헤더는 [routing.md](docs/web/routing.md), STDF 컴포넌트 선택은 [design-system.md](docs/web/design-system.md),
 상태·폼·오버레이 패턴은 [patterns.md](docs/web/patterns.md), 페이지별 화면은 [pages/](docs/web/pages/)를 따른다.
-문서는 목표 설계이며, 아래는 현재 구현된 공통 화면의 상태다. `/me`를 포함한 대부분의 페이지는 제목만 있는 빈 페이지다.
+문서와 구현이 다르면 코드를 기준으로 문서를 갱신한다. 미연결 기능과 후속 작업은 현재 동작과 구분해 적는다.
 
 웹의 서비스명은 `#lib/branding.ts`에서 가져온 `SERVICE_NAME`을 사용한다.
 프로젝트명과 서비스명 사용 규칙은 [AGENTS.md](AGENTS.md)의 Naming and Branding을 따른다.
@@ -65,7 +82,7 @@ pnpm dev
 1024px 미만에서는 메뉴·계정·화면 모드를 오른쪽 패널로 옮긴다. 인증 연결 전에는 개발 모드에서만 목 사용자·서버로 동작한다.
 푸터는 [MSM1 푸터](https://github.com/Longcat2957/MonkeyScrimManager/blob/8847ac77b5d939c683099f381386a242fe764517/apps/web/src/lib/components/layout/AppFooter.svelte)를 참고해
 서비스 도메인과 문서·이용약관·개인정보 처리방침을 제공한다. 정책·문서 링크는 같은 탭에서
-내부 `/docs`, `/terms`, `/privacy` 페이지로 이동한다. 각 페이지의 본문은 아직 작성하지 않았다.
+내부 `/docs`, `/terms`, `/privacy` 페이지로 이동한다. `/docs`는 이용 흐름·FAQ를, 정책 페이지는 현재 준비 상태와 안내 본문을 표시한다.
 푸터는 워드마크·도메인·정책 링크를 적은 여백으로 배치한 간결한 구성이다.
 경계선은 `layout.css`의 공통 `--color-border`·`--color-border-strong` 토큰으로 관리한다.
 배치와 얇은 경계선은 [STDF 헤더](https://github.com/any-tdf/any-tdf/blob/main/apps/stdf-site/src/lib/header/Header.svelte)와
@@ -80,7 +97,8 @@ pnpm dev
 `layout.css`의 `@theme`에서 관리한다. 그레이·슬레이트 계열의 강조색·배경·본문 색상과
 라이트·다크 토큰을 정의했으며 기본 모드는 `html[data-mode="primary"]`다.
 다크 모드는 STDF의 `switchMode('dark')` 또는 `data-mode="dark"`로 적용할 수 있다.
-헤더의 모드 버튼으로 라이트·다크 모드를 전환할 수 있으며, 선택은 저장하지 않는다.
+헤더의 모드 버튼으로 라이트·다크 모드를 전환하며 `localStorage['theme-mode']`에 저장한다.
+`app.html`이 첫 화면을 그리기 전에 저장된 모드를 복원하고, 저장소 접근이 막혀도 화면 전환은 동작한다.
 
 `static/brand/favicon.png`와 `logo.png`는
 [MSM1 원본 에셋](https://github.com/Longcat2957/MonkeyScrimManager/tree/8847ac77b5d939c683099f381386a242fe764517/apps/web/static/brand)을
@@ -121,7 +139,8 @@ RIOT_API_TIMEOUT_MS=10000
 | Data Dragon | 버전 목록, 챔피언·아이템·룬·소환사 주문·프로필 아이콘 카탈로그 및 이미지 URL 생성 |
 
 각 경로의 사용 목적·파라미터·응답·제약은 [Riot API 연동 문서](docs/riot-api.md)에 정리했다.
-외부 API는 현재 기능에서 사용할 근거가 있을 때만 추가한다. 화면·봇 연결과 사용자 계정 저장은 아직 구현하지 않았다.
+외부 API는 현재 기능에서 사용할 근거가 있을 때만 추가한다. Data Dragon은 화면 로더에서 사용한다.
+Riot API와 계정 연결 UI의 연동, 사용자 계정 DB 저장, 봇의 업무 기능 연결은 아직 구현하지 않았다.
 
 공통 요청 처리는 `apps/web/src/lib/server/riot/transport.ts`, 환경 변수 연결은 `client.ts`,
 계정 조회는 `account.ts`, LoL 조회는 `lol/`의 각 모듈이 담당한다.
@@ -158,7 +177,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 31개 테이블과 관계, 조회·삽입 타입 정의 |
+| `apps/web/src/lib/server/db/schema.ts` | 32개 테이블·69개 외래키, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
@@ -166,7 +185,8 @@ DB는 `getDb()`를 처음 호출할 때 초기화한다. 주소 미설정 상태
 풀은 최대 10개 연결, 연결 대기는 10초로 제한한다. 실제 연결은 쿼리 실행 시 시작한다.
 
 스키마는 사용자·길드·Riot 계정, 초과 모집·참가 선발, 내전·팀·참가자, 경매 이력, 라운드·대진,
-Match·Game, 버전별 ROFL 데이터, 포지션별 MMR과 반영 이력, 공개 범위·Discord 설정을 포함한다.
+Match·Game, 버전별 ROFL 데이터, 포지션별 MMR과 반영 이력, Discord 설정·역할·채널을 포함한다.
+개인별 공개 범위 설정 테이블은 없다.
 전체 관계와 주요 제약은 [DB ERD](docs/database-erd.md)에서 확인할 수 있다.
 MMR의 계산 기준과 후속 반영 절차는 [MMR 저장 계약](docs/mmr.md)에 정리한다.
 스키마 변경을 확정한 뒤 프로젝트 루트에서 SQL을 생성하고 내용을 검토한 다음 적용한다.
@@ -225,7 +245,9 @@ pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 
 `rofl:research`는 새 디렉터리에 원본 사본·전체 메타데이터·압축 해제 청크·패킷 인덱스·분석 보고서를 만든다.
 패킷의 시각·ID·본문 위치를 추출하며, 킬·이동 등 본문의 의미 해석은 아직 검증하지 않았다.
-서비스 업로드·경기 등록·DB 저장은 아직 구현하지 않았다.
+개발 모드의 경기 상세에는 ROFL 업로드 폼 action이 있다. `projectRoflGame`으로 실제 파일을 읽고
+경기 목 저장소에 게임을 추가해 시리즈 점수를 계산한다. 실제 참가자 연결·업로드 권한·DB 저장은 미구현이며,
+이 개발용 등록 경로는 `prepareRoflImport`의 DB 적재 모델과 아직 연결되지 않았다.
 로컬 원본·분석 결과는 Git에서 제외되는 프로젝트 루트 `samples/`에 둔다.
 명령과 출력 형식은 [ROFL 분석 문서](docs/rofl.md), 실측 결과와 후속 과제는 [연구 기록](docs/rofl-research.md)을 따른다.
 

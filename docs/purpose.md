@@ -2,6 +2,9 @@
 
 작성일: 2026-10-28
 
+이 문서는 프로젝트의 목표와 원칙이다. 2026-11-03 기준 화면은 개발용 목 저장소 중심이며,
+현재 동작과 미연결 범위는 [웹 문서](web/README.md)와 [README](../README.md)의 구현 현황을 따른다.
+
 ## 1. 프로젝트 개요
 
 MonkeyScrimManager2(이하 `MSM2`)는 [MonkeyScrimManager](https://github.com/Longcat2957/MonkeyScrimManager)(이하 `MSM1`)의 리그 오브 레전드 내전 운영 비즈니스 로직을 참고하여, 프로젝트 구조와 사용자 경험을 처음부터 다시 설계하고 구현하는 프로젝트이다.

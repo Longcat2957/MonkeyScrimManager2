@@ -1,7 +1,8 @@
 # MSM2 데이터베이스 ERD
 
-기준: [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **31개 테이블·67개 외래키**.
+기준: 2026-11-03 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **32개 테이블·69개 외래키**.
 아래는 스키마 정의이며, 현재 DB에 이 전체 구조를 마이그레이션한 상태는 아니다.
+웹 업무 화면의 조작은 메모리 목 저장소에 반영하며, 아래 테이블에 저장하지 않는다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
 밴픽 진행·픽 순서·수동 결과 승인 모델과 원본 ROFL 보관 테이블은 없다.
@@ -17,6 +18,8 @@ erDiagram
     users |o..o{ riot_accounts : 계정_연결
     users ||--o{ user_champion_preferences : 포지션별_선호
     guilds ||--o| guild_discord_settings : 게시_설정
+    guilds ||--o{ guild_discord_roles : 역할_선택지
+    guilds ||--o{ guild_discord_channels : 채널_선택지
 
     guilds ||..o{ mmr_seasons : MMR_시즌
     mmr_seasons ||..o{ user_position_mmr : 포지션별_점수
@@ -64,7 +67,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 실제 DB 외래키 67개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마에 정의한 외래키 69개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -129,15 +132,14 @@ erDiagram
     guilds ||--o{ guild_discord_channels : guild_id
 ```
 
-서버 관리자(`guild_members.is_admin`)는 웹에서 지정하지 않는다. Discord 서버 관리 권한이 있거나
-`guild_discord_settings.operator_role_id` 역할을 가진 멤버이며, 봇이 Discord 역할·권한을 동기화해 갱신한다.
-`guild_discord_roles`·`guild_discord_channels`는 봇이 동기화한 선택지 목록이고, 서버 관리에서 운영자 역할과
-모집·엔트리(팀 구성·밸런스 확인)·결과 채널을 고를 때 쓴다.
+현재 웹은 서버 관리자 여부를 표시만 하고, Discord 운영자 역할·모집·엔트리·결과 채널을 목 선택지에서 고른다.
+`guild_members.is_admin`은 Discord 서버 관리 권한 또는 `operator_role_id` 역할 보유 여부를 동기화해 저장할 필드다.
+`guild_discord_roles`·`guild_discord_channels`도 그 동기화 결과를 보관할 스키마이며, 실제 봇 동기화·관리자 재계산·DB 저장은 미구현이다.
 
-`users`는 Discord 봇에서 참가 신청하거나 웹에 로그인할 때 자동으로 만든다. Riot 계정 연결은 사용자가
-직접 하지 않고 길드 운영자가 지정하며 `linked_by_user_id`·`linked_at`에 남긴다. 사용자마다 대표 계정
-(`is_primary`)은 하나이고 신청할 때 기본으로 고른다. 사용자 삭제로 `user_id`가 비면 대표·연결 정보 정리는
-서비스가 같은 트랜잭션에서 처리한다.
+`users`는 Discord 로그인·봇 참가 신청에서 생성할 사용자 모델이며, 해당 생성 흐름은 아직 연결하지 않았다.
+웹의 Riot 계정 연결은 서버 관리에서 운영자가 지정하는 목 동작이다. DB에는 `linked_by_user_id`·`linked_at`을 정의했고,
+`is_primary` 부분 고유 인덱스로 사용자당 대표 계정을 최대 하나로 제한한다. 사용자 삭제 시 DB가 `user_id`를
+`NULL`로 바꾸지만 대표 여부·연결 시각 정리는 자동 수행하지 않으며, 후속 저장 서비스가 처리해야 한다.
 
 ## MMR 시즌·현재 점수·변동 이력
 
@@ -289,7 +291,8 @@ erDiagram
 `reserve_capacity = 2`이면 10명 내전에 최대 12명의 활성 신청을 받아 최종 참가자 10명을 정할 수 있다.
 신청하면 선발 수가 `team_count × 5` 미만일 때 `selected`, 아니면 `standby`가 된다.
 선발자가 철회·제외되거나 팀 수가 늘어 자리가 비면 가장 먼저 신청한 대기자부터 선발한다.
-운영자가 직접 대기로 돌린 신청은 자동으로 다시 선발하지 않는다.
+현재 목 구현은 운영자가 대기로 바꾸는 요청에서만 자동 충원을 건너뛴다.
+이후 철회·제외·설정 변경으로 충원이 다시 실행되면 그 신청도 선발 대상이다. 수동 대기를 계속 고정하는 별도 필드는 없다.
 
 신청 상태는 `selected`(선발), `standby`(대기), `withdrawn`(자진 철회),
 `excluded`(운영자 제외)로 구분하며 기본값은 없다(서비스가 신청 시점에 정한다). `withdrawn`·`excluded`일 때만 `withdrawn_at`을 기록하며,
@@ -301,6 +304,7 @@ erDiagram
 참가자만 대상으로 한다. 이 인원수·상태 검사와 제외 시 미확정 팀 배정 정리는 이후 서비스에서
 같은 트랜잭션으로 처리할 조건이며, 현재 DB 제약만으로 자동 수행하지 않는다.
 
+아래 단계 전이는 `mocks/workflow.ts`·`teams.ts`·`bracket.ts`의 개발용 동작이며 DB 트랜잭션은 미연결이다.
 `formation_method`는 운영자가 모집 중·편성 중(`preparing`)에 정하거나 바꾸며, 비어 있어도 모집을 마감할 수
 있다. `ready` 이후 상태에서는 반드시 값이 있다(`scrims_formation_method_required`). 편성 중에 방식을 바꾸거나
 비우면 그 내전의 수동 배정·경매 기록을 무효화하고, 모집을 다시 열면 팀·경매 기록만 지우고 방식은 유지한다.
