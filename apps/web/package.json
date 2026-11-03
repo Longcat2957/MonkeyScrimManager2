@@ -7,14 +7,19 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"start": "node --env-file-if-exists=.env build",
-		"test": "node --experimental-strip-types --test tests/*.test.ts",
-		"test:db": "node --env-file-if-exists=.env --experimental-strip-types --test tests/*.integration.ts tests/*-database.test.ts",
+		"test": "node tests/run.mjs default",
+		"test:db": "node tests/run.mjs hard:db",
 		"db:generate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs generate",
 		"db:migrate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs migrate",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test:lite": "node tests/run.mjs lite",
+		"test:hard": "node tests/run.mjs hard",
+		"test:hard:db": "node tests/run.mjs hard:db",
+		"test:hard:http": "node tests/run.mjs hard:http",
+		"check:tests": "tsc --noEmit -p tests/tsconfig.json"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^6.0.0",

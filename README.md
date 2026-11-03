@@ -320,12 +320,22 @@ pnpm build
 pnpm start
 ```
 
-DB 통합 테스트는 `apps/web/.env` 또는 프로세스 환경에 `DATABASE_URL`을 설정하고 루트에서 실행한다. 테스트별 무작위 schema 또는 롤백을 사용해
-실제 제약·동시 요청·서버별 계정 분리를 검증한다. Discord·Riot 자격 증명을 쓰는 최종 로그인/운영 흐름 검증과는 구분한다.
+API 테스트는 `node:test` 기반 lite와 hard로 나눈다. `pnpm test`는 lite와 기존 프론트·ROFL 회귀 테스트를 실행한다.
+hard는 `apps/web/.env.test` 또는 프로세스 환경의 `TEST_DATABASE_URL`을 사용하며 일반 `DATABASE_URL`로 대체하지 않는다.
+설정 예시는 `apps/web/.env.test.example`에 있다. 테스트마다 schema를 격리하고 실제 서비스 커밋·동시성·롤백을 검증한다.
+HTTP hard는 최신 웹 빌드의 SvelteKit 앱을 자식 프로세스로 실행한다. 외부 API는 고정 응답을 주입하며 실제 봇을 실행하지 않는다.
 
 ```sh
-pnpm test:db
+pnpm test:lite
+pnpm test:hard:db
+pnpm test:hard:http
+pnpm test:hard
+pnpm check:tests
 ```
+
+`pnpm test:db`는 `test:hard:db`의 호환 별칭이다. `check:tests`는 테스트를 실행하지 않고 타입만 검사한다.
+2026-11-03 실행에서 lite 324개, DB·HTTP hard 199개, lite를 포함한 기본 회귀 396개가 모두 통과했다.
+구조·검증 범위·실행 조건과 기록은 [API 테스트 문서](docs/testing.md)를 따른다.
 
 운영 서버의 기본 포트는 `3000`이다. VPS의 서비스 관리자에서 환경 변수를
 설정하여 실행한다. 예를 들어 로컬에서 빌드 결과를 확인할 때는 다음과 같다.

@@ -20,6 +20,11 @@
     "rofl:inspect": "node --experimental-strip-types scripts/inspect_rofl.mts",
     "rofl:project": "node --experimental-strip-types scripts/project_rofl.mts",
     "rofl:research": "node --experimental-strip-types scripts/research_rofl.mts",
-    "check:branding": "node scripts/check_branding.mjs"
+    "check:branding": "node scripts/check_branding.mjs",
+    "test:lite": "pnpm --filter @msm2/web test:lite",
+    "test:hard": "pnpm --filter @msm2/web test:hard",
+    "test:hard:db": "pnpm --filter @msm2/web test:hard:db",
+    "test:hard:http": "pnpm --filter @msm2/web test:hard:http",
+    "check:tests": "pnpm --filter @msm2/web check:tests"
   }
 }
