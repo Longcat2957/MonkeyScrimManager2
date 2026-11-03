@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { SERVICE_NAME } from '#lib/branding.ts';
-	import PrivacySettingsList from '#lib/components/me/PrivacySettingsList.svelte';
 	import RiotAccountList from '#lib/components/me/RiotAccountList.svelte';
 	import type { PageProps } from './$types';
 
@@ -34,5 +33,4 @@
 	</header>
 
 	<RiotAccountList accounts={data.riotAccounts} />
-	<PrivacySettingsList privacy={data.privacy} />
 </div>

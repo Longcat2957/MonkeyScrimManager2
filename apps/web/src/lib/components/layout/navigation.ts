@@ -1,6 +1,6 @@
 import { resolve } from '$app/paths';
 import type { GuildContext } from '#lib/features/guild/types.ts';
-import { formationPath } from '#lib/features/scrims/paths.ts';
+import { bracketPath, formationPath, hasResult } from '#lib/features/scrims/paths.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
 
 export type NavItem = { label: string; href: string; current: boolean };
@@ -29,7 +29,8 @@ export function scrimNavItems(guildId: string, scrim: ScrimContext, pathname: st
 	const items = [
 		{ label: '요약', href: resolve('/g/[guildId]/scrims/[scrimId]', params), exact: true },
 		...(teams ? [{ label: '팀 편성', href: teams }] : []),
-		{ label: '대진', href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', params) }
+		// 끝난 내전은 대진 대신 결과 화면을 가리킨다.
+		{ label: hasResult(scrim.status) ? '결과' : '대진', href: bracketPath(params, scrim.status) }
 	];
 	return items.map(({ label, href, exact }) => ({ label, href, current: isCurrent(pathname, href, exact) }));
 }

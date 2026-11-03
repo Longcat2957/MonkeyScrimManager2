@@ -94,7 +94,7 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | 작은 범위 정수 (팀 수 2~4, 추가 정원 0~10) | `Stepper` | `min`·`max`·`step`. 값 칸은 편집 불가이므로 범위가 넓으면 `Input` |
 | 상호 배타 선택 2~5개 (편성 방식, 팀, 포지션) | `Radio` | `layout="h"`, 그룹 라벨은 감싸는 `<fieldset><legend>` |
 | 다중 선택 (희망 포지션) | `Checkbox` | 그룹 라벨은 `<fieldset><legend>` |
-| 즉시 반영 on/off (공개 설정, 관리자 권한) | `SwitchCell` (STDF `Switch` `inside="state"`) | 행 전체가 label이라 어디를 눌러도 토글. `onchange`에서 저장, 실패 시 되돌리고 저장 중 `disabled`. Cell의 `right: switch`는 쓰지 않는다 |
+| 즉시 반영 on/off (모집 설정의 하드 피어리스 등) | `SwitchCell` (STDF `Switch` `inside="state"`) | 행 전체가 label이라 어디를 눌러도 토글. `onchange`에서 저장, 실패 시 되돌리고 저장 중 `disabled`. Cell의 `right: switch`는 쓰지 않는다 |
 | 6개 이상 중 하나 (Riot 계정, 채널) | `ActionSheet` | `Input readonly`(현재 값 표시)를 눌러 연다. 선택 시 값 반영 |
 | 날짜 | `Calendar` | `mode="single"`. 입력 팝업 안에서는 `popup={null}`로 입력 아래에 펼친다(팝업 중첩 금지). `outFormat="YYYY-MM-DD"`. 시각은 아래 `Input`으로 분리 |
 | 시각 | `Input` | `HH:mm` 직접 입력 + 형식 검증. `TimePicker` 휠은 키보드로 조작할 수 없어 쓰지 않는다 |
@@ -171,10 +171,13 @@ UI 하나를 만들 때 아래 순서로 처음 해결되는 단계를 쓴다.
 | `SectionState` | `lib/components/common/` | `Skeleton` / 점선 상자 + 문구 / 점선 상자 + 문구 + `Button` | 영역 하나의 `loading`·`empty`·`error(retry)` 표현. 목록 자리에 같은 폭으로 놓는다. 정상 상태는 렌더링하지 않는다 |
 | `ScrimSettingsDialog` | `lib/components/scrims/` | `Popup` + `<form>` (`Input`·`Calendar`·`Stepper`·`SwitchCell`) | 모집 만들기(내전 목록)와 내전 설정 수정(요약 운영 카드)이 같은 폼을 쓴다. `editable`로 단계별 입력 가능 필드를 받는다. 편성 방식은 받지 않는다 |
 | `ChangeMethodButton` | `lib/components/teams/` | `Button` + `confirm` | 수동 편성·경매 작업판의 `방식 다시 고르기`. 편성을 지우고 요약의 방식 선택으로 |
+| `MemberRiotAccountsDialog` | `lib/components/admin/` | `Popup` + `Input` + `enhance` | 서버 관리에서 운영자가 멤버의 Riot 계정을 조회·연결·해제하고 대표를 정한다 |
+| `MatchTable` | `lib/components/matches/` | 네이티브 `<section>`·`<ul>`·`<a>` + `StatusTag` | 경기 기록의 진행 중·종료 표. 머리 줄(제목·개수), 데스크톱 열 제목, 행 전체 링크. 모바일은 두 줄 카드 |
+| `DiscordSettingRow` | `lib/components/admin/` | `Button` + `ActionMenu` | 서버 관리 Discord 연동의 한 항목(운영자 역할·모집·엔트리·결과 채널). 현재 값 버튼으로 선택지를 열고 고르면 바로 저장한다 |
 | `FormationMethodChooser` | `lib/components/scrims/` | `<button>` 두 칸 | 요약 작업 상자의 `편성 방식`(수동 편성·경매, 고른 방식 표시·변경) |
 | `ScrimOperationsBar` | `lib/components/scrims/` | 한 줄 + `Button` + `ActionMenu` | 요약 운영 줄. 다음 단계 버튼 하나와, 단계에 맞는 설정 수정·되돌리기·중도 종료·취소 메뉴 |
 | `AvatarStack` | `lib/components/common/` | STDF `AvatarGroup` | 겹친 얼굴 묶음 + 정확한 `+N`. 마운트 후 렌더링·`inert`·이미지 키 보정([7절](#7-stdf-300-제약과-대응)). 이미지가 없으면 이름 첫 글자 색 원(`lib/ui/avatar.ts`) |
-| `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, 공개 허용 시 Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
+| `PlayerName` | `lib/components/common/` | `<img>` + 이름 + 선택적 `<a>` | 당시 표시 이름, Riot ID, `userId`가 있으면 `/players/[userId]` 링크 하나 |
 | `PlayerFace` | `lib/components/common/` | `<img>` 또는 이름 첫 글자 색 원 | 사람 얼굴 하나(`sm`·`md`·`lg`). `PlayerName`·편성·경매 타일이 같이 쓴다 |
 | `FormationTeamCard` · `FormationPool` | `lib/components/teams/` | 팀×포지션 자리 / 미배정 타일 | 수동 편성의 선택·배치·교환. `interactive`가 없으면 확정 결과 표시로 재사용 |
 | `AuctionTeamCard` | `lib/components/teams/` | 남은 포인트·인원 막대·입찰 입력·팀원 목록 | 경매 진행·완료 화면 |
@@ -226,7 +229,7 @@ MSM1의 엔트리 편성·경매·대진 화면 구성을 참고해, 사용자�
 | `sr-only`는 `position: absolute`라 가까운 positioned 조상이 없으면 `overflow` 스크롤 영역 밖으로 빠져 문서 높이를 늘린다(푸터 아래 빈 공간) | 행·스크롤 영역에 `relative`를 둔다(`LinkCell`, 순위 스크롤 영역) |
 | 오버레이에 dialog 역할·포커스 가두기·Escape·스크롤 잠금이 없다. 마스크가 이름 없는 `<button>`이다 | `overlay` attachment. `Popup`이 제자리에 렌더링되므로(포털 없음) 래퍼 `<div>`로 보완한다. 확인 창은 `confirm()` 헬퍼 |
 | 어떤 컴포넌트도 `aria-*`·`id`·`class`를 전달받지 않는다 | 접근 가능한 이름이 필요하면 감싸는 요소(`<fieldset>`, 래퍼 `<div role>`)나 보이는 텍스트로 준다. 아이콘 전용 버튼은 `Button` 안에 `<span class="sr-only">` 이름을 넣는다 |
-| `Switch`·`Radio`·`Checkbox` 항목이 상태 ARIA 없는 `<button>`이다 | 그룹은 `<fieldset><legend>`. 상태가 문구로 드러나야 하는 곳(공개 설정)은 `Cell`의 `detail`에 현재 값 텍스트를 쓴다 |
+| `Switch`·`Radio`·`Checkbox` 항목이 상태 ARIA 없는 `<button>`이다 | 그룹은 `<fieldset><legend>`. 상태가 문구로 드러나야 하는 곳은 `Cell`의 `detail`에 현재 값 텍스트를 쓴다 |
 | `Tabs`에 `tablist`/`aria-selected`가 없다 | 탭 묶음을 `<div role="group" aria-label>`로 감싸고, 선택된 내용 영역 제목에 현재 선택을 쓴다 |
 | `Button size="md" \| "sm"`은 정의된 CSS가 없어 패딩이 사라진다 | `size`는 `full`·`big`·`auto`만. 작은 버튼은 `size="auto"` + `heightIn`/`heightOut` |
 | `Button disabledLoading` 기본값이 `true` | `loading` 중에는 자동 비활성. 의도된 동작이므로 그대로 쓴다 |

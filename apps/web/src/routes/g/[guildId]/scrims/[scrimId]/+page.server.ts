@@ -74,7 +74,7 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 			: !user
 				? '로그인하면 신청할 수 있어요'
 				: accounts.length === 0
-					? 'Riot 계정을 연결해야 신청할 수 있어요 — 계정 메뉴의 내 정보에서 연결해요'
+					? 'Riot 계정이 연결돼야 신청할 수 있어요 — 서버 운영자에게 연결을 요청해 주세요'
 					: active >= detail.counts.activeCapacity
 						? '신청 정원이 찼어요'
 						: null;

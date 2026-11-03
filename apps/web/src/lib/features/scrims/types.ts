@@ -61,7 +61,7 @@ export type ScrimParticipant = {
 	displayName: string;
 	// 주 챔피언 아이콘. 없으면 이름 첫 글자로 대신한다.
 	iconUrl: string | null;
-	// 본인이 공개를 허용했을 때만 값이 있다.
+	// 참가에 쓴 Riot 계정. 계정 없이 참가했으면 null이다.
 	riotId: string | null;
 	positions: LolPosition[];
 	status: RegistrationStatus;

@@ -160,8 +160,8 @@ ScrimSummary
 | --- | --- | --- |
 | 내 신청 — 미신청 | 한 줄: 제목 + 오른쪽 `신청하기` `Button` | `RegistrationDialog`(`Popup` + `<form>`): Riot 계정 `Radio layout="v"`(계정 1개면 고정 텍스트, 기본 선택은 대표 계정), 희망 포지션 `Checkbox` 5개. 성공 시 팝업이 닫히고 줄이 선발 또는 대기 상태로 바뀜(알림 없음) |
 | 내 신청 — 신청함 | 한 줄: 상태 `Tag`, 계정, 포지션 칩. 오른쪽 `철회`(`fill="textState" state="error"`) · `수정`(`fill="lineLight"`) | 수정: 같은 팝업. 철회: `confirm` |
-| 내 신청 — 불가 | 한 줄에 `can.registerBlockedReason` | 예: "모집이 마감됐어요", "Riot 계정을 연결해야 신청할 수 있어요 — 계정 메뉴의 내 정보에서 연결해요". `/me` 링크를 따로 두지 않는다 |
-| 운영 — 다음 단계 | 한 줄 오른쪽 `Button` 하나 (`can.nextAction`) | 조건 미충족이면 `disabled` + 같은 줄 왼쪽에 이유. 모두 `confirm`. 편성 중 방식 미정이면 단계 버튼 없이 아래 `편성 방식` 줄이 다음 할 일이다. 모집 다시 열기는 편성 기록만 지우고 방식은 남긴다. `내전 시작`은 대진 확정 전, `내전 종료`는 모든 경기가 끝나기 전 비활성 |
+| 내 신청 — 불가 | 한 줄에 `can.registerBlockedReason` | 예: "모집이 마감됐어요", "Riot 계정이 연결돼야 신청할 수 있어요 — 서버 운영자에게 연결을 요청해 주세요" |
+| 운영 — 다음 단계 | 한 줄 오른쪽 `Button` 하나 (`can.nextAction`). 운영 메뉴와 세로선으로 나누고 굵은 글자·화살표를 붙여 다른 버튼과 구분 | 조건 미충족이면 `disabled` + 같은 줄 왼쪽에 이유. 모두 `confirm`. 편성 중 방식 미정이면 단계 버튼 없이 아래 `편성 방식` 줄이 다음 할 일이다. 모집 다시 열기는 편성 기록만 지우고 방식은 남긴다. `내전 시작`은 대진 확정 전, `내전 종료`는 모든 경기가 끝나기 전 비활성 |
 | 편성 방식 | `FormationMethodChooser`: `<button aria-pressed>` 두 칸(1px 경계, 모바일 1열) | 운영자 + 모집 중·편성 중일 때 운영 줄 아래. 고른 방식은 테두리와 `선택됨` 태그. 모집 중에는 바로 바꾸고, 편성 중에는 방식이 있었으면 `confirm`(편성 기록 삭제) 후 바꿔 그 방식의 작업판으로 `goto`. `chooseMethod` action |
 | 운영 — 기타 | `⋯` `Button` + `ActionMenu` | 단계에 맞는 항목만: `내전 설정 수정`(`ScrimSettingsDialog`, 편집 가능 필드가 있을 때) · 되돌리기(`can.revert.label`, 막혔으면 `disabled` + 설명 줄에 이유) · `중도 종료`(진행 중, `style="error"`) · `내전 취소`(끝나기 전, `style="error"`). 모두 `confirm` |
 | 참가자 — 머리 | 패널 안 제목 + `신청 11/12명`(운영자는 `선발 8/10명`도) + `선발 관리` | |
@@ -181,7 +181,7 @@ ScrimSummary
 
 **미결정** 운영 권한 부여, 계정 미연결 참가 허용, 희망 포지션 개수·순위, 신청 수정·철회 마감 시점, 제외 사유 공개.
 
-## `/g/[guildId]/scrims/[scrimId]/teams/manual` — 수동 편성
+## `/g/[guildId]/scrims/[scrimId]/manual` — 수동 편성
 
 **목적** 운영자가 선발 참가자를 팀·포지션에 배정하고 확정한다. 열람자는 결과를 본다.
 
@@ -238,7 +238,7 @@ grid lg:grid-cols-2 (팀 수만큼)
 
 **미결정** 저장 단위(즉시/일괄), 포지션 미지정 허용.
 
-## `/g/[guildId]/scrims/[scrimId]/teams/auction` — 경매
+## `/g/[guildId]/scrims/[scrimId]/auction` — 경매
 
 **목적** 운영자가 팀장·포인트를 정하고 후보를 한 명씩 뽑아 낙찰·유찰을 기록한다. 열람자는 진행 상황을 본다.
 
@@ -322,7 +322,9 @@ xl:grid-cols-[24rem_1fr]
 
 **미결정** 시작 포인트·가격 단위, 유찰자 재등장 규칙, 구매 정정 권한·시점, 시작 전 팀장 교체, 열람자 실시간 갱신 방식, MMR 노출 여부, 최소 입찰 단위.
 
-## `/g/[guildId]/scrims/[scrimId]/bracket` — 대진
+## `/g/[guildId]/scrims/[scrimId]/bracket` · `/result` — 대진 · 결과
+
+종료·중도 종료한 내전은 같은 `BracketBoard`를 `/result`(편집 action 없음, 제목 `결과`)에서 보여 준다. 상태에 맞지 않는 경로는 서로 redirect한다([routing.md 1.2](../routing.md#12-편성-작업판-진입-규칙)).
 
 **목적** 운영자가 확정된 팀을 정해진 대진 자리에 배치하고 대진을 확정한다. 확정 후에는 같은 화면에서 경기별 점수와 진출 팀을 본다. 게임 결과 등록은 경기 상세가 담당한다.
 

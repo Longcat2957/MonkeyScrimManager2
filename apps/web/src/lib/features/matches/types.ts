@@ -25,7 +25,7 @@ export type GamePlayer = {
 	key: string;
 	userId: string | null;
 	displayName: string;
-	// 공개 설정이 허용할 때만 채운다.
+	// 경기 당시 Riot ID 스냅샷. ROFL에 없으면 null이다.
 	riotId: string | null;
 	champion: { id: string; name: string; iconUrl: string | null };
 	level: number | null;

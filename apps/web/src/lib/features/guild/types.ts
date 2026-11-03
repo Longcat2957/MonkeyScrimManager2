@@ -54,3 +54,24 @@ export type GuildRanking = {
 	positions: Record<LolPosition, RankingPage>;
 };
 
+
+// 봇이 Discord에서 동기화한 서버의 역할·채널 목록이다. 서버 관리의 Discord 연동 선택지로 쓴다.
+export type DiscordRole = { id: string; name: string };
+
+export type DiscordChannel = {
+	id: string;
+	name: string;
+	// 채널이 속한 카테고리 이름. 없으면 null이다.
+	category: string | null;
+	// 봇이 이 채널에 글을 쓸 수 있는지. 쓸 수 없으면 게시 채널로 고르지 못한다.
+	botCanPost: boolean;
+};
+
+export type GuildDiscordSettings = {
+	operatorRoleId: string | null;
+	recruitmentChannelId: string | null;
+	entryChannelId: string | null;
+	resultChannelId: string | null;
+};
+
+export type GuildDiscordSettingKey = keyof GuildDiscordSettings;

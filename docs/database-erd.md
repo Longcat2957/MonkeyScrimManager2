@@ -16,7 +16,6 @@ erDiagram
     guilds ||--o{ guild_members : 구성원
     users |o..o{ riot_accounts : 계정_연결
     users ||--o{ user_champion_preferences : 포지션별_선호
-    users ||--o| user_privacy_settings : 공개_설정
     guilds ||--o| guild_discord_settings : 게시_설정
 
     guilds ||..o{ mmr_seasons : MMR_시즌
@@ -83,37 +82,62 @@ erDiagram
     guild_members {
         text guild_id PK, FK
         text user_id PK, FK
-        boolean is_admin
+        boolean is_admin "봇이 동기화"
     }
     riot_accounts {
         uuid id PK
         text puuid UK
         text user_id FK "NULL 허용"
+        boolean is_primary
+        text linked_by_user_id FK "NULL 허용"
+        timestamptz linked_at "NULL 허용"
     }
     user_champion_preferences {
         text user_id PK, FK
         enum position PK
         integer champion_id PK
     }
-    user_privacy_settings {
-        text user_id PK, FK
-        boolean public_profile_enabled
-        boolean show_riot_ids
-        boolean allow_external_record_search
-    }
     guild_discord_settings {
         text guild_id PK, FK
+        text operator_role_id "NULL 허용"
         text recruitment_channel_id "NULL 허용"
+        text entry_channel_id "NULL 허용"
         text result_channel_id "NULL 허용"
+    }
+    guild_discord_roles {
+        text guild_id PK, FK
+        text role_id PK
+        text name
+        integer position
+    }
+    guild_discord_channels {
+        text guild_id PK, FK
+        text channel_id PK
+        text name
+        text category_name "NULL 허용"
+        integer position
+        boolean bot_can_post
     }
 
     users ||--o{ guild_members : user_id
     guilds ||--o{ guild_members : guild_id
     users |o..o{ riot_accounts : user_id
+    users |o..o{ riot_accounts : linked_by_user_id
     users ||--o{ user_champion_preferences : user_id
-    users ||--o| user_privacy_settings : user_id
     guilds ||--o| guild_discord_settings : guild_id
+    guilds ||--o{ guild_discord_roles : guild_id
+    guilds ||--o{ guild_discord_channels : guild_id
 ```
+
+서버 관리자(`guild_members.is_admin`)는 웹에서 지정하지 않는다. Discord 서버 관리 권한이 있거나
+`guild_discord_settings.operator_role_id` 역할을 가진 멤버이며, 봇이 Discord 역할·권한을 동기화해 갱신한다.
+`guild_discord_roles`·`guild_discord_channels`는 봇이 동기화한 선택지 목록이고, 서버 관리에서 운영자 역할과
+모집·엔트리(팀 구성·밸런스 확인)·결과 채널을 고를 때 쓴다.
+
+`users`는 Discord 봇에서 참가 신청하거나 웹에 로그인할 때 자동으로 만든다. Riot 계정 연결은 사용자가
+직접 하지 않고 길드 운영자가 지정하며 `linked_by_user_id`·`linked_at`에 남긴다. 사용자마다 대표 계정
+(`is_primary`)은 하나이고 신청할 때 기본으로 고른다. 사용자 삭제로 `user_id`가 비면 대표·연결 정보 정리는
+서비스가 같은 트랜잭션에서 처리한다.
 
 ## MMR 시즌·현재 점수·변동 이력
 
@@ -277,8 +301,10 @@ erDiagram
 참가자만 대상으로 한다. 이 인원수·상태 검사와 제외 시 미확정 팀 배정 정리는 이후 서비스에서
 같은 트랜잭션으로 처리할 조건이며, 현재 DB 제약만으로 자동 수행하지 않는다.
 
-`formation_method`는 모집 중에는 NULL이고 모집을 마감할 때 운영자가 정한다. 모집을 다시 열면
-NULL로 되돌리고 그 내전의 팀·경매 기록을 지운다. `scrim_teams.name`은 입력받지 않고 팀 순서대로
+`formation_method`는 운영자가 모집 중·편성 중(`preparing`)에 정하거나 바꾸며, 비어 있어도 모집을 마감할 수
+있다. `ready` 이후 상태에서는 반드시 값이 있다(`scrims_formation_method_required`). 편성 중에 방식을 바꾸거나
+비우면 그 내전의 수동 배정·경매 기록을 무효화하고, 모집을 다시 열면 팀·경매 기록만 지우고 방식은 유지한다.
+진행 중 경매를 팀장 설정으로 되돌릴 때는 유효 영입을 무효화하고 열린 후보를 취소한 뒤 `setup`으로 바꾼다. `scrim_teams.name`은 입력받지 않고 팀 순서대로
 `포로팀`·`칼날부리팀`·`돌거북팀`·`바위게팀`을 붙인다.
 
 내전 단계는 운영자가 한 단계씩 되돌릴 수 있다(편성 중 → 모집 중, 대진 준비 → 편성 중, 게임 기록이 없는

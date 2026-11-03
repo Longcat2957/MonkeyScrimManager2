@@ -34,7 +34,7 @@
 | 조건 미충족 (권한은 있음) | 버튼을 `disabled`로 두고 바로 아래 한 줄로 이유 ("선발 인원이 10명이어야 해요 (현재 8명)") | 이유 없는 비활성 |
 | 제출 중 | 해당 `Button`의 `loading` (자동 비활성). 폼 입력은 그대로 둔다 | `loading.show()` 전체 차단, 측정하지 않은 퍼센트 |
 | 성공 — 결과가 화면에 보임 | 화면 갱신만. 별도 알림 없음 (예: 목록에 새 항목, 태그 변경) | 같은 사실을 toast·문구로 반복 |
-| 성공 — 결과가 안 보임 | `toast.success('저장했어요')` (예: 공개 설정 저장, 팝업 닫힘 후) | |
+| 성공 — 결과가 안 보임 | `toast.success('저장했어요')` (예: 설정 저장, 팝업 닫힘 후) | |
 | 폼 검증 실패 | 해당 `Input`의 `state="error"` + `tip`, 첫 오류 입력에 포커스 | 폼 위 요약 박스와 필드 오류 중복 |
 | 비폼 작업 실패 (토글, 일괄 작업) | 값 원복 + `toast.error(이유)` | |
 | 동시 수정 충돌 | 서버가 409를 주면 `toast.error('다른 사람이 먼저 변경했어요')` + `invalidateAll()`로 최신값 표시. 폼 입력값은 유지 | 자동 재전송·덮어쓰기 |
@@ -45,7 +45,7 @@
 ## 2. 데이터 흐름
 
 - 읽기: `+page.server.ts`의 `load`가 페이지에 필요한 값을 화면용 형태로 만든다. 컴포넌트는 props만 받고 API·목 데이터를 직접 가져오지 않는다.
-- 쓰기: **SvelteKit form action**으로 통일한다(remote function은 Kit 3.1에서 아직 실험 기능). 입력 폼은 `<form method="POST" action="?/이름" use:enhance>`, 폼이 없는 조작(토글·메뉴 항목)은 `lib/ui/actions.ts`의 `postAction(이름, 값)`을 쓴다. STDF 입력에는 `name`이 없으므로 `enhance` 콜백에서 `formData.set`으로 값을 넣는다. 예시는 `/me`.
+- 쓰기: **SvelteKit form action**으로 통일한다(remote function은 Kit 3.1에서 아직 실험 기능). 입력 폼은 `<form method="POST" action="?/이름" use:enhance>`, 폼이 없는 조작(토글·메뉴 항목)은 `lib/ui/actions.ts`의 `postAction(이름, 값)`을 쓴다. STDF 입력에는 `name`이 없으므로 `enhance` 콜백에서 `formData.set`으로 값을 넣는다. 예시는 서버 관리의 Riot 계정 연결(`MemberRiotAccountsDialog`).
 - 목 데이터: `lib/mocks/<기능>.ts`. `load`가 개발 모드에서 목을 반환하도록 하고, 컴포넌트는 목을 모른다.
 - 권한: `load`가 `can: { createScrim: boolean, ... }` 같은 작업 가능 여부를 함께 넘긴다. 화면은 이 값으로 조작을 렌더링할지 정하고, 서버는 쓰기 요청마다 다시 검사한다.
 

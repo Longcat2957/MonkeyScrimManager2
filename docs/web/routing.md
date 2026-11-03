@@ -6,17 +6,17 @@
 
 ```text
 /                                        서비스 소개
-├── me                                   내 계정·공개 설정
+├── me                                   내 계정·연결된 Riot 계정 보기
 ├── docs · terms · privacy               이용 문서·약관·개인정보 처리방침
-├── backoffice                           서비스 운영자 영역 (업무 미정)
+├── backoffice                           서비스 운영자 영역 (서비스 상태)
 ├── dev/components · dev/error           개발 모드 전용. 운영에서 404
 └── g/[guildId]                          서버 홈
     ├── scrims                           내전 목록 + 모집 생성
     │   └── [scrimId]                    모집·참가자·운영 요약
-    │       ├── teams                    페이지 없음(하위 경로만). 편성 방식은 요약에서 고른다
-    │       │   ├── manual               수동 편성
-    │       │   └── auction              경매
-    │       └── bracket                  대진
+    │       ├── manual                   수동 편성 (편성 방식은 요약에서 고른다)
+    │       ├── auction                  경매
+    │       ├── bracket                  대진 운영 (끝난 내전은 result로 redirect)
+    │       └── result                   끝난 내전(종료·중도 종료)의 대진 결과
     ├── matches                          서버 경기 기록
     │   └── [matchId]                    시리즈·게임 결과, ROFL 업로드
     ├── players/[userId]                 서버 내 사용자 전적 (현재 폴더명 [playerId] → 변경 예정)
@@ -35,15 +35,16 @@
 | `[matchId]` | `matches.id` | `Match`는 내전 하위가 아니라 서버 하위. 대진·경기 기록 양쪽에서 진입 |
 | `[userId]` | `users.id` (Discord 사용자 ID) | Riot 계정 ID·참가 기록 ID를 받지 않는다. 사용자 연결이 없는 과거 참가 기록은 링크를 만들지 않는다 |
 
-### 1.2 `/teams` 진입 규칙
+### 1.2 편성 작업판 진입 규칙
 
 `load`에서 `scrims.formationMethod`를 읽어 처리한다.
 
 | 상황 | 결과 |
 | --- | --- |
-| `/teams` | 페이지가 없다(404). 편성 방식은 요약(`/scrims/[scrimId]`)에서 고른다 |
-| `/teams/manual`인데 방식이 `auction` (또는 반대) | 실제 방식 경로로 `redirect(307)` |
-| `/teams/manual`·`/teams/auction` + 방식 미정 | 요약으로 `redirect(307)` |
+| `/manual`인데 방식이 `auction` (또는 반대) | 실제 방식 경로로 `redirect(307)` |
+| `/manual`·`/auction` + 방식 미정 | 요약으로 `redirect(307)`. 편성 방식은 요약(`/scrims/[scrimId]`)에서 고른다 |
+| `/bracket` + 종료·중도 종료 | `/result`로 `redirect(307)` |
+| `/result` + 그 외 상태 | `/bracket`으로 `redirect(307)` |
 
 URL로 편성 방식을 바꾸지 않는다. 방식은 요약에서 모집 중·편성 중에 정하거나 바꾸고, 작업판의 `방식 다시 고르기`로 비워진다. 10인·20인 구분용 경로는 없다.
 
@@ -54,10 +55,11 @@ URL로 편성 방식을 바꾸지 않는다. 방식은 요약에서 모집 중·
 | 페이지 | 쿼리 | 기본값 |
 | --- | --- | --- |
 | 내전 목록 | `status=all\|recruit\|active\|done`, `page` | `all`, `1` |
-| 경기 기록 | `q`, `status`, `page` | 없음, `all`, `1` |
+| 경기 기록 | `q`, `page`(종료 표) | 없음, `1` |
 | 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 게임. 없거나 다른 경기의 게임이면 쿼리를 무시하고 기본값 |
 | 사용자 전적 | `position`, `page` | 전체, `1` |
 | 서버 통계 | `range` | 미결정 (기간·시즌) |
+| 서버 관리 | `tab=members\|discord`, `q`, `page` | `members`, 없음, `1` |
 
 쿼리 변경은 `goto(url, { reset: false })`로 하고, `load`가 쿼리를 읽어 데이터를 다시 준비한다. 검색어 입력은 제출(Enter) 시에만 반영한다.
 
@@ -99,12 +101,12 @@ routes/+layout.svelte                    ConfigProvider(ko_KR) · Feedback · Ap
 | --- | --- | --- |
 | 전역 | `guild` 없음 | 없음 |
 | 서버 | `guild` 있음 | 서버 홈 · 내전 · 경기 기록 · 통계 · 관리(서버 관리자만) |
-| 내전 | `scrim` 있음 | 요약 · 팀 편성 · 대진 — 그리고 데스크톱에서는 메뉴 끝의 `서버 ▾` 버튼이 ActionPopover로 서버 메뉴를 연다 |
+| 내전 | `scrim` 있음 | 요약 · 팀 편성 · 대진(끝난 내전은 결과) — 그리고 데스크톱에서는 메뉴 끝의 `서버 ▾` 버튼이 ActionPopover로 서버 메뉴를 연다 |
 
 ### 3.2 규칙
 
 - 홈 이동은 로고 한 곳. 헤더·푸터에 별도 "홈" 링크를 두지 않는다. GitHub 링크는 제품 화면에서 제거한다.
-- 범위 메뉴 항목은 `<a>`이고 현재 항목에 `aria-current="page"`를 둔다. 팀 편성 메뉴는 편성 방식을 고른 뒤에만 보이고 그 방식의 작업판(`/teams/manual`·`/teams/auction`, `formationPath`)을 가리킨다.
+- 범위 메뉴 항목은 `<a>`이고 현재 항목에 `aria-current="page"`를 둔다. 팀 편성 메뉴는 편성 방식을 고른 뒤에만 보이고 그 방식의 작업판(`/manual`·`/auction`, `formationPath`)을 가리킨다. 대진 메뉴는 끝난 내전에서 이름이 `결과`로 바뀌고 `/result`를 가리킨다(`bracketPath`).
 - 서버 선택기에서 현재 서버는 선택 표시만 하고 이동 동작을 두지 않는다. 서버 선택은 그 서버의 홈(`/g/[id]`)으로 이동한다.
 - 계정 메뉴: `내 정보`(`/me`) · `백오피스`(서비스 운영자만) · `로그아웃`(인증 구현 후). 비로그인이면 계정 메뉴 대신 `Discord로 로그인` 버튼 하나(인증 구현 후). 서버 선택기는 로그인했을 때만 표시.
 - 화면 모드 전환은 데스크톱은 헤더 아이콘 버튼, 모바일은 메뉴 패널의 Cell+Switch 한 곳. 두 변형은 같은 시점에 렌더링하지 않는다.
@@ -133,5 +135,5 @@ routes/+layout.svelte                    ConfigProvider(ko_KR) · Feedback · Ap
 | `AppHeader`, `AppFooter`, 루트 `ConfigProvider`·`Feedback` | 구현됨 |
 | 서버·내전 레이아웃(개발 모드 목 데이터), `ScrimSummary`, 작업판 방식 redirect, `[userId]` 경로 | 구현됨 |
 | 내전 목록·내전 요약·수동 편성·경매·대진, 경기 기록·경기 상세(ROFL 업로드), 사용자 전적, 서버 통계, 서버 관리 본문 | 구현됨(개발 모드 목 데이터·form action) |
-| 서비스 소개, 이용 안내, 약관·개인정보(준비 중 안내), 백오피스(제목 + 운영자 권한 검사) | 구현됨 |
+| 서비스 소개, 이용 안내, 약관·개인정보(준비 중 안내), 백오피스(서비스 상태) | 구현됨 |
 | 인증·권한·DB 조회, 로그인·로그아웃 | 미구현. 운영 모드에서는 서버·내전 문맥이 `null`이라 전역 헤더로 표시 |

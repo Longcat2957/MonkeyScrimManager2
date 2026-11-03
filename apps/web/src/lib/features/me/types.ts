@@ -8,13 +8,6 @@ export type RiotAccount = {
 	inActiveScrim: boolean;
 };
 
-export type PrivacySettings = {
-	profilePublic: boolean;
-	showRiotId: boolean;
-};
-
-export type PrivacyKey = keyof PrivacySettings;
-
 // 조회 결과는 연결 전 확인 단계에서만 쓴다. 조회 성공이 연결 완료를 뜻하지 않는다.
 export type RiotLookup = {
 	puuid: string;
