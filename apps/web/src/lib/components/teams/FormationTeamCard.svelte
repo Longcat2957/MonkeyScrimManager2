@@ -27,15 +27,15 @@
 		interactive: boolean;
 		drag: DragState;
 		details: boolean;
-		onselect: (registrationId: string) => void;
+		onselect: (participantId: string) => void;
 		onplace: (slot: SlotKey) => void;
-		onremove: (registrationId: string) => void;
+		onremove: (participantId: string) => void;
 	};
 
 	let { team, players, assignments, side, selectedId, interactive, drag, details, onselect, onplace, onremove }: Props = $props();
 
 	const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
-	const playerOf = (id: string | null) => (id ? (players.find((player) => player.registrationId === id) ?? null) : null);
+	const playerOf = (id: string | null) => (id ? (players.find((player) => player.participantId === id) ?? null) : null);
 	const average = $derived(teamAverage(team.id, players, assignments));
 	const selectedName = $derived(playerOf(selectedId)?.displayName ?? '');
 </script>
@@ -67,7 +67,7 @@
 		{#each LANES as lane (lane)}
 			{@const slot = slotKey(team.id, lane)}
 			{@const player = playerOf(occupantOf(assignments, slot))}
-			{@const targeting = interactive && selectedId !== null && selectedId !== player?.registrationId}
+			{@const targeting = interactive && selectedId !== null && selectedId !== player?.participantId}
 			{@const offLane = player !== null && !player.positions.includes(lane)}
 			<li
 				role="group"
@@ -119,17 +119,17 @@
 					<button
 						type="button"
 						draggable="true"
-						aria-pressed={selectedId === player.registrationId}
+						aria-pressed={selectedId === player.participantId}
 						class={[
 							'flex min-w-0 cursor-grab items-center gap-2 rounded-(--radius-small) px-2 active:cursor-grabbing',
-							drag.id === player.registrationId && 'opacity-50',
-							selectedId === player.registrationId
+							drag.id === player.participantId && 'opacity-50',
+							selectedId === player.participantId
 								? 'bg-primary/10 ring-2 ring-primary/40 dark:bg-dark/15 dark:ring-dark/40'
 								: 'bg-bg-surface hover:bg-bg-highlight dark:bg-bg-surface-dark dark:hover:bg-bg-highlight-dark'
 						]}
-						ondragstart={(event) => drag.start(event, player.registrationId)}
+						ondragstart={(event) => drag.start(event, player.participantId)}
 						ondragend={() => drag.end()}
-						onclick={() => onselect(player.registrationId)}
+						onclick={() => onselect(player.participantId)}
 					>
 						{@render occupant(player)}
 					</button>
@@ -144,7 +144,7 @@
 				{#if interactive}
 					<span class="flex items-center justify-center">
 						{#if player && !targeting}
-							<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="h-full w-full" onclick={() => onremove(player.registrationId)}>
+							<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="h-full w-full" onclick={() => onremove(player.participantId)}>
 								<span aria-hidden="true" class="text-xl leading-none opacity-60">×</span>
 								<span class="sr-only">{player.displayName} 배정 해제</span>
 							</Button>

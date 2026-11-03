@@ -1,7 +1,31 @@
+import { randomUUID } from 'node:crypto';
+import { error } from '@sveltejs/kit';
 import type { Handle } from '@sveltejs/kit/hooks';
+import { SESSION_COOKIE, authCookieOptions } from '#lib/server/auth/cookies.ts';
+import { validateSession } from '#lib/server/auth/session.ts';
+import { DomainError } from '#lib/server/errors.ts';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	// TODO: 인증 방식을 정한 뒤 요청의 인증 정보를 확인하고 event.locals에 설정한다.
-	// TODO: 권한 정책을 정한 뒤 페이지와 API의 접근 권한을 검사한다.
+	event.locals.requestId = randomUUID();
+	event.locals.actor = null;
+	event.locals.user = null;
+	event.locals.session = null;
+	const token = event.cookies.get(SESSION_COOKIE);
+	if (token) {
+		let result;
+		try {
+			result = await validateSession(token);
+		} catch (cause) {
+			if (cause instanceof DomainError) error(cause.status, cause.message);
+			throw cause;
+		}
+		if (result) {
+			event.locals.actor = result.actor;
+			event.locals.user = result.user;
+			event.locals.session = result.session;
+		} else {
+			event.cookies.delete(SESSION_COOKIE, authCookieOptions);
+		}
+	}
 	return resolve(event);
 };

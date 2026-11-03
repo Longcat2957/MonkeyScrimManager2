@@ -7,12 +7,12 @@ export const LANES: LolPosition[] = POSITIONS.map((position) => position.key);
 
 // 팀 편성·경매 화면의 선발 참가자다. mmr은 현재 시즌의 포지션별 값이다.
 export type FormationPlayer = {
-	registrationId: string;
+	participantId: string;
 	userId: string | null;
 	displayName: string;
 	iconUrl: string | null;
 	positions: LolPosition[];
-	mmr: Record<LolPosition, number>;
+	mmr: Record<LolPosition, number | null>;
 };
 
 export type FormationTeam = { id: string; name: string };
@@ -40,19 +40,19 @@ export function occupantOf(assignments: Assignments, slot: SlotKey): string | nu
  * 한 사람을 자리로 옮기거나(slot) 미배정으로 돌린다(null).
  * 자리에 이미 다른 사람이 있으면 그 사람은 옮기는 사람의 원래 자리로 가고, 원래 자리가 없으면 미배정이 된다.
  */
-export function moveAssignment(assignments: Assignments, registrationId: string, slot: SlotKey | null): Assignments {
+export function moveAssignment(assignments: Assignments, participantId: string, slot: SlotKey | null): Assignments {
 	const next = { ...assignments };
 	if (!slot) {
-		delete next[registrationId];
+		delete next[participantId];
 		return next;
 	}
 	const current = occupantOf(next, slot);
-	const previous = next[registrationId];
-	if (current && current !== registrationId) {
+	const previous = next[participantId];
+	if (current && current !== participantId) {
 		if (previous) next[current] = previous;
 		else delete next[current];
 	}
-	next[registrationId] = slot;
+	next[participantId] = slot;
 	return next;
 }
 
@@ -60,16 +60,18 @@ export function moveAssignment(assignments: Assignments, registrationId: string,
 export function teamAverage(teamId: string, players: FormationPlayer[], assignments: Assignments): number | null {
 	const values = LANES.flatMap((lane) => {
 		const id = occupantOf(assignments, slotKey(teamId, lane));
-		const player = id ? players.find((item) => item.registrationId === id) : undefined;
-		return player ? [player.mmr[lane]] : [];
+		const player = id ? players.find((item) => item.participantId === id) : undefined;
+		const value = player?.mmr[lane];
+		return typeof value === 'number' ? [value] : [];
 	});
 	return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
 }
 
 // 희망 포지션 중 가장 높은 MMR. 후보 목록에서 대략의 실력을 보여 줄 때 쓴다.
-export function bestMmr(player: FormationPlayer): number {
+export function bestMmr(player: FormationPlayer): number | null {
 	const lanes = player.positions.length ? player.positions : LANES;
-	return Math.max(...lanes.map((lane) => player.mmr[lane]));
+	const values = lanes.map((lane) => player.mmr[lane]).filter((value): value is number => value !== null);
+	return values.length ? Math.max(...values) : null;
 }
 
 export function formatMmr(value: number | null) {
@@ -107,6 +109,7 @@ export type AuctionView = {
 	// 준비 단계에서 팀장 후보로 고를 선발 참가자 전체다.
 	players: FormationPlayer[];
 	openLot: FormationPlayer | null;
+	openLotId?: string | null;
 	queue: FormationPlayer[];
 	unsold: FormationPlayer[];
 	history: AuctionHistoryEntry[];
@@ -161,7 +164,7 @@ export function winRate(games: number, wins: number) {
 }
 
 /** 낙찰·수동 배치 직후 팀 패널에 보여 주는 축하 효과. key가 바뀔 때마다 효과를 다시 재생한다. */
-export type Celebration = { teamId: string; registrationId: string; label: string; key: number };
+export type Celebration = { teamId: string; participantId: string; label: string; key: number };
 
 /**
  * 경매 기록과 팀 상태로 공지 막대에 흘릴 짧은 이야기를 만든다.

@@ -1,18 +1,28 @@
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import type { ChampionRecord, DuoRecord, PlayerGame, PlayerSummary } from './types.ts';
 
-const ratio = (kills: number, deaths: number, assists: number) => (kills + assists) / Math.max(1, deaths);
-const sum = (games: PlayerGame[], pick: (game: PlayerGame) => number) => games.reduce((total, game) => total + pick(game), 0);
+const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+const known = (value: number | null): value is number => value !== null && Number.isFinite(value);
+const mean = (values: (number | null)[]) => {
+	const valid = values.filter(known);
+	return valid.length ? sum(valid) / valid.length : null;
+};
 
-/** 게임 목록의 요약 지표. 게임이 없으면 null이라 화면이 0 대신 빈 안내를 쓴다. */
+function kda(games: PlayerGame[]) {
+	const valid = games.filter((game) => known(game.kills) && known(game.deaths) && known(game.assists));
+	return valid.length ? sum(valid.map((game) => game.kills! + game.assists!)) / Math.max(1, sum(valid.map((game) => game.deaths!))) : null;
+}
+
+function perMinute(games: PlayerGame[], pick: (game: PlayerGame) => number | null) {
+	const valid = games.filter((game) => known(pick(game)) && game.durationSec !== null && game.durationSec > 0);
+	return valid.length ? sum(valid.map((game) => pick(game)!)) / (sum(valid.map((game) => game.durationSec!)) / 60) : null;
+}
+
+/** 누락 지표는 제외하고 각 지표에 필요한 값이 모두 있는 게임만 분모에 사용한다. */
 export function summarize(games: PlayerGame[]): PlayerSummary | null {
 	if (!games.length) return null;
-	const minutes = sum(games, (game) => game.durationSec) / 60;
-	const kills = sum(games, (game) => game.kills);
-	const deaths = sum(games, (game) => game.deaths);
-	const assists = sum(games, (game) => game.assists);
 	const positions = new Map<LolPosition, number>();
-	for (const game of games) positions.set(game.position, (positions.get(game.position) ?? 0) + 1);
+	for (const game of games) if (game.position) positions.set(game.position, (positions.get(game.position) ?? 0) + 1);
 	const streaks = { win: 0, loss: 0 };
 	let run = 0;
 	for (const [index, game] of games.entries()) {
@@ -20,23 +30,19 @@ export function summarize(games: PlayerGame[]): PlayerSummary | null {
 		if (game.win) streaks.win = Math.max(streaks.win, run);
 		else streaks.loss = Math.max(streaks.loss, run);
 	}
+	const participation = games.filter((game) => known(game.kills) && known(game.assists) && known(game.teamKills));
+	const champions = new Set(games.filter((game) => game.champion.id !== 'unknown').map((game) => game.champion.id));
+	const kills = games.map((game) => game.kills).filter(known);
+	const chronologyKnown = games.every((game) => game.playedAt !== null);
 	return {
-		games: games.length,
-		wins: games.filter((game) => game.win).length,
-		kills: kills / games.length,
-		deaths: deaths / games.length,
-		assists: assists / games.length,
-		kda: ratio(kills, deaths, assists),
-		csPerMin: sum(games, (game) => game.cs) / minutes,
-		damagePerMin: sum(games, (game) => game.damage) / minutes,
-		goldPerMin: sum(games, (game) => game.gold) / minutes,
-		damageTakenPerMin: sum(games, (game) => game.damageTaken) / minutes,
-		visionPerGame: sum(games, (game) => game.visionScore) / games.length,
-		killParticipation: (kills + assists) / Math.max(1, sum(games, (game) => game.teamKills)),
-		champions: new Set(games.map((game) => game.champion.id)).size,
-		maxKills: Math.max(...games.map((game) => game.kills)),
-		winStreak: streaks.win,
-		lossStreak: streaks.loss,
+		games: games.length, wins: games.filter((game) => game.win).length,
+		kills: mean(games.map((game) => game.kills)), deaths: mean(games.map((game) => game.deaths)), assists: mean(games.map((game) => game.assists)),
+		kda: kda(games), csPerMin: perMinute(games, (game) => game.cs), damagePerMin: perMinute(games, (game) => game.damage),
+		goldPerMin: perMinute(games, (game) => game.gold), damageTakenPerMin: perMinute(games, (game) => game.damageTaken),
+		visionPerGame: mean(games.map((game) => game.visionScore)),
+		killParticipation: participation.length ? sum(participation.map((game) => game.kills! + game.assists!)) / Math.max(1, sum(participation.map((game) => game.teamKills!))) : null,
+		champions: champions.size || null, maxKills: kills.length ? Math.max(...kills) : null,
+		winStreak: chronologyKnown ? streaks.win : null, lossStreak: chronologyKnown ? streaks.loss : null,
 		mainPosition: [...positions].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 	};
 }
@@ -44,13 +50,13 @@ export function summarize(games: PlayerGame[]): PlayerSummary | null {
 /** 챔피언별 성적. 게임 수가 많은 순, 같으면 승률 순이다. */
 export function championRecords(games: PlayerGame[]): ChampionRecord[] {
 	const groups = new Map<string, PlayerGame[]>();
-	for (const game of games) groups.set(game.champion.id, [...(groups.get(game.champion.id) ?? []), game]);
+	for (const game of games.filter((game) => game.champion.id !== 'unknown')) groups.set(game.champion.id, [...(groups.get(game.champion.id) ?? []), game]);
 	return [...groups.values()]
 		.map((list) => ({
 			champion: list[0]!.champion,
 			games: list.length,
 			wins: list.filter((game) => game.win).length,
-			kda: ratio(sum(list, (game) => game.kills), sum(list, (game) => game.deaths), sum(list, (game) => game.assists))
+			kda: kda(list)
 		}))
 		.sort((a, b) => b.games - a.games || b.wins / b.games - a.wins / a.games);
 }
@@ -95,7 +101,7 @@ export const RANKED_METRICS = {
 	champions: { value: (s: PlayerSummary) => s.champions },
 	maxKills: { value: (s: PlayerSummary) => s.maxKills },
 	winStreak: { value: (s: PlayerSummary) => s.winStreak }
-} satisfies Record<string, { value: (summary: PlayerSummary) => number; ascending?: boolean }>;
+} satisfies Record<string, { value: (summary: PlayerSummary) => number | null; ascending?: boolean }>;
 
 export type RankedMetric = keyof typeof RANKED_METRICS;
 
@@ -103,11 +109,13 @@ export type RankedMetric = keyof typeof RANKED_METRICS;
  * 지표마다 서버 사람들 중 상위 몇 %인지 센다. 자신보다 앞선 사람 수로 세어 동점은 같은 순위가 된다.
  * others에는 자신도 들어 있어야 한다.
  */
-export function topPercents(summary: PlayerSummary, others: PlayerSummary[]): Record<RankedMetric, number> {
+export function topPercents(summary: PlayerSummary, others: PlayerSummary[]): Record<RankedMetric, number | null> {
 	const entries = Object.entries(RANKED_METRICS).map(([key, metric]) => {
 		const mine = metric.value(summary);
-		const ahead = others.filter((other) => ('ascending' in metric ? metric.value(other) < mine : metric.value(other) > mine)).length;
-		return [key, Math.max(1, Math.ceil(((ahead + 1) / Math.max(1, others.length)) * 100))];
+		if (mine === null) return [key, null];
+		const values = others.map((other) => metric.value(other)).filter(known);
+		const ahead = values.filter((value) => 'ascending' in metric ? value < mine : value > mine).length;
+		return [key, Math.max(1, Math.ceil(((ahead + 1) / Math.max(1, values.length)) * 100))];
 	});
-	return Object.fromEntries(entries) as Record<RankedMetric, number>;
+	return Object.fromEntries(entries) as Record<RankedMetric, number | null>;
 }

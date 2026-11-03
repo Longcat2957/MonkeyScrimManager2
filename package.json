@@ -13,6 +13,8 @@
     "start": "pnpm --filter @msm2/web start",
     "start:bot": "pnpm --filter @msm2/bot start",
     "check": "pnpm check:branding && pnpm -r check",
+    "test": "pnpm --filter @msm2/web test",
+    "test:db": "pnpm --filter @msm2/web test:db",
     "db:generate": "pnpm --filter @msm2/web db:generate",
     "db:migrate": "pnpm --filter @msm2/web db:migrate",
     "rofl:inspect": "node --experimental-strip-types scripts/inspect_rofl.mts",

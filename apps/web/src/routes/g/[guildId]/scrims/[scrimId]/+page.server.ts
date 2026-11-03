@@ -33,7 +33,14 @@ import {
 	getMockScrimOperations,
 	revertMockScrim
 } from '#lib/mocks/workflow.ts';
-import { mockUser } from '#lib/mocks/session.ts';
+import { findMockGuild, mockUser } from '#lib/mocks/session.ts';
+import { getDb } from '#lib/server/db/index.ts';
+import { actionFailure } from '#lib/server/actions.ts';
+import { routeError } from '#lib/server/http.ts';
+import { getScrimDetail, listRegistrationAccounts } from '#lib/server/scrims/queries.ts';
+import { createRegistration, updateRegistration, withdrawRegistration, setParticipantStatus, updateScrimSettings, cancelScrim } from '#lib/server/scrims/service.ts';
+import { parseScrimSettings } from '#lib/server/scrims/validation.ts';
+import { advanceScrim, chooseFormationMethod, revertScrim, endScrimEarly, getScrimOperations } from '#lib/server/scrims/workflow.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -41,7 +48,7 @@ import type { Actions, PageServerLoad } from './$types';
 const DONE = ['completed', 'ended_early', 'cancelled'];
 const SELECTION_STATUSES = ['selected', 'standby', 'excluded'] as const;
 
-// TODO: 인증·권한이 연결되면 세션 사용자와 내전 운영 권한으로 바꾼다.
+// 명시적인 개발 미리보기에서만 목 상태를 변경한다.
 function requireDev() {
 	if (!dev) error(404, '내전을 찾을 수 없습니다.');
 }
@@ -53,10 +60,32 @@ function myAccounts(): RegistrationAccount[] {
 	}));
 }
 
-export const load: PageServerLoad = async ({ parent, params }) => {
-	requireDev();
+export const load: PageServerLoad = async ({ parent, params, locals }) => {
 	const { scrim, user } = await parent();
 	if (!scrim) error(404, '내전을 찾을 수 없습니다.');
+	if (!(dev && findMockGuild(params.guildId))) {
+		try {
+			const db = getDb();
+			const detail = await getScrimDetail(db, locals.actor, params.guildId, params.scrimId);
+			if (!detail) error(404, '내전을 찾을 수 없습니다.');
+			const accounts = await listRegistrationAccounts(db, locals.actor, params.guildId);
+			const operations = await getScrimOperations(db, locals.actor, params.guildId, params.scrimId);
+			const active = detail.counts.selected + detail.counts.standby;
+			const registerBlockedReason = detail.myRegistration ? null : detail.scrim.status !== 'recruit' ? '모집이 마감됐어요'
+				: !locals.actor ? '로그인하면 신청할 수 있어요'
+				: accounts.accounts.length === 0 ? 'Riot 계정이 연결돼야 신청할 수 있어요 — 서버 운영자에게 연결을 요청해 주세요'
+				: active >= detail.counts.activeCapacity ? '신청 정원이 찼어요' : null;
+			return {
+				scrim: detail.scrim, participants: detail.participants, counts: detail.counts,
+				me: locals.actor ? { registration: detail.myRegistration, riotAccounts: accounts.accounts, primaryAccountId: accounts.primaryAccountId } : null,
+				settings: detail.scrim.canManage ? detail.settings : null,
+				editable: editableFields(detail.scrim.status), finished: DONE.includes(detail.scrim.status),
+				can: { register: !detail.myRegistration && !registerBlockedReason, registerBlockedReason,
+					editRegistration: Boolean(detail.myRegistration) && detail.scrim.status === 'recruit',
+					manage: detail.scrim.canManage, select: detail.scrim.canManage && detail.scrim.status === 'recruit', ...operations }
+			};
+		} catch (cause) { routeError(cause); }
+	}
 	const version = await latestDataDragonVersion();
 	const detail = await getMockScrimDetail(params.guildId, params.scrimId, user?.userId ?? null, (championId) =>
 		championIconUrl(version, championId)
@@ -131,7 +160,7 @@ function requireManager(guildId: string, scrimId: string) {
 	return findMockScrim(guildId, scrimId)?.canManage ? null : fail(403, { message: '내전을 운영할 권한이 없어요' });
 }
 
-export const actions: Actions = {
+const previewActions: Actions = {
 	register: async ({ request, params }) => {
 		requireDev();
 		const parsed = readRegistration(await request.formData());
@@ -224,3 +253,42 @@ export const actions: Actions = {
 		return failWith(await updateMockScrimSettings(params.guildId, params.scrimId, merged));
 	}
 };
+
+type ActionEvent = Parameters<NonNullable<Actions[string]>>[0];
+
+async function runAction(name: string, { request, params, locals, setHeaders }: ActionEvent) {
+	try {
+		const data = await request.formData();
+		const db = getDb();
+		const actor = locals.actor;
+		const { guildId, scrimId } = params;
+		const expectedRevision = data.has('expectedRevision') ? Number(data.get('expectedRevision')) : NaN;
+		const revision = { expectedRevision };
+		if (name === 'register' || name === 'registration') {
+			const input = { riotAccountId: String(data.get('riotAccountId') ?? ''), positions: String(data.get('positions') ?? '').split(',') as (typeof POSITIONS)[number]['key'][] };
+			if (name === 'register') await createRegistration(db, actor, guildId, scrimId, input);
+			else await updateRegistration(db, actor, guildId, scrimId, input);
+		} else if (name === 'withdraw') await withdrawRegistration(db, actor, guildId, scrimId);
+		else if (name === 'participants') await setParticipantStatus(db, actor, guildId, scrimId, {
+			...revision, registrationIds: String(data.get('ids') ?? '').split(',').filter(Boolean), status: String(data.get('status')) as 'selected' | 'standby' | 'excluded'
+		});
+		else if (name === 'settings') await updateScrimSettings(db, actor, guildId, scrimId, { ...revision, settings: parseScrimSettings(readScrimSettingsForm(data)) });
+		else if (name === 'chooseMethod') {
+			const method = readFormationMethod(data.get('method'));
+			if (!method) return fail(400, { message: '팀 편성 방식을 골라 주세요' });
+			await chooseFormationMethod(db, actor, guildId, scrimId, { ...revision, method });
+		}
+		else if (name === 'advance') await advanceScrim(db, actor, guildId, scrimId, { ...revision, key: String(data.get('key') ?? '') as 'close' | 'ready' | 'start' | 'complete' });
+		else if (name === 'revert') await revertScrim(db, actor, guildId, scrimId, revision);
+		else if (name === 'endEarly') await endScrimEarly(db, actor, guildId, scrimId, revision);
+		else if (name === 'cancel') await cancelScrim(db, actor, guildId, scrimId, revision);
+		return { saved: true };
+	} catch (cause) {
+		return actionFailure(cause, setHeaders);
+	}
+}
+
+// 개발 샘플 ID만 메모리 저장소를 사용한다. 실제 요청은 같은 이름의 DB 업무 함수로 연결한다.
+export const actions: Actions = Object.fromEntries(Object.entries(previewActions).map(([name, preview]) => [
+	name, (event: ActionEvent) => dev && findMockGuild(event.params.guildId) ? preview!(event) : runAction(name, event)
+]));

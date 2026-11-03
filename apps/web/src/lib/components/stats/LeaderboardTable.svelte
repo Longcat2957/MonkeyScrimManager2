@@ -3,6 +3,7 @@
 	import PageNav from '#lib/components/common/PageNav.svelte';
 	import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 	import type { AchievementBadge } from '#lib/features/players/achievements.ts';
+	import { fixed, percent, integer } from '#lib/features/players/format.ts';
 	import type { PlayerSummary } from '#lib/features/players/types.ts';
 
 	type Row = PlayerSummary & { userId: string; displayName: string; iconUrl: string | null; badges: AchievementBadge[] };
@@ -33,8 +34,12 @@
 	});
 
 	const value = (row: Row, key: SortKey) => (key === 'winRate' ? row.wins / row.games : row[key]);
-	const sorted = $derived([...rows].sort((a, b) => (value(b, sortKey) - value(a, sortKey)) * (descending ? 1 : -1)));
-	const percent = (number: number) => `${Math.round(number * 100)}%`;
+	const sorted = $derived([...rows].sort((a, b) => {
+		const left = value(a, sortKey), right = value(b, sortKey);
+		if (left === null) return right === null ? 0 : 1;
+		if (right === null) return -1;
+		return (right - left) * (descending ? 1 : -1);
+	}));
 
 	function sortBy(key: SortKey) {
 		current = 1;
@@ -70,8 +75,8 @@
 			{#each sorted.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as row, offset (row.userId)}
 				{@const index = (current - 1) * PAGE_SIZE + offset}
 				<!-- 1~3위는 행 바탕으로 구분하고, 순위 숫자로도 같은 정보를 준다. -->
-				<tr class={['border-b border-border last:border-b-0', PODIUM[index]]}>
-					<td class="px-2 py-2.5 text-right font-semibold tabular-nums lg:px-3">{index + 1}</td>
+				<tr class={['border-b border-border last:border-b-0', value(row, sortKey) !== null && PODIUM[index]]}>
+					<td class="px-2 py-2.5 text-right font-semibold tabular-nums lg:px-3">{value(row, sortKey) === null ? '—' : index + 1}</td>
 					<td class="w-full max-w-0 min-w-28 px-3 py-2.5">
 						<div class="flex min-w-0 items-center gap-2">
 							<a href={resolve('/g/[guildId]/players/[userId]', { guildId, userId: row.userId })} class="flex min-w-0 items-center gap-3 hover:underline">
@@ -91,17 +96,17 @@
 					</td>
 					<td class="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{row.games}</td>
 					<td class="px-3 py-2.5 text-right tabular-nums">
-						<span class="block font-semibold">{row.kda.toFixed(2)}</span>
-						<span class="hidden text-xs opacity-60 sm:block">{row.kills.toFixed(1)} / {row.deaths.toFixed(1)} / {row.assists.toFixed(1)}</span>
+						<span class="block font-semibold">{fixed(row.kda, 2)}</span>
+						<span class="hidden text-xs opacity-60 sm:block">{fixed(row.kills, 1)} / {fixed(row.deaths, 1)} / {fixed(row.assists, 1)}</span>
 					</td>
 					<td class="px-3 py-2.5 text-right tabular-nums">
 						<span class={['block font-semibold', row.wins / row.games >= 0.5 ? 'text-success' : 'text-error']}>{percent(row.wins / row.games)}</span>
 						<span class="hidden text-xs opacity-60 sm:block">{row.wins}승 {row.games - row.wins}패</span>
 					</td>
 					<td class="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{percent(row.killParticipation)}</td>
-					<td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell">{row.csPerMin.toFixed(1)}</td>
-					<td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell">{Math.round(row.damagePerMin).toLocaleString('ko-KR')}</td>
-					<td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell">{row.visionPerGame.toFixed(1)}</td>
+					<td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell">{fixed(row.csPerMin, 1)}</td>
+					<td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell">{integer(row.damagePerMin)}</td>
+					<td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell">{fixed(row.visionPerGame, 1)}</td>
 				</tr>
 			{/each}
 		</tbody>

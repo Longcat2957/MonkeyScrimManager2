@@ -20,7 +20,7 @@
 	const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
 	const at = (lane: (typeof LANES)[number]) => {
 		const id = occupantOf(assignments, slotKey(team.id, lane));
-		return id ? (players.find((player) => player.registrationId === id) ?? null) : null;
+		return id ? (players.find((player) => player.participantId === id) ?? null) : null;
 	};
 	const rowOf = (lane: string) => LANES.indexOf(lane as (typeof LANES)[number]) + 1;
 </script>
@@ -31,7 +31,7 @@
 		{#each SYNERGY_PAIRS as [laneA, laneB] (`${laneA}-${laneB}`)}
 			{@const a = at(laneA)}
 			{@const b = at(laneB)}
-			{@const record = a && b ? pairs[pairKey(a.registrationId, b.registrationId)]?.together : null}
+			{@const record = a && b ? pairs[pairKey(a.participantId, b.participantId)]?.together : null}
 			<!-- 두 자리 사이에 걸치도록 위 자리 줄 아래쪽에 붙인다. -->
 			<li
 				style:grid-row={rowOf(laneA)}

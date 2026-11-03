@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { Button, Loading, toast } from 'stdf';
 	import StatusTag from '#lib/components/common/StatusTag.svelte';
 	import {
@@ -35,39 +36,57 @@
 	let pending = $state(0);
 	let busy = $state(false);
 	let details = $state(false);
+	let queue: { participantId: string; slot: SlotKey | null }[] = [];
+	let processing = false;
 
 	// 끌어 놓기: 자리에 놓으면 배치·교환, 미배정 목록에 놓으면 배정 해제다.
 	const drag = new DragState({
-		enabled: () => editable,
+		enabled: () => editable && !busy,
 		accepts: (id, target) => target !== 'pool' || Boolean(current[id]),
 		ondrop: (id, target) => move(id, target === 'pool' ? null : (target as SlotKey))
 	});
 
 	const current = $derived(optimistic ?? assignments);
-	const unassigned = $derived(players.filter((player) => !current[player.registrationId]));
+	const unassigned = $derived(players.filter((player) => !current[player.participantId]));
 	const placed = $derived(players.length - unassigned.length);
-	const selectedName = $derived(players.find((player) => player.registrationId === selectedId)?.displayName ?? '');
+	const selectedName = $derived(players.find((player) => player.participantId === selectedId)?.displayName ?? '');
 	const confirmBlocked = $derived(unassigned.length ? '모든 참가자를 배치해야 확정할 수 있어요' : null);
 
-	function select(registrationId: string) {
-		selectedId = selectedId === registrationId ? null : registrationId;
+	function select(participantId: string) {
+		selectedId = selectedId === participantId ? null : participantId;
 	}
 
-	async function move(registrationId: string, slot: SlotKey | null) {
+	async function move(participantId: string, slot: SlotKey | null) {
+		if (!editable || busy) return;
 		selectedId = null;
-		optimistic = moveAssignment(current, registrationId, slot);
+		optimistic = moveAssignment(current, participantId, slot);
+		queue.push({ participantId, slot });
 		pending++;
-		const message = await postAction('move', { registrationId, slot: slot ?? '' });
-		pending--;
-		if (message) {
-			toast.error(message);
+		if (processing) return;
+		processing = true;
+		try {
+			while (queue.length) {
+				const next = queue[0]!;
+				const message = await postAction('move', { participantId: next.participantId, slot: next.slot ?? '' });
+				await tick();
+				queue.shift();
+				pending--;
+				if (message) {
+					toast.error(message);
+					break;
+				}
+				optimistic = queue.length ? queue.reduce((value, item) => moveAssignment(value, item.participantId, item.slot), assignments) : null;
+			}
+		} finally {
+			queue = [];
+			pending = 0;
 			optimistic = null;
-		} else if (pending === 0) {
-			optimistic = null;
+			processing = false;
 		}
 	}
 
 	async function run(name: 'reset' | 'confirm') {
+		if (busy || pending) return;
 		busy = true;
 		const message = await postAction(name, {});
 		busy = false;
@@ -123,7 +142,7 @@
 			</Button>
 			{#if editable}
 				<ChangeMethodButton disabled={busy || pending > 0} />
-				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" disabled={placed === 0 || busy} onclick={reset}>초기화</Button>
+				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" disabled={placed === 0 || busy || pending > 0} onclick={reset}>초기화</Button>
 				<Button size="auto" heightOut="0" heightIn="2" injClass="px-4 text-sm" disabled={Boolean(confirmBlocked) || busy || pending > 0} onclick={confirmFormation}>
 					편성 확정
 				</Button>

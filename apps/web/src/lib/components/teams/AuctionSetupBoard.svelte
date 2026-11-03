@@ -47,7 +47,7 @@
 		return keyword ? players.filter((player) => player.displayName.toLocaleLowerCase('ko-KR').includes(keyword)) : players;
 	});
 	const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
-	const playerOf = (id: string | null) => players.find((player) => player.registrationId === id) ?? null;
+	const playerOf = (id: string | null) => players.find((player) => player.participantId === id) ?? null;
 
 	// 누르는 순서대로 비어 있는 첫 팀의 팀장이 되고, 다시 누르면 해제된다.
 	function toggleCaptain(id: string) {
@@ -91,8 +91,8 @@
 				<Input type="search" placeholder="참가자 검색" bind:value={query} clear />
 			</div>
 			<ul class="flex max-h-[28rem] min-h-0 flex-col gap-1.5 overflow-y-auto p-2 xl:max-h-none">
-				{#each filtered as player (player.registrationId)}
-					{@const order = captains.indexOf(player.registrationId)}
+				{#each filtered as player (player.participantId)}
+					{@const order = captains.indexOf(player.participantId)}
 					<li>
 						<button
 							type="button"
@@ -102,7 +102,7 @@
 								'grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border px-2 py-2 text-left transition disabled:opacity-40',
 								order >= 0 ? 'border-warning/40 bg-warning/10' : 'border-transparent bg-bg-highlight/30 hover:border-primary/25 hover:bg-primary/5 dark:bg-bg-highlight-dark/30'
 							]}
-							onclick={() => toggleCaptain(player.registrationId)}
+							onclick={() => toggleCaptain(player.participantId)}
 						>
 							<PlayerFace name={player.displayName} imageUrl={player.iconUrl} size="md" />
 							<span class="min-w-0">
@@ -129,7 +129,7 @@
 			<div class="min-w-0">
 				<h2 id="auction-setup" class="text-base font-semibold">경매 준비</h2>
 				{#if editable}
-					<p class="mt-1 text-xs opacity-60">{startBlocked ?? '설정이 완성됐어요. 시작한 뒤에는 경매 기록을 지워야 팀장과 시작 포인트를 바꿀 수 있어요.'}</p>
+					<p class="mt-1 text-xs opacity-60">{startBlocked ?? '설정이 완성됐어요. 시작한 뒤에는 경매를 초기화해야 팀장과 시작 포인트를 바꿀 수 있어요.'}</p>
 				{/if}
 			</div>
 			{#if editable}<ChangeMethodButton disabled={busy} />{/if}

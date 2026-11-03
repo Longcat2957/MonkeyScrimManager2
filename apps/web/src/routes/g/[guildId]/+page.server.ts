@@ -7,6 +7,10 @@ import { mapSection, toSection } from '#lib/features/section.ts';
 import { listMockRecentMatches } from '#lib/mocks/matches.ts';
 import { listMockGuildPlayers } from '#lib/mocks/players.ts';
 import { findMockNextScrim, listMockActiveScrims } from '#lib/mocks/scrims.ts';
+import { findMockGuild } from '#lib/mocks/session.ts';
+import { getDb } from '#lib/server/db/index.ts';
+import { listMatches } from '#lib/server/matches/queries.ts';
+import { findNextScrim, listActiveScrims } from '#lib/server/scrims/queries.ts';
 import { championIconUrl, dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver, randomChampionSplash } from '#lib/server/ddragon/champions.ts';
 import { getRankingPage, latestDataDragonVersion, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
@@ -30,7 +34,7 @@ async function loadRanking(guildId: string, userId: string | null, version: stri
 
 // 서버 통계와 같은 업적을 전체 포지션·전체 게임 기준으로 고른다. 카드 배경은 1위의 주 챔피언 스플래시다.
 async function loadAchievements(guildId: string, version: string | null) {
-	if (guildId !== 'devGuild001') return [];
+	if (!dev || guildId !== 'devGuild001') return [];
 	const players = listMockGuildPlayers(await championResolver(version));
 	const championOf = new Map(players.map((player) => [player.userId, player.championId]));
 	const achievements = rankAchievements(
@@ -43,7 +47,7 @@ async function loadAchievements(guildId: string, version: string | null) {
 	});
 }
 
-export const load: PageServerLoad = async ({ parent, params, url, depends }) => {
+export const load: PageServerLoad = async ({ parent, params, url, depends, locals }) => {
 	const { guild, user } = await parent();
 	if (!guild) error(404, '서버를 찾을 수 없습니다.');
 	depends('app:guild-home');
@@ -52,14 +56,14 @@ export const load: PageServerLoad = async ({ parent, params, url, depends }) => 
 	const preview = dev ? url.searchParams.get('preview') : null;
 	const version = await latestDataDragonVersion();
 	const icon = (championId: string) => championIconUrl(version, championId);
+	const mock = dev && Boolean(findMockGuild(params.guildId));
 
-	// TODO: DB 조회로 바꾼다. 각 영역은 서로 독립적으로 실패할 수 있다.
+	// 각 조회 영역은 독립적으로 실패를 표시하며, 일반 서버에 목 기록을 섞지 않는다.
 	const [next, activeScrims, recentMatches, ranking, achievements] = await Promise.allSettled([
-		findMockNextScrim(params.guildId, icon),
-		listMockActiveScrims(params.guildId, icon),
-		listMockRecentMatches(params.guildId, { fail: preview === 'error' }).then((items) =>
-			items.slice(0, RECENT_MATCH_LIMIT)
-		),
+		mock ? findMockNextScrim(params.guildId, icon) : findNextScrim(getDb(), locals.actor, params.guildId),
+		mock ? listMockActiveScrims(params.guildId, icon) : listActiveScrims(getDb(), locals.actor, params.guildId),
+		mock ? listMockRecentMatches(params.guildId, { fail: preview === 'error' }).then((items) => items.slice(0, RECENT_MATCH_LIMIT))
+			: listMatches(getDb(), locals.actor, params.guildId, { status: 'done', page: 1, pageSize: RECENT_MATCH_LIMIT }).then((result) => result.matches),
 		loadRanking(params.guildId, user?.userId ?? null, version),
 		loadAchievements(params.guildId, version)
 	]);

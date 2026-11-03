@@ -35,9 +35,9 @@
 	const accountItems = $derived<NavItem[]>(
 		user
 			? [
-					{ label: '내 정보', href: resolve('/me'), current: pathname === '/me' },
+					{ label: '내 정보', href: `${resolve('/me')}${page.data.mockPreview ? '?mock=1' : ''}`, current: pathname === '/me' },
 					...(user.isServiceAdmin
-						? [{ label: '백오피스', href: resolve('/backoffice'), current: pathname.startsWith('/backoffice') }]
+						? [{ label: '백오피스', href: `${resolve('/backoffice')}${page.data.mockPreview ? '?mock=1' : ''}`, current: pathname.startsWith('/backoffice') }]
 						: [])
 				]
 			: []
@@ -56,7 +56,7 @@
 					desc: g.id === guild?.id ? '현재 서버' : undefined,
 					disabled: g.id === guild?.id
 				}))
-			: [{ content: '접근 가능한 서버가 없어요', disabled: true }]
+			: [{ content: page.data.guildListError ?? '접근 가능한 서버가 없어요', disabled: true }]
 	);
 
 	function selectGuild(index: number) {
@@ -69,6 +69,16 @@
 		setMode(mode);
 	}
 </script>
+
+{#snippet sessionControl()}
+	{#if page.data.authenticated}
+		<form method="POST" action={resolve('/auth/logout')}>
+			<Button type="submit" fill="text" size="auto" heightOut="0" heightIn="2">로그아웃</Button>
+		</form>
+	{:else}
+		<a href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + page.url.search)}`} data-sveltekit-reload data-sveltekit-preload-data="false" class="px-3 py-2 text-sm font-semibold">로그인</a>
+	{/if}
+{/snippet}
 
 {#snippet modeIcon()}
 	<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -131,6 +141,7 @@
 				<span class="sr-only">계정 메뉴: {user.displayName}</span>
 			</MenuButton>
 		{/if}
+		{@render sessionControl()}
 	</div>
 {/snippet}
 
@@ -184,6 +195,7 @@
 						<ContextNav items={accountItems} label="계정 메뉴" vertical onnavigate={() => (menuOpen = false)} />
 					</section>
 				{/if}
+				{@render sessionControl()}
 				<CellGroup my="0" mx="0" shadow="none">
 					<SwitchCell title="다크 모드" active={mode === 'dark'} onchange={toggleMode} />
 				</CellGroup>

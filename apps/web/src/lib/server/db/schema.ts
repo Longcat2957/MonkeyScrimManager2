@@ -19,6 +19,19 @@ export const users = pgTable('users', {
 		.$onUpdate(() => new Date())
 });
 
+// 쿠키의 원본 세션 토큰은 저장하지 않고 SHA-256 해시만 보관한다.
+export const sessions = pgTable('sessions', {
+	tokenHash: text('token_hash').primaryKey(),
+	userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+	expiresAt: timestamp('expires_at', { withTimezone: true, precision: 3 }).notNull()
+}, (table) => [
+	index('sessions_user_id_idx').on(table.userId),
+	index('sessions_expires_at_idx').on(table.expiresAt),
+	check('sessions_token_hash_format', sql`${table.tokenHash} ~ '^[0-9a-f]{64}$'`),
+	check('sessions_expiry_order', sql`${table.expiresAt} > ${table.createdAt}`)
+]);
+
 // 탑·정글·미드·바텀·서포터를 구분하며, 선호 챔피언은 사용자가 포지션별로 지정한다.
 export const lolPosition = pgEnum('lol_position', ['top', 'jungle', 'mid', 'bot', 'support']);
 
@@ -39,6 +52,9 @@ export const guilds = pgTable('guilds', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),
 	iconHash: text('icon_hash'),
+	// 봇이 나간 서버도 과거 기록은 보존하고 서비스 활성 상태만 바꾼다.
+	isActive: boolean('is_active').default(true).notNull(),
+	syncedAt: timestamp('synced_at', { withTimezone: true, precision: 3 }),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
 		.defaultNow()
@@ -53,6 +69,10 @@ export const guildMembers = pgTable('guild_members', {
 	// 해당 길드의 서버 관리자 여부. 웹에서 직접 바꾸지 않고, 봇이 Discord 서버 관리 권한이나
 	// guild_discord_settings.operator_role_id 역할 보유 여부로 동기화한다.
 	isAdmin: boolean('is_admin').default(false).notNull(),
+	// 역할 설정을 바꾼 뒤에도 권한을 재평가할 수 있도록 검증한 Discord 권한 근거를 보관한다.
+	manageGuild: boolean('manage_guild').default(false).notNull(),
+	roleIds: text('role_ids').array().default(sql`'{}'::text[]`).notNull(),
+	syncedAt: timestamp('synced_at', { withTimezone: true, precision: 3 }),
 	// 서비스에 연결을 저장한 시각이며 Discord 서버 가입 시각과는 구분한다.
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
 }, (table) => [
@@ -60,19 +80,12 @@ export const guildMembers = pgTable('guild_members', {
 	index('guild_members_user_id_idx').on(table.userId)
 ]);
 
-// Riot 계정 연결은 사용자가 직접 하지 않고 길드 운영자가 수동으로 지정한다. 지정한 사람과 시각을 남긴다.
+// Riot 계정 식별 정보는 공유하되 사용자 연결과 대표 계정은 길드마다 독립적으로 관리한다.
 export const riotAccounts = pgTable('riot_accounts', {
 	// 경기 등 서비스 내부 참조에는 이 ID를 사용하고, 외부 API 식별자는 별도로 보관한다.
 	id: uuid('id').defaultRandom().primaryKey(),
 	// Riot API가 반환한 PUUID만 저장한다. ROFL 원시 PUUID와 자동 연결하지 않는다.
 	puuid: text('puuid').notNull().unique(),
-	// 한 사용자에게 여러 계정을 연결할 수 있다. 사용자 삭제 시 계정은 보존하고 연결만 해제한다.
-	userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
-	// 신청할 때 기본으로 고르는 대표 계정이다. 사용자마다 하나이며 연결이 없으면 false다.
-	isPrimary: boolean('is_primary').default(false).notNull(),
-	// 연결을 지정한 운영자와 시각이다. 연결을 해제하면 대표 여부와 함께 비운다.
-	linkedByUserId: text('linked_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-	linkedAt: timestamp('linked_at', { withTimezone: true, precision: 3 }),
 	// 변경 가능한 표시 정보이며 계정 식별에 사용하지 않는다. API 응답에서 생략될 수 있다.
 	gameName: text('game_name'),
 	tagLine: text('tag_line'),
@@ -84,11 +97,21 @@ export const riotAccounts = pgTable('riot_accounts', {
 		.defaultNow()
 		.notNull()
 		.$onUpdate(() => new Date())
+});
+
+// 같은 계정도 서버마다 서로 다른 연결을 가질 수 있다. 해제는 이 연결만 지우고 계정·출전 기록은 남긴다.
+export const guildRiotAccounts = pgTable('guild_riot_accounts', {
+	guildId: text('guild_id').notNull().references(() => guilds.id, { onDelete: 'cascade' }),
+	riotAccountId: uuid('riot_account_id').notNull().references(() => riotAccounts.id, { onDelete: 'restrict' }),
+	userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	isPrimary: boolean('is_primary').default(false).notNull(),
+	linkedByUserId: text('linked_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	linkedAt: timestamp('linked_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
 }, (table) => [
-	index('riot_accounts_user_id_idx').on(table.userId),
-	index('riot_accounts_linked_by_user_id_idx').on(table.linkedByUserId),
-	// 사용자 삭제 시 user_id가 SET NULL로 비므로 대표·연결 정보 정리는 CHECK 대신 서비스에서 함께 처리한다.
-	uniqueIndex('riot_accounts_primary_user_unique').on(table.userId).where(sql`${table.isPrimary}`)
+	primaryKey({ columns: [table.guildId, table.riotAccountId] }),
+	index('guild_riot_accounts_user_idx').on(table.userId, table.guildId),
+	index('guild_riot_accounts_linker_idx').on(table.linkedByUserId),
+	uniqueIndex('guild_riot_accounts_primary_unique').on(table.guildId, table.userId).where(sql`${table.isPrimary}`)
 ]);
 
 // 시즌을 닫아도 이전 점수와 원장은 보존한다. 길드마다 종료되지 않은 시즌은 하나다.
@@ -133,8 +156,8 @@ export const scrimStatus = pgEnum('scrim_status', [
 
 export const scrimFormationMethod = pgEnum('scrim_formation_method', ['manual', 'auction']);
 
-// 모집부터 종료까지 같은 내전을 유지한다. 경기 시작 후 팀을 다시 편성하려면 새 내전을 모집한다.
-// 상태 전환 조건과 시작 후 편성 변경 금지는 이후 서비스 로직에서 검사한다.
+// 모집부터 종료까지 같은 내전을 유지한다. 기록된 Game이 있으면 팀을 다시 편성하지 않는다.
+// 무결과 시작 취소와 단계별 변경 조건은 서비스 로직에서 검사한다.
 // 중도 종료 시 확정된 Game 결과와 Match 점수는 보존하며, 미완료 시리즈의 승자를 임의로 확정하지 않는다.
 export const scrims = pgTable('scrims', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -145,6 +168,11 @@ export const scrims = pgTable('scrims', {
 	mmrSeasonId: uuid('mmr_season_id'),
 	// 웹·봇에서 생성을 요청한 사용자이며, 사용자 삭제 후에도 내전은 보존한다.
 	createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	// 클라이언트가 생성 요청 동안 유지하는 식별자다. 같은 실행자의 재시도는 기존 내전을 반환한다.
+	creationRequestId: uuid('creation_request_id'),
+	revision: integer('revision').default(0).notNull(),
+	bracketConfirmedAt: timestamp('bracket_confirmed_at', { withTimezone: true, precision: 3 }),
+	bracketConfirmedByUserId: text('bracket_confirmed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 	title: text('title').notNull(),
 	status: scrimStatus('status').default('recruit').notNull(),
 	// 운영자가 모집 중·편성 중에 정하거나 바꾼다. 비어 있어도 모집을 마감할 수 있고, 대진 준비부터는 반드시 있다.
@@ -166,6 +194,7 @@ export const scrims = pgTable('scrims', {
 		.$onUpdate(() => new Date())
 }, (table) => [
 	unique('scrims_id_mmr_season_unique').on(table.id, table.mmrSeasonId),
+	unique('scrims_creation_request_unique').on(table.createdByUserId, table.creationRequestId),
 	foreignKey({
 		name: 'scrims_mmr_season_fk',
 		columns: [table.guildId, table.mmrSeasonId], foreignColumns: [mmrSeasons.guildId, mmrSeasons.id]
@@ -173,8 +202,11 @@ export const scrims = pgTable('scrims', {
 	index('scrims_guild_id_idx').on(table.guildId),
 	index('scrims_mmr_season_id_idx').on(table.mmrSeasonId),
 	index('scrims_created_by_user_id_idx').on(table.createdByUserId),
-	check('scrims_team_count_min', sql`${table.teamCount} >= 2`),
-	check('scrims_reserve_capacity_nonnegative', sql`${table.reserveCapacity} >= 0`),
+	check('scrims_team_count_range', sql`${table.teamCount} between 2 and 4`),
+	check('scrims_reserve_capacity_range', sql`${table.reserveCapacity} between 0 and 10`),
+	check('scrims_revision_nonnegative', sql`${table.revision} >= 0`),
+	check('scrims_title_length', sql`length(btrim(${table.title})) between 1 and 50`),
+	check('scrims_bracket_confirmer_requires_time', sql`${table.bracketConfirmedByUserId} is null or ${table.bracketConfirmedAt} is not null`),
 	check('scrims_formation_method_required', sql`${table.status} in ('recruit', 'preparing', 'cancelled') or ${table.formationMethod} is not null`)
 ]);
 
@@ -204,12 +236,17 @@ export const scrimTeams = pgTable('scrim_teams', {
 	scrimId: uuid('scrim_id').notNull().references(() => scrims.id, { onDelete: 'restrict' }),
 	// 팀을 만들 때 정해진 이름 목록(포로팀·칼날부리팀…)에서 순서대로 붙이며 운영자가 따로 입력하지 않는다.
 	name: text('name').notNull(),
+	// 현재 구성의 팀 순서다. 경매 이력이 있는 팀을 제외할 때는 행 대신 활성 상태를 바꾼다.
+	ordinal: integer('ordinal').notNull(),
+	isActive: boolean('is_active').default(true).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
 		.defaultNow().notNull().$onUpdate(() => new Date())
 }, (table) => [
 	// 참가자와 대진에서 같은 내전의 팀만 연결할 수 있도록 복합 외래키의 대상이 된다.
-	unique('scrim_teams_scrim_id_id_unique').on(table.scrimId, table.id)
+	unique('scrim_teams_scrim_id_id_unique').on(table.scrimId, table.id),
+	uniqueIndex('scrim_teams_active_ordinal_unique').on(table.scrimId, table.ordinal).where(sql`${table.isActive}`),
+	check('scrim_teams_ordinal_range', sql`${table.ordinal} between 1 and 4`)
 ]);
 
 // 모집 참가 기록은 길드 탈퇴·사용자 삭제 후에도 보존한다. 경기 시작 후 팀 재편성은 허용하지 않는다.
@@ -236,7 +273,8 @@ export const scrimParticipants = pgTable('scrim_participants', {
 		columns: [table.scrimId, table.teamId], foreignColumns: [scrimTeams.scrimId, scrimTeams.id]
 	}).onDelete('restrict'),
 	index('scrim_participants_user_id_idx').on(table.userId),
-	index('scrim_participants_riot_account_id_idx').on(table.riotAccountId)
+	index('scrim_participants_riot_account_id_idx').on(table.riotAccountId),
+	check('scrim_participants_position_requires_team', sql`${table.position} is null or ${table.teamId} is not null`)
 ]);
 
 // 경매에 참여하는 팀의 팀장과 시작 예산을 보관한다.
@@ -247,7 +285,7 @@ export const auctionTeams = pgTable('auction_teams', {
 	auctionId: uuid('auction_id').notNull(),
 	teamId: uuid('team_id').notNull(),
 	// 사용자 계정 대신 보존되는 참가 기록을 참조한다.
-	captainParticipantId: uuid('captain_participant_id').notNull(),
+	captainParticipantId: uuid('captain_participant_id'),
 	// 시작 포인트는 명시적으로 지정한다. 잔여 포인트는 이후 유효한 영입 내역에서 계산한다.
 	initialPoints: integer('initial_points').notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
@@ -272,7 +310,28 @@ export const auctionTeams = pgTable('auction_teams', {
 	}).onDelete('restrict'),
 	index('auction_teams_team_id_idx').on(table.teamId),
 	index('auction_teams_captain_participant_id_idx').on(table.captainParticipantId),
-	check('auction_teams_initial_points_nonnegative', sql`${table.initialPoints} >= 0`)
+	check('auction_teams_initial_points_positive', sql`${table.initialPoints} > 0`)
+]);
+
+// 아직 등장하지 않은 후보만 보관한다. 현재 후보는 열린 lot, 영입 결과는 acquisition이 원천이다.
+export const auctionQueueEntries = pgTable('auction_queue_entries', {
+	scrimId: uuid('scrim_id').notNull(),
+	auctionId: uuid('auction_id').notNull(),
+	scrimParticipantId: uuid('scrim_participant_id').notNull(),
+	ordinal: integer('ordinal').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+}, (table) => [
+	primaryKey({ columns: [table.auctionId, table.scrimParticipantId] }),
+	unique('auction_queue_entries_ordinal_unique').on(table.auctionId, table.ordinal),
+	foreignKey({
+		name: 'auction_queue_entries_auction_fk',
+		columns: [table.scrimId, table.auctionId], foreignColumns: [auctions.scrimId, auctions.id]
+	}).onDelete('cascade'),
+	foreignKey({
+		name: 'auction_queue_entries_participant_fk',
+		columns: [table.scrimId, table.scrimParticipantId], foreignColumns: [scrimParticipants.scrimId, scrimParticipants.id]
+	}).onDelete('restrict'),
+	check('auction_queue_entries_ordinal_positive', sql`${table.ordinal} > 0`)
 ]);
 
 export const auctionLotStatus = pgEnum('auction_lot_status', ['open', 'sold', 'unsold', 'cancelled']);
@@ -291,6 +350,10 @@ export const auctionLots = pgTable('auction_lots', {
 	status: auctionLotStatus('status').default('open').notNull(),
 	openedAt: timestamp('opened_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	closedAt: timestamp('closed_at', { withTimezone: true, precision: 3 }),
+	// 유찰도 되돌릴 수 있으므로 영입과 별도로 시도 자체의 무효화 근거를 남긴다.
+	voidedAt: timestamp('voided_at', { withTimezone: true, precision: 3 }),
+	voidedByUserId: text('voided_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+	voidReason: text('void_reason'),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
 		.defaultNow().notNull().$onUpdate(() => new Date())
@@ -310,7 +373,9 @@ export const auctionLots = pgTable('auction_lots', {
 	index('auction_lots_participant_id_idx').on(table.scrimParticipantId),
 	check('auction_lots_sequence_positive', sql`${table.sequenceNumber} > 0`),
 	check('auction_lots_closed_at_matches_status', sql`(${table.status} = 'open' and ${table.closedAt} is null) or (${table.status} <> 'open' and ${table.closedAt} is not null)`),
-	check('auction_lots_time_order', sql`${table.closedAt} >= ${table.openedAt}`)
+	check('auction_lots_time_order', sql`${table.closedAt} >= ${table.openedAt}`),
+	check('auction_lots_void_details', sql`(${table.voidedAt} is null and ${table.voidedByUserId} is null and ${table.voidReason} is null) or (${table.voidedAt} is not null and ${table.status} <> 'open' and ${table.voidReason} is not null and length(btrim(${table.voidReason})) > 0)`),
+	check('auction_lots_void_time', sql`${table.voidedAt} >= ${table.closedAt}`)
 ]);
 
 export const auctionAcquisitionMethod = pgEnum('auction_acquisition_method', ['auction', 'manual']);
@@ -506,6 +571,10 @@ export const matches = pgTable('matches', {
 	startedAt: timestamp('started_at', { withTimezone: true, precision: 3 }),
 	endedAt: timestamp('ended_at', { withTimezone: true, precision: 3 }),
 	endReason: text('end_reason'),
+	// 내전 중도 종료가 멈춘 경기만 재개한다. 이전 종료 정보도 함께 보존한다.
+	statusBeforeScrimEnd: matchStatus('status_before_scrim_end'),
+	endedAtBeforeScrimEnd: timestamp('ended_at_before_scrim_end', { withTimezone: true, precision: 3 }),
+	endReasonBeforeScrimEnd: text('end_reason_before_scrim_end'),
 	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
 		.defaultNow().notNull().$onUpdate(() => new Date())
@@ -522,10 +591,11 @@ export const matches = pgTable('matches', {
 	index('matches_team_a_id_idx').on(table.teamAId),
 	index('matches_team_b_id_idx').on(table.teamBId),
 	check('matches_distinct_teams', sql`${table.teamAId} <> ${table.teamBId}`),
-	check('matches_best_of_positive_odd', sql`${table.bestOf} > 0 and ${table.bestOf} % 2 = 1`),
+	check('matches_best_of_allowed', sql`${table.bestOf} in (1, 3, 5)`),
 	check('matches_winner_is_competing_team', sql`${table.winnerTeamId} is null or ${table.winnerTeamId} in (${table.teamAId}, ${table.teamBId})`),
 	check('matches_winner_requires_completion', sql`(${table.status} = 'completed' and ${table.winnerTeamId} is not null) or (${table.status} <> 'completed' and ${table.winnerTeamId} is null)`),
-	check('matches_time_order', sql`${table.endedAt} >= ${table.startedAt}`)
+	check('matches_time_order', sql`${table.endedAt} >= ${table.startedAt}`),
+	check('matches_scrim_end_restore_state', sql`(${table.statusBeforeScrimEnd} is null and ${table.endedAtBeforeScrimEnd} is null and ${table.endReasonBeforeScrimEnd} is null) or (${table.statusBeforeScrimEnd} is not null and ((${table.statusBeforeScrimEnd} = 'pending' and ${table.status} = 'cancelled') or (${table.statusBeforeScrimEnd} = 'in_progress' and ${table.status} = 'ended_early')))`)
 ]);
 
 // scrimId는 같은 내전의 Game·참가자만 연결하도록 복합 외래키에 사용한다.
@@ -612,7 +682,7 @@ export const gameParticipants = pgTable('game_participants', {
 ]);
 
 // MMR 반영에 필요한 사용자·포지션·시즌이 미확정이어도 ROFL과 Game 저장은 가능하다. 그 경우 반영 행을 아직 만들지 않는다.
-// 한 반영과 출전자 원장·현재 점수 갱신은 별도의 한 트랜잭션이다. 채택 ROFL·실출전·동포지션 상대의 일치는 서비스에서 검사한다.
+// 정상 결과는 Game·출전자·원장·현재 점수를 같은 트랜잭션으로 갱신한다. 채택 ROFL·실출전·동포지션 상대의 일치는 서비스에서 검사한다.
 export const gameMmrApplications = pgTable('game_mmr_applications', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	scrimId: uuid('scrim_id').notNull(),
@@ -729,7 +799,7 @@ export const scrimRounds = pgTable('scrim_rounds', {
 	unique('scrim_rounds_scrim_id_id_unique').on(table.scrimId, table.id),
 	unique('scrim_rounds_number_unique').on(table.scrimId, table.roundNumber),
 	check('scrim_rounds_number_positive', sql`${table.roundNumber} > 0`),
-	check('scrim_rounds_best_of_positive_odd', sql`${table.bestOf} > 0 and ${table.bestOf} % 2 = 1`)
+	check('scrim_rounds_best_of_allowed', sql`${table.bestOf} in (1, 3, 5)`)
 ]);
 
 // 대진표의 계획 경기다. 양 팀이 결정되면 실제 Match를 만들고 연결하며, 팀 미정 결승도 미리 보관할 수 있다.
@@ -771,7 +841,7 @@ export const scrimBracketSlots = pgTable('scrim_bracket_slots', {
 		.defaultNow().notNull().$onUpdate(() => new Date())
 }, (table) => [
 	primaryKey({ columns: [table.nodeId, table.slot] }),
-	unique('scrim_bracket_slots_team_unique').on(table.nodeId, table.teamId),
+	unique('scrim_bracket_slots_team_unique').on(table.scrimId, table.teamId),
 	// 한 경기의 승자가 대진표의 여러 자리로 동시에 진출하지 않도록 한다.
 	unique('scrim_bracket_slots_source_unique').on(table.sourceNodeId),
 	foreignKey({
@@ -884,10 +954,13 @@ export const scrimParticipantRegistrations = pgTable('scrim_participant_registra
 
 // 조회용 관계와 위의 DB 외래키 제약을 함께 유지한다.
 export const usersRelations = relations(users, ({ one, many }) => ({
+	sessions: many(sessions),
 	memberships: many(guildMembers),
-	riotAccounts: many(riotAccounts, { relationName: 'riotAccountOwner' }),
-	linkedRiotAccounts: many(riotAccounts, { relationName: 'riotAccountLinker' }),
-	createdScrims: many(scrims),
+	riotAccounts: many(guildRiotAccounts, { relationName: 'riotAccountOwner' }),
+	linkedRiotAccounts: many(guildRiotAccounts, { relationName: 'riotAccountLinker' }),
+	createdScrims: many(scrims, { relationName: 'scrimCreator' }),
+	confirmedBrackets: many(scrims, { relationName: 'bracketConfirmer' }),
+	voidedAuctionLots: many(auctionLots),
 	championPreferences: many(userChampionPreferences),
 	scrimParticipations: many(scrimParticipants),
 	uploadedRoflResults: many(roflMetadata),
@@ -901,6 +974,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 	recordedMmrEntries: many(mmrLedgerEntries, { relationName: 'mmrEntryRecorder' })
 }));
 
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+	user: one(users, { fields: [sessions.userId], references: [users.id] })
+}));
+
 export const userChampionPreferencesRelations = relations(userChampionPreferences, ({ one }) => ({
 	user: one(users, { fields: [userChampionPreferences.userId], references: [users.id] })
 }));
@@ -910,6 +987,7 @@ export const guildsRelations = relations(guilds, ({ one, many }) => ({
 	discordRoles: many(guildDiscordRoles),
 	discordChannels: many(guildDiscordChannels),
 	members: many(guildMembers),
+	riotAccounts: many(guildRiotAccounts),
 	scrims: many(scrims),
 	mmrSeasons: many(mmrSeasons)
 }));
@@ -919,11 +997,17 @@ export const guildMembersRelations = relations(guildMembers, ({ one }) => ({
 	user: one(users, { fields: [guildMembers.userId], references: [users.id] })
 }));
 
-export const riotAccountsRelations = relations(riotAccounts, ({ one, many }) => ({
-	user: one(users, { fields: [riotAccounts.userId], references: [users.id], relationName: 'riotAccountOwner' }),
-	linkedBy: one(users, { fields: [riotAccounts.linkedByUserId], references: [users.id], relationName: 'riotAccountLinker' }),
+export const riotAccountsRelations = relations(riotAccounts, ({ many }) => ({
+	links: many(guildRiotAccounts),
 	scrimParticipations: many(scrimParticipants),
 	gameParticipations: many(gameParticipants)
+}));
+
+export const guildRiotAccountsRelations = relations(guildRiotAccounts, ({ one }) => ({
+	guild: one(guilds, { fields: [guildRiotAccounts.guildId], references: [guilds.id] }),
+	account: one(riotAccounts, { fields: [guildRiotAccounts.riotAccountId], references: [riotAccounts.id] }),
+	user: one(users, { fields: [guildRiotAccounts.userId], references: [users.id], relationName: 'riotAccountOwner' }),
+	linkedBy: one(users, { fields: [guildRiotAccounts.linkedByUserId], references: [users.id], relationName: 'riotAccountLinker' })
 }));
 
 export const scrimsRelations = relations(scrims, ({ one, many }) => ({
@@ -931,7 +1015,8 @@ export const scrimsRelations = relations(scrims, ({ one, many }) => ({
 	mmrSeason: one(mmrSeasons, {
 		fields: [scrims.guildId, scrims.mmrSeasonId], references: [mmrSeasons.guildId, mmrSeasons.id]
 	}),
-	creator: one(users, { fields: [scrims.createdByUserId], references: [users.id] }),
+	creator: one(users, { fields: [scrims.createdByUserId], references: [users.id], relationName: 'scrimCreator' }),
+	bracketConfirmer: one(users, { fields: [scrims.bracketConfirmedByUserId], references: [users.id], relationName: 'bracketConfirmer' }),
 	teams: many(scrimTeams),
 	participants: many(scrimParticipants),
 	matches: many(matches),
@@ -944,6 +1029,7 @@ export const scrimsRelations = relations(scrims, ({ one, many }) => ({
 export const auctionsRelations = relations(auctions, ({ one, many }) => ({
 	scrim: one(scrims, { fields: [auctions.scrimId], references: [scrims.id] }),
 	teams: many(auctionTeams),
+	queue: many(auctionQueueEntries),
 	lots: many(auctionLots),
 	acquisitions: many(auctionAcquisitions)
 }));
@@ -961,7 +1047,17 @@ export const auctionTeamsRelations = relations(auctionTeams, ({ one, many }) => 
 	})
 }));
 
+export const auctionQueueEntriesRelations = relations(auctionQueueEntries, ({ one }) => ({
+	auction: one(auctions, {
+		fields: [auctionQueueEntries.scrimId, auctionQueueEntries.auctionId], references: [auctions.scrimId, auctions.id]
+	}),
+	participant: one(scrimParticipants, {
+		fields: [auctionQueueEntries.scrimId, auctionQueueEntries.scrimParticipantId], references: [scrimParticipants.scrimId, scrimParticipants.id]
+	})
+}));
+
 export const auctionLotsRelations = relations(auctionLots, ({ one, many }) => ({
+	voidedBy: one(users, { fields: [auctionLots.voidedByUserId], references: [users.id] }),
 	acquisitions: many(auctionAcquisitions),
 	auction: one(auctions, {
 		fields: [auctionLots.scrimId, auctionLots.auctionId], references: [auctions.scrimId, auctions.id]
@@ -1024,6 +1120,7 @@ export const scrimParticipantsRelations = relations(scrimParticipants, ({ one, m
 	}),
 	captainedAuctionTeam: one(auctionTeams),
 	auctionLots: many(auctionLots),
+	auctionQueueEntries: many(auctionQueueEntries),
 	acquisitions: many(auctionAcquisitions, { relationName: 'acquisitionTarget' }),
 	purchases: many(auctionAcquisitions, { relationName: 'acquisitionBuyer' }),
 	preferences: many(scrimParticipantPreferences),
@@ -1206,6 +1303,8 @@ export const scrimParticipantRegistrationsRelations = relations(scrimParticipant
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
 export type UserChampionPreference = typeof userChampionPreferences.$inferSelect;
 export type NewUserChampionPreference = typeof userChampionPreferences.$inferInsert;
 export type Guild = typeof guilds.$inferSelect;
@@ -1214,6 +1313,8 @@ export type GuildMember = typeof guildMembers.$inferSelect;
 export type NewGuildMember = typeof guildMembers.$inferInsert;
 export type RiotAccount = typeof riotAccounts.$inferSelect;
 export type NewRiotAccount = typeof riotAccounts.$inferInsert;
+export type GuildRiotAccount = typeof guildRiotAccounts.$inferSelect;
+export type NewGuildRiotAccount = typeof guildRiotAccounts.$inferInsert;
 export type MmrSeason = typeof mmrSeasons.$inferSelect;
 export type NewMmrSeason = typeof mmrSeasons.$inferInsert;
 export type UserPositionMmr = typeof userPositionMmr.$inferSelect;
@@ -1228,6 +1329,8 @@ export type Auction = typeof auctions.$inferSelect;
 export type NewAuction = typeof auctions.$inferInsert;
 export type AuctionTeam = typeof auctionTeams.$inferSelect;
 export type NewAuctionTeam = typeof auctionTeams.$inferInsert;
+export type AuctionQueueEntry = typeof auctionQueueEntries.$inferSelect;
+export type NewAuctionQueueEntry = typeof auctionQueueEntries.$inferInsert;
 export type AuctionLot = typeof auctionLots.$inferSelect;
 export type NewAuctionLot = typeof auctionLots.$inferInsert;
 export type AuctionAcquisition = typeof auctionAcquisitions.$inferSelect;

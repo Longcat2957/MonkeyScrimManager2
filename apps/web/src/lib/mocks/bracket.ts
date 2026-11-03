@@ -41,7 +41,7 @@ async function scrimTeams(scrim: MockScrim, icon: IconResolver): Promise<Bracket
 		return (auction?.teams ?? []).map((team) => ({
 			id: team.id,
 			name: team.name,
-			members: team.members.map(({ player }) => ({ id: player.registrationId, displayName: player.displayName, iconUrl: player.iconUrl, position: null }))
+			members: team.members.map(({ player }) => ({ id: player.participantId, displayName: player.displayName, iconUrl: player.iconUrl, position: null }))
 		}));
 	}
 	const formation = await getMockManualFormation(scrim.guildId, scrim.id, icon);
@@ -50,9 +50,9 @@ async function scrimTeams(scrim: MockScrim, icon: IconResolver): Promise<Bracket
 		id: team.id,
 		name: team.name,
 		members: formation.players.flatMap((player) => {
-			const slot = formation.assignments[player.registrationId];
+			const slot = formation.assignments[player.participantId];
 			const parsed = slot ? parseSlot(slot) : null;
-			return parsed?.teamId === team.id ? [{ id: player.registrationId, displayName: player.displayName, iconUrl: player.iconUrl, position: parsed.lane }] : [];
+			return parsed?.teamId === team.id ? [{ id: player.participantId, displayName: player.displayName, iconUrl: player.iconUrl, position: parsed.lane }] : [];
 		})
 	}));
 }

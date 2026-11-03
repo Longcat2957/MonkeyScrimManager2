@@ -23,9 +23,10 @@ feature, or architectural decisions.
 
 ## Project Principles
 
-- MSM2(This project) is a clean-slate rewrite of MSM1.
-- MSM1(https://github.com/Longcat2957/MonkeyScrimManager) is a reference, not an implementation template.
-- Do not assume MSM1 features must be preserved.
+- MSM2 rewrites the application structure while reusing MSM1's service logic as closely as possible.
+- MSM1(https://github.com/Longcat2957/MonkeyScrimManager) is the default reference for recruitment, formation, auctions, brackets, records, MMR, and correction rules. Read its actual implementation before redefining an existing rule.
+- Treat the final result input as the main workflow replacement: ROFL supplies results instead of manual result entry. Match context, set numbers, confirmed lineups, result processing, and MMR retain MSM1's rules unless the user explicitly changes them.
+- Preserve the explicitly agreed MSM2 changes: public viewing, guild-scoped Riot account connections, and game-side handling of bans and picks. Reuse business behavior without copying the old application architecture or known defects.
 - Prefer simple, maintainable solutions.
 - Avoid unnecessary complexity and abstractions.
 - Implement external API endpoints only when a currently agreed service feature needs them. Identify the consuming feature before adding an endpoint; upstream API completeness, parity with MSM1, and possible future use are not sufficient reasons.
@@ -34,6 +35,7 @@ feature, or architectural decisions.
 
 - 서비스는 모집·참가자 관리·팀 편성(수동 또는 경매)·대진 운영을 담당한다. 밴픽·픽 순서·경기 중 진행 과정은 게임에서 처리하며 서비스의 입력·진행 관리 대상으로 만들지 않는다.
 - 전적은 ROFL의 최종 결과로 자동 기록한다. 정상 파일은 서버가 권한·참가자 연결·중복·데이터를 검증한 뒤 저장하며, 수동 결과 입력이나 매번 사람의 승인을 요구하지 않는다. 연결 실패·데이터 충돌 등은 예외로 처리한다.
+- 경기·다음 세트 번호·확정 출전 라인업은 서비스가 관리한다. ROFL에 절대 경기 시각이나 포지션이 없다는 이유로 이 운영 문맥까지 미확정으로 취급하지 않는다. 실제 시각은 모르면 null이며, 희망 포지션은 확정 출전 포지션을 대신하지 않는다.
 - 하드 피어리스는 이전 경기의 실제 사용 챔피언을 기준으로 안내하며, 위반을 이유로 ROFL 업로드나 결과 등록을 막지 않는다.
 
 ## Code Comments

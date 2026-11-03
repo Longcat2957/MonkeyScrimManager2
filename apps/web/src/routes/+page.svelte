@@ -32,8 +32,8 @@
 		{ label: '에러 페이지', href: resolve('/dev/error') }
 	];
 	const shortcuts = [
-		{ label: '내 정보', href: resolve('/me') },
-		{ label: '백오피스', href: resolve('/backoffice') },
+		{ label: '내 정보', href: `${resolve('/me')}?mock=1` },
+		{ label: '백오피스', href: `${resolve('/backoffice')}?mock=1` },
 		{ label: '서버 홈', href: resolve('/g/[guildId]', { guildId }) },
 		{ label: '내전 목록', href: resolve('/g/[guildId]/scrims', { guildId }) },
 		{ label: '내전 상세', href: resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId }) },

@@ -24,7 +24,7 @@
 	const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
 	const at = (teamId: string, lane: (typeof LANES)[number]) => {
 		const id = occupantOf(assignments, slotKey(teamId, lane));
-		return id ? (players.find((player) => player.registrationId === id) ?? null) : null;
+		return id ? (players.find((player) => player.participantId === id) ?? null) : null;
 	};
 </script>
 
@@ -37,7 +37,7 @@
 		{#each LANES as lane (lane)}
 			{@const a = at(teams[0].id, lane)}
 			{@const b = at(teams[1].id, lane)}
-			{@const record = a && b ? headToHead(pairs, a.registrationId, b.registrationId) : null}
+			{@const record = a && b ? headToHead(pairs, a.participantId, b.participantId) : null}
 			<li class="flex flex-col items-center justify-center rounded-(--radius-small) border border-border text-center">
 				<span class="sr-only">{laneText(lane)}</span>
 				{#if record}

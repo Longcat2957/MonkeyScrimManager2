@@ -1,6 +1,11 @@
 import { dev } from '$app/env';
 import { error, fail } from '@sveltejs/kit';
 import { getMockMatch, recordMockGame, type RawGame } from '#lib/mocks/matches.ts';
+import { findMockGuild } from '#lib/mocks/session.ts';
+import { getDb } from '#lib/server/db/index.ts';
+import { getMatch } from '#lib/server/matches/queries.ts';
+import { requireGuildMember } from '#lib/server/guild/access.ts';
+import { routeError } from '#lib/server/http.ts';
 import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
 import { loadoutResolver } from '#lib/server/ddragon/loadout.ts';
@@ -12,22 +17,21 @@ import type { Actions, PageServerLoad } from './$types';
 // 실제 경기 파일은 수십 MB 안쪽이다. 이보다 크면 읽기 전에 거절한다.
 const MAX_ROFL_BYTES = 64 * 1024 * 1024;
 
-// TODO: DB 조회와 서버 열람·업로드 권한 확인으로 바꾼다.
-function requireDev() {
-	if (!dev) error(404, '경기를 찾을 수 없습니다.');
-}
-
-export const load: PageServerLoad = async ({ params, url }) => {
-	requireDev();
+export const load: PageServerLoad = async ({ params, url, locals }) => {
 	const version = await latestDataDragonVersion();
 	const [champion, loadout] = await Promise.all([championResolver(version), loadoutResolver(version)]);
-	const result = await getMockMatch(params.guildId, params.matchId, url.searchParams.get('game'), {
+	const resolvers = {
 		champion,
 		...loadout,
-		splash: (championId) => (version && championId ? dataDragonSplashUrl(championId) : null)
-	});
-	if (!result) error(404, '경기를 찾을 수 없습니다.');
-	return result;
+		splash: (championId: string) => (version && championId ? dataDragonSplashUrl(championId) : null)
+	};
+	try {
+		const result = dev && findMockGuild(params.guildId)
+			? await getMockMatch(params.guildId, params.matchId, url.searchParams.get('game'), resolvers)
+			: await getMatch(getDb(), locals.actor, params.guildId, params.matchId, url.searchParams.get('game'), resolvers);
+		if (!result) error(404, '경기를 찾을 수 없습니다.');
+		return result;
+	} catch (cause) { routeError(cause); }
 };
 
 function toRawGame(bytes: Uint8Array): RawGame | string {
@@ -53,8 +57,12 @@ function toRawGame(bytes: Uint8Array): RawGame | string {
 }
 
 export const actions: Actions = {
-	upload: async ({ request, params }) => {
-		requireDev();
+	upload: async ({ request, params, locals }) => {
+		if (!(dev && findMockGuild(params.guildId))) {
+			try { await requireGuildMember(locals.actor, params.guildId); } catch (cause) { routeError(cause); }
+			// 참가자 식별·진영·경기 순서가 검증되기 전에는 목 저장소나 임의 추정으로 결과를 만들지 않는다.
+			return fail(503, { message: '현재 ROFL의 경기 정보를 검증할 수 없어요' });
+		}
 		const file = (await request.formData()).get('file');
 		if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl')) return fail(400, { message: 'ROFL 파일을 골라 주세요' });
 		if (file.size > MAX_ROFL_BYTES) return fail(413, { message: '파일이 너무 커요' });

@@ -8,7 +8,7 @@
 
 	const blue = $derived(game.sides.find((side) => side.side === 'blue')!);
 	const red = $derived(game.sides.find((side) => side.side === 'red')!);
-	const kills = (side: GameDetail['sides'][number]) => side.players.reduce((sum, player) => sum + player.kills, 0);
+	const kills = (side: GameDetail['sides'][number]) => side.players.some((player) => player.kills === null) ? '-' : side.players.reduce((sum, player) => sum + (player.kills ?? 0), 0);
 	const winner = $derived(game.sides.find((side) => side.win) ?? null);
 	const mvp = $derived(game.sides.flatMap((side) => side.players).find((player) => player.badge === 'mvp') ?? null);
 	const meta = $derived(

@@ -30,7 +30,7 @@ function selected(scrim: MockScrim) {
 
 function toPlayers(scrim: MockScrim, icon: IconResolver): FormationPlayer[] {
 	return selected(scrim).map((participant) => ({
-		registrationId: participant.registrationId,
+		participantId: participant.registrationId,
 		userId: participant.userId,
 		displayName: participant.displayName,
 		iconUrl: icon(participant.championId),
@@ -73,7 +73,7 @@ const TIERS = ['DIAMOND II', 'EMERALD I', 'PLATINUM III', 'GOLD II', null];
 
 // 현재 후보의 상세 보기용 전적을 만든다. 실제로는 Game·Riot 캐시에서 조회한다.
 function mockProfile(player: FormationPlayer, champion: (id: string) => ChampionRef): TargetProfile {
-	const h = hash(player.registrationId);
+	const h = hash(player.participantId);
 	const pick = (offset: number) => champion(PROFILE_CHAMPIONS[(h + offset * 5) % PROFILE_CHAMPIONS.length]!);
 	const games = 8 + (h % 30);
 	const wins = Math.round(games * (0.35 + ((h >>> 5) % 30) / 100));
@@ -88,7 +88,7 @@ function mockProfile(player: FormationPlayer, champion: (id: string) => Champion
 		laneGames: Object.fromEntries(LANES.map((lane, index) => [lane, lane === mainLane ? Math.round(games * 0.6) : (h >>> index) % 5])) as TargetProfile['laneGames'],
 		preferredChampions: [3, 4, 5].map(pick),
 		recentGames: Array.from({ length: 8 }, (_, index) => ({
-			id: `${player.registrationId}-g${index}`,
+			id: `${player.participantId}-g${index}`,
 			champion: pick(index % 3),
 			lane: index % 3 === 2 && player.positions[1] ? player.positions[1] : mainLane,
 			win: ((h >>> index) & 1) === 1,
@@ -159,17 +159,17 @@ function editableManual(guildId: string, scrimId: string): { scrim: MockScrim; s
 	return { scrim, state };
 }
 
-export async function moveMockManualPlayer(guildId: string, scrimId: string, registrationId: string, slot: SlotKey | null) {
+export async function moveMockManualPlayer(guildId: string, scrimId: string, participantId: string, slot: SlotKey | null) {
 	await wait();
 	const target = editableManual(guildId, scrimId);
 	if ('status' in target) return target;
-	if (!selected(target.scrim).some((participant) => participant.registrationId === registrationId)) {
+	if (!selected(target.scrim).some((participant) => participant.registrationId === participantId)) {
 		return { status: 409, message: '선발 참가자가 아니에요' };
 	}
 	if (slot && !target.state.teams.some((team) => slot.startsWith(`${team.id}:`))) {
 		return { status: 400, message: '알 수 없는 자리예요' };
 	}
-	target.state.assignments = moveAssignment(target.state.assignments, registrationId, slot);
+	target.state.assignments = moveAssignment(target.state.assignments, participantId, slot);
 	return null;
 }
 
@@ -196,7 +196,7 @@ export async function confirmMockManual(guildId: string, scrimId: string) {
 
 type Lot = {
 	id: string;
-	registrationId: string;
+	participantId: string;
 	result: 'sold' | 'unsold' | 'manual';
 	teamId: string | null;
 	price: number | null;
@@ -248,7 +248,7 @@ function auctionState(scrim: MockScrim): AuctionState {
 			const team = teams[index % teams.length]!;
 			state!.lots.push({
 				id: `lot${++state!.seq}`,
-				registrationId: id,
+				participantId: id,
 				result: index === 7 ? 'manual' : 'sold',
 				teamId: team.id,
 				price: index === 7 ? null : 40 + ((index * 53) % 260),
@@ -271,7 +271,7 @@ export async function getMockAuction(
 	if (!scrim) return null;
 	const state = auctionState(scrim);
 	const players = toPlayers(scrim, icon);
-	const byId = new Map(players.map((player) => [player.registrationId, player]));
+	const byId = new Map(players.map((player) => [player.participantId, player]));
 	const pick = (id: string) => byId.get(id)!;
 	const teamName = (id: string | null) => state.teams.find((team) => team.id === id)?.name ?? null;
 
@@ -288,7 +288,7 @@ export async function getMockAuction(
 				...(team.captainId ? [{ player: pick(team.captainId), via: 'captain' as const, price: null }] : []),
 				...acquisitions(state)
 					.filter((lot) => lot.teamId === team.id)
-					.map((lot) => ({ player: pick(lot.registrationId), via: lot.result === 'manual' ? ('manual' as const) : ('auction' as const), price: lot.price }))
+					.map((lot) => ({ player: pick(lot.participantId), via: lot.result === 'manual' ? ('manual' as const) : ('auction' as const), price: lot.price }))
 			]
 		})),
 		openLot: state.open ? pick(state.open) : null,
@@ -299,7 +299,7 @@ export async function getMockAuction(
 			(lot, index): AuctionHistoryEntry => ({
 				id: lot.id,
 				order: index + 1,
-				displayName: pick(lot.registrationId).displayName,
+				displayName: pick(lot.participantId).displayName,
 				result: lot.result,
 				teamName: teamName(lot.teamId),
 				price: lot.price,
@@ -381,7 +381,7 @@ export async function awardMockLot(guildId: string, scrimId: string, teamId: str
 	if (membersOf(state, teamId) >= TEAM_SIZE) return { status: 409, message: '이 팀은 정원이 찼어요' };
 	if (!Number.isSafeInteger(price) || price < 0) return { status: 400, message: '입찰가는 0 이상의 정수여야 해요' };
 	if (price > remainingPoints(state, teamId)) return { status: 409, message: '남은 포인트보다 높게 낙찰할 수 없어요' };
-	state.lots.push({ id: `lot${++state.seq}`, registrationId: state.open, result: 'sold', teamId, price, voided: false });
+	state.lots.push({ id: `lot${++state.seq}`, participantId: state.open, result: 'sold', teamId, price, voided: false });
 	state.open = null;
 	completeIfFull(scrim, state);
 	return null;
@@ -393,35 +393,35 @@ export async function passMockLot(guildId: string, scrimId: string) {
 	if ('status' in target) return target;
 	const { state } = target;
 	if (!state.open) return { status: 409, message: '진행 중인 후보가 없어요' };
-	state.lots.push({ id: `lot${++state.seq}`, registrationId: state.open, result: 'unsold', teamId: null, price: null, voided: false });
+	state.lots.push({ id: `lot${++state.seq}`, participantId: state.open, result: 'unsold', teamId: null, price: null, voided: false });
 	state.unsold.push(state.open);
 	state.open = null;
 	return null;
 }
 
-export async function assignMockUnsold(guildId: string, scrimId: string, registrationId: string, teamId: string) {
+export async function assignMockUnsold(guildId: string, scrimId: string, participantId: string, teamId: string) {
 	await wait();
 	const target = auctionTarget(guildId, scrimId, 'in_progress');
 	if ('status' in target) return target;
 	const { state, scrim } = target;
 	if (state.open) return { status: 409, message: '진행 중인 후보를 먼저 처리해 주세요' };
-	if (!state.unsold.includes(registrationId)) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
+	if (!state.unsold.includes(participantId)) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
 	if (membersOf(state, teamId) >= TEAM_SIZE) return { status: 409, message: '이 팀은 정원이 찼어요' };
-	state.lots.push({ id: `lot${++state.seq}`, registrationId, result: 'manual', teamId, price: null, voided: false });
-	state.unsold = state.unsold.filter((id) => id !== registrationId);
+	state.lots.push({ id: `lot${++state.seq}`, participantId, result: 'manual', teamId, price: null, voided: false });
+	state.unsold = state.unsold.filter((id) => id !== participantId);
 	completeIfFull(scrim, state);
 	return null;
 }
 
-export async function restoreMockUnsold(guildId: string, scrimId: string, registrationId: string) {
+export async function restoreMockUnsold(guildId: string, scrimId: string, participantId: string) {
 	await wait();
 	const target = auctionTarget(guildId, scrimId, 'in_progress');
 	if ('status' in target) return target;
 	const { state } = target;
 	if (state.open) return { status: 409, message: '진행 중인 후보를 먼저 처리해 주세요' };
-	if (!state.unsold.includes(registrationId)) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
-	state.unsold = state.unsold.filter((id) => id !== registrationId);
-	state.open = registrationId;
+	if (!state.unsold.includes(participantId)) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
+	state.unsold = state.unsold.filter((id) => id !== participantId);
+	state.open = participantId;
 	return null;
 }
 
@@ -434,9 +434,9 @@ export async function revertMockLot(guildId: string, scrimId: string) {
 	const last = state.lots.findLast((lot) => !lot.voided);
 	if (!last) return { status: 409, message: '되돌릴 기록이 없어요' };
 	last.voided = true;
-	state.unsold = state.unsold.filter((id) => id !== last.registrationId);
+	state.unsold = state.unsold.filter((id) => id !== last.participantId);
 	if (state.open) state.queue.unshift(state.open);
-	state.open = last.registrationId;
+	state.open = last.participantId;
 	return null;
 }
 
@@ -472,7 +472,7 @@ export async function assignMockCurrent(guildId: string, scrimId: string, teamId
 	if (!state.open) return { status: 409, message: '진행 중인 후보가 없어요' };
 	if (!state.teams.some((team) => team.id === teamId)) return { status: 404, message: '팀을 찾을 수 없어요' };
 	if (membersOf(state, teamId) >= TEAM_SIZE) return { status: 409, message: '이 팀은 정원이 찼어요' };
-	state.lots.push({ id: `lot${++state.seq}`, registrationId: state.open, result: 'manual', teamId, price: null, voided: false });
+	state.lots.push({ id: `lot${++state.seq}`, participantId: state.open, result: 'manual', teamId, price: null, voided: false });
 	state.open = null;
 	completeIfFull(scrim, state);
 	return null;

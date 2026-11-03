@@ -1,8 +1,9 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-03 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **32개 테이블·69개 외래키**.
-아래는 스키마 정의이며, 현재 DB에 이 전체 구조를 마이그레이션한 상태는 아니다.
-웹 업무 화면의 조작은 메모리 목 저장소에 반영하며, 아래 테이블에 저장하지 않는다.
+기준: 2026-11-03 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **35개 테이블·76개 외래키**.
+전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 Drizzle snapshot·journal이다.
+인증·서버별 계정·모집·수동 편성·대진·진행 상태는 실제 DB를 사용한다. ROFL 영구 등록과 MMR 자동 반영 등
+아직 소비 서비스가 없는 저장 모델은 현재 구현 범위와 구분한다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
 밴픽 진행·픽 순서·수동 결과 승인 모델과 원본 ROFL 보관 테이블은 없다.
@@ -15,7 +16,10 @@
 erDiagram
     users ||--o{ guild_members : 소속
     guilds ||--o{ guild_members : 구성원
-    users |o..o{ riot_accounts : 계정_연결
+    users ||..o{ sessions : 로그인_세션
+    users ||..o{ guild_riot_accounts : 서버별_계정_연결
+    guilds ||--o{ guild_riot_accounts : 계정_연결_범위
+    riot_accounts ||--o{ guild_riot_accounts : Riot_식별자
     users ||--o{ user_champion_preferences : 포지션별_선호
     guilds ||--o| guild_discord_settings : 게시_설정
     guilds ||--o{ guild_discord_roles : 역할_선택지
@@ -40,6 +44,7 @@ erDiagram
 
     scrims ||..o| auctions : 경매
     auctions ||--o{ auction_teams : 팀장과_예산
+    auctions ||--o{ auction_queue_entries : 후보_대기열
     auctions ||..o{ auction_lots : 후보_등장
     auction_teams ||..o{ auction_acquisitions : 구매_이력
     auction_lots |o..o{ auction_acquisitions : 낙찰과_정정
@@ -67,7 +72,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 스키마에 정의한 외래키 69개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마에 정의한 외래키 76개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -78,22 +83,40 @@ erDiagram
         text username
         boolean is_service_admin
     }
+    sessions {
+        text token_hash PK
+        text user_id FK
+        timestamptz created_at
+        timestamptz expires_at
+    }
     guilds {
         text id PK
         text name
+        boolean is_active
+        timestamptz synced_at "NULL 허용"
     }
     guild_members {
         text guild_id PK, FK
         text user_id PK, FK
-        boolean is_admin "봇이 동기화"
+        boolean is_admin "표시용 동기화 값"
+        boolean manage_guild
+        text_array role_ids
+        timestamptz synced_at "NULL 허용"
     }
     riot_accounts {
         uuid id PK
         text puuid UK
-        text user_id FK "NULL 허용"
+        text game_name "NULL 허용"
+        text tag_line "NULL 허용"
+        text platform "NULL 허용"
+    }
+    guild_riot_accounts {
+        text guild_id PK, FK
+        uuid riot_account_id PK, FK
+        text user_id FK
         boolean is_primary
         text linked_by_user_id FK "NULL 허용"
-        timestamptz linked_at "NULL 허용"
+        timestamptz linked_at
     }
     user_champion_preferences {
         text user_id PK, FK
@@ -124,22 +147,29 @@ erDiagram
 
     users ||--o{ guild_members : user_id
     guilds ||--o{ guild_members : guild_id
-    users |o..o{ riot_accounts : user_id
-    users |o..o{ riot_accounts : linked_by_user_id
+    users ||..o{ sessions : user_id
+    guilds ||--o{ guild_riot_accounts : guild_id
+    riot_accounts ||--o{ guild_riot_accounts : riot_account_id
+    users ||..o{ guild_riot_accounts : user_id
+    users |o..o{ guild_riot_accounts : linked_by_user_id
     users ||--o{ user_champion_preferences : user_id
     guilds ||--o| guild_discord_settings : guild_id
     guilds ||--o{ guild_discord_roles : guild_id
     guilds ||--o{ guild_discord_channels : guild_id
 ```
 
-현재 웹은 서버 관리자 여부를 표시만 하고, Discord 운영자 역할·모집·엔트리·결과 채널을 목 선택지에서 고른다.
-`guild_members.is_admin`은 Discord 서버 관리 권한 또는 `operator_role_id` 역할 보유 여부를 동기화해 저장할 필드다.
-`guild_discord_roles`·`guild_discord_channels`도 그 동기화 결과를 보관할 스키마이며, 실제 봇 동기화·관리자 재계산·DB 저장은 미구현이다.
+웹 서버는 Bot 토큰으로 Discord 소속·실효 서버 관리 권한·역할·채널을 확인하고 저장한다.
+`guild_members.is_admin`만 신뢰해 조작을 허용하지 않는다. 쓰기 전 실제 Discord를 조회하고 트랜잭션 안에서도
+활성·소속·동기화 시각·현재 운영자 역할 설정을 재검사한다. 역할 변경 후 실행자의 관리 권한을 유지해야 하며,
+게시 채널은 채널 overwrite와 timeout을 반영해 봇의 보기·메시지 전송 권한을 확인한다.
 
-`users`는 Discord 로그인·봇 참가 신청에서 생성할 사용자 모델이며, 해당 생성 흐름은 아직 연결하지 않았다.
-웹의 Riot 계정 연결은 서버 관리에서 운영자가 지정하는 목 동작이다. DB에는 `linked_by_user_id`·`linked_at`을 정의했고,
-`is_primary` 부분 고유 인덱스로 사용자당 대표 계정을 최대 하나로 제한한다. 사용자 삭제 시 DB가 `user_id`를
-`NULL`로 바꾸지만 대표 여부·연결 시각 정리는 자동 수행하지 않으며, 후속 저장 서비스가 처리해야 한다.
+`users`는 OAuth 로그인과 검증된 Discord 멤버 응답에서 생성한다. `sessions`에는 난수 토큰의 해시와 만료만 보관한다.
+일반 서버 화면은 공개 열람하고, 본인 신청·관리 조작은 별도 권한 검사를 거친다.
+
+Riot 식별자는 PUUID 고유 행으로 재사용하고 사용자 연결은 `guild_riot_accounts`에서 **서버별**로 관리한다.
+같은 계정은 서버마다 다른 사용자에게 연결될 수 있으며 `(guild_id, user_id)`의 대표 연결은 최대 하나다.
+연결 해제는 해당 연결 행만 삭제한다. 해당 서버의 활성 신청이 사용하는 계정은 해제를 막고, 다른 서버의 연결·신청과
+기존 `scrim_participants`·`game_participants` 기록은 보존한다. 사용자 삭제 시 연결 행은 CASCADE로 제거되며 Riot 식별자는 남는다.
 
 ## MMR 시즌·현재 점수·변동 이력
 
@@ -217,8 +247,9 @@ MMR은 길드·시즌·Discord 사용자·포지션별로 관리한다. 길드 �
 반영별 사용자/참가자·원본당 역분개를 고유키로 구분한다. 변경 전·후 수치를 저장하고 증감은 두 값의 차로 구한다.
 원장은 ROFL 교체 때 재생성되는 출전 행 대신 보존되는 참가자·반영 회차를 참조한다.
 
-사용자·포지션·시즌 미확정으로 MMR을 보류하더라도 정상 ROFL 경기 결과는 저장할 수 있다.
-Elo 계산, 원자적 반영과 과거 경기 정정 순서는 [MMR 저장 계약](mmr.md)을 따르는 후속 서비스 작업이다.
+스키마는 예외 자료의 결과 보존과 MMR 미반영을 표현할 수 있다. 정상 결과 처리에는 MSM1처럼 확정 시즌·출전 라인업을 사용하고 Game·MMR을 같은 트랜잭션으로 반영한다.
+Elo 계산과 원장·현재값의 원자적 반영, 안전한 마지막 Game 역분개는 [내부 MMR 서비스](../apps/web/src/lib/server/mmr/README.md)에 구현했다.
+ROFL 결과 저장·시리즈·대진과의 연결은 남아 있으며 [MMR 저장 계약](mmr.md)을 따른다.
 
 ## 모집·팀 편성
 
@@ -234,11 +265,17 @@ erDiagram
         integer team_count
         integer reserve_capacity
         boolean is_hard_fearless
+        uuid creation_request_id "NULL 허용"
+        integer revision
+        timestamptz bracket_confirmed_at "NULL 허용"
+        text bracket_confirmed_by_user_id FK "NULL 허용"
     }
     scrim_teams {
         uuid id PK
         uuid scrim_id FK
         text name
+        integer ordinal
+        boolean is_active
     }
     scrim_participants {
         uuid id PK
@@ -272,6 +309,7 @@ erDiagram
 
     guilds ||..o{ scrims : guild_id
     users |o..o{ scrims : created_by_user_id
+    users |o..o{ scrims : bracket_confirmed_by_user_id
     scrims ||..o{ scrim_teams : scrim_id
     scrims ||..o{ scrim_participants : scrim_id
     users |o..o{ scrim_participants : user_id
@@ -287,11 +325,11 @@ erDiagram
 동일 내전에서 사용자·Riot 계정은 중복 참가할 수 없고, 팀별 배정 포지션도 중복되지 않는다.
 
 실출전 정원은 `team_count × 5`, 전체 신청 정원은 여기에 `reserve_capacity`를 더한 값이다.
-`reserve_capacity`는 기본값 0인 음이 아닌 정수다. 예를 들어 `team_count = 2`,
+`team_count`는 2~4, `reserve_capacity`는 기본값 0이며 0~10 범위의 정수다. 예를 들어 `team_count = 2`,
 `reserve_capacity = 2`이면 10명 내전에 최대 12명의 활성 신청을 받아 최종 참가자 10명을 정할 수 있다.
 신청하면 선발 수가 `team_count × 5` 미만일 때 `selected`, 아니면 `standby`가 된다.
 선발자가 철회·제외되거나 팀 수가 늘어 자리가 비면 가장 먼저 신청한 대기자부터 선발한다.
-현재 목 구현은 운영자가 대기로 바꾸는 요청에서만 자동 충원을 건너뛴다.
+모집 서비스는 운영자가 대기로 바꾸는 요청에서만 자동 충원을 건너뛴다.
 이후 철회·제외·설정 변경으로 충원이 다시 실행되면 그 신청도 선발 대상이다. 수동 대기를 계속 고정하는 별도 필드는 없다.
 
 신청 상태는 `selected`(선발), `standby`(대기), `withdrawn`(자진 철회),
@@ -301,13 +339,13 @@ erDiagram
 
 신청 정원은 전체 참가자 행 수가 아닌 활성 신청 수로 검사한다. 모집을 마감(팀 편성 시작)하려면
 `selected` 수가 `team_count × 5`와 일치해야 하며, 팀 배정·경매 팀장·경매 후보·게임 출전은 선발된
-참가자만 대상으로 한다. 이 인원수·상태 검사와 제외 시 미확정 팀 배정 정리는 이후 서비스에서
-같은 트랜잭션으로 처리할 조건이며, 현재 DB 제약만으로 자동 수행하지 않는다.
+참가자만 대상으로 한다. 이 인원수·상태 검사와 제외 시 미확정 팀 배정 정리는 서비스 트랜잭션에서 검사한다.
+사용자·계정·내전 잠금과 `revision` 검증으로 신청과 계정 해제·운영자 동시 변경을 조정한다.
 
-아래 단계 전이는 `mocks/workflow.ts`·`teams.ts`·`bracket.ts`의 개발용 동작이며 DB 트랜잭션은 미연결이다.
+아래 단계 전이는 `server/scrims/service.ts`·`manual.ts`·`bracket.ts`·`workflow.ts`의 DB 트랜잭션에 연결했다.
 `formation_method`는 운영자가 모집 중·편성 중(`preparing`)에 정하거나 바꾸며, 비어 있어도 모집을 마감할 수
 있다. `ready` 이후 상태에서는 반드시 값이 있다(`scrims_formation_method_required`). 편성 중에 방식을 바꾸거나
-비우면 그 내전의 수동 배정·경매 기록을 무효화하고, 모집을 다시 열면 팀·경매 기록만 지우고 방식은 유지한다.
+비우면 그 내전의 수동 배정·경매 효과를 무효화하고, 모집을 다시 열면 미확정 편성을 비우되 참가·영입 이력과 방식은 유지한다.
 진행 중 경매를 팀장 설정으로 되돌릴 때는 유효 영입을 무효화하고 열린 후보를 취소한 뒤 `setup`으로 바꾼다. `scrim_teams.name`은 입력받지 않고 팀 순서대로
 `포로팀`·`칼날부리팀`·`돌거북팀`·`바위게팀`을 붙인다.
 
@@ -328,8 +366,14 @@ erDiagram
         uuid auction_id PK, FK
         uuid team_id PK, FK
         uuid scrim_id FK
-        uuid captain_participant_id FK
+        uuid captain_participant_id FK "NULL 허용"
         integer initial_points
+    }
+    auction_queue_entries {
+        uuid auction_id PK, FK
+        uuid scrim_participant_id PK, FK
+        uuid scrim_id FK
+        integer ordinal
     }
     auction_lots {
         uuid id PK
@@ -340,6 +384,9 @@ erDiagram
         enum status
         timestamptz opened_at
         timestamptz closed_at "open이면 NULL, 그 외 필수"
+        timestamptz voided_at "NULL 허용"
+        text voided_by_user_id FK "NULL 허용"
+        text void_reason "무효화 시 필수"
     }
     auction_acquisitions {
         uuid id PK
@@ -361,8 +408,11 @@ erDiagram
     auctions ||--o{ auction_teams : "scrim_id, auction_id"
     scrim_teams ||--o| auction_teams : "scrim_id, team_id"
     scrim_participants ||..o| auction_teams : "scrim_id, captain_participant_id"
+    auctions ||--o{ auction_queue_entries : "scrim_id, auction_id"
+    scrim_participants ||--o{ auction_queue_entries : "scrim_id, scrim_participant_id"
     auctions ||..o{ auction_lots : "scrim_id, auction_id"
     scrim_participants ||..o{ auction_lots : "scrim_id, scrim_participant_id"
+    users |o..o{ auction_lots : voided_by_user_id
     auctions ||..o{ auction_acquisitions : "scrim_id, auction_id"
     auction_teams ||..o{ auction_acquisitions : "scrim_id, auction_id, team_id"
     scrim_participants ||..o{ auction_acquisitions : "scrim_id, scrim_participant_id"
@@ -377,6 +427,7 @@ erDiagram
 열린 경매 후보는 경매당 하나, 무효화되지 않은 영입은 경매·참가자당 하나다.
 낙찰은 구매자·경매 시도·비음수 가격이 필수이고, 수동 배정은 구매자·가격이 `NULL`이다.
 정정은 기존 행을 무효화하고 새 행의 `supersedes_id`로 연결해 구매 이력을 남긴다.
+아직 등장하지 않은 후보의 순서는 `auction_queue_entries`, 현재 후보는 열린 lot, 영입 결과는 acquisition이 저장 원천이다.
 
 ## 라운드·대진·경기 결과
 
@@ -411,6 +462,9 @@ erDiagram
         boolean is_hard_fearless
         enum status
         uuid winner_team_id "NULL 허용, A 또는 B를 CHECK"
+        enum status_before_scrim_end "NULL 허용"
+        timestamptz ended_at_before_scrim_end "NULL 허용"
+        text end_reason_before_scrim_end "NULL 허용"
     }
     games {
         uuid id PK
@@ -455,6 +509,8 @@ erDiagram
 `Match`는 두 팀의 시리즈이고 `Game`은 개별 한 판이다. 점수는 완료 Game에서 집계한다.
 `winner_team_id`는 별도 FK가 아니라 A/B 팀 중 하나인지 확인하는 `CHECK`로 제한한다.
 대진 자리는 직접 지정한 팀 또는 이전 대진의 승자 중 하나를 참조하며 둘 다 미정일 수도 있다.
+2·3·4팀 대진과 라운드별 BO 1·3·5, 활성 팀 순서, 중복 직접 시드에 DB 제약을 둔다.
+시작 시 양 팀이 정해진 노드만 Match를 만들며, 중도 종료의 복원 필드는 그 동작이 멈춘 Match만 재개하는 데 쓴다.
 
 출전 기록의 ROFL 참조는 필수다. `(game_id, rofl_metadata_id)` FK가 해당 Game의 채택본과 연결되도록 하고,
 `(rofl_metadata_id, rofl_participant_index)` FK가 실제 ROFL 참가자 존재를 보장한다.

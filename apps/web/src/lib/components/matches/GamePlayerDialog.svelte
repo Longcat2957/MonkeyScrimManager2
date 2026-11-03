@@ -7,7 +7,7 @@
 	import LoadoutIcon from './LoadoutIcon.svelte';
 
 	// 한 선수의 전체 수치. 표에 다 싣지 못한 주문·룬·아이템 이름과 세부 지표를 보여 준다.
-	let { open = $bindable(false), player, durationSec }: { open: boolean; player: GamePlayer | null; durationSec: number } = $props();
+	let { open = $bindable(false), player, durationSec }: { open: boolean; player: GamePlayer | null; durationSec: number | null } = $props();
 
 	const multi = $derived(
 		player
@@ -20,7 +20,7 @@
 	const rows = $derived(
 		player
 			? [
-					['KDA', `${player.kills} / ${player.deaths} / ${player.assists} (${kdaRatio(player)})`],
+					['KDA', `${player.kills ?? '-'} / ${player.deaths ?? '-'} / ${player.assists ?? '-'} (${kdaRatio(player)})`],
 					['챔피언 피해', formatNumber(player.damage)],
 					['받은 피해', formatNumber(player.damageTaken)],
 					['골드', `${formatNumber(player.gold)} (${perMinute(player.gold, durationSec)}/분)`],

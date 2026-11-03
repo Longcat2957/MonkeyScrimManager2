@@ -131,11 +131,11 @@
 	{/if}
 
 	<ul class="flex min-h-0 flex-col gap-1 overflow-y-auto" aria-label={`${team.name} 팀원`}>
-		{#each team.members as member (member.player.registrationId)}
+		{#each team.members as member (member.player.participantId)}
 			<li
 				class={[
 					'flex items-center gap-2 rounded-(--radius-small) bg-bg-highlight/50 px-2 py-2 dark:bg-bg-highlight-dark/50',
-					celebration?.registrationId === member.player.registrationId && 'member-pop'
+					celebration?.participantId === member.player.participantId && 'member-pop'
 				]}
 			>
 				<PlayerFace name={member.player.displayName} imageUrl={member.player.iconUrl} size="md" />

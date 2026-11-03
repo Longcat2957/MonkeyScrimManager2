@@ -13,6 +13,12 @@ import { createMockScrim, listMockScrims } from '#lib/mocks/scrims.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
+import { getDb } from '#lib/server/db/index.ts';
+import { listScrims } from '#lib/server/scrims/queries.ts';
+import { createScrim } from '#lib/server/scrims/service.ts';
+import { parseScrimSettings } from '#lib/server/scrims/validation.ts';
+import { actionFailure } from '#lib/server/actions.ts';
+import { routeError } from '#lib/server/http.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 const PAGE_SIZE = 20;
@@ -23,8 +29,7 @@ function requireDev() {
 	if (!dev) error(404, '내전을 찾을 수 없습니다.');
 }
 
-export const load: PageServerLoad = async ({ parent, params, url }) => {
-	requireDev();
+export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
 	const { guild } = await parent();
 	if (!guild) error(404, '서버를 찾을 수 없습니다.');
 
@@ -32,6 +37,12 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
 	const status = url.searchParams.get('status') as ScrimStatusFilter;
 	const statusFilter = FILTERS.includes(status) ? status : 'all';
 	const page = Math.max(1, Math.floor(Number(url.searchParams.get('page'))) || 1);
+	if (!(dev && findMockGuild(params.guildId))) {
+		try {
+			const result = await listScrims(getDb(), locals.actor, params.guildId, { status: statusFilter, page, pageSize: PAGE_SIZE });
+			return { ...result, page, pageSize: PAGE_SIZE, statusFilter, can: { createScrim: guild.isAdmin } };
+		} catch (cause) { routeError(cause); }
+	}
 
 	const version = await latestDataDragonVersion();
 	const result = await listMockScrims(params.guildId, { status: statusFilter, page, pageSize: PAGE_SIZE }, (championId) =>
@@ -47,7 +58,17 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
 };
 
 export const actions: Actions = {
-	create: async ({ request, params }) => {
+	create: async ({ request, params, locals, setHeaders }) => {
+		if (!(dev && findMockGuild(params.guildId))) {
+			try {
+				const data = await request.formData();
+				const settings = parseScrimSettings(readScrimSettingsForm(data));
+				const id = await createScrim(getDb(), locals.actor, params.guildId, { ...settings, requestId: String(data.get('requestId') ?? '') });
+				return { id };
+			} catch (cause) {
+				return actionFailure(cause, setHeaders);
+			}
+		}
 		requireDev();
 		if (!findMockGuild(params.guildId)?.isAdmin) return fail(403, { message: '내전을 만들 권한이 없어요' });
 		const input = readScrimSettingsForm(await request.formData());

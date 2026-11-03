@@ -8,45 +8,45 @@ export type PlayerGame = {
 	matchId: string;
 	gameId: string;
 	scrimTitle: string;
-	playedAt: string;
+	playedAt: string | null;
 	win: boolean;
 	champion: ChampionRef;
-	position: LolPosition;
-	kills: number;
-	deaths: number;
-	assists: number;
-	cs: number;
-	damage: number;
-	damageTaken: number;
-	gold: number;
-	visionScore: number;
-	teamKills: number;
-	durationSec: number;
+	position: LolPosition | null;
+	kills: number | null;
+	deaths: number | null;
+	assists: number | null;
+	cs: number | null;
+	damage: number | null;
+	damageTaken: number | null;
+	gold: number | null;
+	visionScore: number | null;
+	teamKills: number | null;
+	durationSec: number | null;
 	teammates: { userId: string; displayName: string }[];
 };
 
 export type PlayerSummary = {
 	games: number;
 	wins: number;
-	kills: number;
-	deaths: number;
-	assists: number;
-	kda: number;
-	csPerMin: number;
-	damagePerMin: number;
-	goldPerMin: number;
-	damageTakenPerMin: number;
-	visionPerGame: number;
-	killParticipation: number;
+	kills: number | null;
+	deaths: number | null;
+	assists: number | null;
+	kda: number | null;
+	csPerMin: number | null;
+	damagePerMin: number | null;
+	goldPerMin: number | null;
+	damageTakenPerMin: number | null;
+	visionPerGame: number | null;
+	killParticipation: number | null;
 	/** 플레이한 챔피언 수. */
-	champions: number;
+	champions: number | null;
 	/** 한 게임 최다 킬. */
-	maxKills: number;
+	maxKills: number | null;
 	/** 가장 긴 연승·연패. */
-	winStreak: number;
-	lossStreak: number;
+	winStreak: number | null;
+	lossStreak: number | null;
 	mainPosition: LolPosition | null;
 };
 
-export type ChampionRecord = { champion: ChampionRef; games: number; wins: number; kda: number };
+export type ChampionRecord = { champion: ChampionRef; games: number; wins: number; kda: number | null };
 export type DuoRecord = { userId: string; displayName: string; games: number; wins: number };

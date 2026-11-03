@@ -21,6 +21,14 @@ export type MatchStatusFilter = 'all' | 'in_progress' | 'done';
 /** 게임 표의 아이템·주문·룬 아이콘. 카탈로그에서 찾지 못하면 이름이 비고 아이콘이 null이다. */
 export type LoadoutIcon = { id: number; name: string; iconUrl: string | null };
 
+export type GameResolvers = {
+	champion: (id: string) => { id: string; name: string; iconUrl: string | null };
+	item: (id: number | null) => LoadoutIcon | null;
+	spell: (id: number | null) => LoadoutIcon | null;
+	rune: (id: number | null) => LoadoutIcon | null;
+	splash: (championId: string) => string | null;
+};
+
 export type GamePlayer = {
 	key: string;
 	userId: string | null;
@@ -29,9 +37,9 @@ export type GamePlayer = {
 	riotId: string | null;
 	champion: { id: string; name: string; iconUrl: string | null };
 	level: number | null;
-	kills: number;
-	deaths: number;
-	assists: number;
+	kills: number | null;
+	deaths: number | null;
+	assists: number | null;
 	cs: number | null;
 	damage: number | null;
 	damageTaken: number | null;
@@ -43,14 +51,14 @@ export type GamePlayer = {
 	heal: number | null;
 	shield: number | null;
 	largestKillingSpree: number | null;
-	multiKills: { double: number; triple: number; quadra: number; penta: number };
+	multiKills: { double: number | null; triple: number | null; quadra: number | null; penta: number | null };
 	// 빈 칸을 포함한 ITEM0~ITEM6 순서.
 	items: (LoadoutIcon | null)[];
 	spells: (LoadoutIcon | null)[];
 	keystone: LoadoutIcon | null;
 	secondaryStyle: LoadoutIcon | null;
-	// 임시 성과 점수(평점)와, 그 점수로 정한 승리 팀 1위(MVP)·패배 팀 1위(ACE).
-	score: number;
+	// 평점 기준이 정해지지 않은 실제 기록은 null이다. 개발 미리보기만 예시 평점을 가진다.
+	score: number | null;
 	badge: 'mvp' | 'ace' | null;
 	fearlessViolation: boolean;
 };
@@ -66,7 +74,7 @@ export type GameSide = {
 export type GameDetail = {
 	id: string;
 	order: number;
-	durationSec: number;
+	durationSec: number | null;
 	playedAt: string | null;
 	patch: string;
 	mmrStatus: 'applied' | 'pending' | 'none';

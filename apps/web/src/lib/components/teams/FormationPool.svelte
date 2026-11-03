@@ -9,7 +9,7 @@
 		selectedId: string | null;
 		interactive: boolean;
 		drag: DragState;
-		onselect: (registrationId: string) => void;
+		onselect: (participantId: string) => void;
 	};
 
 	let { players, selectedId, interactive, drag, onselect }: Props = $props();
@@ -31,7 +31,7 @@
 		<p class="px-3 pb-5 text-center text-sm text-gray-500 dark:text-gray-400">모든 참가자가 배정됐어요</p>
 	{:else}
 		<ul class="grid max-h-48 gap-1.5 overflow-y-auto px-2 pb-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-			{#each players as player (player.registrationId)}
+			{#each players as player (player.participantId)}
 				{#snippet content()}
 					<PlayerFace name={player.displayName} imageUrl={player.iconUrl} size="sm" />
 					<span class="flex min-w-0 flex-1 flex-col gap-1 text-left">
@@ -47,17 +47,17 @@
 						<button
 							type="button"
 							draggable="true"
-							aria-pressed={selectedId === player.registrationId}
+							aria-pressed={selectedId === player.participantId}
 							class={[
 								'flex min-h-12 w-full cursor-grab items-center gap-2 rounded-(--radius-small) border px-2 py-1.5 active:cursor-grabbing',
-								drag.id === player.registrationId && 'opacity-50',
-								selectedId === player.registrationId
+								drag.id === player.participantId && 'opacity-50',
+								selectedId === player.participantId
 									? 'border-primary bg-primary/10 ring-2 ring-primary/30 dark:border-dark dark:bg-dark/15'
 									: 'border-warning/20 bg-warning/5 hover:border-warning/40 hover:bg-warning/10'
 							]}
-							ondragstart={(event) => drag.start(event, player.registrationId)}
+							ondragstart={(event) => drag.start(event, player.participantId)}
 							ondragend={() => drag.end()}
-							onclick={() => onselect(player.registrationId)}
+							onclick={() => onselect(player.participantId)}
 						>
 							{@render content()}
 						</button>

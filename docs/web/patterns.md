@@ -19,7 +19,7 @@
 | 조건 변경 중 | 내전 목록은 `$app/state`의 `navigating`으로 이전 결과 흐림·작은 `Loading`을 표시. 모든 목록의 공통 자동 동작은 아님 |
 | 데이터 없음 | `SectionState state="empty"` 또는 해당 목록의 간단한 문구. 빈 결과 안에 상단 생성 작업을 다시 두지 않음 |
 | 영역 조회 실패 | `SectionState state="error"`: `role="alert"`, 오류 문구, 재시도 중 비활성인 버튼. 서버 홈은 `Promise.allSettled`·`SectionResult`로 영역별 실패를 분리 |
-| 권한 없음 | `can`, `guild.isAdmin` 등으로 관리 조작 렌더링을 제한. 일부 action은 목 권한을 다시 검사하지만 서버 관리의 Riot 계정 action은 실행자 권한 검사가 없음. 실제 인증·권한 정책은 미연결 |
+| 권한 없음 | `can`, `guild.isAdmin` 등으로 관리 조작 렌더링을 제한. 실제 action은 세션 실행자와 현재 Discord 권한을 검사하고 트랜잭션에서 다시 확인. 일반 읽기는 공개 |
 | 조건 미충족 | 편성 인원·잔여 포인트·단계 등 해당 기능의 조건에 따라 `disabled`와 이유 문구 사용 |
 | 제출 중 | `Button loading={pending ? {} : null}`. STDF `disabledLoading=true`로 해당 버튼 비활성. 입력 잠금·취소 허용 여부는 폼별 구현 |
 | 성공 | 결과가 화면에 보이면 데이터 갱신으로 알림. 설정 변경 등 일부 작업은 `toast.success` 사용 |
@@ -35,8 +35,8 @@
 ### 2.1 읽기와 갱신
 
 - 초기 읽기는 주로 `+page.server.ts`·`+layout.server.ts`의 `load`가 담당한다. 화면용 타입은 `lib/features/`, 목 데이터·목 변경 함수는 `lib/mocks/`에 있다.
-- 개발 모드에서 루트가 목 사용자·서버를 내려주고, 대부분의 업무 화면은 목 데이터를 조회·변경한다. 운영 모드 업무 화면은 아직 열리지 않는다.
-- 실제 서버 조회도 일부 있다. Data Dragon 이미지·챔피언/장비 정보와 백오피스의 서비스 상태는 각 서버 모듈을 사용한다. 서버 홈 순위는 전용 GET 경로가 있지만 순위 데이터 자체는 목이다. 기능별 데이터 출처는 페이지 문서에 기록한다.
+- 실제 서버 ID는 DB 업무 모듈을 읽고 변경한다. 개발 모드의 `devGuild001`·`devGuild002` 및 명시적 `mock=1` 미리보기만 목 사용자·저장소를 사용하며 실제 조회 실패를 목으로 대체하지 않는다.
+- Data Dragon 이미지·챔피언/장비 정보와 백오피스 서비스 상태는 각각 서버 모듈을 사용한다. 서버 홈 순위 GET은 DB의 현재 시즌·포지션 MMR을 읽으며 MMR 자동 계산·반영과는 별개다. 기능별 데이터 출처는 페이지 문서에 기록한다.
 - 컴포넌트는 목 모듈을 직접 읽지 않는다. 다만 `RankingBoard`는 초기 순위 props에서 시작해 무한 스크롤 시 전용 `/ranking` GET 경로를 직접 조회하고, 기능 컴포넌트는 필요한 form action을 호출한다. 모든 통신이 `load`에만 있는 구조는 아니다.
 - URL에 저장한 필터·검색·쪽 상태는 `goto(url, { reset: false })` → `load`로 갱신한다. 서버 홈 탭·통계 정렬 등 로컬 상태는 URL에 저장하지 않는다.
 
@@ -52,7 +52,7 @@
 
 `postAction`은 성공 시 `invalidateAll()` 후 `null`, `failure`의 `data.message`가 있으면 그 문자열, 그 외는 일반 실패 문구를 반환한다. 네트워크 예외는 현재 상태를 `invalidateAll()`로 다시 요청한 뒤 확인 문구를 반환한다. redirect·페이지 오류를 `applyAction`으로 처리하는 일반 helper는 아니다.
 
-409 충돌 최신화도 일괄 동작이 아니다. `RegistrationDialog`는 409 때 `invalidateAll()`로 정원을 갱신하지만, `postAction`은 상태 코드별 최신화·자동 재전송을 하지 않는다. 모든 쓰기에 멱등 키가 구현된 것은 아니며 각 action의 상태 검사와 제약을 확인해야 한다.
+`RegistrationDialog`와 `postAction`은 409 충돌 때 `invalidateAll()`로 현재 상태를 다시 읽는다. 자동 재전송은 하지 않는다. 모든 쓰기에 멱등 키가 구현된 것은 아니며 각 action의 상태 검사와 제약을 확인해야 한다.
 
 ## 3. 폼
 

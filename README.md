@@ -4,7 +4,7 @@
 화면·브라우저 제목·메타데이터·봇 메시지에는 정확히 `Monkeybot`을 사용한다.
 
 리그 오브 레전드 내전 운영과 ROFL 기반 전적 관리를 위한 전면 재구축 프로젝트.
-방향과 제약은 [프로젝트 목적](docs/purpose.md)을 따른다.
+MSM1의 운영 로직을 최대한 준용하고 최종 결과 입력만 ROFL로 대체한다. 방향과 제약은 [프로젝트 목적](docs/purpose.md), 실제 대조와 남은 차이는 [MSM1 준용 기준](docs/backend-plan.md#0-msm1-준용-기준)을 따른다.
 
 ## 개발 환경
 
@@ -14,7 +14,7 @@
 - 봇: discord.js 14, TypeScript 6, tsx
 - 디자인 프레임워크: [STDF 3](https://stdf.dev/), Tailwind CSS 4
 - 운영 서버: VPS에서 `@sveltejs/adapter-node`로 실행
-- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 32개 테이블을 정의했으며, 전체 스키마의 마이그레이션과 업무 화면의 DB 연결은 아직 하지 않았다.
+- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 35개 테이블·76개 외래키와 전체 초기 마이그레이션을 관리한다.
 
 프로젝트 루트에서 실행한다.
 
@@ -25,7 +25,8 @@ pnpm dev
 ```
 
 기본 개발 주소는 `http://localhost:5173`이다. 홈의 개발 바로가기에서 내전·팀 편성·대진·경기 기록·통계·서버 관리 화면을 열 수 있다.
-업무 화면은 개발용 목 저장소로 동작하며, 저장한 변경은 프로세스 재시작이나 관련 모듈의 HMR로 초기화될 수 있다.
+명시적인 개발 샘플 서버(`devGuild001`, `devGuild002`)와 `?mock=1` 미리보기에는 목 데이터를 사용한다.
+실제 Discord 서버 ID의 구현된 기능은 DB를 사용하며, 인증·외부 조회 실패를 목 데이터로 대체하지 않는다.
 
 ## 현재 구현 범위
 
@@ -33,15 +34,22 @@ pnpm dev
 
 | 영역 | 현재 동작 |
 | --- | --- |
-| 모집·편성·대진 | 개발 모드에서 신청·선발·수동 편성·경매·대진 배치·단계 되돌리기·중도 종료를 목 저장소에 반영한다. 편성은 `/manual`·`/auction`, 종료된 내전은 `/result`로 이동한다 |
-| 경기·전적·통계 | 경기 상세는 샘플 데이터와 메모리에 등록한 ROFL 결과를 표시한다. 개인 전적·서버 통계는 별도의 합성 데이터이며, 업로드 결과와 연결되지 않는다 |
-| Riot 계정·서버 관리 | `/me`는 계정 조회만 제공한다. 서버 관리에서 계정 연결·해제·대표 지정, Discord 역할·채널 선택을 목 저장소에 반영한다 |
-| 외부 조회 | Riot 조회 API와 Data Dragon 조회가 구현돼 있다. 화면의 챔피언·아이템·룬 이미지 등은 실제 Data Dragon을 사용하지만 Riot 계정 연결 화면의 조회는 목이다 |
-| 백오피스 | 목 로그인 사용자의 서비스 운영자 여부를 확인한 뒤 실제 DB `select 1`과 설정한 봇 상태 주소를 조회한다 |
-| 인증·영속 저장 | Discord OAuth·세션 복원·실제 서버 소속/권한 검사·업무 데이터 DB 저장은 미구현이다. 개발 외 모드의 업무 화면은 경로에 따라 빈 상태 또는 401/403/404를 반환한다 |
+| 모집·수동 편성·대진 | 생성·신청·선발·철회·설정, 수동 배정·확정, 대진 배치·BO·확정, 시작·되돌리기·중도 종료를 DB 트랜잭션으로 처리한다. 시작 시 양 팀이 정해진 실제 Match를 만든다 |
+| 경매 | 팀장·포인트 설정, 후보 대기열·낙찰·유찰·수동 배치·되돌리기를 DB에 연결했다. 상태·revision·잔여 포인트를 트랜잭션에서 검사한다 |
+| 경기·전적·통계 | 경기 목록·상세는 DB Match·Game·실출전을 공개 조회한다. 누락된 수치·시각과 평가 근거 없는 평점은 null로 유지한다. 개인 전적·서버 통계는 현재 활성 시즌의 유효 실출전 기록, 홈 순위는 현재 멤버의 해당 시즌·포지션 유효 1게임 이상을 조회한다 |
+| MMR | 초기 1500·K=32·동포지션 Elo와 내부 반영·역분개 서비스를 구현했다. 중복 반영을 막고 원장·현재값을 같은 트랜잭션으로 갱신한다. ROFL 결과 저장 흐름에는 아직 연결하지 않았다 |
+| Riot 계정·서버 관리 | 실제 Riot 조회 후 서버별 계정 연결·대표 지정·해제를 저장한다. `/me`는 본인 연결을 서버별로 조회한다. Discord 역할·채널·게시 가능 권한을 실제 조회하고 설정을 저장한다 |
+| 외부 조회 | Riot 서버 모듈과 Data Dragon 조회를 사용한다. 계정 조회는 실행자별 호출 제한과 관리자 검사를 거친다 |
+| 백오피스 | 세션의 서비스 운영자 권한을 확인한 뒤 실제 DB `select 1`과 설정한 봇 상태 주소를 조회한다 |
+| 인증·접근 | Discord OAuth + PKCE, DB 세션·로그아웃, 실제 Discord 소속·실효 권한 검사를 구현했다. 일반 서버 화면은 비로그인·비소속자도 열람하고 조작은 서버 관리자 또는 본인 신청 권한으로 제한한다 |
 
-대진 확정/내전 시작이 실제 Match를 만들거나 ROFL 결과를 대진·MMR로 전파하지는 않는다.
+경기별 라인업 확정, ROFL의 실제 참가자·진영·중복 검증과 영구 결과 등록, 승자 진출·MMR 서비스 연결, Discord 업무 게시·interaction은 남아 있다.
 화면별 구현과 제한은 [웹 문서](docs/web/README.md)를 기준으로 확인한다.
+
+현재 프론트엔드를 실제 인증·DB·봇에 연결하는 구조, CRUD 대응, 구현 순서와 검증 기준은
+[백엔드 구현 계획](docs/backend-plan.md)에 정리한다. 완료한 기반과 후속 작업을 구분해 기록한다.
+
+[서버 구조](apps/web/src/lib/server/README.md)는 기능별 조회·쓰기 함수, 실행자·인증 guard·업무 오류·트랜잭션 타입을 설명한다.
 
 ## 진입점
 
@@ -51,7 +59,7 @@ pnpm dev
 | `apps/web/src/routes/+layout.svelte` | 공통 헤더 연결·본문 컨테이너 및 전역 CSS 로딩 |
 | `apps/web/src/lib/components/layout/AppHeader.svelte` | 상단 내비게이션·모바일 메뉴·화면 모드 전환 |
 | `apps/web/src/lib/components/layout/AppFooter.svelte` | 서비스 도메인·정책·문서 링크를 담은 공통 푸터 |
-| `apps/web/src/hooks.server.ts` | 요청별 인증·권한 검사를 연결할 서버 훅 |
+| `apps/web/src/hooks.server.ts` | 요청 식별자 생성·DB 세션 복원·만료 쿠키 제거 |
 | `apps/web/src/lib/branding.ts` | 화면 표시명 `SERVICE_NAME`과 서비스·저장소 URL의 공통 정의 |
 | `apps/web/src/routes/layout.css` | Tailwind CSS, STDF 소스와 전역 Slate 테마 |
 | `apps/web/src/routes/+page.svelte` | `/` 첫 페이지 |
@@ -79,7 +87,7 @@ pnpm dev
 본문과 푸터는 공통 `app-frame`으로 폭과 세로 경계선을 맞춘다. 짧은 페이지에서는 푸터가 화면 하단에,
 긴 페이지에서는 콘텐츠 다음에 배치된다.
 헤더는 STDF `NavBar` 기반이며 현재 범위(전역·서버·내전)에 맞는 메뉴, 오른쪽의 서버 선택·화면 모드·계정 메뉴를 제공한다.
-1024px 미만에서는 메뉴·계정·화면 모드를 오른쪽 패널로 옮긴다. 인증 연결 전에는 개발 모드에서만 목 사용자·서버로 동작한다.
+1024px 미만에서는 메뉴·계정·화면 모드를 오른쪽 패널로 옮긴다. 로그인·로그아웃과 실제 세션 사용자·서버 목록을 연결했다.
 푸터는 [MSM1 푸터](https://github.com/Longcat2957/MonkeyScrimManager/blob/8847ac77b5d939c683099f381386a242fe764517/apps/web/src/lib/components/layout/AppFooter.svelte)를 참고해
 서비스 도메인과 문서·이용약관·개인정보 처리방침을 제공한다. 정책·문서 링크는 같은 탭에서
 내부 `/docs`, `/terms`, `/privacy` 페이지로 이동한다. `/docs`는 이용 흐름·FAQ를, 정책 페이지는 현재 준비 상태와 안내 본문을 표시한다.
@@ -88,9 +96,9 @@ pnpm dev
 배치와 얇은 경계선은 [STDF 헤더](https://github.com/any-tdf/any-tdf/blob/main/apps/stdf-site/src/lib/header/Header.svelte)와
 [공통 스타일](https://github.com/any-tdf/any-tdf/blob/main/apps/site-common/assets/styles.css)을 참고했다.
 
-서버 훅은 `인증 정보 복원 → 권한 검사 → resolve(event)` 순서의 틀만 두었다.
-현재는 모든 요청을 그대로 통과시키며, 인증 방식·역할·세션·접근 정책은 미구현이다.
-이후 인증 정보를 `event.locals`에 전달하고 실제 권한은 서버에서 검사한다.
+서버 훅은 요청마다 `event.locals.requestId`를 만들고 DB 세션을 `actor`·`user`·`session`에 복원한다.
+일반 서버 조회는 활성 길드의 공개 열람을 허용한다. 관리자 조작과 본인 신청은 Discord 소속·실효 권한을 다시 확인하며,
+서비스 운영자에게 다른 서버 관리 권한을 자동 부여하지 않는다.
 레이아웃에서 메뉴를 표시하거나 숨기는 것은 접근 권한 검사를 대신하지 않는다.
 
 전역 색상은 [STDF 단일 테마 설정](https://github.com/any-tdf/any-tdf/blob/main/content/stdf/guide/theme_en.md)에 맞춰
@@ -106,6 +114,14 @@ pnpm dev
 본문·내비게이션·STDF 컨트롤은 MSM1과 동일한 `Noto Sans KR`을 사용한다. Google Fonts에서
 400·500·600·700·800 굵기를 `display=swap`으로 불러오며 `@theme`의 `--font-sans`로 전역 적용한다.
 `Monkeybot` 워드마크에는 Google Fonts의 `Jersey 10` regular 400을 `font-brand`로 적용한다.
+
+## Discord 로그인과 권한
+
+`apps/web/.env`의 `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `DISCORD_BOT_TOKEN`을 설정한다.
+Discord 개발자 설정에 동일한 callback 주소를 등록한다. 로그인은 `identify` scope와 Authorization Code + PKCE를 사용하고,
+길드 소속·권한·설정 선택지는 웹 서버가 Bot 토큰으로 Discord REST에서 조회한다.
+OAuth 토큰은 사용자 확인 후 폐기하고, 30일 세션의 난수 토큰은 쿠키에, SHA-256 해시는 DB에 보관한다.
+쿠키는 HttpOnly·SameSite=Lax와 운영 Secure를 적용한다. 로그인 상태와 길드 관리 권한은 서로 분리한다.
 
 ## Riot API
 
@@ -140,13 +156,15 @@ RIOT_API_TIMEOUT_MS=10000
 
 각 경로의 사용 목적·파라미터·응답·제약은 [Riot API 연동 문서](docs/riot-api.md)에 정리했다.
 외부 API는 현재 기능에서 사용할 근거가 있을 때만 추가한다. Data Dragon은 화면 로더에서 사용한다.
-Riot API와 계정 연결 UI의 연동, 사용자 계정 DB 저장, 봇의 업무 기능 연결은 아직 구현하지 않았다.
+계정 연결 UI는 서버 내부 Riot 모듈을 직접 호출하고, 연결 전에 PUUID와 활성 LoL 플랫폼을 다시 검증한다.
+계정 식별 행은 재사용하되 사용자 연결·대표 여부는 `guild_riot_accounts`에서 서버별로 관리한다. 봇의 업무 기능은 후속 작업이다.
 
 공통 요청 처리는 `apps/web/src/lib/server/riot/transport.ts`, 환경 변수 연결은 `client.ts`,
 계정 조회는 `account.ts`, LoL 조회는 `lol/`의 각 모듈이 담당한다.
 HTTP 경로와 웹 서버 내부의 호출은 동일한 조회 함수를 사용한다.
 
-현재 조회 API에는 사용자 인증을 적용하지 않았다. 웹 서버 프로세스당 Riot 요청은 최대 8개를 동시에 처리하고,
+기존 Riot HTTP 조회 경로는 공개 조회를 유지한다. 신규 관리자 계정 조회·연결은 사용자당 분당 10회로 제한한다.
+웹 서버 프로세스당 Riot 요청은 최대 8개를 동시에 처리하고,
 `429` 응답을 받으면 `Retry-After`에 따라 해당 호스트의 후속 요청을 일시 중단한다.
 Riot 응답 캐시와 자동 재시도는 적용하지 않았다. Data Dragon은 API 키 없이 별도로 요청하며,
 버전 목록은 5분, 버전별 정적 데이터는 24시간 캐시한다.
@@ -177,7 +195,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 32개 테이블·69개 외래키, 조회·삽입 타입 정의 |
+| `apps/web/src/lib/server/db/schema.ts` | 35개 테이블·76개 외래키, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
@@ -188,7 +206,7 @@ DB는 `getDb()`를 처음 호출할 때 초기화한다. 주소 미설정 상태
 Match·Game, 버전별 ROFL 데이터, 포지션별 MMR과 반영 이력, Discord 설정·역할·채널을 포함한다.
 개인별 공개 범위 설정 테이블은 없다.
 전체 관계와 주요 제약은 [DB ERD](docs/database-erd.md)에서 확인할 수 있다.
-MMR의 계산 기준과 후속 반영 절차는 [MMR 저장 계약](docs/mmr.md)에 정리한다.
+MMR의 계산 기준과 내부 반영·역분개 절차는 [MMR 저장 계약](docs/mmr.md)에 정리한다.
 스키마 변경을 확정한 뒤 프로젝트 루트에서 SQL을 생성하고 내용을 검토한 다음 적용한다.
 
 ```sh
@@ -200,8 +218,8 @@ pnpm db:migrate
 `db:generate`는 DB 접속 없이 스키마 변경에 대한 SQL을 생성한다.
 `db:migrate`는 실제 DB에 접속해 검토한 마이그레이션을 적용하는 명령이다.
 생성한 SQL과 메타데이터는 Git으로 관리하고 접속 정보는 제외한다.
-현재 관리하는 마이그레이션은 `0000_create_users`뿐이다. 이후 추가한 테이블과 제약은
-스키마 정의 단계이며, 해당 변경의 마이그레이션 생성·DB 적용은 아직 하지 않았다.
+초기 생성 기준은 `0000_initial_schema.sql`과 대응 snapshot·journal이다. 업무 데이터가 없는 개발 DB를 기준으로
+전체 초기 스키마를 재생성했으며, 이후 운영 데이터가 생기면 변경 migration을 추가한다.
 
 ### User
 
@@ -221,8 +239,10 @@ pnpm db:migrate
 프로필 필드는 Discord 응답의 복사본이며 서버별 닉네임·프로필과 구분한다.
 `updatedAt`은 Drizzle의 수정 쿼리에서 자동 갱신한다. 직접 SQL로 수정할 때는 호출자가 함께 갱신해야 한다.
 비밀번호·이메일·OAuth 토큰·길드 권한은 User에 저장하지 않는다.
-사용자 한 명은 여러 `riot_accounts`를 연결할 수 있으며, 길드 소속과 관리자 권한은 `guild_members`에서 관리한다.
-OAuth 로그인 처리와 세션 관리는 아직 구현하지 않았다.
+사용자 한 명은 서버마다 여러 Riot 계정을 연결할 수 있다. `riot_accounts`는 PUUID 식별 정보,
+`guild_riot_accounts`는 서버별 사용자 연결·대표 여부·지정자를 저장한다. 같은 Riot 계정도 서버마다 다른 연결을 가질 수 있다.
+해제는 해당 서버의 연결만 삭제하며 같은 서버의 활성 신청에 쓰이는 계정은 해제하지 않는다.
+길드 소속과 동기화한 권한은 `guild_members`, 로그인 세션은 `sessions`에서 관리한다.
 
 필드 근거: [Discord User](https://docs.discord.com/developers/resources/user#user-object),
 [Discord Snowflake](https://docs.discord.com/developers/reference#snowflakes).
@@ -245,8 +265,9 @@ pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 
 `rofl:research`는 새 디렉터리에 원본 사본·전체 메타데이터·압축 해제 청크·패킷 인덱스·분석 보고서를 만든다.
 패킷의 시각·ID·본문 위치를 추출하며, 킬·이동 등 본문의 의미 해석은 아직 검증하지 않았다.
-개발 모드의 경기 상세에는 ROFL 업로드 폼 action이 있다. `projectRoflGame`으로 실제 파일을 읽고
-경기 목 저장소에 게임을 추가해 시리즈 점수를 계산한다. 실제 참가자 연결·업로드 권한·DB 저장은 미구현이며,
+명시적 개발 샘플의 경기 상세에는 ROFL 업로드 폼 action이 있다. `projectRoflGame`으로 실제 파일을 읽고
+경기 목 저장소에 게임을 추가해 시리즈 점수를 계산한다. 실제 참가자 귀속·진영·순서 검증과 DB 등록은 미구현이며 운영 업로드는 비활성이다.
+
 이 개발용 등록 경로는 `prepareRoflImport`의 DB 적재 모델과 아직 연결되지 않았다.
 로컬 원본·분석 결과는 Git에서 제외되는 프로젝트 루트 `samples/`에 둔다.
 명령과 출력 형식은 [ROFL 분석 문서](docs/rofl.md), 실측 결과와 후속 과제는 [연구 기록](docs/rofl-research.md)을 따른다.
@@ -294,8 +315,16 @@ pnpm start:bot
 
 ```sh
 pnpm check
+pnpm test
 pnpm build
 pnpm start
+```
+
+DB 통합 테스트는 `apps/web/.env` 또는 프로세스 환경에 `DATABASE_URL`을 설정하고 루트에서 실행한다. 테스트별 무작위 schema 또는 롤백을 사용해
+실제 제약·동시 요청·서버별 계정 분리를 검증한다. Discord·Riot 자격 증명을 쓰는 최종 로그인/운영 흐름 검증과는 구분한다.
+
+```sh
+pnpm test:db
 ```
 
 운영 서버의 기본 포트는 `3000`이다. VPS의 서비스 관리자에서 환경 변수를

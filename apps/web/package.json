@@ -8,6 +8,7 @@
 		"build": "vite build",
 		"start": "node --env-file-if-exists=.env build",
 		"test": "node --experimental-strip-types --test tests/*.test.ts",
+		"test:db": "node --env-file-if-exists=.env --experimental-strip-types --test tests/*.integration.ts tests/*-database.test.ts",
 		"db:generate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs generate",
 		"db:migrate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs migrate",
 		"preview": "vite preview",

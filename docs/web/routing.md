@@ -1,12 +1,14 @@
 # 라우트·레이아웃·내비게이션
 
-갱신일: 2026-11-03. `apps/web/src/routes/`와 공통 레이아웃의 현재 구현을 기준으로 한다. 서비스 화면은 구현되어 있지만 인증과 대부분의 업무 데이터는 개발 모드 목에 의존한다.
+갱신일: 2026-11-03. `apps/web/src/routes/`와 공통 레이아웃의 현재 구현을 기준으로 한다. 실제 서버 ID는 DB 조회와 OAuth 세션을 사용하고 개발 샘플 ID만 목 화면을 제공한다.
 
 ## 1. 라우트
 
 ```text
 /                                        서비스 소개
-├── me                                   내 정보·연결된 Riot 계정 조회
+├── auth/login · auth/callback           Discord OAuth + PKCE
+├── auth/logout                          POST 로그아웃
+├── me                                   내 정보·서버별 연결된 Riot 계정 조회
 ├── docs · terms · privacy               이용 안내·약관·개인정보 처리방침
 ├── backoffice                           서비스 운영자용 서비스 상태
 ├── dev/components · dev/error           개발 모드 전용 검증 화면
@@ -31,16 +33,16 @@
 
 | 파라미터 | 의미 | 현재 처리 |
 | --- | --- | --- |
-| `[guildId]` | Discord 서버 ID | 개발 모드 레이아웃에서 `findMockGuild`로 조회하고 없으면 404 |
-| `[scrimId]` | `scrims.id` | 서버 ID와 함께 `findMockScrim`으로 조회하고 없으면 404 |
+| `[guildId]` | Discord 서버 ID | 활성 DB 서버를 공개 조회. 개발 샘플 ID만 `findMockGuild`로 조회 |
+| `[scrimId]` | `scrims.id` | 서버 ID와 함께 DB에서 조회하고 없으면 404 |
 | `[matchId]` | `matches.id` | 서버 하위 경기 경로. 대진·경기 기록에서 같은 상세로 이동 |
 | `[userId]` | `users.id` (Discord 사용자 ID) | `[userId]` 폴더로 구현됨. `PlayerName`은 사용자 연결이 없거나 `link=false`이면 링크 없이 이름만 표시 |
 
-`hooks.server.ts`는 현재 `resolve(event)`만 호출한다. 공통 세션 인증·DB 기반 서버 멤버십 검사는 아직 없다. 개발 모드의 `mockUser`, `guild.isAdmin`, `can` 값과 일부 action의 목 권한 검사를 운영 인증으로 해석하지 않는다. 모든 action이 실행자 권한을 재검사하는 것도 아니다.
+`hooks.server.ts`는 해시 세션으로 `locals.actor`·`locals.user`를 복원한다. 일반 서버 열람은 비로그인·비소속자에게 공개하며 활성 서버·대상의 존재를 검사한다. 신청·관리 action은 실제 Discord 소속·실효 권한을 다시 확인하고 트랜잭션에서도 권한·상태를 검사한다. 개발 샘플의 `mockUser`·`can`은 실제 ID의 요청에 쓰지 않는다.
 
 ### 1.2 편성·대진 작업판 진입
 
-개발 모드에서 내전 조회 후 각 `+page.server.ts`가 아래를 처리한다.
+내전 조회 후 각 `+page.server.ts`가 아래를 처리한다.
 
 | 상황 | 결과 |
 | --- | --- |
@@ -59,7 +61,7 @@
 | 경기 기록 | `q`, `page` | 빈 검색어, `1`; 검색어는 50자까지, 쪽 이동은 종료 목록에만 적용 |
 | 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 게임. 일치하는 게임이 없으면 기본 선택 |
 | 사용자 전적 | `position=all\|top\|jungle\|mid\|bot\|support`, `page` | `all`, `1` |
-| 서버 통계 | `position`, `recent=1`, `min` | 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 업적의 사용자별 최근 10게임 집계에 적용; 기간·시즌 `range`는 미구현 |
+| 서버 통계 | `position`, `recent=1`, `min` | 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 개발 샘플 업적의 사용자별 최근 10게임 집계에만 적용; 기간·시즌 `range`는 미구현 |
 | 서버 관리 | `tab=members\|discord`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지 |
 
 페이지 필터 변경은 `goto(url, { reset: false })`로 이동하고 `load`가 다시 읽는다. 검색은 폼 제출 시 반영한다. 목록 조건이 바뀌면 페이지를 초기화하며, 서버 관리 탭 변경은 해당 경로의 새 URL에서 시작한다.
@@ -77,16 +79,16 @@
 - `/api/lol/summoner/v4/summoners/by-puuid/[puuid]`, `/api/lol/league/v4/entries/by-puuid/[puuid]`.
 - `/g/[guildId]/ranking`: `RankingBoard`의 무한 스크롤이 소비하는 서버 순위 다음 쪽.
 
-Riot API 핸들러의 `region`·`platform` 등은 서버 클라이언트 설정과 검증을 따른다. 이 경로가 존재한다고 프론트의 목 조회·계정 연결·전적이 모두 실서비스 API에 연결된 것은 아니다.
+Riot API 핸들러의 `region`·`platform` 등은 서버 클라이언트 설정과 검증을 따른다. 기존 프로필·티어 HTTP 조회는 공개이며, 서버 관리의 계정 조회·연결은 관리자 guard를 거친 서버 내부 호출이다.
 
 ## 2. 레이아웃 계층
 
 ```text
-routes/+layout.server.ts                  user·guilds (개발 목 / 운영 null·[])
+routes/+layout.server.ts                  user·guilds (세션 사용자·본인 소속 서버 목록)
 routes/+layout.svelte                     ConfigProvider(ko_KR)
                                          본문 바로가기 · AppHeader · main · AppFooter · Feedback
-└── g/[guildId]/+layout.server.ts         guild (개발 목 / 운영 null)
-    └── scrims/[scrimId]/+layout.server.ts  scrim·artUrl (개발 조회 / 운영 null)
+└── g/[guildId]/+layout.server.ts         guild (공개 DB 조회)
+    └── scrims/[scrimId]/+layout.server.ts  scrim·artUrl (공개 DB 조회)
         └── +layout.svelte                ScrimSummary + 하위 페이지
 ```
 
@@ -123,7 +125,7 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 - 내전 범위의 서버 메뉴는 데스크톱 `MenuButton`, 모바일 패널의 `ContextNav`로 제공한다. 팀 편성은 `formationPath`, 대진·결과는 `bracketPath`를 사용한다.
 - `MenuButton`은 `ActionMenu`를 연다. 데스크톱은 `ActionPopover`, 모바일은 `ActionSheet`이며 메뉴 항목 선택은 `goto`로 이동한다. 이 메뉴 항목은 `ContextNav`의 `<a>`와 다른 구조다.
 - 서버 선택기는 `user`가 있을 때만 표시한다. 현재 서버는 `현재 서버` 설명과 비활성 표시만 제공하고, 다른 서버는 해당 서버 홈으로 이동한다. 서버가 없으면 비활성 안내 항목 하나를 표시한다.
-- 계정 메뉴는 `내 정보`와 서비스 운영자 전용 `백오피스`다. 로그인·로그아웃 버튼과 인증 경로는 아직 없다. 운영 모드의 비로그인 헤더에는 계정 메뉴·서버 선택기가 표시되지 않는다.
+- 계정 메뉴는 `내 정보`와 서비스 운영자 전용 `백오피스`다. 비로그인 상태에는 Discord 로그인 링크, 로그인 상태에는 POST 로그아웃이 있다. 비로그인 상태에는 계정 메뉴·서버 선택기가 표시되지 않지만 서버 URL로 공개 화면에 접근할 수 있다.
 - 화면 모드는 데스크톱 아이콘 `Button`, 모바일 메뉴의 `SwitchCell` 한 곳에서 전환한다. `setMode`가 `html[data-mode]`와 저장소를 갱신한다.
 - 모바일 링크 선택은 메뉴 패널을 닫는다. `overlay`가 열린 패널 밖 헤더를 `inert`로 만들어 서버 선택기 등 배경 조작을 막는다. 별도의 전역 메뉴 상태 관리자는 없다.
 - 헤더만 `sticky top-0`이며 하단 탭바는 없다.
@@ -140,9 +142,9 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 | `/dev/error` | 개발 모드에서 `status`의 403·404·500을 재현. 없거나 다른 값이면 404 |
 | `/dev/components` | 개발 모드에서 대표 STDF·서비스 컴포넌트, 폼·팝업·상태 샘플 제공. 모든 업무 화면을 대체하는 검증 공간은 아님 |
 | `/dev/*` 운영 모드 | 404 |
-| `/me` 운영 모드 | 401. 현재 공통 오류 화면은 401 전용 로그인 안내가 없음 |
-| `/backoffice` | `user.isServiceAdmin`이 아니면 403. 개발 목 운영자는 실제 서비스 상태 조회 사용 |
-| `/g/[guildId]`와 하위 업무 화면 운영 모드 | 레이아웃 문맥이 `null`이고 페이지는 404. 목 화면이 운영에서 그대로 제공되지 않음 |
+| `/me` | 세션으로 본인의 서버별 계정을 조회. 비로그인 401 |
+| `/backoffice` | 실제 세션의 `isServiceAdmin`을 검사. 명시적 개발 목 미리보기는 분리 |
+| `/g/[guildId]`와 일반 하위 화면 | 활성 DB 서버·대상을 공개 조회. 없음·비활성은 404. `/admin`은 현재 관리자 검사 |
 | `/`, `/docs`, `/terms`, `/privacy` | 정적 서비스 소개·이용 안내·정책 준비 중 화면 |
 
-현재 구현은 인증·업무 DB 연결의 완료를 뜻하지 않는다. 세부 화면과 목 데이터·실제 외부 조회의 경계는 [페이지별 문서](README.md)를 따른다.
+기능별 DB 연결·개발 미리보기·아직 보류된 ROFL 등록과 MMR 반영의 경계는 [페이지별 문서](README.md)를 따른다.

@@ -13,6 +13,7 @@
 	import StatusTag from '#lib/components/common/StatusTag.svelte';
 	import DuoList from '#lib/components/players/DuoList.svelte';
 	import RadarChart from '#lib/components/players/RadarChart.svelte';
+	import { fixed, percent, integer, withUnit } from '#lib/features/players/format.ts';
 	import type { RankedMetric } from '#lib/features/players/stats.ts';
 	import { formatShortDate, POSITIONS } from '#lib/features/labels.ts';
 	import type { LolPosition } from '#lib/features/guild/types.ts';
@@ -23,7 +24,7 @@
 
 	const guildId = $derived(page.params.guildId!);
 	const laneText = (key: LolPosition) => POSITIONS.find((position) => position.key === key)?.text ?? key;
-	const filters = $derived([{ key: 'all' as const, games: data.positions.reduce((sum, item) => sum + item.games, 0) }, ...data.positions]);
+	const filters = $derived([{ key: 'all' as const, games: data.overallGames }, ...data.positions]);
 	const active = $derived(filters.findIndex((filter) => filter.key === data.position));
 	const labels = $derived(filters.map((filter) => ({ text: `${filter.key === 'all' ? '전체' : laneText(filter.key)} ${filter.games}` })));
 	// 챔피언이 많으면 상위 몇 개만 먼저 보여 준다. 포지션을 바꾸면 다시 접는다.
@@ -34,30 +35,28 @@
 		showAllChampions = false;
 	});
 	const champions = $derived(showAllChampions ? data.champions : data.champions.slice(0, CHAMPION_PREVIEW));
-	const percent = (value: number) => `${Math.round(value * 100)}%`;
 	const gameHref = (matchId: string, gameId: string) => `${resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId })}?game=${gameId}`;
 
-	const thousands = (value: number) => Math.round(value).toLocaleString('ko-KR');
-	const top = (key: RankedMetric) => (data.percents ? `상위 ${data.percents[key]}%` : null);
+	const top = (key: RankedMetric) => (data.percents?.[key] != null ? `상위 ${data.percents[key]}%` : null);
 	const tiles = $derived.by((): [string, string, string | null, StatTone][] => {
 		const s = data.summary;
 		if (!s) return [];
 		return [
 			['승률', percent(s.wins / s.games), top('winRate'), 'info'],
-			['KDA', s.kda.toFixed(2), top('kda'), 'warning'],
+			['KDA', fixed(s.kda, 2), top('kda'), 'warning'],
 			['킬 관여', percent(s.killParticipation), top('killParticipation'), 'success'],
-			['최장 연승', `${s.winStreak}연승`, top('winStreak'), 'success'],
-			['최장 연패', `${s.lossStreak}연패`, null, 'error'],
-			['평균 킬', s.kills.toFixed(1), top('kills'), 'error'],
-			['평균 데스', s.deaths.toFixed(1), top('deaths'), 'neutral'],
-			['평균 어시스트', s.assists.toFixed(1), top('assists'), 'info'],
-			['최다 킬', `${s.maxKills}킬`, top('maxKills'), 'error'],
-			['챔피언 폭', `${s.champions}개`, top('champions'), 'neutral'],
-			['분당 CS', s.csPerMin.toFixed(1), top('csPerMin'), 'success'],
-			['분당 골드', thousands(s.goldPerMin), top('goldPerMin'), 'warning'],
-			['분당 피해량', thousands(s.damagePerMin), top('damagePerMin'), 'error'],
-			['분당 받은 피해', thousands(s.damageTakenPerMin), top('damageTakenPerMin'), 'neutral'],
-			['게임당 시야', s.visionPerGame.toFixed(1), top('visionPerGame'), 'info']
+			['최장 연승', withUnit(s.winStreak, '연승'), top('winStreak'), 'success'],
+			['최장 연패', withUnit(s.lossStreak, '연패'), null, 'error'],
+			['평균 킬', fixed(s.kills, 1), top('kills'), 'error'],
+			['평균 데스', fixed(s.deaths, 1), top('deaths'), 'neutral'],
+			['평균 어시스트', fixed(s.assists, 1), top('assists'), 'info'],
+			['최다 킬', withUnit(s.maxKills, '킬'), top('maxKills'), 'error'],
+			['챔피언 폭', withUnit(s.champions, '개'), top('champions'), 'neutral'],
+			['분당 CS', fixed(s.csPerMin, 1), top('csPerMin'), 'success'],
+			['분당 골드', integer(s.goldPerMin), top('goldPerMin'), 'warning'],
+			['분당 피해량', integer(s.damagePerMin), top('damagePerMin'), 'error'],
+			['분당 받은 피해', integer(s.damageTakenPerMin), top('damageTakenPerMin'), 'neutral'],
+			['게임당 시야', fixed(s.visionPerGame, 1), top('visionPerGame'), 'info']
 		];
 	});
 	// 성향 그래프는 상위 %를 0~1 점수로 바꿔 그린다. 바깥쪽일수록 서버에서 앞선다.
@@ -71,9 +70,9 @@
 	] as const;
 	const radar = $derived.by(() => {
 		const percents = data.percents;
-		return percents ? RADAR_AXES.map(([label, key]) => ({ label, value: (101 - percents[key]) / 100, detail: `상위 ${percents[key]}%` })) : null;
+		return percents && RADAR_AXES.every(([, key]) => percents[key] !== null) ? RADAR_AXES.map(([label, key]) => ({ label, value: (101 - percents[key]!) / 100, detail: `상위 ${percents[key]}%` })) : null;
 	});
-	const overall = $derived(data.positions.reduce((sum, item) => sum + item.games, 0));
+	const overall = $derived(data.overallGames);
 
 	function navigate(params: { position?: LolPosition | 'all'; page?: number }) {
 		const url = new URL(page.url.href);
@@ -173,7 +172,7 @@
 									<span class="text-xs tabular-nums">
 										<span class="opacity-60">{record.games}게임</span>
 										<span class={record.wins / record.games >= 0.5 ? 'text-success' : 'text-error'}>{percent(record.wins / record.games)}</span>
-										<span class="opacity-60">· KDA {record.kda.toFixed(2)}</span>
+										<span class="opacity-60">· KDA {fixed(record.kda, 2)}</span>
 									</span>
 								</span>
 							</li>
@@ -189,22 +188,22 @@
 				</section>
 
 				<section aria-labelledby="history" class="flex flex-col gap-3">
-					<h2 id="history" class="text-lg font-semibold">최근 게임</h2>
+					<h2 id="history" class="text-lg font-semibold">게임 기록</h2>
 					<CellGroup my="0" mx="0" shadow="none">
 						<ul>
 							{#each data.history as game, index (game.gameId + game.playedAt)}
 								<li>
-									<LinkCell href={gameHref(game.matchId, game.gameId)} line={index < data.history.length - 1} subTitle={`${game.scrimTitle} · ${formatShortDate(game.playedAt)}`}>
+									<LinkCell href={gameHref(game.matchId, game.gameId)} line={index < data.history.length - 1} subTitle={`${game.scrimTitle} · ${game.playedAt ? formatShortDate(game.playedAt) : '경기 일시 미확인'}`}>
 										{#snippet leftChild()}
 											<span class="relative">
 												{#if game.champion.iconUrl}<img src={game.champion.iconUrl} alt="" class="size-10 rounded-(--radius-form)" />{/if}
-												<span class="absolute -right-1 -bottom-1 rounded-full bg-bg-surface p-0.5 dark:bg-bg-surface-dark"><PositionIcon position={game.position} size="sm" /></span>
+												{#if game.position}<span class="absolute -right-1 -bottom-1 rounded-full bg-bg-surface p-0.5 dark:bg-bg-surface-dark"><PositionIcon position={game.position} size="sm" /></span>{/if}
 											</span>
 										{/snippet}
 										{#snippet titleChild()}
 											<span class="flex min-w-0 items-baseline gap-2">
 												<span class="truncate">{game.champion.name}</span>
-												<span class="shrink-0 text-sm font-normal tabular-nums">{game.kills} / <span class="text-error">{game.deaths}</span> / {game.assists} · CS {game.cs}</span>
+												<span class="shrink-0 text-sm font-normal tabular-nums">{game.kills ?? '—'} / <span class="text-error">{game.deaths ?? '—'}</span> / {game.assists ?? '—'} · CS {game.cs ?? '—'}</span>
 											</span>
 										{/snippet}
 										{#snippet detailChild()}
@@ -244,6 +243,8 @@
 									<td class="px-3 py-2 text-right font-semibold tabular-nums">{row.rating.toLocaleString('ko-KR')}</td>
 									<td class="px-3 py-2 text-right tabular-nums opacity-70">{row.games}</td>
 								</tr>
+							{:else}
+								<tr><td colspan="3" class="px-3 py-4 text-center opacity-60">아직 반영된 MMR이 없어요</td></tr>
 							{/each}
 						</tbody>
 					</table>

@@ -8,6 +8,10 @@ import { listMockGuildPlayers } from '#lib/mocks/players.ts';
 import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
+import { findMockGuild } from '#lib/mocks/session.ts';
+import { getDb } from '#lib/server/db/index.ts';
+import { getGuildRecords, type GuildPlayerRecords } from '#lib/server/records/queries.ts';
+import { routeError } from '#lib/server/http.ts';
 import type { PageServerLoad } from './$types';
 
 const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
@@ -15,18 +19,24 @@ const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
 const RECENT_GAMES = 10;
 const DEFAULT_MIN_GAMES = 5;
 
-export const load: PageServerLoad = async ({ parent, params, url }) => {
-	// TODO: DB 집계와 서버 열람 권한 확인으로 바꾼다. 기간·시즌 범위는 정책이 정해지면 추가한다.
-	if (!dev) error(404, '서버를 찾을 수 없습니다.');
+export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
 	const { guild } = await parent();
 	if (!guild) error(404, '서버를 찾을 수 없습니다.');
-	if (params.guildId !== 'devGuild001') {
-		return { empty: true as const };
-	}
-
+	const demo = dev && Boolean(findMockGuild(params.guildId));
+	if (demo && params.guildId !== 'devGuild001') return { empty: true as const };
 	const champion = await championResolver(await latestDataDragonVersion());
-	const players = listMockGuildPlayers(champion);
-	const allGames: PlayerGame[] = players.flatMap((player) => player.games);
+	let players: GuildPlayerRecords[];
+	let allGames: PlayerGame[];
+	let recordedGames: { id: string; durationSec: number | null; kills: number | null }[];
+	if (demo) {
+		players = listMockGuildPlayers(champion);
+		allGames = players.flatMap((player) => player.games);
+		recordedGames = [];
+	} else {
+		try { ({ players, allGames, recordedGames } = await getGuildRecords(getDb(), locals.actor, params.guildId, champion)); }
+		catch (cause) { routeError(cause); }
+		if (!recordedGames.length) return { empty: true as const };
+	}
 
 	const requested = url.searchParams.get('position') as LolPosition;
 	const position = POSITIONS.includes(requested) ? requested : 'all';
@@ -39,13 +49,15 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
 		return summary ? [{ ...player, ...summary }] : [];
 	});
 	// 업적은 포지션 필터와 최근 기록 여부를 함께 적용한다. 게임 기록은 최근 순이다.
-	const achievements = rankAchievements(
+	const achievements = demo ? rankAchievements(
 		scoped.map(({ games, ...player }) => ({ ...player, summary: summarize(recent ? games.slice(0, RECENT_GAMES) : games) })),
 		ACHIEVEMENT_MIN_GAMES
-	);
+	) : [];
 	const badges = achievementBadges(achievements);
-	const totalMinutes = allGames.reduce((sum, game) => sum + game.durationSec, 0) / 60;
-	const totalKills = allGames.reduce((sum, game) => sum + game.kills, 0);
+	const durationGames = recordedGames.filter((game) => game.durationSec !== null);
+	const killGames = recordedGames.filter((game) => game.kills !== null && game.durationSec !== null && game.durationSec > 0);
+	const totalMinutes = allGames.reduce((sum, game) => sum + (game.durationSec ?? 0), 0) / 60;
+	const totalKills = allGames.reduce((sum, game) => sum + (game.kills ?? 0), 0);
 	const overall = summarize(allGames);
 	const championOf = new Map(players.map((player) => [player.userId, player.championId]));
 	const splash = (userId: string) => {
@@ -55,15 +67,16 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
 
 	return {
 		empty: false as const,
+		showAchievements: demo,
 		kpis: {
-			// 게임 하나에 열 명이 기록되므로 사용자 게임 수를 10으로 나눠 게임 수를 센다.
-			games: Math.round(allGames.length / 10),
+			// 실제 기록은 출전자 수와 무관하게 완료 Game 행으로 센다.
+			games: demo ? Math.round(allGames.length / 10) : recordedGames.length,
 			players: players.filter((player) => player.games.length).length,
-			averageDurationSec: Math.round((totalMinutes * 60) / allGames.length),
-			// 사용자 게임 시간도 열 번씩 더해졌으므로 게임 시간으로 되돌려 게임 1분당 킬을 구한다.
-			killsPerMinute: totalKills / (totalMinutes / 10),
-			kda: overall?.kda ?? 0,
-			champions: new Set(allGames.map((game) => game.champion.id)).size
+			averageDurationSec: demo ? Math.round((totalMinutes * 60) / allGames.length) : durationGames.length ? Math.round(durationGames.reduce((sum, game) => sum + game.durationSec!, 0) / durationGames.length) : null,
+			// 킬·시간이 모두 검증된 Game만 같은 분자와 분모에 포함한다.
+			killsPerMinute: demo ? totalKills / (totalMinutes / 10) : killGames.length ? killGames.reduce((sum, game) => sum + game.kills!, 0) / (killGames.reduce((sum, game) => sum + game.durationSec!, 0) / 60) : null,
+			kda: overall?.kda ?? null,
+			champions: overall?.champions ?? null
 		},
 		achievements: achievements.map((item) => ({ ...item, splashUrl: splash(item.entries[0]!.userId) })),
 		achievementMinGames: ACHIEVEMENT_MIN_GAMES,

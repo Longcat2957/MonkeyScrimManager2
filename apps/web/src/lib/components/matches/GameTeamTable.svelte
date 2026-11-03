@@ -9,7 +9,7 @@
 	type Props = {
 		side: GameSide;
 		guildId: string;
-		durationSec: number;
+		durationSec: number | null;
 		// 두 진영 통틀어 가장 큰 피해량(입힌·받은 피해 중). 막대 길이의 기준이다.
 		maxDamage: number;
 		ondetail: (player: GamePlayer) => void;
@@ -17,7 +17,7 @@
 
 	let { side, guildId, durationSec, maxDamage, ondetail }: Props = $props();
 
-	const total = (key: 'kills' | 'deaths' | 'assists' | 'gold') => side.players.reduce((sum, player) => sum + (player[key] ?? 0), 0);
+	const total = (key: 'kills' | 'deaths' | 'assists' | 'gold') => side.players.some((player) => player[key] === null) ? null : side.players.reduce((sum, player) => sum + (player[key] ?? 0), 0);
 	const sideText = $derived(side.side === 'blue' ? '블루' : '레드');
 	const bar = (value: number | null) => `${maxDamage && value ? Math.min(100, Math.max(4, (value / maxDamage) * 100)) : 0}%`;
 </script>
@@ -30,7 +30,7 @@
 			<span class={['text-base', side.win ? 'text-success' : 'opacity-60']}>{side.win ? '승리' : '패배'}</span>
 			<span class="text-sm font-semibold text-warning tabular-nums">{formatNumber(total('gold'))} 골드</span>
 		</h3>
-		<span class="text-sm opacity-60 tabular-nums">{total('kills')} K · {total('deaths')} D · {total('assists')} A</span>
+		<span class="text-sm opacity-60 tabular-nums">{total('kills') ?? '-'} K · {total('deaths') ?? '-'} D · {total('assists') ?? '-'} A</span>
 	</header>
 	<table class="w-full text-sm [&_td:not(:first-child)]:whitespace-nowrap [&_th]:whitespace-nowrap">
 		<caption class="sr-only">{sideText} {side.teamName} {side.win ? '승리' : '패배'}</caption>
@@ -86,9 +86,9 @@
 							</span>
 						</div>
 					</td>
-					<td class={['hidden px-2 py-2.5 text-center text-base font-semibold tabular-nums sm:table-cell', player.badge === 'mvp' && 'text-warning', player.badge === 'ace' && 'text-primary dark:text-dark']}>{player.score.toFixed(2)}</td>
+					<td class={['hidden px-2 py-2.5 text-center text-base font-semibold tabular-nums sm:table-cell', player.badge === 'mvp' && 'text-warning', player.badge === 'ace' && 'text-primary dark:text-dark']}>{player.score?.toFixed(2) ?? '-'}</td>
 					<td class="px-2 py-2.5 text-center tabular-nums">
-						<span class="block font-semibold whitespace-nowrap">{player.kills} / <span class="text-error">{player.deaths}</span> / {player.assists}</span>
+						<span class="block font-semibold whitespace-nowrap">{player.kills ?? '-'} / <span class="text-error">{player.deaths ?? '-'}</span> / {player.assists ?? '-'}</span>
 						<span class="block text-xs opacity-60">{kdaRatio(player)} : 1</span>
 					</td>
 					<td class="hidden px-2 py-2.5 lg:table-cell">

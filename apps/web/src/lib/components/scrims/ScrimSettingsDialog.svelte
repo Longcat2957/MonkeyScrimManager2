@@ -2,6 +2,8 @@
 	import { untrack } from 'svelte';
 	import { Button, Calendar, Input, Popup, Stepper } from 'stdf';
 	import { enhance, type SubmitFunction } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import SwitchCell from '#lib/components/common/SwitchCell.svelte';
 	import {
 		playCapacity,
@@ -50,11 +52,15 @@
 	let pending = $state(false);
 	let calendarOpen = $state(false);
 	let form = $state<HTMLFormElement>();
+	let requestId = $state('');
+	let expectedRevision = $state<number>();
 
 	// 열 때마다 저장된 값에서 다시 시작한다.
 	$effect(() => {
 		if (!open) return;
 		untrack(() => {
+			requestId = crypto.randomUUID();
+			expectedRevision = page.data.scrim?.revision;
 			input = fromSettings(initial);
 			errors = {};
 			formError = '';
@@ -100,6 +106,8 @@
 			return;
 		}
 		writeScrimSettingsForm(formData, input);
+		formData.set('requestId', requestId);
+		if (expectedRevision !== undefined) formData.set('expectedRevision', String(expectedRevision));
 		pending = true;
 		return async ({ result }) => {
 			pending = false;
@@ -107,6 +115,7 @@
 				await onsaved(result.data);
 				open = false;
 			} else if (result.type === 'failure') {
+				if (result.status === 409) await invalidateAll();
 				errors = (result.data?.errors as ScrimSettingsErrors) ?? {};
 				formError = String(result.data?.message ?? '');
 				if (Object.keys(errors).length) focusFirstError();

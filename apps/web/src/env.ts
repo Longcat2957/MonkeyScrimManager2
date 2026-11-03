@@ -2,6 +2,10 @@ import { defineEnvVars } from '@sveltejs/kit/env';
 
 export const variables = defineEnvVars({
 	DATABASE_URL: { schema: (value) => value ?? '' },
+	DISCORD_CLIENT_ID: { schema: (value) => value ?? '' },
+	DISCORD_CLIENT_SECRET: { schema: (value) => value ?? '' },
+	DISCORD_REDIRECT_URI: { schema: (value) => value ?? '' },
+	DISCORD_BOT_TOKEN: { schema: (value) => value ?? '' },
 	RIOT_API_KEY: { schema: (value) => value ?? '' },
 	RIOT_ACCOUNT_REGION: { schema: (value) => value ?? 'asia' },
 	RIOT_PLATFORM: { schema: (value) => value ?? 'kr' },

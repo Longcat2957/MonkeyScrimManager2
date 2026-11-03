@@ -69,3 +69,29 @@ test('업적은 최소 게임 수를 넘긴 사람만 줄 세우고 1위에게 �
 	assert.ok(achievementBadges(rankings).get('b')!.some((badge) => badge.id === 'slayer'));
 	assert.equal(achievementBadges(rankings).has('c'), false);
 });
+
+test('누락 통계는 0으로 만들지 않고 지표별로 같은 유효 게임을 분모에 쓴다', () => {
+	const summary = summarize([
+		game({ kills: null, deaths: null, assists: null, cs: null, damage: null, damageTaken: null, gold: null, visionScore: null, teamKills: null, position: null, playedAt: null }),
+		game({ kills: 0, deaths: 0, assists: 0, cs: 100, durationSec: 600, damage: null, visionScore: 0 }),
+		game({ durationSec: null, cs: 1000, damage: null, visionScore: null })
+	])!;
+	assert.equal(summary.kills, 2.5);
+	assert.equal(summary.kda, 5);
+	assert.equal(summary.csPerMin, 10);
+	assert.equal(summary.damagePerMin, null);
+	assert.equal(summary.visionPerGame, 0);
+	assert.equal(summary.winStreak, null);
+	assert.equal(summary.lossStreak, null);
+	assert.equal(summary.mainPosition, 'mid');
+	const onlyMissing = summarize([game({ kills: null, deaths: null, assists: null, champion: champion('unknown'), position: null })])!;
+	assert.equal(onlyMissing.kda, null);
+	assert.equal(onlyMissing.champions, null);
+	assert.equal(onlyMissing.maxKills, null);
+	assert.deepEqual(championRecords([game({ champion: champion('unknown') })]), []);
+	const missing = { ...summary, kda: null };
+	assert.equal(topPercents(missing, [missing, summary]).kda, null);
+	assert.equal(topPercents(summary, [missing, summary]).kda, 100);
+	const ranks = rankAchievements([{ userId: 'x', displayName: 'x', iconUrl: null, summary: { ...onlyMissing, games: 4 } }], 4);
+	assert.ok(ranks.every((ranking) => !['kda', 'slayer', 'pool', 'multikill'].includes(ranking.id)));
+});

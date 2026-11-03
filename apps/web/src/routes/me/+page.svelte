@@ -32,5 +32,5 @@
 		</div>
 	</header>
 
-	<RiotAccountList accounts={data.riotAccounts} />
+	<RiotAccountList groups={data.groups} />
 </div>

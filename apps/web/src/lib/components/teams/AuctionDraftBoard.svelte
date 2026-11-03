@@ -49,16 +49,16 @@
 		enabled: () => controls && !busy,
 		accepts: (id, teamId) => {
 			const team = auction.teams.find((item) => item.id === teamId);
-			const movable = id === open?.registrationId || (!open && auction.unsold.some((player) => player.registrationId === id));
+			const movable = id === open?.participantId || (!open && auction.unsold.some((player) => player.participantId === id));
 			return Boolean(team && team.members.length < TEAM_SIZE && movable);
 		},
-		ondrop: (id, teamId) => (id === open?.registrationId ? assignCurrent(teamId) : assign(id, teamId))
+		ondrop: (id, teamId) => (id === open?.participantId ? assignCurrent(teamId) : assign(id, teamId))
 	});
 
 	// 후보가 바뀌거나 입찰가가 바뀌면 타이머를 다시 채운다.
 	$effect(() => {
 		if (!open) details = false;
-		void open?.registrationId;
+		void open?.participantId;
 		void JSON.stringify(bids);
 		timerStart = Date.now();
 	});
@@ -73,20 +73,20 @@
 
 	async function run(name: string, fields: Record<string, string> = {}) {
 		busy = true;
-		const message = await postAction(name, fields);
+		const message = await postAction(name, { ...fields, ...(auction.openLotId ? { lotId: auction.openLotId } : {}) });
 		busy = false;
 		if (message) toast.error(message);
 		return !message;
 	}
 
-	function celebrate(teamId: string, registrationId: string, label: string) {
+	function celebrate(teamId: string, participantId: string, label: string) {
 		clearTimeout(celebrationTimer);
-		celebration = { teamId, registrationId, label, key: Date.now() };
+		celebration = { teamId, participantId, label, key: Date.now() };
 		celebrationTimer = setTimeout(() => (celebration = null), 1800);
 	}
 
 	async function award(teamId: string, price: number) {
-		const target = open?.registrationId;
+		const target = open?.participantId;
 		if (await run('award', { teamId, price: String(price) })) {
 			bids = {};
 			if (target) celebrate(teamId, target, `낙찰! ${price}P`);
@@ -94,12 +94,12 @@
 	}
 
 	async function assignCurrent(teamId: string) {
-		const target = open?.registrationId;
+		const target = open?.participantId;
 		if ((await run('assignCurrent', { teamId })) && target) celebrate(teamId, target, '낙찰!');
 	}
 
-	async function assign(registrationId: string, teamId: string) {
-		if (await run('assign', { registrationId, teamId })) celebrate(teamId, registrationId, '낙찰!');
+	async function assign(participantId: string, teamId: string) {
+		if (await run('assign', { participantId, teamId })) celebrate(teamId, participantId, '낙찰!');
 	}
 
 	async function draw() {
@@ -115,7 +115,7 @@
 	}
 
 	async function reopenSetup() {
-		if (await confirm('낙찰·유찰·수동 배치를 모두 지우고 팀장·시작 포인트 설정으로 돌아갈까요?', '팀장 다시 정하기')) await run('reopenSetup');
+		if (await confirm('낙찰·유찰·수동 배치를 무효화하고 팀장·시작 포인트 설정으로 돌아갈까요?', '팀장 다시 정하기')) await run('reopenSetup');
 	}
 
 	async function refresh() {
@@ -137,7 +137,7 @@
 			<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" disabled={refreshing} onclick={refresh}>새로고침</Button>
 		{/if}
 		{#if controls}
-			<!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 둘 다 지금까지의 경매 기록을 지운다. -->
+			<!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 기존 경매 기록은 무효화해 보존한다. -->
 			<div class="-mr-3 flex flex-wrap justify-end">
 				<Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-3 text-sm" disabled={busy} onclick={reopenSetup}>팀장 다시 정하기</Button>
 				<ChangeMethodButton disabled={busy} />
@@ -174,7 +174,7 @@
 							{#if controls && canRevert}
 								<Button fill="textState" state="warning" size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" disabled={busy} onclick={revert}>되돌리기</Button>
 							{/if}
-							{#if open}
+							{#if open && profile}
 								<Button fill={details ? 'lineLight' : 'text'} size="auto" heightOut="0" heightIn="2" injClass="px-2 text-sm" onclick={() => (details = !details)}>상세보기</Button>
 							{/if}
 							{#if controls}
@@ -194,9 +194,9 @@
 									'relative isolate flex shrink-0 flex-col overflow-hidden border px-4 py-5',
 									details ? 'gap-3' : 'min-h-[24rem] justify-between gap-5',
 									controls && 'cursor-grab active:cursor-grabbing',
-									drag.id === open.registrationId ? 'border-primary/60 bg-primary/10 opacity-70' : 'border-primary/30 bg-bg-highlight/30 dark:border-dark/30 dark:bg-bg-highlight-dark/30'
+									drag.id === open.participantId ? 'border-primary/60 bg-primary/10 opacity-70' : 'border-primary/30 bg-bg-highlight/30 dark:border-dark/30 dark:bg-bg-highlight-dark/30'
 								]}
-								ondragstart={(event) => drag.start(event, open.registrationId)}
+								ondragstart={(event) => drag.start(event, open.participantId)}
 								ondragend={() => drag.end()}
 							>
 								{#if !details}
@@ -336,6 +336,7 @@
 		{controls}
 		{busy}
 		onassign={assign}
-		onrestore={(registrationId) => run('restore', { registrationId })}
+		onassignCurrent={assignCurrent}
+		onrestore={(participantId) => run('restore', { participantId })}
 	/>
 {/if}

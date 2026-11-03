@@ -88,7 +88,7 @@ test('수동 편성·진행 중인 경매에서 방식 선택으로 되돌리면
 	await chooseMockFormationMethod(guildId, scrimId, 'manual');
 	const initial = (await getMockManualFormation(guildId, scrimId))!;
 	const first = initial.players[0]!;
-	assert.equal(await moveMockManualPlayer(guildId, scrimId, first.registrationId, null), null);
+	assert.equal(await moveMockManualPlayer(guildId, scrimId, first.participantId, null), null);
 	assert.equal(await clearMockFormationMethod(guildId, scrimId), null);
 	assert.equal(scrim.formationMethod, null);
 	assert.equal((await clearMockFormationMethod(guildId, scrimId))?.status, 409);
@@ -100,7 +100,7 @@ test('수동 편성·진행 중인 경매에서 방식 선택으로 되돌리면
 	assert.equal(await clearMockFormationMethod(guildId, scrimId), null);
 	await chooseMockFormationMethod(guildId, scrimId, 'auction');
 	const players = (await getMockAuction(guildId, scrimId))!.players;
-	assert.equal(await saveMockAuctionSetup(guildId, scrimId, [{ captainId: players[0]!.registrationId, startPoints: 1000 }, { captainId: players[1]!.registrationId, startPoints: 1000 }]), null);
+	assert.equal(await saveMockAuctionSetup(guildId, scrimId, [{ captainId: players[0]!.participantId, startPoints: 1000 }, { captainId: players[1]!.participantId, startPoints: 1000 }]), null);
 	assert.equal(await startMockAuction(guildId, scrimId), null);
 	assert.equal(await clearMockFormationMethod(guildId, scrimId), null);
 	await chooseMockFormationMethod(guildId, scrimId, 'auction');
@@ -115,7 +115,7 @@ test('진행 중인 경매를 팀장 설정으로 되돌리면 기록을 지우�
 	await advanceMockScrim(guildId, scrimId, 'close');
 	await chooseMockFormationMethod(guildId, scrimId, 'auction');
 	const players = (await getMockAuction(guildId, scrimId))!.players;
-	const captains = [players[0]!.registrationId, players[1]!.registrationId];
+	const captains = [players[0]!.participantId, players[1]!.participantId];
 	await saveMockAuctionSetup(guildId, scrimId, captains.map((captainId) => ({ captainId, startPoints: 500 })));
 	assert.equal((await reopenMockAuctionSetup(guildId, scrimId))?.status, 409);
 	await startMockAuction(guildId, scrimId);
