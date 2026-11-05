@@ -1,14 +1,17 @@
 # Riot API 연동
 
-현재 서비스에 필요한 **계정 식별·참가자 프로필·개인 랭크·화면 표시용 정적 데이터**만 제공한다.
+현재 서비스에 필요한 **계정 식별·ROFL 참가자 확인·참가자 프로필·개인 랭크·화면 표시용 정적 데이터**만 제공한다.
 Riot 조회 5개와 Data Dragon 2개 라우트 패턴이며 모두 `GET`이다.
 Data Dragon은 서버 홈·순위·경기·전적·통계 등 화면 로더에서 실제 조회한다.
 서버 관리의 계정 조회·연결은 실제 Riot Account 조회와 LoL 활성 플랫폼 확인을 사용한다.
-확인한 계정 식별자는 DB에 보존하고 소유 연결·대표 선택은 서버별 `guild_riot_accounts`에 저장한다. 봇의 업무 연동은 후속 작업이다.
+확인한 계정 식별자는 DB에 보존하고 소유 연결·대표 선택은 서버별 `guild_riot_accounts`에 저장한다.
+봇의 참가 신청도 웹 내부 API를 통해 같은 서버별 연결을 사용한다. 봇 애플리케이션이 Riot API나 DB에 직접 접근하지 않는다.
 
 외부 API 추가 기준은 [프로젝트 규칙](../AGENTS.md#project-principles)을 따른다.
 사용처가 정해지지 않은 일반 전적·관전·숙련도·전체 리그·Clash·Challenges 등의 조회는 제공하지 않는다.
-내전 경기 기록 처리와 Riot 계정 조회는 별도 책임이다.
+내전 경기 기록 처리는 `matches/`가 담당하며, ROFL의 Riot ID를 실제 PUUID로 확인할 때 기존 서버 내부 Account 조회 함수를 사용한다.
+기존 계정 연결로 팀을 식별한 뒤 확정 포지션과 대조해 실사용 계정을 기록한다. 미등록 부계정도 대응이 유일하면 해당 전적에 저장하지만,
+서버별 계정 소유 연결·대표 선택을 자동 변경하지 않는다. 식별·충돌·중복 검증은 [ROFL 적재 문서](rofl-import.md)를 따른다.
 
 ## 현재 사용 범위
 
@@ -16,7 +19,7 @@ Data Dragon은 서버 홈·순위·경기·전적·통계 등 화면 로더에�
 
 | 경로 | 필요한 서비스 기능 |
 | --- | --- |
-| `/api/riot/account/v1/accounts/by-riot-id/[gameName]/[tagLine]` | 계정 입력 시 Riot ID를 식별하고 PUUID 확보 |
+| `/api/riot/account/v1/accounts/by-riot-id/[gameName]/[tagLine]` | 계정 입력 시 Riot ID를 식별하고 PUUID 확보. ROFL 처리는 같은 서버 내부 조회 함수를 사용 |
 | `/api/riot/account/v1/accounts/by-puuid/[puuid]` | 등록된 참가자의 현재 Riot ID 표시·갱신 |
 | `/api/riot/account/v1/region/by-game/lol/by-puuid/[puuid]` | 참가자의 LoL 플랫폼 확인 |
 | `/api/lol/summoner/v4/summoners/by-puuid/[puuid]` | 참가자 프로필 아이콘·레벨 표시 |

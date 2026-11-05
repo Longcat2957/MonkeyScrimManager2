@@ -10,6 +10,36 @@ import { DomainError } from '../errors.ts';
 
 export type GuildAccessDependencies = { db: Database; discord: DiscordClient };
 
+/** 화면 로딩 전에 만료된 소속만 갱신한다. 공개 조회 트랜잭션 안에서는 외부 호출이나 쓰기를 하지 않는다. */
+export async function refreshGuildViewAccess(
+    actor: Actor | null,
+    guildId: string,
+    dependencies: Partial<GuildAccessDependencies> = {}
+): Promise<void> {
+    if (!actor || !isDiscordId(actor.userId) || !isDiscordId(guildId)) return;
+    const db = dependencies.db ?? (await import('../db/index.ts')).getDb();
+    const [membership] = await db
+        .select({ syncedAt: guildMembers.syncedAt })
+        .from(guildMembers)
+        .innerJoin(guilds, eq(guilds.id, guildMembers.guildId))
+        .where(
+            and(
+                eq(guildMembers.guildId, guildId),
+                eq(guildMembers.userId, actor.userId),
+                eq(guilds.isActive, true)
+            )
+        )
+        .limit(1);
+    if (!membership || (membership.syncedAt && Date.now() - membership.syncedAt.getTime() <= 60_000)) return;
+    try {
+        const { discord } = await getGuildAccessDependencies({ ...dependencies, db });
+        await synchronizeGuildMembership(db, discord, actor.userId, guildId);
+    } catch (cause) {
+        // 연동 장애에도 공개 열람은 유지한다. 오래된 권한은 assertGuildView에서 계속 제외한다.
+        if (!(cause instanceof DiscordError)) throw cause;
+    }
+}
+
 /** 공개 열람은 Discord 로그인이나 외부 API 가용성에 의존하지 않는다. */
 export async function assertGuildView(
     db: Database | Transaction,

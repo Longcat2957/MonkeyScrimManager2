@@ -131,11 +131,11 @@ export function createApiClient(options: {
         reconcile() {
             return request<{ ok: true }>('POST', '/reconciliation', {});
         },
-        failedPublications(guildId: string, actorId: string) {
+        failedPublications(guildId: string, actorId: string, query = '') {
             // 자동완성은 지연 응답을 지원하지 않아 Discord 초기 응답 제한보다 먼저 종료한다.
             return request<{ publications: BotFailedPublication[] }>(
                 'GET',
-                guildPath(guildId) + '/publications?actorId=' + encodeURIComponent(actorId),
+                guildPath(guildId) + '/publications?' + new URLSearchParams({ actorId, q: query }),
                 undefined,
                 2000
             );

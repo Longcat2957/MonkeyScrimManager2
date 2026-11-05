@@ -1,6 +1,6 @@
 # 디자인 시스템: STDF 사용 규칙
 
-갱신일: 2026-11-03. 현재 설치된 `stdf@3.0.0`과 `apps/web/src`를 기준으로 한다. 패키지 선언은 `^3.0.0`이므로 의존성을 갱신하면 [7절](#7-stdf-300-제약과-대응)의 실제 소스·DOM을 다시 확인한다. 현재 구성과 향후 구현 기준을 구분하며, 접근성 보완의 존재만으로 모든 화면의 검증 완료를 뜻하지 않는다.
+갱신일: 2026-11-05. 현재 설치된 `stdf@3.0.0`과 `apps/web/src`를 기준으로 한다. 패키지 선언은 `^3.0.0`이므로 의존성을 갱신하면 [7절](#7-stdf-300-제약과-대응)의 실제 소스·DOM을 다시 확인한다. 현재 구성과 향후 구현 기준을 구분하며, 접근성 보완의 존재만으로 모든 화면의 검증 완료를 뜻하지 않는다.
 
 ## 1. 선택 순서
 
@@ -14,13 +14,13 @@
 
 ## 2. 루트 설정
 
-`routes/+layout.svelte`는 `ConfigProvider locale={ko_KR}` 안에 본문 바로가기·`AppHeader`·`main`·`AppFooter`와 `Feedback`을 한 번씩 둔다. 스타일 진입점은 `routes/layout.css`다.
+`routes/+layout.svelte`는 `ConfigProvider locale={ko_KR}` 안에 본문 바로가기·`AppHeader`·`main`·`AppFooter`와 `Feedback`·`ConfirmDialog`를 한 번씩 둔다. 스타일 진입점은 `routes/layout.css`다.
 
 | 항목 | 현재 구현 |
 | --- | --- |
 | 스타일 | `@import 'tailwindcss'`, `@import 'stdf/source.css'`와 앱 `@theme` |
 | 언어 | `stdf/lang`의 `ko_KR`. 설치 STDF의 기본 언어는 중국어 |
-| 함수형 피드백 | 루트 `<Feedback />` 하나. `toast`와 `confirm` helper를 통한 `dialog.confirm` 사용 |
+| 함수형 피드백 | 루트 `<Feedback />`는 `toast` 등 STDF 피드백을 담당. `confirm`은 별도 `<ConfirmDialog />`의 STDF `Dialog`로 요청을 전달 |
 | 화면 모드 | `lib/ui/theme.ts`의 `currentMode`·`setMode` → `stdf/theme`의 `getMode`·`switchMode`. `primary`/`dark`를 `localStorage['theme-mode']`에 저장 |
 | 첫 페인트 | `app.html`이 저장된 모드를 `html[data-mode]`에 복원. 저장소 접근 실패 시 기본 라이트 모드 유지 |
 | 다크 변형 | `layout.css`의 `@custom-variant dark`와 다크 모드 토큰 덮어쓰기 |
@@ -105,7 +105,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 메뉴 | `ActionMenu` | 데스크톱 `ActionPopover`, 모바일 `ActionSheet`; 마운트 후 렌더링 |
 | 모바일 메뉴 | `Popup position="right"` | `AppHeader`의 80% 폭 패널 |
 | 선수 상세 | `GamePlayerDialog` | 데스크톱 right·모바일 bottom |
-| 확인 | `confirm()` | `dialog.confirm`에 Escape·포커스 복귀만 보완. 중첩 접근성을 보장하는 공통 dialog 관리자는 아님 |
+| 확인 | `confirm()` → `ConfirmDialog` | STDF `Dialog`의 제목·본문·버튼을 사용. 공통 `overlay`가 dialog 의미·취소 초기 포커스·배경 차단·Tab·Escape·복귀 보완 |
 | 일시적 결과 | `toast.success`·`toast.error` | 이미 화면에 보이는 결과를 반복하지 않는 것이 작성 기준 |
 | 대기·실패·빈 상태 | `SectionState`, 필요한 인라인 `Loading` | 루트 공통 live region은 없고 해당 기능의 안내 영역을 사용 |
 
@@ -113,7 +113,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 
 ### 4.5 현재 선택하지 않은 구성
 
-하단 `TabBar`, 드래그 단계형 `BottomSheet`, 휠 기반 Picker·TimePicker, STDF `Form`, 직접 렌더링하는 `Dialog`·`Modal`, 개인 얼굴용 `Avatar`는 제품 화면에 사용하지 않는다. 경로 이동은 링크, 확인은 `confirm`, 날짜·시각은 달력과 입력, 얼굴은 `PlayerFace`로 구현되어 있다.
+하단 `TabBar`, 드래그 단계형 `BottomSheet`, 휠 기반 Picker·TimePicker, STDF `Form`, `Modal`, 개인 얼굴용 `Avatar`는 제품 화면에 사용하지 않는다. 경로 이동은 링크, 확인은 `confirm`, 날짜·시각은 달력과 입력, 얼굴은 `PlayerFace`로 구현되어 있다.
 
 새 기능이 생기면 설치 버전 API와 접근성을 확인해 선택한다. 이 목록에 없다는 이유만으로 사용하지 않는 STDF 컴포넌트를 미리 화면에 추가하지 않는다.
 
@@ -123,10 +123,10 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 
 | helper | 위치 | 실제 책임 |
 | --- | --- | --- |
-| `overlay` | `lib/ui/overlay.ts` | 열린 래퍼의 dialog 속성·바깥 inert·스크롤 잠금·초기 포커스 재시도·Escape·기존 포커스 복귀. Tab 순환·트리거 소멸 fallback 없음 |
+| `overlay` | `lib/ui/overlay.ts` | dialog 속성, 최상위 오버레이 기준 inert·스크롤 잠금, 초기 포커스 재시도, Tab 순환·Escape, 중첩·연속 전환의 트리거 복귀와 main 대체 이동 |
 | `nonSubmitButtons` | `lib/ui/form.ts` | 폼의 타입 없는 버튼에 `type="button"` 설정, DOM 변경 감시 |
-| `confirm` | `lib/ui/confirm.ts` | STDF `dialog.confirm` 호출, Escape 닫기·기존 포커스 복귀 |
-| `postAction` | `lib/ui/actions.ts` | 이름 있는 form action POST·결과 해석·성공 또는 네트워크 예외 뒤 최신화. 409 공통 처리 없음 |
+| `confirm` | `lib/ui/confirm.ts` | 확인 요청 상태와 `Promise<boolean>` 관리. 중복 요청은 false, 확인은 true, 취소·Escape·경로 이동은 false로 한 번 종료 |
+| `postAction` | `lib/ui/actions.ts` | 이름 있는 form action POST·결과 해석·성공·409 충돌·네트워크 예외 뒤 최신화 |
 | `desktop`·`markHydrated` | `lib/ui/viewport.svelte.ts` | 1024px MediaQuery를 루트 마운트 이후에만 노출. SSR은 모바일 |
 | `setMode`·`currentMode` | `lib/ui/theme.ts` | 화면 모드 변경·조회·저장 |
 | `avatarColor`·`initialAvatarUrl` | `lib/ui/avatar.ts` | 이름 기반 얼굴 대체색과 이니셜 SVG data URL |
@@ -134,6 +134,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 공통 컴포넌트 | 위치 | 실제 인터페이스·책임 |
 | --- | --- | --- |
 | `AppHeader`·`ContextNav`·`MenuButton`·`AppFooter` | `lib/components/layout/` | 루트 헤더·범위 링크·메뉴 트리거·푸터. 항목 생성은 `navigation.ts`, 사용자·서버 메뉴는 `AppHeader` |
+| `ConfirmDialog` | `lib/components/common/` | 루트 단일 확인창 호스트. STDF `Dialog`와 `overlay`를 연결하고 경로 이동·호스트 해제 시 미결 요청 취소 |
 | `ActionMenu` | `lib/components/common/` | `open` 바인딩, `label`, `actions`, `trigger`, `onselect`. 데스크톱 popover·모바일 sheet와 overlay 보완 |
 | `LinkCell` | 같은 폴더 | `href`, `title`/`titleChild`, `subTitle`, `detail`/`detailChild`, `info`/`infoChild`, `leftChild`, `line`. 오른쪽 정보는 제목·부제 줄에 맞춤 |
 | `StatusTag` | 같은 폴더 | `text`, `state`. 장식 Tag와 숨긴 상태 문구 |
@@ -155,7 +156,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 내전 요약·참가 | `ScrimSummary`, `ScrimListRow`, `ScrimSettingsDialog`, `ScrimOperationsBar`, `MyRegistrationBar`, `RegistrationDialog`, `ParticipantBoard`, `PositionChips`, `FormationMethodChooser` |
 | 수동 편성·경매 | `ManualFormationBoard`, `FormationTeamCard`, `FormationPool`, `FormationSynergyRail`, `FormationHeadToHead`, `AuctionSetupBoard`, `AuctionDraftBoard`, `AuctionTeamCard`, `AuctionTargetProfile`, `CandidateListDialog`, `ChangeMethodButton`; 드래그 상태는 `drag.svelte.ts`의 `DragState` |
 | 대진 | `BracketBoard`, `BracketMatchBox`, `BracketTeamContent`, `BracketFormatControl` |
-| 경기 | `MatchListRow`, `MatchTable`, `GameHero`, `GameTeamTable`, `GamePlayerDialog`, `RoflUploadDialog`, `LoadoutIcon` |
+| 경기 | `MatchListRow`, `MatchTable`, `MatchLineupBoard`, `GameHero`, `GameTeamTable`, `GamePlayerDialog`, `RoflUploadDialog`, `LoadoutIcon` |
 | 사용자 전적·통계 | `DuoList`, `RadarChart`, `LeaderboardTable`(PageNav 사용), `AchievementCarousel`, `AchievementRankingDialog` |
 | 내 정보·서버 관리 | `RiotAccountList`, `MemberRiotAccountsDialog`, `DiscordSettingRow` |
 
@@ -164,10 +165,10 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 ### 5.1 작업판 레이아웃 (팀 편성·경매·대진)
 
 - 수동 편성·경매·대진은 테두리와 `bg-border` 바탕, `gap-px`와 각 영역 표면색을 조합한 작업판을 사용한다.
-- 수동 편성은 미배정 타일과 팀 자리, 선택적 시너지·상대 전적을 한 판에 둔다. 구성에 따라 30rem 또는 56rem 최소 폭을 두고 안쪽에서 가로로 스크롤한다.
+- 수동 편성은 미배정 타일과 팀 자리, 선택적 시너지·상대 전적 영역을 한 판에 둔다. 실제 서버의 시너지·상대 전적 데이터는 아직 연결하지 않았다. 구성에 따라 30rem 또는 56rem 최소 폭을 두고 안쪽에서 가로로 스크롤한다.
 - 경매 진행은 `xl`에서 52rem 높이와 후보/팀 패널의 열 배치를 적용하고 각 영역에서 스크롤한다. 작은 화면은 세로 배치하며 팀은 `md`에서 두 열이다.
 - 대진의 팀 풀은 편집 중에만 표시하고 `lg`에서 작업판 왼쪽에 둔다. 라운드는 여러 개면 `md`에서 두 열로, 작은 화면에서는 세로로 배치한다.
-- 수동 편성·대진·경기 라인업은 HTML5 드래그와 클릭/탭 선택·배치를 함께 제공한다. 경매 유찰자는 후보 목록 팝업의 팀 배치 버튼을 사용할 수 있지만, 현재 후보의 무료 수동 배치는 드래그 전용이다. 일반 입찰·낙찰 버튼과 별개로 이 동작에는 터치·키보드 대안이 아직 없다.
+- 수동 편성·대진·경기 라인업은 HTML5 드래그와 클릭/탭 선택·배치를 함께 제공한다. 경매의 현재 후보는 드래그 또는 후보 목록 팝업의 팀별 `수동 배치` 버튼으로 가격 없이 배치한다. 유찰자도 같은 팝업의 배치 버튼을 사용한다.
 - `ScrimSummary`는 요약·수동 편성에서 전체 머리, 경매·대진·결과에서 `compact`다.
 
 ## 6. 네이티브 HTML을 쓰는 곳
@@ -195,7 +196,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | `AvatarGroup` 내부 버튼 중첩, `image` 기반 each 키, `top="totle"`는 전체 수 표시 | `AvatarStack`은 마운트 후 렌더링·inert·고유 fragment/이니셜 URL·남은 수 snippet. 루트 너비도 계산 |
 | `Avatar`는 버튼이며 `alt`는 이미지 대체 텍스트 속성과 다른 대체 표시 | 직접 사용하지 않고 `PlayerFace` 등 정적 이미지 구성 |
 | `ActionPopover`는 DOM을 참조하며 SSR 종료에도 `document` 사용 | `ActionMenu`가 마운트 후에만 렌더링. 모바일은 `ActionSheet` |
-| Popup·확인창에 앱이 필요한 dialog 의미·포커스·배경 차단이 모두 내장되어 있지 않음 | Popup/Menu는 `overlay`, 확인은 `confirm`. 두 helper의 보완 범위가 다르며 Tab 순환·중첩 확인은 미해결 검증 대상 |
+| Popup·확인창에 앱이 필요한 dialog 의미·포커스·배경 차단이 모두 내장되어 있지 않음 | Popup/Menu와 `ConfirmDialog`에 `overlay` 적용. 함수형 `dialog.confirm`은 공개 visible·snippet이 없어 앱 확인창은 STDF `Dialog`를 직접 사용. 보완 범위와 검증은 [오버레이 패턴](patterns.md#4-오버레이) 참고 |
 | `Button`·`Input` 등은 임의 HTML 속성을 그대로 전달하지 않음 | `injClass`·공개 prop·snippet·외부 래퍼 사용. 모든 컴포넌트가 모든 `aria-*`를 지원하지 않는다고 일반화하지 말고 해당 타입 확인 |
 | `Input` 제목이 네이티브 label로 연결되지 않고 `name`도 없음 | formData 직접 구성. 프로그램적 이름·오류 연결은 별도 보완 필요 |
 | `Switch`·`Radio`·`Checkbox`에 기대하는 선택 상태 ARIA가 없음 | 그룹 legend·현재 상태 문구 사용. 네이티브 라디오/체크박스 의미를 완전히 대체하지 않음 |

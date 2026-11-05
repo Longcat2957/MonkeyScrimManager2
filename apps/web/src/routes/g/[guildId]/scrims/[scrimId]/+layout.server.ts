@@ -9,7 +9,9 @@ import { randomChampionSplash } from '#lib/server/ddragon/champions.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ params, locals }) => {
+export const load: LayoutServerLoad = async ({ params, locals, url }) => {
+    // 같은 내전의 하위 화면으로 이동할 때도 운영 권한을 다시 계산한다.
+    url.pathname;
     let scrim;
     try {
         scrim =

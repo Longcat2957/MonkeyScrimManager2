@@ -1,7 +1,7 @@
 import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
 import { MessageFlags } from 'discord.js';
 import type { BotApi } from '../api/client.js';
-import type { BotPublicationKind } from '../../../../shared/bot-api.js';
+import type { BotFailedPublication, BotPublicationKind } from '../../../../shared/bot-api.js';
 import { BotApiError } from '../api/client.js';
 import { card, linkRow, notice, scrimUrl, webUrl } from '../messages/shared.js';
 
@@ -101,24 +101,38 @@ export async function handleAutocomplete(interaction: AutocompleteInteraction, a
         await interaction.respond([]);
         return;
     }
-    const query = interaction.options.getFocused().toLocaleLowerCase();
+    const query = interaction.options.getFocused();
     try {
-        const { publications } = await api.failedPublications(interaction.guildId, interaction.user.id);
+        const { publications } = await api.failedPublications(
+            interaction.guildId,
+            interaction.user.id,
+            query
+        );
         await interaction.respond(
-            publications
-                .filter((item) => item.title.toLocaleLowerCase().includes(query))
-                .slice(0, 25)
-                .map((item) => ({
-                    value: item.id,
-                    name: `${PUBLICATION_LABELS[item.kind]} · ${item.title} · ${item.state === 'uncertain' ? '전달 불명' : '게시 실패'}`.slice(
-                        0,
-                        100
-                    )
-                }))
+            publications.slice(0, 25).map((item) => ({ value: item.id, name: publicationChoiceName(item) }))
         );
     } catch (error) {
         // 자동완성은 별도 오류 메시지를 만들 수 없으며 실제 실행 시 다시 권한을 확인한다.
         if (error instanceof BotApiError) await interaction.respond([]);
         else throw error;
     }
+}
+
+function shorten(value: string, limit: number) {
+    if (value.length <= limit) return value;
+    let result = '';
+    // 이모지의 서로게이트 쌍을 자르지 않으면서 Discord의 100자 제한 안에 둔다.
+    for (const character of value) {
+        if (result.length + character.length > limit - 1) break;
+        result += character;
+    }
+    return result + '…';
+}
+
+function publicationChoiceName(item: BotFailedPublication) {
+    const prefix = `${PUBLICATION_LABELS[item.kind]} · ${item.state === 'uncertain' ? '전달 불명' : '게시 실패'}`;
+    if (!item.targetLabel) return `${prefix} · ${shorten(item.title, 100 - prefix.length - 3)}`;
+    // 경기·세트 정보를 앞에 두고, 긴 팀명에도 내전 제목을 확인할 공간을 남긴다.
+    const target = shorten(item.targetLabel, 100 - prefix.length - 6 - Math.min(item.title.length, 20));
+    return `${prefix} · ${target} · ${shorten(item.title, 100 - prefix.length - target.length - 6)}`;
 }

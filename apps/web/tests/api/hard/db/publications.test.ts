@@ -277,7 +277,7 @@ test('안내 요청 후 철회·내전 종료된 수신자는 발송 시 다시 
         failed.publications.every(
             (job) =>
                 job.kind === 'confirmation_dm' &&
-                job.title.includes('사용자') &&
+                job.targetLabel?.includes('사용자') &&
                 job.errorCode === 'RECIPIENT_INELIGIBLE'
         )
     );

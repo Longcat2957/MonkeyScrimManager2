@@ -1,7 +1,7 @@
 # API 테스트
 
 현재 API 테스트는 기존 Node `node:test`와 `node:assert/strict`를 사용한다. 별도 테스트 프레임워크나 테스트용 운영 endpoint는 추가하지 않는다.
-2026-11-03 재작성분을 실제 실행했다. lite 324개, 격리 PostgreSQL과 빌드한 SvelteKit 앱을 사용하는 hard 199개가 모두 통과했다.
+2026-11-03 재작성 이후 기능 추가와 결함 수정 때마다 기본/lite 및 격리 PostgreSQL·SvelteKit HTTP hard 테스트를 실행한다.
 실행 환경과 회귀 테스트 결과는 아래 실행 기록에 정리한다.
 
 ## 구분과 실행 명령
@@ -34,6 +34,8 @@ pnpm test:hard:db --test-name-pattern=세션
 | 파일 | 계약 |
 | --- | --- |
 | `bot-auth.test.ts` | 내부 API 전용 토큰·미설정·잘못된 인증 헤더 |
+| `publication-search.test.ts` | 기존 내부 GET의 검색어 검증, 오래된 항목 검색·대상 표시·인증·권한·서버 경계 |
+| `guild-view-refresh.test.ts` | 61초 만료·layout 재사용 요청의 권한 갱신, 회수·탈퇴·503·비로그인 공개 열람 |
 | `auth.test.ts` | OAuth 설정·복귀 주소·state·PKCE·서명·만료, 세션 해시·표시 사용자 |
 | `errors.test.ts` | 인증·서비스 운영 권한, 업무 오류의 상태/필드 변환, Retry-After, 예상하지 못한 오류 전파 |
 | `permissions.test.ts` | 웹에서 사용하는 Discord 권한 비트·timeout·역할/채널 overwrite 계산 |
@@ -73,7 +75,7 @@ Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 
 | `bot.test.ts` | interaction 멱등성·동시 신청·롤백·게시 점유·불명 복구·초기 시즌·동기화, 게시 완료/복구와 신청의 잠금 경합 |
 | `schema.test.ts` | 실제 초기 SQL, 복합 FK, 활성 행 유일성, CHECK·이력 보존 |
 | `sessions.test.ts` | 실제 세션 저장·교체·검증·만료·삭제, 관리자 권한 보존, 중간 실패 롤백 |
-| `guild-access.test.ts` | 공개 조회, 실제 DB 권한 갱신/회수, 탈퇴, 신선도·활성 서버·운영 역할 |
+| `guild-access.test.ts` | 공개 조회, 만료 소속의 사전 갱신·권한 회수·탈퇴·외부 장애, 읽기 전용 계약, 신선도·활성 서버·운영 역할 |
 | `guild-settings.test.ts` | 역할·채널 동기화, 설정 변경, 서버 경계, 실패 시 기존 값 보존 |
 | `accounts.test.ts` | 서버별 연결·대표·해제, 탈취 방지, 활성 신청, 과거 귀속, 동시 연결 |
 | `recruitment.test.ts` | 생성 멱등성, 신청/철회/재신청·승급, 정원·revision·일괄 변경, 계정 해제와 신청 경합 |
@@ -85,8 +87,11 @@ Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 
 | `ranking.test.ts` | 현재 멤버·실적, 채택본·실출전·원장 일치, 페이지·본인 순위·대표 챔피언 |
 | `match-read.test.ts` | 공개 경기 목록·상세, 검색·서버 경계·당시 출전·피어리스·처리 상태 |
 | `match-results.test.ts` | 경기 단위 라인업·ROFL 실사용 계정 식별·중복·동시 등록·롤백·MMR·승자 포지션 전파·마지막 결과 취소 |
+| `match-result-restoration.test.ts` | 취소한 동일 파일의 새 Game 복구·진영 정정·계정 귀속 보존·동시 재요청·반복 복구·롤백·진출 |
+| `rofl-restoration-migration.test.ts` | 취소 데이터가 있는 0003 구조에 실제 0004 SQL 적용, 역분개 시각·근거 보존과 복구 |
 | `rofl-account-concurrency.test.ts` | ROFL 등록과 다른 서버의 동일 Riot 계정 연결을 실제 서비스·연결·잠금 장벽으로 병행하고 교착 방지·서버별 소유권 보존 검증 |
 | `publications.test.ts` | 확정 라인업·결과 게시 자료, 참가 안내 DM 대상·중복·상태·복구 |
+| `publication-search.test.ts` | 제한 전 전체 이력 검색, 특수문자·권한·서버 경계, 세트·취소 결과·삭제 라인업·수신자 구분 |
 
 서비스가 요구하는 Discord·Riot 응답은 고정된 의존성으로 제공한다. 실제 권한 계산·DB 조회·업무 함수는 실행 대상이다.
 
@@ -104,11 +109,14 @@ adapter-node의 `PROTOCOL_HEADER`로 HTTPS 프록시 뒤 HTTP 연결을 재현�
 | 파일 | HTTP 계약 |
 | --- | --- |
 | `bot.test.ts` | 실제 내부 라우트 인증·JSON 검증·권한·생성·신청·웹 변경의 게시 예약 |
+| `publication-search.test.ts` | 기존 내부 GET의 검색어 검증, 오래된 항목 검색·대상 표시·인증·권한·서버 경계 |
+| `guild-view-refresh.test.ts` | 61초 만료·layout 재사용 요청의 권한 갱신, 회수·탈퇴·503·비로그인 공개 열람 |
 | `auth.test.ts` | 개인 페이지 인증, 세션 만료, OAuth 시작·고정 프로필 콜백, 쿠키 속성, POST/출처 검사와 로그아웃 |
 | `public-reads.test.ts` | 실제 DB 제목·사용자 표시, 공개 조회, 다른 서버·개발 샘플 404, 순위 JSON·입력 오류, 관리 페이지 권한 |
 | `actions.test.ts` | 기존 39개 action의 비로그인 차단, 모집 생성·신청·철회·revision, 계정·설정, 수동 편성→대진→시작, 경매 낙찰·되돌리기 |
 | `external-api.test.ts` | Riot·LoL endpoint의 JSON·오류·Retry-After·no-store, Data Dragon 공개 캐시 |
 | `match-results.test.ts` | 실제 multipart ROFL 등록·세션/출전자 권한·오류·stale 요청·결과 취소·참가 안내 DM 예약 |
+| `match-result-restoration.test.ts` | 실제 multipart 동일 파일 복구·문맥/권한 거부·동시/반복 요청, Riot 재조회 없이 이력 보존 |
 
 SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/`failure`는 본문의 `status`, `error`는 `error.status`를 확인한다.
 반환값 없는 성공은 HTTP 200과 결과 status 204를 사용한다. 업무 저장은 응답과 DB 행을 함께 확인한다.
@@ -185,3 +193,32 @@ ROFL 등록과 다른 서버 계정 연결의 경합은 실제 서비스·Postgr
 일반 앱 DB는 public 테이블 40개·외래키 88개·업무 행 0개·마이그레이션 기록 4개다.
 종료 후 테스트 schema·연결·HTTP 앱 프로세스와 테스트 DB public 테이블은 모두 0개였다.
 실제 Discord 로그인·명령 등록·메시지 발송은 실행하지 않았다.
+
+
+2026-11-05, 문서 정합성을 먼저 수정한 뒤 검토에서 재현한 결함을 순서대로 수정하고 전체 검증을 완료했다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `pnpm test` | 웹 414개 + 봇 63개 = 477개 통과. API lite 포함 |
+| `pnpm test:hard` | 최신 웹 빌드 성공, 실제 PostgreSQL·HTTP 312개 통과 |
+| `pnpm check:tests` | 웹·봇 테스트 타입 검사 통과 |
+| `pnpm check` | 포맷·브랜딩·웹·봇 검사 통과, 오류·경고 0개 |
+| `pnpm build:bot` | 봇 운영 빌드 성공 |
+| `pnpm db:migrate` | 개발 DB에 `0004_rofl_result_restoration.sql`까지 적용 성공 |
+
+실패·취소·건너뜀은 모두 0개다. 추가 회귀는 동일 파일 취소/복구·과거 귀속 보존·MMR/대진 원자성,
+기존 취소 데이터의 migration, 만료된 관리자 권한의 내부 이동 갱신, 전체 실패 게시 이력 검색과 대상 구분을 포함한다.
+수정 전 대조 실행에서는 동일 파일 복구가 409, 만료 후 내부 이동에서 운영 메뉴 소실,
+오래된 게시물 검색이 최근 25개 반환으로 실패하는 것을 확인했고 수정 후 통과했다.
+
+별도 Chromium 검증은 API 테스트 개수에 합산하지 않는다.
+
+- 실제 앱·격리 DB에서 61초 만료 후 내전 목록·요약·편성·대진·경기를 내부 이동해 관리자 기능 유지 확인.
+- 공통 확인창은 360/1440px 일반·중첩 상태에서 취소 초기 포커스, 양방향 Tab, 배경 차단, Escape 한 단계 종료, 메뉴 트리거 복귀, 트리거 소멸 시 main 복귀, 경로 이동 취소, 확인 POST 1회 및 JS 오류 0개 확인.
+- 경기 화면은 360/768/1024/1440px, 드래그·키보드 교환, 라인업 확정, ROFL 오류/성공과 실제 저장, 모바일 다크 상태 확인.
+- 수동 편성은 2/3/4팀을 네 화면 폭에서 렌더링해 허위 진영 표시와 문서 가로 넘침이 없음을 확인. 드래그·키보드 교환·미배정 영역 배치 해제와 재배치의 실제 저장, 읽기 전용 빈 영역 숨김도 확인.
+- 저장소 문서 30개의 로컬 링크 138개가 모두 존재함을 확인.
+
+개발 DB는 public 테이블 40개·외래키 88개·업무 행 0개·migration 기록 5개다.
+최종 정리 후 앱/테스트 DB에 테스트 schema와 잔여 연결이 없으며, 테스트 DB public 테이블과 HTTP 자식 프로세스도 0개다.
+외부 Riot·Discord 응답은 고정하고 브라우저의 외부 자산 요청은 차단했다. 실제 Discord 로그인·명령 등록·메시지/DM 발송은 실행하지 않았다.

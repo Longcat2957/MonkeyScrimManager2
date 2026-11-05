@@ -29,6 +29,13 @@
       "when": 1793864927247,
       "tag": "0003_match_results",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793868970891,
+      "tag": "0004_rofl_result_restoration",
+      "breakpoints": true
     }
   ]
 }

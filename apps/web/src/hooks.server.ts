@@ -4,6 +4,7 @@ import type { Handle } from '@sveltejs/kit/hooks';
 import { SESSION_COOKIE, authCookieOptions } from '#lib/server/auth/cookies.ts';
 import { validateSession } from '#lib/server/auth/session.ts';
 import { DomainError } from '#lib/server/errors.ts';
+import { refreshGuildViewAccess } from '#lib/server/guild/access.ts';
 
 export const handle: Handle = async ({ event, resolve }) => {
     event.locals.requestId = randomUUID();
@@ -26,6 +27,10 @@ export const handle: Handle = async ({ event, resolve }) => {
         } else {
             event.cookies.delete(SESSION_COOKIE, authCookieOptions);
         }
+    }
+    if (event.request.method === 'GET' && event.route.id?.startsWith('/g/') && event.params.guildId) {
+        // 내부 이동은 상위 layout을 재사용할 수 있으므로 모든 병렬 load보다 먼저 갱신한다.
+        await refreshGuildViewAccess(event.locals.actor, event.params.guildId);
     }
     return resolve(event);
 };

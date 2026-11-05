@@ -88,3 +88,26 @@ test('잘못된 성공 응답은 API 정상 응답으로 간주하지 않는다'
         (error) => error instanceof BotApiError && error.code === 'INVALID_RESPONSE'
     );
 });
+
+test('게시 복구 검색어는 특수문자와 대소문자를 보존해 내부 API에 전달한다', async () => {
+    const queries = ['', '  2세트 A_%\\ 한글?&=#  '];
+    const calls: URL[] = [];
+    const api = createApiClient({
+        origin: new URL('http://127.0.0.1:3000'),
+        token: 'fixture',
+        fetch: async (input, init) => {
+            calls.push(new URL(String(input)));
+            assert.equal(init?.method, 'GET');
+            assert.equal(init?.body, undefined);
+            assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer fixture');
+            return Response.json({ publications: [] });
+        }
+    });
+    for (const query of queries) await api.failedPublications(GUILD, USER, query);
+    assert.ok(calls.every((url) => url.pathname === `/internal/bot/guilds/${GUILD}/publications`));
+    assert.ok(calls.every((url) => url.searchParams.get('actorId') === USER));
+    assert.deepEqual(
+        calls.map((url) => url.searchParams.get('q')),
+        queries
+    );
+});

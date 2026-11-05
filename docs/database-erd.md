@@ -4,6 +4,7 @@
 전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
 게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
 경기 라인업·결과 이력·게시 대상 확장은 [0003_match_results.sql](../apps/web/drizzle/0003_match_results.sql)에 포함한다.
+취소한 ROFL의 새 채택 이력과 활성 결과 고유키는 [0004_rofl_result_restoration.sql](../apps/web/drizzle/0004_rofl_result_restoration.sql)에 포함한다.
 인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
@@ -64,12 +65,12 @@ erDiagram
     games ||--o{ game_participants : 출전_기록
     scrim_participants ||--o{ game_participants : 서비스_참가자
 
-    rofl_metadata |o..o| games : 채택한_결과
+    rofl_metadata |o..o{ games : 채택한_결과
     rofl_metadata ||--o{ rofl_participants : 원본_참가자_키
     rofl_metadata ||--o| rofl_game_data_v1 : V1_경기
     rofl_game_data_v1 ||--o{ rofl_participant_data_v1 : V1_참가자
     rofl_participants ||--o| rofl_participant_data_v1 : 버전별_상세
-    rofl_participants ||..o| game_participants : 필수_ROFL_근거
+    rofl_participants ||..o{ game_participants : 필수_ROFL_근거
 ```
 
 ## 상세 표기
@@ -490,7 +491,7 @@ erDiagram
 경매는 내전당 하나이므로 한 팀·참가자가 연결되는 경매 팀 행도 각각 최대 하나다.
 열린 경매 후보는 경매당 하나, 무효화되지 않은 영입은 경매·참가자당 하나다.
 낙찰은 구매자·경매 시도·비음수 가격이 필수이고, 수동 배정은 구매자·가격이 `NULL`이다.
-정정은 기존 행을 무효화하고 새 행의 `supersedes_id`로 연결해 구매 이력을 남긴다.
+현재 되돌리기는 기존 lot·영입을 무효화하고 재영입 시 새 행을 남긴다. 스키마에는 `supersedes_id` 정정 연결이 있지만 현재 경매 서비스는 이 값을 기록하지 않는다.
 아직 등장하지 않은 후보의 순서는 `auction_queue_entries`, 현재 후보는 열린 lot, 영입 결과는 acquisition이 저장 원천이다.
 
 ## 라운드·대진·경기 결과
@@ -539,7 +540,7 @@ erDiagram
         enum blue_team_slot
         enum status
         enum winner_side "NULL 허용, completed이면 필수"
-        uuid rofl_metadata_id FK, UK "NULL 허용, completed이면 필수"
+        uuid rofl_metadata_id FK "NULL 허용, completed이면 필수"
     }
     game_participants {
         uuid game_id PK, FK
@@ -563,12 +564,12 @@ erDiagram
     scrim_teams ||..o{ matches : "scrim_id, team_a_id"
     scrim_teams ||..o{ matches : "scrim_id, team_b_id"
     matches ||..o{ games : "scrim_id, match_id"
-    rofl_metadata |o..o| games : rofl_metadata_id
+    rofl_metadata |o..o{ games : rofl_metadata_id
     games ||--o{ game_participants : "scrim_id, game_id"
     games ||--o{ game_participants : "game_id, rofl_metadata_id"
     scrim_participants ||--o{ game_participants : "scrim_id, scrim_participant_id"
     riot_accounts |o..o{ game_participants : riot_account_id
-    rofl_participants ||..o| game_participants : "rofl_metadata_id, rofl_participant_index"
+    rofl_participants ||..o{ game_participants : "rofl_metadata_id, rofl_participant_index"
 ```
 
 `Match`는 두 팀이 BO 전체를 진행하는 경기이고 `Game`은 그 안의 한 판이다. 점수는 완료 Game에서 집계한다.
@@ -578,11 +579,11 @@ erDiagram
 2·3·4팀 대진과 라운드별 BO 1·3·5, 활성 팀 순서, 중복 직접 시드에 DB 제약을 둔다.
 시작 시 양 팀이 정해진 노드만 Match를 만들며, 중도 종료의 복원 필드는 그 동작이 멈춘 Match만 재개하는 데 쓴다.
 `games`의 `(match_id, game_number)` 고유 인덱스는 `status <> 'cancelled'`인 행에만 적용한다.
-정정한 이전 Game은 취소 상태로 남고 같은 번호의 새 Game을 별도 ID로 등록한다.
+정정한 이전 Game은 취소 상태로 남고 같은 번호의 새 Game을 별도 ID로 등록한다. `rofl_metadata_id`도 취소되지 않은 Game 사이에서만 고유하다. 같은 파일을 복구할 때 원본 메타데이터를 다시 참조하며, 이전 Game의 채택 근거는 유지한다.
 
 출전 기록의 ROFL 참조는 필수다. `(game_id, rofl_metadata_id)` FK가 해당 Game의 채택본과 연결되도록 하고,
 `(rofl_metadata_id, rofl_participant_index)` FK가 실제 ROFL 참가자 존재를 보장한다.
-Game의 채택 메타 고유키와 Game별 ROFL 인덱스 고유키 때문에 ROFL 참가자당 출전 기록은 최대 하나다.
+Game별 ROFL 인덱스는 고유하다. 동일 파일의 복구 이력이 있으면 같은 ROFL 참가자에 여러 Game의 출전 기록이 연결되지만, 활성 Game은 최대 하나다.
 같은 두 ROFL 참조 열에는 역조회용 복합 인덱스가 있다.
 
 ## 경기 출전·ROFL 등록 이력
@@ -604,13 +605,14 @@ erDiagram
         enum position
     }
     match_rofl_imports {
-        uuid rofl_metadata_id PK, FK
-        text result_fingerprint UK
+        uuid rofl_metadata_id FK
+        text result_fingerprint
         uuid match_id FK
-        uuid game_id FK
+        uuid game_id PK, FK
         uuid lineup_id FK
         integer submitted_revision
         timestamptz created_at
+        timestamptz cancelled_at "NULL 허용"
     }
 
     matches ||..o| match_lineups : "scrim_id, match_id"
@@ -618,7 +620,7 @@ erDiagram
     match_lineups ||--o{ match_lineup_players : "scrim_id, lineup_id"
     scrim_participants ||--o{ match_lineup_players : "scrim_id, participant_id"
     scrim_teams ||..o{ match_lineup_players : "scrim_id, team_id"
-    rofl_metadata ||--o| match_rofl_imports : rofl_metadata_id
+    rofl_metadata ||..o{ match_rofl_imports : rofl_metadata_id
     matches ||..o{ match_rofl_imports : match_id
     match_lineups ||..o{ match_rofl_imports : "match_id, lineup_id"
     games ||..o| match_rofl_imports : "match_id, game_id"
@@ -633,10 +635,11 @@ erDiagram
 라인업별 참가자와 `(lineup_id, team_id, position)`은 유일하다. 같은 내전의 참가자·팀만 연결하는 복합 FK를 두고,
 선발 상태·해당 Match의 양 팀·열 명의 사용자 유일성·다섯 포지션 완전성은 서비스에서 검증한다.
 
-`match_rofl_imports`는 채택 ROFL의 정규화 지문과 Match revision을 보존한다. 복합 FK는 같은 Match의 라인업·Game과
+`match_rofl_imports`는 Game별 채택 ROFL의 정규화 지문과 Match revision·취소 시각을 보존한다. 복합 FK는 같은 Match의 라인업·Game과
 그 Game이 채택한 ROFL만 연결하게 한다. 파일 SHA-256은 별도로 `rofl_metadata`에 저장한다.
 같은 성공 요청은 기존 Game을 반환하고, 다른 파일의 동일 결과나 다른 경기 재사용은 거절한다.
-결과 취소 뒤에도 등록 이력을 남겨 늦은 재전송이 취소한 결과를 다시 적용하지 못하게 한다.
+`result_fingerprint`는 `cancelled_at IS NULL`인 활성 등록 사이에서만 고유하며 메타데이터·지문별 전체 이력 조회 인덱스도 둔다. 결과 취소 시 Game·MMR 역분개와 함께 해당 등록의 `cancelled_at`을 기록한다.
+같은 파일의 복구·진영 정정은 동일 Match·세트·확정 라인업의 최신 revision일 때만 새 Game·등록 이력으로 저장한다. 원본 ROFL·과거 출전·계정 귀속과 취소 이력은 유지하며 Riot 계정을 재조회하지 않는다. 오래된 요청·다른 슬롯 재사용·바이트만 다른 동일 결과는 거절한다. 자세한 조건은 [ROFL 적재 모델](rofl-import.md#자동-귀속과-경기-운영)을 따른다.
 
 ## ROFL 공통 메타·버전별 결과
 

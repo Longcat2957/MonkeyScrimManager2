@@ -30,10 +30,16 @@
         <h3 id="formation-pool" class="text-sm font-semibold">
             미배정 <span class="font-normal opacity-60 tabular-nums">{players.length}명</span>
         </h3>
-        <span class="text-xs opacity-60">{interactive ? '탭 선택 / 드래그' : '편성 보기'}</span>
+        {#if interactive && players.length > 0 && !selectedId}
+            <span class="text-xs opacity-60">탭 선택 / 드래그</span>
+        {/if}
     </header>
     {#if players.length === 0}
-        <p class="px-3 pb-5 text-center text-sm text-gray-500 dark:text-gray-400">모든 참가자가 배정됐어요</p>
+        {#if interactive}
+            <p class="px-3 pb-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                여기로 끌어 놓으면 배치를 해제해요
+            </p>
+        {/if}
     {:else}
         <ul
             class="grid max-h-48 gap-1.5 overflow-y-auto px-2 pb-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"

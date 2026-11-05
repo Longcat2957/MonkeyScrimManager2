@@ -953,9 +953,7 @@ export const games = pgTable(
         // 등록 권한·참가자 연결·중복·결과 일관성을 검증한 ROFL 결과를 자동 등록한다.
         // 같은 파일의 다른 projectionVersion을 별개 경기로 재등록하지 않도록 채택 시 서비스에서 검사한다.
         // 정정은 기존 Game·출전·메타를 남겨 취소하고, 새 결과를 별도 Game으로 등록한다.
-        roflMetadataId: uuid('rofl_metadata_id')
-            .unique()
-            .references(() => roflMetadata.id, { onDelete: 'restrict' }),
+        roflMetadataId: uuid('rofl_metadata_id').references(() => roflMetadata.id, { onDelete: 'restrict' }),
         createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
         updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
             .defaultNow()
@@ -965,6 +963,9 @@ export const games = pgTable(
     (table) => [
         uniqueIndex('games_match_number_unique')
             .on(table.matchId, table.gameNumber)
+            .where(sql`${table.status} <> 'cancelled'`),
+        uniqueIndex('games_active_rofl_metadata_unique')
+            .on(table.roflMetadataId)
             .where(sql`${table.status} <> 'cancelled'`),
         unique('games_scrim_id_id_unique').on(table.scrimId, table.id),
         unique('games_match_id_id_unique').on(table.matchId, table.id),
@@ -987,23 +988,29 @@ export const games = pgTable(
     ]
 );
 
-// 원본 파일 대신 검증된 결과 지문과 당시 요청 슬롯을 보존한다. 취소 후 재전송이 결과를 되살리지 않는다.
+// 원본 파일 대신 검증된 결과 지문과 채택 요청별 슬롯을 보존한다. 취소 후 새 채택도 별도 Game의 이력으로 남긴다.
 export const matchRoflImports = pgTable(
     'match_rofl_imports',
     {
         roflMetadataId: uuid('rofl_metadata_id')
-            .primaryKey()
+            .notNull()
             .references(() => roflMetadata.id, { onDelete: 'restrict' }),
-        resultFingerprint: text('result_fingerprint').notNull().unique(),
+        resultFingerprint: text('result_fingerprint').notNull(),
         matchId: uuid('match_id')
             .notNull()
             .references(() => matches.id, { onDelete: 'restrict' }),
-        gameId: uuid('game_id').notNull(),
+        gameId: uuid('game_id').primaryKey(),
         lineupId: uuid('lineup_id').notNull(),
         submittedRevision: integer('submitted_revision').notNull(),
+        cancelledAt: timestamp('cancelled_at', { withTimezone: true, precision: 3 }),
         createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
     },
     (table) => [
+        uniqueIndex('match_rofl_imports_active_fingerprint_unique')
+            .on(table.resultFingerprint)
+            .where(sql`${table.cancelledAt} is null`),
+        index('match_rofl_imports_metadata_idx').on(table.roflMetadataId),
+        index('match_rofl_imports_fingerprint_idx').on(table.resultFingerprint),
         foreignKey({
             columns: [table.matchId, table.lineupId],
             foreignColumns: [matchLineups.matchId, matchLineups.id],
@@ -1024,7 +1031,7 @@ export const matchRoflImports = pgTable(
     ]
 );
 
-// 실제 한 판의 출전 기록이다. 미연결 ROFL 참가자의 선별 데이터는 버전별 ROFL 하위 모델에 남긴다.
+// 실제 한 판의 출전 기록이다. 검증된 열 명의 연결을 ROFL 선별 데이터와 함께 저장한다.
 // selected 신청·팀 소속·실제 사용 계정·5인 라인업·Game 순번과 시리즈 종료 조건은 저장 시 서비스에서 검사한다.
 export const gameParticipants = pgTable(
     'game_participants',
@@ -1140,7 +1147,7 @@ export const mmrLedgerEntryKind = pgEnum('mmr_ledger_entry_kind', [
 ]);
 
 // 원장 수치는 덮어쓰지 않는다. 증감은 afterMmr - beforeMmr로 계산하고 취소는 별도 역분개 행으로 남긴다.
-// ROFL 교체 시 재생성되는 gameParticipants 대신 보존되는 참가자와 반영 회차를 참조한다.
+// 결과 정정은 기존 Game·출전을 보존하고 새 Game을 만든다. 원장은 참가자와 각 반영 회차를 참조한다.
 // 이전·이후 점수의 연결, 현재 점수·revision과의 일치, 실제 사용자·포지션 및 역분개 가능 순서는 서비스에서 검증한다.
 export const mmrLedgerEntries = pgTable(
     'mmr_ledger_entries',
@@ -1790,16 +1797,16 @@ export const matchesRelations = relations(matches, ({ one, many }) => ({
 
 export const roflMetadataRelations = relations(roflMetadata, ({ one, many }) => ({
     uploadedBy: one(users, { fields: [roflMetadata.uploadedByUserId], references: [users.id] }),
-    game: one(games),
+    games: many(games),
     gameDataV1: one(roflGameDataV1),
     participants: many(roflParticipants),
     mmrApplications: many(gameMmrApplications)
 }));
 
-export const roflParticipantsRelations = relations(roflParticipants, ({ one }) => ({
+export const roflParticipantsRelations = relations(roflParticipants, ({ one, many }) => ({
     metadata: one(roflMetadata, { fields: [roflParticipants.roflMetadataId], references: [roflMetadata.id] }),
     dataV1: one(roflParticipantDataV1),
-    gameParticipation: one(gameParticipants)
+    gameParticipations: many(gameParticipants)
 }));
 
 export const roflGameDataV1Relations = relations(roflGameDataV1, ({ one, many }) => ({

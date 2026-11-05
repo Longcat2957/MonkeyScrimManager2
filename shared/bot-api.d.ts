@@ -118,6 +118,7 @@ export interface BotFailedPublication {
     id: string;
     scrimId: string;
     title: string;
+    targetLabel: string | null;
     kind: BotPublicationKind;
     state: 'blocked' | 'uncertain';
     channelId: string | null;

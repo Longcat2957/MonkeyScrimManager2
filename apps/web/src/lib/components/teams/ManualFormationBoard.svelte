@@ -144,8 +144,7 @@
                 {/if}
             </div>
             <p class="truncate text-sm font-semibold tabular-nums">
-                {placed}/{players.length} 배치{#if !confirmed}
-                    · 미배정 {unassigned.length}명{/if}
+                {placed}/{players.length} 배치
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
@@ -207,12 +206,11 @@
         </p>
     {/if}
 
-    {#snippet teamColumn(team: FormationTeam, index: number)}
+    {#snippet teamColumn(team: FormationTeam)}
         <FormationTeamCard
             {team}
             {players}
             assignments={current}
-            side={teams.length === 2 ? (index === 0 ? 'blue' : 'red') : null}
             {selectedId}
             interactive={editable}
             {drag}
@@ -230,28 +228,28 @@
                 class="grid min-w-[56rem] grid-cols-[8rem_minmax(0,1fr)_6rem_minmax(0,1fr)_8rem] gap-px pt-px"
             >
                 <FormationSynergyRail team={teams[0]!} {players} assignments={current} {pairs} />
-                {@render teamColumn(teams[0]!, 0)}
+                {@render teamColumn(teams[0]!)}
                 <FormationHeadToHead teams={[teams[0]!, teams[1]!]} {players} assignments={current} {pairs} />
-                {@render teamColumn(teams[1]!, 1)}
+                {@render teamColumn(teams[1]!)}
                 <FormationSynergyRail team={teams[1]!} {players} assignments={current} {pairs} />
             </div>
         {:else if details}
             <div class="grid min-w-[56rem] grid-cols-[8rem_minmax(0,1fr)_8rem_minmax(0,1fr)] gap-px pt-px">
-                {#each teams as team, index (team.id)}
+                {#each teams as team (team.id)}
                     <FormationSynergyRail {team} {players} assignments={current} {pairs} />
-                    {@render teamColumn(team, index)}
+                    {@render teamColumn(team)}
                 {/each}
             </div>
         {:else}
             <div class="grid min-w-[30rem] grid-cols-2 gap-px pt-px">
-                {#each teams as team, index (team.id)}
-                    {@render teamColumn(team, index)}
+                {#each teams as team (team.id)}
+                    {@render teamColumn(team)}
                 {/each}
             </div>
         {/if}
     </div>
 
-    {#if !confirmed}
+    {#if !confirmed && (editable || unassigned.length > 0)}
         <div class="pt-px">
             <FormationPool
                 players={unassigned}

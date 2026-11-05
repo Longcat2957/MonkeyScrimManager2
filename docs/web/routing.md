@@ -21,7 +21,7 @@
     │       ├── bracket                  대진 운영
     │       └── result                   종료·중도 종료 내전 결과
     ├── matches                          서버 경기 기록
-    │   └── [matchId]                    시리즈·게임 결과·ROFL 업로드 팝업
+    │   └── [matchId]                    경기 라인업·세트 결과·ROFL 업로드 팝업
     ├── players/[userId]                 서버 내 사용자 전적
     ├── stats                            서버 통계
     └── admin                            멤버·Discord 연동 관리
@@ -59,7 +59,7 @@
 | --- | --- | --- |
 | 내전 목록 | `status=all\|recruit\|active\|done`, `page` | `all`, `1`; 페이지당 20 |
 | 경기 기록 | `q`, `page` | 빈 검색어, `1`; 검색어는 50자까지, 쪽 이동은 종료 목록에만 적용 |
-| 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 게임. 일치하는 게임이 없으면 기본 선택 |
+| 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 세트. 일치하는 세트가 없으면 기본 선택 |
 | 사용자 전적 | `position=all\|top\|jungle\|mid\|bot\|support`, `page` | `all`, `1` |
 | 서버 통계 | `position`, `recent=1`, `min` | 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 개발 샘플 업적의 사용자별 최근 10게임 집계에만 적용; 기간·시즌 `range`는 미구현 |
 | 서버 관리 | `tab=members\|discord`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지 |
@@ -86,13 +86,13 @@ Riot API 핸들러의 `region`·`platform` 등은 서버 클라이언트 설정�
 ```text
 routes/+layout.server.ts                  user·guilds (세션 사용자·본인 소속 서버 목록)
 routes/+layout.svelte                     ConfigProvider(ko_KR)
-                                         본문 바로가기 · AppHeader · main · AppFooter · Feedback
+                                         본문 바로가기 · AppHeader · main · AppFooter · Feedback · ConfirmDialog
 └── g/[guildId]/+layout.server.ts         guild (공개 DB 조회)
     └── scrims/[scrimId]/+layout.server.ts  scrim·artUrl (공개 DB 조회)
         └── +layout.svelte                ScrimSummary + 하위 페이지
 ```
 
-- 헤더·푸터·`Feedback`은 루트에 한 번만 둔다. `AppHeader`는 `page.data`의 `scrim` → `guild` → 전역 순으로 범위를 정한다.
+- 헤더·푸터·`Feedback`·`ConfirmDialog`는 루트에 한 번만 둔다. `AppHeader`는 `page.data`의 `scrim` → `guild` → 전역 순으로 범위를 정한다.
 - 본문은 `id="main-content"`, `tabindex="-1"`인 `<main>`이다. `app-frame`을 본문·푸터가 공유하고 헤더에는 별도 최대 폭을 적용한다.
 - 내전 레이아웃은 `scrim`이 있을 때 `ScrimSummary`를 한 번 렌더링한다. 요약·수동 편성은 배경 아트·상태·설정·단계가 있는 전체 머리, 경매·대진·결과는 제목·일정·하드 피어리스만 남기는 `compact` 머리다.
 - 배경 아트는 서버에서 Data Dragon으로 준비한다. 확보하지 못하면 배경색을 사용한다.
@@ -147,4 +147,4 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 | `/g/[guildId]`와 일반 하위 화면 | 활성 DB 서버·대상을 공개 조회. 없음·비활성은 404. `/admin`은 현재 관리자 검사 |
 | `/`, `/docs`, `/terms`, `/privacy` | 정적 서비스 소개·이용 안내·정책 준비 중 화면 |
 
-기능별 DB 연결·개발 미리보기·아직 보류된 ROFL 등록과 MMR 반영의 경계는 [페이지별 문서](README.md)를 따른다.
+기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 과거 시즌 선택·편성 참고 전적 등 현재 연결되지 않은 영역은 해당 페이지의 한계에 명시한다.

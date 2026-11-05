@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { parseRiotId } from '../../features/me/riot-id.ts';
 import { requireUser } from '../auth/guards.ts';
 import type { Actor } from '../auth/types.ts';
@@ -77,32 +77,52 @@ async function requireUploader(
     return lineup;
 }
 
+type StoredImport = {
+    metadata: typeof roflMetadata.$inferSelect;
+    receipt: typeof matchRoflImports.$inferSelect;
+    game: typeof games.$inferSelect;
+};
+type ExistingImport = { kind: 'replay'; result: MatchResult } | { kind: 'cancelled'; source: StoredImport };
+
 async function existingImport(
     db: Database | Transaction,
     matchId: string,
     input: MatchRoflInput,
     fileSha256: string
-): Promise<MatchResult | null> {
-    const [stored] = await db
+): Promise<ExistingImport | null> {
+    const stored = await db
         .select({ metadata: roflMetadata, receipt: matchRoflImports, game: games })
         .from(roflMetadata)
         .leftJoin(matchRoflImports, eq(matchRoflImports.roflMetadataId, roflMetadata.id))
         .leftJoin(games, eq(games.id, matchRoflImports.gameId))
         .where(eq(roflMetadata.fileSha256, fileSha256))
-        .limit(1);
-    if (!stored) return null;
-    if (
-        stored.receipt?.matchId === matchId &&
-        stored.receipt.lineupId === input.lineupId &&
-        stored.receipt.submittedRevision === input.expectedRevision &&
-        stored.game?.gameNumber === input.nextGameNumber &&
-        stored.game.blueTeamSlot === input.blueTeamSlot &&
-        stored.game.status === 'completed' &&
-        stored.game.roflMetadataId === stored.metadata.id
-    ) {
-        return { order: stored.game.gameNumber, gameId: stored.game.id };
-    }
-    conflict('이미 등록되었거나 취소된 ROFL이에요. 다른 결과로 재사용할 수 없어요');
+        .orderBy(desc(matchRoflImports.submittedRevision));
+    if (!stored.length) return null;
+    // 파일의 모든 채택 이력은 같은 경기·세트·라인업에만 속해야 한다.
+    const receipts: StoredImport[] = stored.map(({ metadata, receipt, game }) => {
+        if (
+            !receipt ||
+            !game ||
+            receipt.matchId !== matchId ||
+            receipt.lineupId !== input.lineupId ||
+            game.gameNumber !== input.nextGameNumber ||
+            game.roflMetadataId !== metadata.id
+        )
+            conflict('이미 등록된 ROFL은 같은 경기의 같은 세트에서만 복구할 수 있어요');
+        return { metadata, receipt, game };
+    });
+    const replay = receipts.find(
+        ({ receipt, game }) =>
+            receipt.submittedRevision === input.expectedRevision &&
+            game.blueTeamSlot === input.blueTeamSlot &&
+            receipt.cancelledAt === null &&
+            game.status === 'completed'
+    );
+    if (replay) return { kind: 'replay', result: { order: replay.game.gameNumber, gameId: replay.game.id } };
+    if (receipts.some(({ receipt, game }) => receipt.cancelledAt === null || game.status !== 'cancelled'))
+        conflict('이미 등록된 ROFL이에요. 현재 결과를 먼저 확인해 주세요');
+    // 복구 가능 여부는 경기 잠금 뒤 최신 revision·다음 슬롯을 다시 검사한다.
+    return { kind: 'cancelled', source: receipts[0]! };
 }
 
 function validateProjection(prepared: RoflImportData) {
@@ -199,6 +219,15 @@ function resultFingerprint(
         .digest('hex');
 }
 
+async function lockResultUsers(tx: Transaction, actor: Actor, userIds: string[]) {
+    await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(inArray(users.id, [...new Set([actor.userId, ...userIds])].sort()))
+        .orderBy(asc(users.id))
+        .for('no key update');
+}
+
 /** 사용자 → 계정 키 → 연결 순서를 시즌·내전보다 먼저 잡는다. 읽기만 하는 계정 키는 표시정보 수정 잠금과 충돌하지 않는다. */
 async function lockReplayAccounts(
     tx: Transaction,
@@ -213,17 +242,7 @@ async function lockReplayAccounts(
         .from(guildRiotAccounts)
         .innerJoin(riotAccounts, eq(riotAccounts.id, guildRiotAccounts.riotAccountId))
         .where(and(eq(guildRiotAccounts.guildId, guildId), inArray(riotAccounts.puuid, puuids)));
-    await tx
-        .select({ id: users.id })
-        .from(users)
-        .where(
-            inArray(
-                users.id,
-                [...new Set([actor.userId, ...lineupUserIds, ...owners.map((row) => row.userId)])].sort()
-            )
-        )
-        .orderBy(asc(users.id))
-        .for('no key update');
+    await lockResultUsers(tx, actor, [...lineupUserIds, ...owners.map((row) => row.userId)]);
     let identities = await tx
         .select()
         .from(riotAccounts)
@@ -342,6 +361,176 @@ async function finishSeries(tx: Transaction, context: Awaited<ReturnType<typeof 
         await tx.update(scrims).set({ status: 'completed' }).where(eq(scrims.id, context.scrim.id));
 }
 
+function winnerSideFor(
+    players: { teamId: string; replayTeamId: number | null }[],
+    blueTeamId: string,
+    winnerReplayTeamId: number | null
+) {
+    const blue = new Set(
+        players.filter((player) => player.teamId === blueTeamId).map((player) => player.replayTeamId)
+    );
+    const red = new Set(
+        players.filter((player) => player.teamId !== blueTeamId).map((player) => player.replayTeamId)
+    );
+    const blueTeam = [...blue][0];
+    const redTeam = [...red][0];
+    if (
+        blue.size !== 1 ||
+        red.size !== 1 ||
+        blueTeam == null ||
+        redTeam == null ||
+        blueTeam === redTeam ||
+        (winnerReplayTeamId !== blueTeam && winnerReplayTeamId !== redTeam)
+    )
+        conflict('ROFL의 양 팀 구성과 확정한 출전 팀이 일치하지 않아요');
+    return winnerReplayTeamId === blueTeam ? ('blue' as const) : ('red' as const);
+}
+
+type ResultParticipant = Omit<typeof gameParticipants.$inferInsert, 'scrimId' | 'gameId'>;
+
+async function saveGameResult(
+    tx: Transaction,
+    user: Actor,
+    guildId: string,
+    context: Awaited<ReturnType<typeof lockMatch>>,
+    input: MatchRoflInput,
+    result: {
+        metadataId: string;
+        fingerprint: string;
+        winnerSide: 'blue' | 'red';
+        participants: ResultParticipant[];
+    }
+): Promise<MatchResult> {
+    const [game] = await tx
+        .insert(games)
+        .values({
+            scrimId: context.scrim.id,
+            matchId: context.match.id,
+            gameNumber: input.nextGameNumber,
+            blueTeamSlot: input.blueTeamSlot,
+            status: 'completed',
+            winnerSide: result.winnerSide,
+            roflMetadataId: result.metadataId
+        })
+        .returning();
+    await tx.insert(gameParticipants).values(
+        result.participants.map((participant) => ({
+            ...participant,
+            scrimId: context.scrim.id,
+            gameId: game!.id
+        }))
+    );
+    await tx.insert(matchRoflImports).values({
+        roflMetadataId: result.metadataId,
+        resultFingerprint: result.fingerprint,
+        matchId: context.match.id,
+        gameId: game!.id,
+        lineupId: input.lineupId,
+        submittedRevision: input.expectedRevision
+    });
+    await applyGameMmr(tx, guildId, game!.id, user.userId);
+    await finishSeries(tx, context);
+    await bumpMatchRevision(tx, context.match.id, context.scrim.id);
+    return { order: game!.gameNumber, gameId: game!.id };
+}
+
+/** 같은 파일의 복구는 과거에 검증한 귀속을 사용한다. 현재 Riot ID·서버 계정 소유자로 다시 해석하지 않는다. */
+async function restoreGameResult(
+    tx: Transaction,
+    user: Actor,
+    guildId: string,
+    context: Awaited<ReturnType<typeof lockMatch>>,
+    input: MatchRoflInput,
+    source: StoredImport,
+    players: Awaited<ReturnType<typeof validateLineupRoster>>
+) {
+    const [result] = await tx
+        .select()
+        .from(roflGameDataV1)
+        .where(eq(roflGameDataV1.roflMetadataId, source.metadata.id));
+    const previous = await tx
+        .select({ played: gameParticipants, data: roflParticipantDataV1 })
+        .from(gameParticipants)
+        .innerJoin(
+            roflParticipantDataV1,
+            and(
+                eq(roflParticipantDataV1.roflMetadataId, gameParticipants.roflMetadataId),
+                eq(roflParticipantDataV1.participantIndex, gameParticipants.roflParticipantIndex)
+            )
+        )
+        .where(eq(gameParticipants.gameId, source.game.id));
+    if (
+        !result ||
+        result.resultStatus !== 'consistent' ||
+        previous.length !== 10 ||
+        source.metadata.fileSizeBytes !== input.bytes.byteLength
+    )
+        conflict('이전 결과의 ROFL 근거와 출전을 확인해야 해요');
+    const originalBlueTeam = source.game.blueTeamSlot === 'a' ? context.match.teamAId : context.match.teamBId;
+    const blueTeamId = input.blueTeamSlot === 'a' ? context.match.teamAId : context.match.teamBId;
+    const linked = previous.map(({ played, data }) => {
+        const assigned = players.find((player) => player.participantId === played.scrimParticipantId);
+        if (
+            !assigned ||
+            played.roflMetadataId !== source.metadata.id ||
+            !played.riotAccountId ||
+            played.position !== assigned.position ||
+            (played.side === 'blue') !== (assigned.teamId === originalBlueTeam)
+        )
+            conflict('이전 결과의 확정 출전과 현재 라인업이 일치하지 않아요');
+        return { played, data, assigned };
+    });
+    if (new Set(linked.map((row) => row.assigned.participantId)).size !== 10)
+        conflict('이전 결과의 출전자 열 명을 확인해야 해요');
+    return saveGameResult(tx, user, guildId, context, input, {
+        metadataId: source.metadata.id,
+        fingerprint: source.receipt.resultFingerprint,
+        winnerSide: winnerSideFor(
+            linked.map(({ data, assigned }) => ({
+                teamId: assigned.teamId,
+                replayTeamId: data.replayTeamId
+            })),
+            blueTeamId,
+            result.winnerReplayTeamId
+        ),
+        participants: linked.map(({ played, assigned }) => ({
+            scrimParticipantId: played.scrimParticipantId,
+            riotAccountId: played.riotAccountId,
+            displayName: played.displayName,
+            riotGameName: played.riotGameName,
+            riotTagLine: played.riotTagLine,
+            side: assigned.teamId === blueTeamId ? 'blue' : 'red',
+            position: played.position,
+            championId: played.championId,
+            roflMetadataId: source.metadata.id,
+            roflParticipantIndex: played.roflParticipantIndex
+        }))
+    });
+}
+
+async function restoreImport(
+    db: Database,
+    user: Actor,
+    guildId: string,
+    matchId: string,
+    input: MatchRoflInput,
+    fileSha256: string,
+    lineupUserIds: string[]
+) {
+    return db.transaction(async (tx) => {
+        await lockResultUsers(tx, user, lineupUserIds);
+        const context = await lockMatch(tx, user, guildId, matchId, false, true);
+        const lineup = await requireUploader(tx, user, context.guild.isAdmin, matchId, input);
+        const existing = await existingImport(tx, matchId, input, fileSha256);
+        if (existing?.kind === 'replay') return existing.result;
+        await requireCurrentSlot(tx, context, input);
+        if (!lineup.confirmedAt || existing?.kind !== 'cancelled')
+            conflict('복구할 결과와 확정 라인업을 다시 확인해 주세요');
+        const players = await validateLineupRoster(tx, context.match, lineup.players, true);
+        return restoreGameResult(tx, user, guildId, context, input, existing.source, players);
+    });
+}
+
 export async function importMatchRofl(
     db: Database,
     actor: Actor | null,
@@ -363,7 +552,12 @@ export async function importMatchRofl(
     await requireUploader(db, user, guild.isAdmin, matchId, input);
     const fileSha256 = createHash('sha256').update(input.bytes).digest('hex');
     const existing = await existingImport(db, matchId, input, fileSha256);
-    if (existing) return existing;
+    if (existing?.kind === 'replay') return existing.result;
+    const lineupUserIds = (await readRoster(db, before.match)).flatMap(({ participant }) =>
+        participant.userId ? [participant.userId] : []
+    );
+    if (existing?.kind === 'cancelled')
+        return restoreImport(db, user, guildId, matchId, input, fileSha256, lineupUserIds);
     let prepared: RoflImportData;
     let identity: ReturnType<typeof readRoflIdentity>;
     try {
@@ -384,42 +578,28 @@ export async function importMatchRofl(
     validateProjection(prepared);
     const resolved = await resolveReplayAccounts(prepared, dependencies);
     const fingerprint = resultFingerprint(prepared, resolved);
-    const lineupUserIds = (await readRoster(db, before.match)).flatMap(({ participant }) =>
-        participant.userId ? [participant.userId] : []
-    );
     try {
         return await db.transaction(async (tx) => {
             const accounts = await lockReplayAccounts(tx, guildId, user, resolved, lineupUserIds);
             const context = await lockMatch(tx, user, guildId, matchId, false, true);
             const lineup = await requireUploader(tx, user, context.guild.isAdmin, matchId, input);
             const replay = await existingImport(tx, matchId, input, fileSha256);
-            if (replay) return replay;
+            if (replay?.kind === 'replay') return replay.result;
             await requireCurrentSlot(tx, context, input);
             if (!lineup.confirmedAt) conflict('먼저 경기 출전 라인업을 확정해 주세요');
             const players = await validateLineupRoster(tx, context.match, lineup.players, true);
+            if (replay?.kind === 'cancelled')
+                return restoreGameResult(tx, user, guildId, context, input, replay.source, players);
             const linked = linkReplayParticipants(prepared, identity, accounts, players, context.match);
             const blueTeamId = input.blueTeamSlot === 'a' ? context.match.teamAId : context.match.teamBId;
-            const replayBlueTeams = new Set(
-                linked
-                    .filter((row) => row.assigned.teamId === blueTeamId)
-                    .map((row) => row.player.replayTeamId)
+            const winnerSide = winnerSideFor(
+                linked.map(({ player, assigned }) => ({
+                    teamId: assigned.teamId,
+                    replayTeamId: player.replayTeamId
+                })),
+                blueTeamId,
+                prepared.rows.gameData.winnerReplayTeamId
             );
-            const replayRedTeams = new Set(
-                linked
-                    .filter((row) => row.assigned.teamId !== blueTeamId)
-                    .map((row) => row.player.replayTeamId)
-            );
-            if (
-                replayBlueTeams.size !== 1 ||
-                replayRedTeams.size !== 1 ||
-                [...replayBlueTeams][0] === [...replayRedTeams][0]
-            )
-                conflict('ROFL의 양 팀 구성과 확정한 출전 팀이 일치하지 않아요');
-            const blueReplayTeam = [...replayBlueTeams][0]!;
-            const winnerSide =
-                prepared.rows.gameData.winnerReplayTeamId === blueReplayTeam
-                    ? ('blue' as const)
-                    : ('red' as const);
             const [duplicate] = await tx
                 .select({ id: matchRoflImports.roflMetadataId })
                 .from(matchRoflImports)
@@ -430,45 +610,22 @@ export async function importMatchRofl(
             await tx.insert(roflParticipants).values(prepared.rows.participants);
             await tx.insert(roflGameDataV1).values(prepared.rows.gameData);
             await tx.insert(roflParticipantDataV1).values(prepared.rows.participantData);
-            const [game] = await tx
-                .insert(games)
-                .values({
-                    scrimId: context.scrim.id,
-                    matchId,
-                    gameNumber: input.nextGameNumber,
-                    blueTeamSlot: input.blueTeamSlot,
-                    status: 'completed',
-                    winnerSide,
-                    roflMetadataId: prepared.rows.metadata.id
-                })
-                .returning();
-            await tx.insert(gameParticipants).values(
-                linked.map(({ player, account, assigned }) => ({
-                    scrimId: context.scrim.id,
-                    gameId: game!.id,
+            return saveGameResult(tx, user, guildId, context, input, {
+                metadataId: prepared.rows.metadata.id,
+                fingerprint,
+                winnerSide,
+                participants: linked.map(({ player, account, assigned }) => ({
                     scrimParticipantId: assigned.participantId,
                     riotAccountId: account.accountId,
                     displayName: assigned.member.displayName,
                     riotGameName: player.gameName,
                     riotTagLine: player.tagLine,
-                    side: assigned.teamId === blueTeamId ? ('blue' as const) : ('red' as const),
+                    side: assigned.teamId === blueTeamId ? 'blue' : 'red',
                     position: assigned.position,
                     roflMetadataId: prepared.rows.metadata.id,
                     roflParticipantIndex: player.participantIndex
                 }))
-            );
-            await tx.insert(matchRoflImports).values({
-                roflMetadataId: prepared.rows.metadata.id,
-                resultFingerprint: fingerprint,
-                matchId,
-                gameId: game!.id,
-                lineupId: lineup.id,
-                submittedRevision: input.expectedRevision
             });
-            await applyGameMmr(tx, guildId, game!.id, user.userId);
-            await finishSeries(tx, context);
-            await bumpMatchRevision(tx, matchId, context.scrim.id);
-            return { order: game!.gameNumber, gameId: game!.id };
         });
     } catch (error) {
         const cause = error instanceof Error && 'cause' in error ? error.cause : error;
@@ -524,6 +681,10 @@ export async function revertLastMatchGame(
             await tx.delete(matches).where(eq(matches.id, next.match.id));
         }
         await tx.update(games).set({ status: 'cancelled', winnerSide: null }).where(eq(games.id, game.id));
+        await tx
+            .update(matchRoflImports)
+            .set({ cancelledAt: new Date() })
+            .where(eq(matchRoflImports.gameId, game.id));
         await tx
             .update(matches)
             .set({ status: 'in_progress', winnerTeamId: null, endedAt: null, endReason: null })

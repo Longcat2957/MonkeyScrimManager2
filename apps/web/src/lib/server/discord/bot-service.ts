@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type {
     BotCreateScrimInput,
+    BotFailedPublication,
     BotGuildSyncInput,
     BotPublicationRetryInput,
     BotRegistrationContext,
@@ -18,12 +20,16 @@ import {
     guildMembers,
     guildRiotAccounts,
     guilds,
+    games,
+    matchLineups,
+    matches,
     mmrSeasons,
     riotAccounts,
     scrimParticipantPreferences,
     scrimParticipantRegistrations,
     scrimParticipants,
-    scrims
+    scrims,
+    scrimTeams
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import {
@@ -367,15 +373,35 @@ export async function listFailedPublications(
     db: Database,
     guildId: string,
     actorId: string,
-    access?: ScrimAccessDependencies
-) {
+    access?: ScrimAccessDependencies,
+    q = ''
+): Promise<{ publications: BotFailedPublication[] }> {
     requireGuildId(guildId);
+    const query = q.trim();
+    if (query.length > 100 || query.includes('\0'))
+        throw new DomainError('INVALID_INPUT', '검색어는 100자 이내의 올바른 문자열이어야 해요');
     await requireGuildAdmin(botActor(actorId), guildId, { ...access, db });
+    const teamA = alias(scrimTeams, 'publication_team_a');
+    const teamB = alias(scrimTeams, 'publication_team_b');
+    const matchLabel = sql<string>`concat(coalesce(${matches.label}, '경기'), ' · ', coalesce(${teamA.name}, '팀'), ' vs ', coalesce(${teamB.name}, '팀'))`;
+    const targetLabel = sql<string | null>`case
+        when ${discordPublicationJobs.kind} = 'confirmation_dm'
+            then coalesce(${scrimParticipants.displayName}, ${discordPublicationJobs.subjectId})
+        when ${discordPublicationJobs.kind} = 'lineup'
+            then case when ${matches.id} is null
+                then concat('삭제된 라인업 · ', ${discordPublicationJobs.subjectId})
+                else ${matchLabel} end
+        when ${discordPublicationJobs.kind} = 'result' and ${games.id} is not null
+            then concat(case when ${games.status} = 'cancelled' then '취소 결과 · ' else '' end,
+                ${games.gameNumber}, '세트 · ', ${matchLabel})
+        else null end`;
+    // 표시할 제목·대상을 전체 실패 이력에서 먼저 검색한 뒤 Discord 선택지 상한을 적용한다.
+    const pattern = `%${query.replace(/[\\%_]/g, '\\$&')}%`;
     const rows = await db
         .select({
             job: discordPublicationJobs,
             title: scrims.title,
-            recipientName: scrimParticipants.displayName,
+            targetLabel,
             message: scrimDiscordMessages,
             settings: guildDiscordSettings
         })
@@ -398,16 +424,47 @@ export async function listFailedPublications(
                 eq(discordPublicationJobs.kind, 'confirmation_dm')
             )
         )
+        // subjectId에는 'scrim'과 Discord ID도 있으므로 대상 UUID 열을 text로 변환한다.
+        .leftJoin(
+            matchLineups,
+            and(
+                eq(discordPublicationJobs.kind, 'lineup'),
+                eq(matchLineups.scrimId, scrims.id),
+                eq(sql`${matchLineups.id}::text`, discordPublicationJobs.subjectId)
+            )
+        )
+        .leftJoin(
+            games,
+            and(
+                eq(discordPublicationJobs.kind, 'result'),
+                eq(games.scrimId, scrims.id),
+                eq(sql`${games.id}::text`, discordPublicationJobs.subjectId)
+            )
+        )
+        .leftJoin(
+            matches,
+            and(
+                eq(matches.scrimId, scrims.id),
+                eq(matches.id, sql`coalesce(${matchLineups.matchId}, ${games.matchId})`)
+            )
+        )
+        .leftJoin(teamA, and(eq(teamA.scrimId, scrims.id), eq(teamA.id, matches.teamAId)))
+        .leftJoin(teamB, and(eq(teamB.scrimId, scrims.id), eq(teamB.id, matches.teamBId)))
         .where(
-            and(eq(scrims.guildId, guildId), inArray(discordPublicationJobs.status, ['blocked', 'uncertain']))
+            and(
+                eq(scrims.guildId, guildId),
+                inArray(discordPublicationJobs.status, ['blocked', 'uncertain']),
+                query ? ilike(sql`concat_ws(' · ', ${scrims.title}, ${targetLabel})`, pattern) : undefined
+            )
         )
         .orderBy(desc(discordPublicationJobs.updatedAt), asc(discordPublicationJobs.id))
         .limit(25);
     return {
-        publications: rows.map(({ job, title, recipientName, message, settings }) => ({
+        publications: rows.map(({ job, title, targetLabel, message, settings }) => ({
             id: job.id,
             scrimId: job.scrimId,
-            title: job.kind === 'confirmation_dm' ? `${title} · ${recipientName ?? job.subjectId}` : title,
+            title,
+            targetLabel,
             kind: job.kind,
             state: job.status as 'blocked' | 'uncertain',
             channelId:

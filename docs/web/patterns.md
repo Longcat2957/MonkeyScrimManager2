@@ -1,6 +1,6 @@
 # 화면 패턴
 
-갱신일: 2026-11-03. 현재 코드의 공통 패턴과 확인이 필요한 한계를 기록한다. 선택 기준과 STDF 제약은 [design-system.md](design-system.md), 경로·쿼리는 [routing.md](routing.md)를 따른다. 아래 완료 체크리스트는 작업 기준이며 현재 모든 화면이 이를 충족한다는 뜻은 아니다.
+갱신일: 2026-11-05. 현재 코드의 공통 패턴과 확인이 필요한 한계를 기록한다. 선택 기준과 STDF 제약은 [design-system.md](design-system.md), 경로·쿼리는 [routing.md](routing.md)를 따른다. 아래 완료 체크리스트는 작업 기준이며 현재 모든 화면이 이를 충족한다는 뜻은 아니다.
 
 ## 0. 페이지 골격
 
@@ -28,6 +28,8 @@
 
 서버 홈의 재시도는 `invalidate('app:guild-home')`, 백오피스는 `invalidate('app:service-status')`, 경매 갱신은 `invalidate('app:auction')`를 사용한다. 서버 홈의 업적 조회 실패는 영역 생략, 다음 내전 조회 실패는 `NextScrimHero`의 빈 안내로 처리하므로 모든 영역이 같은 오류 상자를 갖지는 않는다.
 
+**권한 표시 갱신:** 공개 읽기의 관리자 힌트는 DB 멤버십 동기화 후 60초까지만 유효하다. 로그인 사용자의 서버 화면 GET 요청에서는 hook이 만료된 기존 소속을 병렬 load 전에 갱신한다. 서버·내전 layout은 경로 변경을 추적해 내부 이동에도 새 권한을 반영한다. 비로그인·최신 소속은 추가 조회하지 않고, Discord 장애 시 공개 열람은 유지하되 오래된 관리자 힌트는 숨긴다. 실제 쓰기는 별도로 현재 권한을 재검증한다.
+
 문구는 사용자가 이해할 수 있는 한국어로 쓰고 필요한 피드백을 한 곳에서 제공한다. 공통 오류 화면의 HTTP 상태 표시는 현재 구현이며, 업무 폼에 내부 예외를 그대로 표시하는 근거로 사용하지 않는다.
 
 ## 2. 데이터 흐름
@@ -36,9 +38,10 @@
 
 - 초기 읽기는 주로 `+page.server.ts`·`+layout.server.ts`의 `load`가 담당한다. 화면용 타입은 `lib/features/`, 목 데이터·목 변경 함수는 `lib/mocks/`에 있다.
 - 실제 서버 ID는 DB 업무 모듈을 읽고 변경한다. 개발 모드의 `devGuild001`·`devGuild002` 및 명시적 `mock=1` 미리보기만 목 사용자·저장소를 사용하며 실제 조회 실패를 목으로 대체하지 않는다.
-- Data Dragon 이미지·챔피언/장비 정보와 백오피스 서비스 상태는 각각 서버 모듈을 사용한다. 서버 홈 순위 GET은 DB의 현재 시즌·포지션 MMR을 읽으며 MMR 자동 계산·반영과는 별개다. 기능별 데이터 출처는 페이지 문서에 기록한다.
+- Data Dragon 이미지·챔피언/장비 정보와 백오피스 서비스 상태는 각각 서버 모듈을 사용한다. 서버 홈 순위 GET은 DB의 현재 시즌·포지션 MMR을 읽는다. 점수 계산·반영은 ROFL 결과 저장 트랜잭션에서 수행하며 읽기가 점수를 변경하지 않는다. 기능별 데이터 출처는 페이지 문서에 기록한다.
 - 컴포넌트는 목 모듈을 직접 읽지 않는다. 다만 `RankingBoard`는 초기 순위 props에서 시작해 무한 스크롤 시 전용 `/ranking` GET 경로를 직접 조회하고, 기능 컴포넌트는 필요한 form action을 호출한다. 모든 통신이 `load`에만 있는 구조는 아니다.
 - URL에 저장한 필터·검색·쪽 상태는 `goto(url, { reset: false })` → `load`로 갱신한다. 서버 홈 탭·통계 정렬 등 로컬 상태는 URL에 저장하지 않는다.
+- 다른 사용자의 변경이나 Discord 게시 완료를 자동 구독하지 않는다. 참가 안내 건수는 페이지 데이터 갱신 때 다시 읽으며 경매 열람자에게는 별도 새로고침 버튼을 제공한다.
 
 ### 2.2 쓰기
 
@@ -48,7 +51,7 @@
 | --- | --- |
 | 입력 폼 | `<form method="POST" action="?/이름" use:enhance={submit}>`. STDF 값은 콜백에서 `formData.set` 또는 기능별 직렬화 helper로 추가 |
 | 폼 없는 작업 | `lib/ui/actions.ts`의 `postAction(name, fields)`가 현재 페이지에 POST하고 `deserialize`로 결과 해석 |
-| ROFL 업로드 | `RoflUploadDialog`가 파일마다 `?/upload`에 `FormData`를 순차 전송하고 상태·마지막 기록 순서를 보관 |
+| ROFL 업로드 | 실제 서버는 다음 세트 파일 하나와 블루 팀·경기 revision·라인업·세트 번호를 `?/upload`에 전송. 개발 샘플만 여러 파일을 순차 전송. 상태·마지막 기록 순서를 보관 |
 
 `postAction`은 성공 시 `invalidateAll()` 후 `null`, `failure`의 `data.message`가 있으면 그 문자열, 그 외는 일반 실패 문구를 반환한다. 네트워크 예외는 현재 상태를 `invalidateAll()`로 다시 요청한 뒤 확인 문구를 반환한다. redirect·페이지 오류를 `applyAction`으로 처리하는 일반 helper는 아니다.
 
@@ -79,19 +82,22 @@ STDF `Input`의 `title`은 설치 버전에서 네이티브 `<label>` 연결을 
 
 | 종류 | 현재 구현 |
 | --- | --- |
-| 입력 팝업 | `Popup` + 내용 상자 또는 폼. `desktop.current`에 따라 데스크톱 `center`, 모바일 `bottom` |
+| 입력 팝업 | `Popup` + 내용 상자 또는 폼. 기본 데스크톱 `center`, 모바일 `bottom`. ROFL 팝업은 입력 중 중복 렌더링을 막기 위해 닫힌 상태에서만 위치를 갱신 |
 | 헤더·행 메뉴 | `ActionMenu`: 마운트 후 데스크톱 `ActionPopover`, 모바일 `ActionSheet` |
 | 상세 보기 | `GamePlayerDialog`는 데스크톱 `right`, 모바일 `bottom`. 후보·업적 목록은 각 팝업 구성 사용 |
-| 확인 | `confirm(content, title?)`가 STDF `dialog.confirm`을 호출하고 `Promise<boolean>` 반환 |
+| 확인 | `confirm(content, title?)`가 루트 `ConfirmDialog`의 STDF `Dialog`를 열고 `Promise<boolean>` 반환. `Feedback`은 토스트 등 기존 피드백 담당 |
 
-`Popup`·`ActionMenu`를 감싸는 `overlay({ open, label, onclose })` attachment의 실제 책임은 다음과 같다.
+`Popup`·`ActionMenu`·`ConfirmDialog`를 감싸는 `overlay({ open, label, onclose })` attachment의 실제 책임은 다음과 같다.
 
-1. 열린 래퍼에 `role="dialog"`, `aria-modal`, `aria-label` 부여.
-2. 래퍼에서 `body`까지 올라가며 형제 요소를 `inert`로 만들고 `body` 스크롤 잠금.
-3. 다음 프레임부터 `[data-autofocus]` 또는 첫 조작 가능한 요소로 포커스 이동을 재시도하고 직접 자식 마스크 버튼을 탭·보조기기에서 제외.
-4. Escape를 `onclose`로 전달. 닫힐 때 속성·`inert`·스크롤을 복원하고 이전 포커스 요소가 남아 있으면 복귀.
+1. 열린 래퍼에 `role="dialog"`, `aria-modal`, `aria-label`과 프로그램적 포커스용 `tabindex="-1"` 부여. 확인창은 본문을 `aria-describedby`로 연결한다.
+2. 활성 오버레이 순서를 보관하고 최상위 래퍼 밖을 `inert`로 만든다. 중첩 변경 때 이전 차단을 원래 값으로 복원한 뒤 다시 계산하며, 마지막 오버레이가 닫힐 때 기존 스크롤 상태를 복원한다.
+3. 다음 프레임부터 `[data-autofocus]` 또는 첫 조작 가능한 요소로 포커스 이동을 재시도한다. 확인창에서는 취소 버튼이 첫 대상이며, 직접 자식 STDF Mask 버튼은 Tab·보조기기 탐색에서 제외한다. 다른 오버레이가 위에 열리면 이전 초기 포커스 작업은 중단한다.
+4. 최상위에서만 Tab·Shift+Tab을 내부 조작 요소 사이로 순환시키고 Escape를 `onclose`로 전달한다. 부모 팝업이 같은 Escape를 함께 처리하지 않는다.
+5. 최상위가 닫히면 남아 있고 조작 가능한 이전 요소로 포커스를 돌린다. 메뉴→확인창처럼 먼저 닫힌 팝업 내부를 가리키는 복귀 대상은 그 팝업을 열었던 트리거로 이어 준다. 대상이 없으면 남은 팝업의 첫 조작 요소, 팝업도 없으면 `main`으로 이동한다.
 
-이 helper에는 Tab 순환 처리, 사라진 트리거 대신 `h1`으로 이동하는 기능, 전역 오버레이 관리자 기능이 없다. `confirm`도 Escape와 기존 포커스 복귀만 추가하며 `overlay`와 같은 배경 차단·초기 포커스를 제공하지 않는다. 팝업 안 확인창은 호출 코드가 존재하지만 배경 `inert`와의 충돌·키보드 접근은 별도 검증 대상이다.
+`confirm`은 확인에서 `true`, 취소·Escape·경로 이동·호스트 해제에서 `false`로 한 번만 종료한다. 확인 중 들어온 추가 요청은 기존 요청을 덮어쓰지 않고 `false`를 반환한다. STDF `secondaryClose={false}`와 공통 종료 함수를 사용하며, 마스크 클릭으로는 확인창을 닫지 않는다. 확인창은 중앙 위치를 유지하고 종료 전환 시간을 0으로 두어 요청 종료 뒤 조작 가능한 잔여 패널이 남지 않게 한다.
+
+브라우저에서는 일반 확인창, 운영 메뉴→확인창, 설정 편집→폐기 확인의 데스크톱·모바일 키보드 경로를 검증한다. 접근 가능한 이름, 취소 초기 포커스, 양방향 Tab 순환, 배경 차단, Escape 한 단계 종료, 재열기, 트리거 소멸과 경로 이동을 확인한다. 이 검증 범위가 모든 STDF 입력·팝업의 접근성 완성을 뜻하지는 않는다.
 
 모집 설정·참가 신청·멤버 계정 팝업은 `maskClosable={false}`다. ROFL 팝업도 자동 마스크 닫기를 끄고 `onclickMask`·Escape·닫기 버튼을 같은 `close()`에 연결한다. 업로드 중에는 닫기를 막고, 요청 후 닫을 때 입력 초기화와 경기 재조회를 함께 수행한다.
 
@@ -130,7 +136,7 @@ STDF `Input`의 `title`은 설치 버전에서 네이티브 `<label>` 연결을 
 
 `SectionState`는 오류를 `role="alert"`로 제공한다. ROFL 파일 결과와 모집 정원은 해당 컴포넌트의 `aria-live`를 사용한다. 루트의 공통 `role="status"` 영역은 없다. STDF `Tab` 그룹 라벨은 있으나 네이티브 tablist 키보드 패턴을 구현한 것은 아니다.
 
-접근성의 남은 확인 항목은 입력의 프로그램적 이름·오류 연결, 오버레이 포커스 순환·중첩 확인창, 모든 컨트롤의 실제 터치 크기, 조합 중 Enter 제출이다. `heightIn="2"`는 여백 옵션이므로 항상 40px 또는 44px 높이를 보장하지 않는다. 푸터 링크는 현재 `min-h-9`다.
+공통 확인창의 포커스 순환·중첩 처리는 [4절](#4-오버레이)의 범위에서 검증했다. 남은 확인 항목은 입력의 프로그램적 이름·오류 연결, 모든 컨트롤의 실제 터치 크기, 조합 중 Enter 제출이다. `heightIn="2"`는 여백 옵션이므로 항상 40px 또는 44px 높이를 보장하지 않는다. 푸터 링크는 현재 `min-h-9`다.
 
 움직임 줄이기는 `AuctionTeamCard`의 CSS와 `NextScrimHero`의 LIVE 점 등 일부 효과에서 처리하며, 앱 전체의 STDF 애니메이션·캐러셀에 대한 공통 설정은 없다. 이를 구현 완료로 전제하지 않는다.
 

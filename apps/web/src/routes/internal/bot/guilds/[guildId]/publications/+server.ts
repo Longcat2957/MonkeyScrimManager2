@@ -5,5 +5,11 @@ import { botResponse } from '#lib/server/discord/bot-http.ts';
 
 export const GET: RequestHandler = ({ request, params, url }) =>
     botResponse(request, () =>
-        listFailedPublications(getDb(), params.guildId!, url.searchParams.get('actorId') ?? '')
+        listFailedPublications(
+            getDb(),
+            params.guildId!,
+            url.searchParams.get('actorId') ?? '',
+            undefined,
+            url.searchParams.get('q') ?? ''
+        )
     );

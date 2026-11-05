@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import {
     assertGuildAccess,
     assertGuildView,
+    refreshGuildViewAccess,
     requireGuildAdmin,
     requireGuildMember,
     requireGuildView
@@ -16,6 +17,91 @@ import { createAccessFixture } from '../../support/access-fixtures.ts';
 
 const domain = (code: DomainError['code']) => (error: unknown) =>
     error instanceof DomainError && error.code === code;
+
+test('공개 화면 로딩은 만료된 소속을 갱신한 뒤 읽기 전용 트랜잭션에서 관리자 권한을 제공한다', async (t) => {
+    const f = await createAccessFixture(t);
+    await f.db.update(schema.guildMembers).set({ syncedAt: new Date(0) });
+    assert.equal((await assertGuildView(f.db, f.owner, f.ids.guild)).isAdmin, false);
+    await refreshGuildViewAccess(f.owner, f.ids.guild, { db: f.db, discord: f.discord });
+    const view = await f.db.transaction((tx) => assertGuildView(tx, f.owner, f.ids.guild), {
+        isolationLevel: 'repeatable read',
+        accessMode: 'read only'
+    });
+    assert.equal(view.isAdmin, true);
+    assert.equal((await assertGuildView(f.db, f.owner, f.ids.otherGuild)).isAdmin, false);
+});
+
+test('화면 권한 갱신은 현재 역할 회수와 탈퇴를 반영한다', async (t) => {
+    const f = await createAccessFixture(t);
+    await f.db.update(schema.guildMembers).set({ syncedAt: null });
+    f.guilds.get(f.ids.guild)!.ownerId = f.ids.otherMember;
+    await refreshGuildViewAccess(f.owner, f.ids.guild, { db: f.db, discord: f.discord });
+    assert.equal((await assertGuildView(f.db, f.owner, f.ids.guild)).isAdmin, false);
+    f.members.get(f.ids.guild)!.delete(f.member.userId);
+    await refreshGuildViewAccess(f.member, f.ids.guild, { db: f.db, discord: f.discord });
+    assert.equal((await assertGuildView(f.db, f.member, f.ids.guild)).isAdmin, false);
+    const memberships = await f.db
+        .select()
+        .from(schema.guildMembers)
+        .where(eq(schema.guildMembers.userId, f.member.userId));
+    assert.deepEqual(
+        memberships.map((row) => row.guildId),
+        [f.ids.otherGuild]
+    );
+});
+
+test('비로그인·비소속·최신 권한·비활성 서버의 열람은 Discord 갱신을 요구하지 않는다', async (t) => {
+    const f = await createAccessFixture(t);
+    const dependencies = {
+        db: f.db,
+        discord: {
+            ...f.discord,
+            getMember: async () => {
+                throw new Error('불필요한 외부 조회');
+            }
+        }
+    };
+    await refreshGuildViewAccess(null, f.ids.guild, dependencies);
+    await refreshGuildViewAccess(
+        { userId: f.ids.outsider, isServiceAdmin: false },
+        f.ids.guild,
+        dependencies
+    );
+    await refreshGuildViewAccess(f.owner, f.ids.guild, dependencies);
+    await refreshGuildViewAccess(f.owner, 'devGuild001', dependencies);
+    await f.db.update(schema.guilds).set({ isActive: false }).where(eq(schema.guilds.id, f.ids.guild));
+    await f.db.update(schema.guildMembers).set({ syncedAt: new Date(0) });
+    await refreshGuildViewAccess(f.owner, f.ids.guild, dependencies);
+});
+
+test('화면 권한 갱신의 Discord 장애는 공개 열람을 막거나 오래된 관리 권한을 살리지 않는다', async (t) => {
+    const f = await createAccessFixture(t);
+    await f.db.update(schema.guildMembers).set({ syncedAt: new Date(0) });
+    const before = await f.db.select().from(schema.guildMembers);
+    await refreshGuildViewAccess(f.owner, f.ids.guild, {
+        db: f.db,
+        discord: {
+            ...f.discord,
+            getMember: async () => {
+                throw new DiscordError(503, '검증용 장애');
+            }
+        }
+    });
+    assert.equal((await assertGuildView(f.db, f.owner, f.ids.guild)).isAdmin, false);
+    assert.deepEqual(await f.db.select().from(schema.guildMembers), before);
+    await assert.rejects(
+        refreshGuildViewAccess(f.owner, f.ids.guild, {
+            db: f.db,
+            discord: {
+                ...f.discord,
+                getMember: async () => {
+                    throw new Error('예상하지 못한 오류');
+                }
+            }
+        }),
+        /예상하지 못한 오류/
+    );
+});
 
 test('비로그인·비소속 사용자도 활성 서버를 열람하고 관리자 힌트는 현재 소속만 따른다', async (t) => {
     const f = await createAccessFixture(t);

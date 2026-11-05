@@ -20,8 +20,6 @@
         team: FormationTeam;
         players: FormationPlayer[];
         assignments: Assignments;
-        // 두 팀이면 진영 표시(BLUE·RED)를 붙인다.
-        side: 'blue' | 'red' | null;
         // 놓을 자리를 고르는 중인 참가자다. 있으면 각 자리가 "여기에 배치" 버튼이 된다.
         selectedId: string | null;
         interactive: boolean;
@@ -36,7 +34,6 @@
         team,
         players,
         assignments,
-        side,
         selectedId,
         interactive,
         drag,
@@ -58,25 +55,13 @@
     aria-labelledby={`team-${team.id}`}
     class="flex min-w-0 flex-col bg-bg-surface dark:bg-bg-surface-dark"
 >
-    <header class="flex h-14 items-center justify-between gap-2 px-3">
+    <header class="flex h-14 items-center px-3">
         <div class="flex min-w-0 flex-col">
             <h3 id={`team-${team.id}`} class="truncate text-sm font-semibold">{team.name}</h3>
             {#if details}
                 <span class="text-[0.6875rem] text-gray-500 tabular-nums dark:text-gray-400"
                     >평균 {formatMmr(average)}</span
                 >
-            {/if}
-        </div>
-        <div class="flex shrink-0 items-center gap-1">
-            {#if side}
-                <span
-                    class={[
-                        'border px-2 py-1 text-[0.6875rem] font-semibold tracking-wide',
-                        side === 'blue' ? 'border-info/40 text-info' : 'border-error/40 text-error'
-                    ]}
-                >
-                    {side === 'blue' ? 'BLUE' : 'RED'}
-                </span>
             {/if}
         </div>
     </header>

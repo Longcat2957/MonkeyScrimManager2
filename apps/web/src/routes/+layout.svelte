@@ -6,6 +6,7 @@
     import { SERVICE_NAME } from '#lib/branding.ts';
     import AppHeader from '#lib/components/layout/AppHeader.svelte';
     import AppFooter from '#lib/components/layout/AppFooter.svelte';
+    import ConfirmDialog from '#lib/components/common/ConfirmDialog.svelte';
     import { markHydrated } from '#lib/ui/viewport.svelte.ts';
     import type { LayoutProps } from './$types';
 
@@ -34,4 +35,5 @@
         <AppFooter />
     </div>
     <Feedback />
+    <ConfirmDialog />
 </ConfigProvider>
