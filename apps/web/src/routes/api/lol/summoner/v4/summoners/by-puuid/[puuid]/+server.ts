@@ -4,8 +4,8 @@ import { getSummonerByPuuid } from '#lib/server/riot/lol/summoner.ts';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ params, url }) =>
-	riotResponse(() => {
-		const value = url.searchParams.get('platform');
-		const platform = value === null ? undefined : parsePlatformRouting(value);
-		return getSummonerByPuuid(params.puuid, platform);
-	});
+    riotResponse(() => {
+        const value = url.searchParams.get('platform');
+        const platform = value === null ? undefined : parsePlatformRouting(value);
+        return getSummonerByPuuid(params.puuid, platform);
+    });

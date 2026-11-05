@@ -8,13 +8,13 @@
 
 | 명령 | 대상 | 실행 환경 |
 | --- | --- | --- |
-| `pnpm test:lite` | `tests/api/lite` | 단순 규칙·입력·오류·고정 응답 계약. DB와 실제 네트워크 없음 |
+| `pnpm test:lite` | 웹 `tests/api/lite` + 봇 `tests` | 단순 규칙·입력·오류·고정 응답 계약. DB와 실제 네트워크 없음 |
 | `pnpm test:hard:db` | `tests/api/hard/db` | 실제 서버 함수와 격리 PostgreSQL |
 | `pnpm test:hard:http` | `tests/api/hard/http` | 웹 빌드 후 SvelteKit 자식 프로세스와 격리 PostgreSQL |
 | `pnpm test:hard` | DB·HTTP hard 전체 | 웹 빌드는 실행 시작 시 한 번 수행 |
-| `pnpm test` | API lite + 기존 최상위 `tests/*.test.ts` | 프론트 목·표현·ROFL 파서 회귀도 보존 |
+| `pnpm test` | 웹 API lite + 기존 최상위 `tests/*.test.ts` + 봇 테스트 | 프론트 목·표현·ROFL 파서 회귀도 보존 |
 | `pnpm test:db` | DB hard | 기존 명령의 호환 별칭 |
-| `pnpm check:tests` | API 테스트 TypeScript | 타입만 검사. 테스트 함수·DB·앱을 실행하지 않음 |
+| `pnpm check:tests` | 웹·봇 테스트 TypeScript | 타입만 검사. 테스트 함수·DB·앱을 실행하지 않음 |
 
 실행 스크립트는 `apps/web/tests/run.mjs`다. 파일 경로·실행 순서를 셸 glob에 맡기지 않고 범위별로 정렬해 전달한다.
 테스트 프로세스 병렬 수는 2로 제한하고, DB 경합은 해당 시나리오 안에서 여러 실제 연결로 만든다.
@@ -27,10 +27,13 @@ pnpm test:hard:db --test-name-pattern=세션
 
 ## lite
 
+봇 자체의 명령·개인 입력창·메시지·전송 adapter 테스트는 `apps/bot/tests/`에서 같은 node:test로 실행한다. `pnpm test:bot`으로 별도 실행할 수 있다.
+
 `tests/api/lite/`는 다음 책임을 나눠 검증한다.
 
 | 파일 | 계약 |
 | --- | --- |
+| `bot-auth.test.ts` | 내부 API 전용 토큰·미설정·잘못된 인증 헤더 |
 | `auth.test.ts` | OAuth 설정·복귀 주소·state·PKCE·서명·만료, 세션 해시·표시 사용자 |
 | `errors.test.ts` | 인증·서비스 운영 권한, 업무 오류의 상태/필드 변환, Retry-After, 예상하지 못한 오류 전파 |
 | `permissions.test.ts` | 웹에서 사용하는 Discord 권한 비트·timeout·역할/채널 overwrite 계산 |
@@ -66,6 +69,7 @@ Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 
 
 | 파일 | 핵심 검증 |
 | --- | --- |
+| `bot.test.ts` | interaction 멱등성·동시 신청·롤백·게시 점유·불명 복구·초기 시즌·동기화, 게시 완료/복구와 신청의 잠금 경합 |
 | `schema.test.ts` | 실제 초기 SQL, 복합 FK, 활성 행 유일성, CHECK·이력 보존 |
 | `sessions.test.ts` | 실제 세션 저장·교체·검증·만료·삭제, 관리자 권한 보존, 중간 실패 롤백 |
 | `guild-access.test.ts` | 공개 조회, 실제 DB 권한 갱신/회수, 탈퇴, 신선도·활성 서버·운영 역할 |
@@ -95,6 +99,7 @@ adapter-node의 `PROTOCOL_HEADER`로 HTTPS 프록시 뒤 HTTP 연결을 재현�
 
 | 파일 | HTTP 계약 |
 | --- | --- |
+| `bot.test.ts` | 실제 내부 라우트 인증·JSON 검증·권한·생성·신청·웹 변경의 게시 예약 |
 | `auth.test.ts` | 개인 페이지 인증, 세션 만료, OAuth 시작·고정 프로필 콜백, 쿠키 속성, POST/출처 검사와 로그아웃 |
 | `public-reads.test.ts` | 실제 DB 제목·사용자 표시, 공개 조회, 다른 서버·개발 샘플 404, 순위 JSON·입력 오류, 관리 페이지 권한 |
 | `actions.test.ts` | 기존 39개 action의 비로그인 차단, 모집 생성·신청·철회·revision, 계정·설정, 수동 편성→대진→시작, 경매 낙찰·되돌리기 |
@@ -111,6 +116,8 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 - 기존 프론트 목·표현 테스트와 ROFL 파서 테스트를 새 API 저장 기능의 검증 수로 계산하지 않는다.
 
 ## 실행 기록
+
+아래 날짜별 수치는 당시 명령 범위의 결과다. 2026-11-05부터 기본/lite 명령에 봇 테스트가 포함된다.
 
 2026-11-03, Node 22.20.0·PostgreSQL 17.11에서 실행했다. 앱 DB와 분리한 `msm2_test` DB·전용 계정을 사용했다.
 
@@ -129,3 +136,21 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 첫 실행에서는 SvelteKit 3 오류 응답의 status 위치와 Riot ID 입력 fixture에 대한 테스트의 잘못된 가정을 수정했다.
 업무 코드는 변경하지 않았으며 수정 후 기본 테스트와 전체 hard를 다시 통과했다.
 종료 후 테스트 schema·연결·HTTP 앱 프로세스가 남지 않았고, 기존 앱 DB의 35개 public 테이블은 데이터 없이 유지됨을 확인했다.
+
+2026-11-05, 같은 Node·PostgreSQL 환경에서 봇 구현 후 전체 검증을 실행했다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `pnpm test` | 웹 409개 + 봇 47개 = 456개 통과 |
+| `pnpm test:hard` | 웹 빌드 성공, 실제 PostgreSQL·HTTP 테스트 243개 통과 |
+| `pnpm check:tests` | 웹·봇 테스트 타입 검사 통과 |
+| `pnpm check` | 포맷·브랜딩·웹·봇 검사 통과, 오류·경고 0개 |
+| `pnpm build:bot` | 봇 운영 빌드 성공 |
+
+최종 실행의 실패·취소·건너뜀은 모두 0개다. 게시 완료 응답·운영자 복구와 참가 신청의 경합은
+실제 PostgreSQL 연결과 잠금 대기 확인으로 검사했다. 이전 잠금 순서를 메모리에서 복원한 대조 실행에서는
+두 시나리오 모두 `40P01` 교착이 발생했으며, 내전 → 게시 작업 순서로 통일한 구현에서는 통과했다.
+
+테스트 schema·연결·HTTP 앱 프로세스가 남지 않았고 테스트 DB의 public 테이블은 0개였다.
+일반 앱 DB에는 봇용 마이그레이션까지 적용되어 public 테이블 37개·외래키 78개·업무 행 0개를 확인했다.
+실제 Discord 로그인·명령 등록·메시지 발송은 실행하지 않았다.

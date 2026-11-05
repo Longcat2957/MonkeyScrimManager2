@@ -1,0 +1,10 @@
+node_modules
+build
+dist
+.svelte-kit
+.tmp
+samples
+pnpm-lock.yaml
+apps/web/drizzle
+# 문서의 표와 줄바꿈은 기존 작성 형식을 유지한다.
+*.md

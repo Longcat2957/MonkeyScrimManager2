@@ -3,5 +3,5 @@ import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI } from '
 import { readOAuthConfig } from './oauth.ts';
 
 export function getOAuthConfig() {
-	return readOAuthConfig({ DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI }, dev);
+    return readOAuthConfig({ DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI }, dev);
 }

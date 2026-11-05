@@ -8,11 +8,11 @@ const query = new MediaQuery('min-width: 1024px', false);
 let hydrated = $state(false);
 
 export function markHydrated() {
-	hydrated = true;
+    hydrated = true;
 }
 
 export const desktop = {
-	get current() {
-		return hydrated && query.current;
-	}
+    get current() {
+        return hydrated && query.current;
+    }
 };

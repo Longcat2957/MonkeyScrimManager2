@@ -1,35 +1,39 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+    import type { Snippet } from 'svelte';
 
-	type Props = {
-		href: string;
-		title?: string;
-		subTitle?: string;
-		detail?: string;
-		info?: string;
-		// 마지막 행이 아니면 STDF Cell처럼 안쪽으로 들인 구분선을 그린다.
-		line?: boolean;
-		titleChild?: Snippet;
-		leftChild?: Snippet;
-		detailChild?: Snippet;
-		infoChild?: Snippet;
-	};
+    type Props = {
+        href: string;
+        title?: string;
+        subTitle?: string;
+        detail?: string;
+        info?: string;
+        // 마지막 행이 아니면 STDF Cell처럼 안쪽으로 들인 구분선을 그린다.
+        line?: boolean;
+        titleChild?: Snippet;
+        leftChild?: Snippet;
+        detailChild?: Snippet;
+        infoChild?: Snippet;
+    };
 
-	let {
-		href,
-		title = '',
-		subTitle = '',
-		detail = '',
-		info = '',
-		line = false,
-		titleChild,
-		leftChild,
-		detailChild,
-		infoChild
-	}: Props = $props();
+    let {
+        href,
+        title = '',
+        subTitle = '',
+        detail = '',
+        info = '',
+        line = false,
+        titleChild,
+        leftChild,
+        detailChild,
+        infoChild
+    }: Props = $props();
 
-	// 왼쪽 요소 유무에 따라 본문·오른쪽 열의 위치가 바뀐다.
-	const col = $derived(leftChild ? { main: 'col-start-2', right: 'col-start-3' } : { main: 'col-start-1', right: 'col-start-2' });
+    // 왼쪽 요소 유무에 따라 본문·오른쪽 열의 위치가 바뀐다.
+    const col = $derived(
+        leftChild
+            ? { main: 'col-start-2', right: 'col-start-3' }
+            : { main: 'col-start-1', right: 'col-start-2' }
+    );
 </script>
 
 <!--
@@ -41,42 +45,44 @@
 	relative는 행 안의 sr-only(absolute) 텍스트가 스크롤 영역 밖으로 빠져 문서 높이를 늘리지 않게 한다.
 -->
 <a
-	{href}
-	class="relative block bg-bg-surface px-3 no-underline hover:bg-text-primary/3 focus-visible:rounded-(--radius-box) focus-visible:-outline-offset-2 active:bg-text-primary/5 dark:bg-bg-surface-dark dark:hover:bg-text-dark/3 dark:active:bg-text-dark/5"
+    {href}
+    class="relative block bg-bg-surface px-3 no-underline hover:bg-text-primary/3 focus-visible:rounded-(--radius-box) focus-visible:-outline-offset-2 active:bg-text-primary/5 dark:bg-bg-surface-dark dark:hover:bg-text-dark/3 dark:active:bg-text-dark/5"
 >
-	<span
-		class={[
-			'grid w-full items-center gap-x-3 gap-y-0.5 py-4',
-			leftChild ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
-			line && 'border-b border-text-primary/5 dark:border-text-dark/5'
-		]}
-	>
-		{#if leftChild}
-			<span class="col-start-1 row-span-2 row-start-1 self-center">{@render leftChild()}</span>
-		{/if}
-		<span class={['row-start-1 truncate font-medium', col.main]}>
-			{#if titleChild}{@render titleChild()}{:else}{title}{/if}
-		</span>
-		{#if detailChild || detail}
-			<span class={['row-start-1 flex items-center justify-end', col.right]}>
-				{#if detailChild}
-					{@render detailChild()}
-				{:else}
-					<span class="text-gray-700 dark:text-gray-300">{detail}</span>
-				{/if}
-			</span>
-		{/if}
-		{#if subTitle}
-			<span class={['row-start-2 truncate text-xs text-gray-500 dark:text-gray-400', col.main]}>{subTitle}</span>
-		{/if}
-		{#if infoChild || info}
-			<span class={['row-start-2 flex items-center justify-end', col.right]}>
-				{#if infoChild}
-					{@render infoChild()}
-				{:else}
-					<span class="text-xs font-light text-gray-500 dark:text-gray-400">{info}</span>
-				{/if}
-			</span>
-		{/if}
-	</span>
+    <span
+        class={[
+            'grid w-full items-center gap-x-3 gap-y-0.5 py-4',
+            leftChild ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
+            line && 'border-b border-text-primary/5 dark:border-text-dark/5'
+        ]}
+    >
+        {#if leftChild}
+            <span class="col-start-1 row-span-2 row-start-1 self-center">{@render leftChild()}</span>
+        {/if}
+        <span class={['row-start-1 truncate font-medium', col.main]}>
+            {#if titleChild}{@render titleChild()}{:else}{title}{/if}
+        </span>
+        {#if detailChild || detail}
+            <span class={['row-start-1 flex items-center justify-end', col.right]}>
+                {#if detailChild}
+                    {@render detailChild()}
+                {:else}
+                    <span class="text-gray-700 dark:text-gray-300">{detail}</span>
+                {/if}
+            </span>
+        {/if}
+        {#if subTitle}
+            <span class={['row-start-2 truncate text-xs text-gray-500 dark:text-gray-400', col.main]}
+                >{subTitle}</span
+            >
+        {/if}
+        {#if infoChild || info}
+            <span class={['row-start-2 flex items-center justify-end', col.right]}>
+                {#if infoChild}
+                    {@render infoChild()}
+                {:else}
+                    <span class="text-xs font-light text-gray-500 dark:text-gray-400">{info}</span>
+                {/if}
+            </span>
+        {/if}
+    </span>
 </a>

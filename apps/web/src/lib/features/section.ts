@@ -2,11 +2,11 @@
 export type SectionResult<T> = { ok: true; value: T } | { ok: false };
 
 export function toSection<T>(result: PromiseSettledResult<T>, label: string): SectionResult<T> {
-	if (result.status === 'fulfilled') return { ok: true, value: result.value };
-	console.error(`[${label}] 조회 실패`, result.reason);
-	return { ok: false };
+    if (result.status === 'fulfilled') return { ok: true, value: result.value };
+    console.error(`[${label}] 조회 실패`, result.reason);
+    return { ok: false };
 }
 
 export function mapSection<T, U>(section: SectionResult<T>, map: (value: T) => U): SectionResult<U> {
-	return section.ok ? { ok: true, value: map(section.value) } : section;
+    return section.ok ? { ok: true, value: map(section.value) } : section;
 }

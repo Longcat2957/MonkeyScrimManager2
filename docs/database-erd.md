@@ -1,7 +1,8 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-03 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **35개 테이블·76개 외래키**.
-전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 Drizzle snapshot·journal이다.
+기준: 2026-11-05 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **37개 테이블·78개 외래키**.
+전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
+게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
 인증·서버별 계정·모집·수동 편성·대진·진행 상태는 실제 DB를 사용한다. ROFL 영구 등록과 MMR 자동 반영 등
 아직 소비 서비스가 없는 저장 모델은 현재 구현 범위와 구분한다.
 
@@ -40,7 +41,9 @@ erDiagram
     scrim_teams |o..o{ scrim_participants : 배정
     scrim_participants ||--o{ scrim_participant_preferences : 희망_포지션
     scrim_participants ||..o{ scrim_participant_registrations : 신청_이력
-    scrims ||--o| scrim_discord_messages : 모집_게시물
+    scrims ||--o{ scrim_discord_messages : 종류별_게시물
+    scrims ||..o{ discord_publication_jobs : 게시_작업
+    guilds ||..o{ discord_interaction_receipts : 요청_처리_기록
 
     scrims ||..o| auctions : 경매
     auctions ||--o{ auction_teams : 팀장과_예산
@@ -72,7 +75,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 스키마에 정의한 외래키 76개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마에 정의한 외래키 78개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -161,7 +164,7 @@ erDiagram
 웹 서버는 Bot 토큰으로 Discord 소속·실효 서버 관리 권한·역할·채널을 확인하고 저장한다.
 `guild_members.is_admin`만 신뢰해 조작을 허용하지 않는다. 쓰기 전 실제 Discord를 조회하고 트랜잭션 안에서도
 활성·소속·동기화 시각·현재 운영자 역할 설정을 재검사한다. 역할 변경 후 실행자의 관리 권한을 유지해야 하며,
-게시 채널은 채널 overwrite와 timeout을 반영해 봇의 보기·메시지 전송 권한을 확인한다.
+게시 채널은 채널 overwrite와 timeout을 반영해 봇의 보기·메시지 전송·메시지 기록 읽기 권한을 확인한다.
 
 `users`는 OAuth 로그인과 검증된 Discord 멤버 응답에서 생성한다. `sessions`에는 난수 토큰의 해시와 만료만 보관한다.
 일반 서버 화면은 공개 열람하고, 본인 신청·관리 조작은 별도 권한 검사를 거친다.
@@ -303,8 +306,10 @@ erDiagram
     }
     scrim_discord_messages {
         uuid scrim_id PK, FK
+        text kind PK
         text channel_id
         text message_id UK
+        integer published_revision
     }
 
     guilds ||..o{ scrims : guild_id
@@ -319,7 +324,7 @@ erDiagram
     scrim_participants ||..o{ scrim_participant_registrations : scrim_participant_id
     users |o..o{ scrim_participant_registrations : joined_by_user_id
     users |o..o{ scrim_participant_registrations : withdrawn_by_user_id
-    scrims ||--o| scrim_discord_messages : scrim_id
+    scrims ||--o{ scrim_discord_messages : scrim_id
 ```
 
 동일 내전에서 사용자·Riot 계정은 중복 참가할 수 없고, 팀별 배정 포지션도 중복되지 않는다.
@@ -352,6 +357,45 @@ erDiagram
 내전 단계는 운영자가 한 단계씩 되돌릴 수 있다(편성 중 → 모집 중, 대진 준비 → 편성 중, 게임 기록이 없는
 진행 중 → 대진 준비, 종료·중도 종료 → 진행 중). 중도 종료는 진행 중 Match를 `ended_early`, 시작 전 Match를
 `cancelled`로 바꾸며 기록된 Game과 점수는 보존한다. 되돌릴 때도 Game을 지우지 않는다.
+
+## Discord 작업과 요청 기록
+
+```mermaid
+erDiagram
+    discord_publication_jobs {
+        uuid id PK
+        uuid scrim_id FK
+        text kind "내전·종류별 유일"
+        integer revision
+        text status
+        integer attempts
+        timestamptz next_attempt_at
+        text nonce
+        uuid lease_token "NULL 허용"
+        timestamptz lease_until "NULL 허용"
+        integer lease_revision "NULL 허용"
+        text lease_channel_id "NULL 허용"
+        text lease_message_id "NULL 허용"
+        text lease_operation "NULL 허용"
+        text error_code "NULL 허용"
+    }
+    discord_interaction_receipts {
+        text interaction_id PK
+        text guild_id FK
+        text actor_id
+        text request_hash
+        jsonb result "NULL 허용"
+        timestamptz created_at
+    }
+    scrims ||..o{ discord_publication_jobs : scrim_id
+    guilds ||..o{ discord_interaction_receipts : guild_id
+```
+
+신청 변경·게시 작업·interaction 성공 결과를 같은 트랜잭션에서 커밋한다. 실패 시 모두 롤백한다.
+게시 작업은 최신 목표 버전을 하나로 합치며 `pending`·`processing`·`sent`·`blocked`·`uncertain` 상태로 관리한다.
+전송은 DB 트랜잭션 밖에서 수행하고 점유 토큰·만료·처리 버전으로 오래된 응답을 거절한다.
+채널 이동은 이전 글 삭제 뒤 새 글 생성으로 처리한다. 신규 전송 응답 유실은 `uncertain`으로 남겨 운영자가 대조한다.
+요청 기록의 actor ID는 원래 실행자의 식별값을 보존하며 사용자의 현재 권한을 대신하지 않는다.
 
 ## 경매·구매 이력
 

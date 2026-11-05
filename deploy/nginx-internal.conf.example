@@ -1,0 +1,16 @@
+# 실제 서비스의 server 블록에 포함한다. 내부 API는 인터넷에 공개하지 않는다.
+location = /internal {
+    return 404;
+}
+
+location ^~ /internal/ {
+    return 404;
+}
+
+# 웹 앱은 HOST=127.0.0.1로 실행하고 봇은 같은 호스트의 내부 주소로 호출한다.
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}

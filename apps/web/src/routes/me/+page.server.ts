@@ -9,15 +9,22 @@ import type { PageServerLoad } from './$types';
 
 // Riot 계정 연결은 서버 운영자가 서버 관리에서 하므로 이 화면에는 쓰기 action이 없다.
 export const load: PageServerLoad = async ({ parent, url, locals }) => {
-	const { user } = await parent();
-	if (dev && url.searchParams.get('mock') === '1') {
-		if (!user) error(401, '로그인이 필요합니다.');
-		const { riotAccounts } = getMockMe(url.searchParams.get('preview'));
-		return { me: user, groups: riotAccounts.length ? [{ guildId: 'devGuild001', guildName: '개발 서버', riotAccounts }] : [] };
-	}
-	try {
-		const actor = requireUser(locals.actor);
-		if (!locals.user) error(401, '로그인이 필요합니다.');
-		return { me: locals.user, groups: await listMyRiotAccounts(getDb(), actor) };
-	} catch (cause) { routeError(cause); }
+    const { user } = await parent();
+    if (dev && url.searchParams.get('mock') === '1') {
+        if (!user) error(401, '로그인이 필요합니다.');
+        const { riotAccounts } = getMockMe(url.searchParams.get('preview'));
+        return {
+            me: user,
+            groups: riotAccounts.length
+                ? [{ guildId: 'devGuild001', guildName: '개발 서버', riotAccounts }]
+                : []
+        };
+    }
+    try {
+        const actor = requireUser(locals.actor);
+        if (!locals.user) error(401, '로그인이 필요합니다.');
+        return { me: locals.user, groups: await listMyRiotAccounts(getDb(), actor) };
+    } catch (cause) {
+        routeError(cause);
+    }
 };

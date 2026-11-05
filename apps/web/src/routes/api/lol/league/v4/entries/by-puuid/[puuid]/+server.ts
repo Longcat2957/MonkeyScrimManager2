@@ -4,8 +4,8 @@ import { getLeagueEntriesByPuuid } from '#lib/server/riot/lol/league.ts';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ params, url }) =>
-	riotResponse(() => {
-		const value = url.searchParams.get('platform');
-		const platform = value === null ? undefined : parsePlatformRouting(value);
-		return getLeagueEntriesByPuuid(params.puuid, platform);
-	});
+    riotResponse(() => {
+        const value = url.searchParams.get('platform');
+        const platform = value === null ? undefined : parsePlatformRouting(value);
+        return getLeagueEntriesByPuuid(params.puuid, platform);
+    });

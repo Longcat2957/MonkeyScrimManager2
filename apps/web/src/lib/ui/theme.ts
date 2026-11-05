@@ -6,14 +6,14 @@ export type ThemeMode = 'primary' | 'dark';
 const STORAGE_KEY = 'theme-mode';
 
 export function currentMode(): ThemeMode {
-	return getMode() === 'dark' ? 'dark' : 'primary';
+    return getMode() === 'dark' ? 'dark' : 'primary';
 }
 
 export function setMode(mode: ThemeMode) {
-	switchMode(mode);
-	try {
-		localStorage.setItem(STORAGE_KEY, mode);
-	} catch {
-		// 저장이 불가능해도 현재 화면의 모드 전환은 유지한다.
-	}
+    switchMode(mode);
+    try {
+        localStorage.setItem(STORAGE_KEY, mode);
+    } catch {
+        // 저장이 불가능해도 현재 화면의 모드 전환은 유지한다.
+    }
 }

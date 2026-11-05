@@ -14,7 +14,7 @@ MSM1의 운영 로직을 최대한 준용하고 최종 결과 입력만 ROFL로 
 - 봇: discord.js 14, TypeScript 6, tsx
 - 디자인 프레임워크: [STDF 3](https://stdf.dev/), Tailwind CSS 4
 - 운영 서버: VPS에서 `@sveltejs/adapter-node`로 실행
-- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 35개 테이블·76개 외래키와 전체 초기 마이그레이션을 관리한다.
+- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 37개 테이블·78개 외래키와 전체 초기 마이그레이션을 관리한다.
 
 프로젝트 루트에서 실행한다.
 
@@ -30,7 +30,7 @@ pnpm dev
 
 ## 현재 구현 범위
 
-2026-11-03 코드 기준이다. 화면의 서비스 소개와 향후 저장 모델을 현재 운영 연동과 구분한다.
+2026-11-05 코드 기준이다. 화면의 서비스 소개와 향후 저장 모델을 현재 운영 연동과 구분한다.
 
 | 영역 | 현재 동작 |
 | --- | --- |
@@ -42,12 +42,13 @@ pnpm dev
 | 외부 조회 | Riot 서버 모듈과 Data Dragon 조회를 사용한다. 계정 조회는 실행자별 호출 제한과 관리자 검사를 거친다 |
 | 백오피스 | 세션의 서비스 운영자 권한을 확인한 뒤 실제 DB `select 1`과 설정한 봇 상태 주소를 조회한다 |
 | 인증·접근 | Discord OAuth + PKCE, DB 세션·로그아웃, 실제 Discord 소속·실효 권한 검사를 구현했다. 일반 서버 화면은 비로그인·비소속자도 열람하고 조작은 서버 관리자 또는 본인 신청 권한으로 제한한다 |
+| Discord 봇 | 초기 시즌 준비·모집 생성·본인 신청/수정/철회, 모집/팀 구성 게시·갱신, Gateway 동기화와 게시 실패 복구를 구현했다. 내부 HTTP API로 기존 업무 서비스를 사용하며 실제 Discord 발송 검증은 별도로 진행한다 |
 
-경기별 라인업 확정, ROFL의 실제 참가자·진영·중복 검증과 영구 결과 등록, 승자 진출·MMR 서비스 연결, Discord 업무 게시·interaction은 남아 있다.
+경기별 라인업 확정, ROFL의 실제 참가자·진영·중복 검증과 영구 결과 등록, 승자 진출·MMR 서비스 연결, ROFL 결과 Discord 게시는 남아 있다.
 화면별 구현과 제한은 [웹 문서](docs/web/README.md)를 기준으로 확인한다.
 
 현재 프론트엔드를 실제 인증·DB·봇에 연결하는 구조, CRUD 대응, 구현 순서와 검증 기준은
-[백엔드 구현 계획](docs/backend-plan.md)에 정리한다. 완료한 기반과 후속 작업을 구분해 기록한다.
+[백엔드 구현 계획](docs/backend-plan.md)에 정리한다. 봇의 역할·구현 순서는 [봇 계획](docs/bot-plan.md), 설정·실행·복구 절차는 [봇 문서](docs/bot.md)를 따른다.
 
 [서버 구조](apps/web/src/lib/server/README.md)는 기능별 조회·쓰기 함수, 실행자·인증 guard·업무 오류·트랜잭션 타입을 설명한다.
 
@@ -68,7 +69,7 @@ pnpm dev
 | `apps/bot/src/index.ts` | Discord 봇 진입점 |
 | `apps/bot/dist/index.js` | `pnpm build:bot`으로 생성되는 봇 운영 진입점 |
 
-`deploy/`의 배포 설정은 아직 없으며 구체적인 운영 요구사항을 정한 뒤 추가한다.
+`deploy/nginx-internal.conf.example`은 봇 내부 API의 외부 접근을 막는 프록시 설정 예제다. 실제 도메인·TLS·프로세스 배포 설정은 운영 환경에 맞춰 준비한다.
 
 ## 웹 공통 구조
 
@@ -157,7 +158,7 @@ RIOT_API_TIMEOUT_MS=10000
 각 경로의 사용 목적·파라미터·응답·제약은 [Riot API 연동 문서](docs/riot-api.md)에 정리했다.
 외부 API는 현재 기능에서 사용할 근거가 있을 때만 추가한다. Data Dragon은 화면 로더에서 사용한다.
 계정 연결 UI는 서버 내부 Riot 모듈을 직접 호출하고, 연결 전에 PUUID와 활성 LoL 플랫폼을 다시 검증한다.
-계정 식별 행은 재사용하되 사용자 연결·대표 여부는 `guild_riot_accounts`에서 서버별로 관리한다. 봇의 업무 기능은 후속 작업이다.
+계정 식별 행은 재사용하되 사용자 연결·대표 여부는 `guild_riot_accounts`에서 서버별로 관리한다. 봇의 모집·신청·팀 구성 게시도 같은 서버별 연결을 사용한다.
 
 공통 요청 처리는 `apps/web/src/lib/server/riot/transport.ts`, 환경 변수 연결은 `client.ts`,
 계정 조회는 `account.ts`, LoL 조회는 `lol/`의 각 모듈이 담당한다.
@@ -195,7 +196,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 35개 테이블·76개 외래키, 조회·삽입 타입 정의 |
+| `apps/web/src/lib/server/db/schema.ts` | 37개 테이블·78개 외래키, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
@@ -281,27 +282,23 @@ pnpm --silent rofl:research samples/replay.rofl samples/replay-research
 
 ## Discord 봇
 
-프로젝트 루트에서 환경 변수 예제를 복사한다.
+봇은 `/초기설정`·`/내전모집`·`/내전목록`·`/게시복구`와 모집 글의 `내 신청`을 제공한다.
+개인 신청은 서버별 Riot 계정·희망 포지션을 명시적으로 제출하며 웹과 같은 업무 함수를 사용한다.
+웹의 변경도 모집 글과 확정된 팀 구성 글에 반영한다. ROFL 최종 결과 게시는 후속 기능이다.
 
 ```sh
 cp apps/bot/.env.example apps/bot/.env
-```
-
-`apps/bot/.env`의 `DISCORD_TOKEN`에 봇 토큰을 설정한 뒤 실행한다.
-환경 변수는 Node.js가 직접 읽으며, 서비스 관리자에서 주입할 수도 있다.
-
-```sh
 pnpm dev:bot
 ```
 
-봇은 `Guilds` 인텐트로 로그인하고 준비 완료 시 계정 정보를 출력한다.
-명령어와 내전 운영 기능은 아직 구현하지 않았다.
+`DISCORD_TOKEN`·`WEB_ORIGIN`·`BOT_API_URL`을 설정하고 웹과 봇의 `BOT_INTERNAL_TOKEN`에 같은 32자 이상 난수 키를 넣는다.
+개발 웹이 5173에서 실행되면 `BOT_API_URL`도 해당 로컬 포트로 맞춘다. `Guilds`·`GuildMembers` intent를 사용한다.
+운영에서는 프록시에서 `/internal/` 접근을 차단한다. 내부 API는 전용 키로 인증하며 봇이 DB에 직접 접근하지 않는다.
 
-백오피스의 서비스 상태에 봇을 표시하려면 봇의 `BOT_STATUS_PORT`(예: `3101`)와
-웹의 `BOT_STATUS_URL`(예: `http://127.0.0.1:3101/status`)을 함께 설정한다.
-상태 확인 서버는 `127.0.0.1`에만 열리므로 웹과 봇이 같은 서버에서 실행돼야 한다. 비우면 `설정 안 됨`으로 표시한다.
-
-운영 실행은 다음과 같다.
+명령 등록은 `DISCORD_APPLICATION_ID`·`DISCORD_TEST_GUILD_ID`를 확인한 뒤 `pnpm bot:register`로 별도 실행한다.
+전역 등록은 `pnpm bot:register --global`로 명시한다. 등록과 메시지 발송은 실제 Discord 상태를 변경한다.
+백오피스 상태 확인은 봇의 `BOT_STATUS_PORT`와 웹의 `BOT_STATUS_URL`을 연결하며 127.0.0.1에서만 제공한다.
+설정·권한·동작·게시 복구는 [Discord 봇 문서](docs/bot.md)를 따른다.
 
 ```sh
 pnpm build:bot
@@ -310,7 +307,7 @@ pnpm start:bot
 
 ## 검증 및 운영 실행
 
-`pnpm check`와 `pnpm build`는 웹과 봇을 모두 검사·빌드한다.
+`pnpm check`와 `pnpm build`는 웹과 봇을 모두 검사·빌드한다. 직접 관리하는 코드의 들여쓰기는 공백 4칸이며 `pnpm format`으로 맞춘다. `pnpm check`에는 포맷 검사도 포함한다.
 `pnpm dev`와 `pnpm start`는 웹을 실행한다.
 
 ```sh
@@ -320,7 +317,7 @@ pnpm build
 pnpm start
 ```
 
-API 테스트는 `node:test` 기반 lite와 hard로 나눈다. `pnpm test`는 lite와 기존 프론트·ROFL 회귀 테스트를 실행한다.
+API 테스트는 `node:test` 기반 lite와 hard로 나눈다. `pnpm test`는 웹 lite·봇 테스트와 기존 프론트·ROFL 회귀 테스트를 실행한다.
 hard는 `apps/web/.env.test` 또는 프로세스 환경의 `TEST_DATABASE_URL`을 사용하며 일반 `DATABASE_URL`로 대체하지 않는다.
 설정 예시는 `apps/web/.env.test.example`에 있다. 테스트마다 schema를 격리하고 실제 서비스 커밋·동시성·롤백을 검증한다.
 HTTP hard는 최신 웹 빌드의 SvelteKit 앱을 자식 프로세스로 실행한다. 외부 API는 고정 응답을 주입하며 실제 봇을 실행하지 않는다.
@@ -333,8 +330,8 @@ pnpm test:hard
 pnpm check:tests
 ```
 
-`pnpm test:db`는 `test:hard:db`의 호환 별칭이다. `check:tests`는 테스트를 실행하지 않고 타입만 검사한다.
-2026-11-03 실행에서 lite 324개, DB·HTTP hard 199개, lite를 포함한 기본 회귀 396개가 모두 통과했다.
+`pnpm test:db`는 `test:hard:db`의 호환 별칭이다. `check:tests`는 웹·봇 테스트를 실행하지 않고 타입만 검사한다.
+2026-11-05 실행에서 기본 테스트는 웹 409개·봇 47개, DB·HTTP hard는 243개가 모두 통과했다. 타입·브랜딩·포맷 검사와 웹·봇 빌드도 통과했다.
 구조·검증 범위·실행 조건과 기록은 [API 테스트 문서](docs/testing.md)를 따른다.
 
 운영 서버의 기본 포트는 `3000`이다. VPS의 서비스 관리자에서 환경 변수를

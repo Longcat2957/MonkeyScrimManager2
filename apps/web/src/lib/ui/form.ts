@@ -7,11 +7,12 @@ import type { Attachment } from 'svelte/attachments';
  * 제출 버튼은 STDF Button에 type="submit"을 명시한다.
  */
 export const nonSubmitButtons: Attachment<HTMLFormElement> = (form) => {
-	const fix = () => {
-		for (const button of form.querySelectorAll('button:not([type])')) button.setAttribute('type', 'button');
-	};
-	fix();
-	const observer = new MutationObserver(fix);
-	observer.observe(form, { childList: true, subtree: true });
-	return () => observer.disconnect();
+    const fix = () => {
+        for (const button of form.querySelectorAll('button:not([type])'))
+            button.setAttribute('type', 'button');
+    };
+    fix();
+    const observer = new MutationObserver(fix);
+    observer.observe(form, { childList: true, subtree: true });
+    return () => observer.disconnect();
 };

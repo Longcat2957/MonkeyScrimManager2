@@ -7,18 +7,20 @@ import { dataDragon } from './client.ts';
  * 카탈로그를 받지 못하면 ID를 이름 대신 쓰고, 버전이 없으면 아이콘 없이 돌려준다.
  */
 export async function championResolver(version: string | null): Promise<(id: string) => ChampionRef> {
-	let names: Record<string, string> = {};
-	if (version) {
-		try {
-			const catalog = await dataDragon.getCatalog(version, 'ko_KR', 'champions');
-			if (!Array.isArray(catalog)) {
-				names = Object.fromEntries(Object.entries(catalog.data).map(([id, champion]) => [id, String(champion.name ?? id)]));
-			}
-		} catch {
-			names = {};
-		}
-	}
-	return (id) => ({ id, name: names[id] ?? id, iconUrl: championIconUrl(version, id) });
+    let names: Record<string, string> = {};
+    if (version) {
+        try {
+            const catalog = await dataDragon.getCatalog(version, 'ko_KR', 'champions');
+            if (!Array.isArray(catalog)) {
+                names = Object.fromEntries(
+                    Object.entries(catalog.data).map(([id, champion]) => [id, String(champion.name ?? id)])
+                );
+            }
+        } catch {
+            names = {};
+        }
+    }
+    return (id) => ({ id, name: names[id] ?? id, iconUrl: championIconUrl(version, id) });
 }
 
 /**
@@ -26,14 +28,14 @@ export async function championResolver(version: string | null): Promise<(id: str
  * 버전이나 카탈로그를 받지 못하면 배경색만 쓰도록 null을 돌려준다.
  */
 export async function randomChampionSplash(version: string | null): Promise<string | null> {
-	if (!version) return null;
-	try {
-		const catalog = await dataDragon.getCatalog(version, 'ko_KR', 'champions');
-		if (Array.isArray(catalog)) return null;
-		const ids = Object.keys(catalog.data);
-		const id = ids[Math.floor(Math.random() * ids.length)];
-		return id ? dataDragonSplashUrl(id) : null;
-	} catch {
-		return null;
-	}
+    if (!version) return null;
+    try {
+        const catalog = await dataDragon.getCatalog(version, 'ko_KR', 'champions');
+        if (Array.isArray(catalog)) return null;
+        const ids = Object.keys(catalog.data);
+        const id = ids[Math.floor(Math.random() * ids.length)];
+        return id ? dataDragonSplashUrl(id) : null;
+    } catch {
+        return null;
+    }
 }

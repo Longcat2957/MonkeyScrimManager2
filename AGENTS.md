@@ -40,6 +40,8 @@ feature, or architectural decisions.
 
 ## Code Comments
 
+- 직접 관리하는 코드와 설정은 공백 4칸 들여쓰기를 사용한다. `.editorconfig`와 Prettier 설정을 따르고 `pnpm check:format`으로 확인한다. 잠금 파일과 생성 산출물은 생성 도구의 형식을 유지한다.
+
 - 코드 주석은 한국어로 작성한다. 한 줄·블록 주석, JSDoc/TSDoc, 테스트·설정·SQL의 설명 주석에 모두 적용하며, 주석을 추가하거나 수정할 때 이 규칙을 따른다.
 - 식별자, 공식 기술명, URL, 컴파일러·린터 등의 도구 지시문은 원문을 유지한다.
 

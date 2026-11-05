@@ -1,30 +1,38 @@
 {
-  "name": "monkey-scrim-manager-2",
-  "private": true,
-  "packageManager": "pnpm@10.20.0",
-  "engines": {
-    "node": "^22.17.0 || >=24.0.0"
-  },
-  "scripts": {
-    "dev": "pnpm --filter @msm2/web dev",
-    "dev:bot": "pnpm --filter @msm2/bot dev",
-    "build": "pnpm -r build",
-    "build:bot": "pnpm --filter @msm2/bot build",
-    "start": "pnpm --filter @msm2/web start",
-    "start:bot": "pnpm --filter @msm2/bot start",
-    "check": "pnpm check:branding && pnpm -r check",
-    "test": "pnpm --filter @msm2/web test",
-    "test:db": "pnpm --filter @msm2/web test:db",
-    "db:generate": "pnpm --filter @msm2/web db:generate",
-    "db:migrate": "pnpm --filter @msm2/web db:migrate",
-    "rofl:inspect": "node --experimental-strip-types scripts/inspect_rofl.mts",
-    "rofl:project": "node --experimental-strip-types scripts/project_rofl.mts",
-    "rofl:research": "node --experimental-strip-types scripts/research_rofl.mts",
-    "check:branding": "node scripts/check_branding.mjs",
-    "test:lite": "pnpm --filter @msm2/web test:lite",
-    "test:hard": "pnpm --filter @msm2/web test:hard",
-    "test:hard:db": "pnpm --filter @msm2/web test:hard:db",
-    "test:hard:http": "pnpm --filter @msm2/web test:hard:http",
-    "check:tests": "pnpm --filter @msm2/web check:tests"
-  }
+    "name": "monkey-scrim-manager-2",
+    "private": true,
+    "packageManager": "pnpm@10.20.0",
+    "engines": {
+        "node": "^22.17.0 || >=24.0.0"
+    },
+    "scripts": {
+        "dev": "pnpm --filter @msm2/web dev",
+        "dev:bot": "pnpm --filter @msm2/bot dev",
+        "build": "pnpm -r build",
+        "build:bot": "pnpm --filter @msm2/bot build",
+        "start": "pnpm --filter @msm2/web start",
+        "start:bot": "pnpm --filter @msm2/bot start",
+        "check": "pnpm check:format && pnpm check:branding && pnpm -r check",
+        "test": "pnpm --filter @msm2/web test && pnpm test:bot",
+        "test:db": "pnpm --filter @msm2/web test:db",
+        "db:generate": "pnpm --filter @msm2/web db:generate",
+        "db:migrate": "pnpm --filter @msm2/web db:migrate",
+        "rofl:inspect": "node --experimental-strip-types scripts/inspect_rofl.mts",
+        "rofl:project": "node --experimental-strip-types scripts/project_rofl.mts",
+        "rofl:research": "node --experimental-strip-types scripts/research_rofl.mts",
+        "check:branding": "node scripts/check_branding.mjs",
+        "test:lite": "pnpm --filter @msm2/web test:lite && pnpm test:bot",
+        "test:hard": "pnpm --filter @msm2/web test:hard",
+        "test:hard:db": "pnpm --filter @msm2/web test:hard:db",
+        "test:hard:http": "pnpm --filter @msm2/web test:hard:http",
+        "check:tests": "pnpm --filter @msm2/web check:tests && pnpm --filter @msm2/bot check:tests",
+        "format": "prettier --write .",
+        "check:format": "prettier --check .",
+        "test:bot": "pnpm --filter @msm2/bot test",
+        "bot:register": "pnpm --filter @msm2/bot register:commands"
+    },
+    "devDependencies": {
+        "prettier": "^3.9.10",
+        "prettier-plugin-svelte": "^4.1.1"
+    }
 }

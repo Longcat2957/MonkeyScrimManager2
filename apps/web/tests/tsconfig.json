@@ -1,9 +1,9 @@
 {
-	"extends": "../tsconfig.json",
-	"compilerOptions": {
-		"noEmit": true,
-		"allowImportingTsExtensions": true,
-		"skipLibCheck": true
-	},
-	"include": ["api/**/*.ts", "../src/**/*.d.ts", "../src/env.ts"]
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "skipLibCheck": true
+    },
+    "include": ["api/**/*.ts", "../src/**/*.d.ts", "../src/env.ts"]
 }
