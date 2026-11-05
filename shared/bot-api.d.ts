@@ -40,17 +40,45 @@ export interface BotPublicationData {
     capacity: number;
     participants: { name: string; status: 'selected' | 'standby'; positions: BotPosition[] }[];
     teams: { name: string; players: { name: string; position: BotPosition | null }[] }[];
+    match?: {
+        id: string;
+        label: string;
+        gameNumber: number | null;
+        bestOf: number;
+        teamAName: string;
+        teamBName: string;
+        blueTeamName: string | null;
+        redTeamName: string | null;
+        scoreA: number;
+        scoreB: number;
+        winnerSide: 'blue' | 'red' | null;
+        seriesWinnerName: string | null;
+        players: {
+            name: string;
+            position: BotPosition | null;
+            side: 'blue' | 'red' | null;
+            teamSlot: 'a' | 'b';
+            champion: string | null;
+            kills: number | null;
+            deaths: number | null;
+            assists: number | null;
+        }[];
+    };
 }
+
+export type BotPublicationKind = 'recruitment' | 'entry' | 'lineup' | 'result' | 'confirmation_dm';
 
 export interface BotPublication {
     id: string;
     guildId: string;
     scrimId: string;
-    kind: 'recruitment' | 'entry';
+    kind: BotPublicationKind;
+    subjectId: string;
     revision: number;
     leaseToken: string;
     operation: 'upsert' | 'delete';
-    channelId: string;
+    channelId: string | null;
+    recipientId: string | null;
     messageId: string | null;
     nonce: string;
     data: BotPublicationData;
@@ -61,6 +89,7 @@ export interface BotPublicationResult {
     revision: number;
     outcome: 'sent' | 'retry' | 'blocked' | 'uncertain';
     messageId?: string;
+    channelId?: string;
     errorCode?: string;
     retryAfterSeconds?: number;
 }
@@ -89,7 +118,7 @@ export interface BotFailedPublication {
     id: string;
     scrimId: string;
     title: string;
-    kind: 'recruitment' | 'entry';
+    kind: BotPublicationKind;
     state: 'blocked' | 'uncertain';
     channelId: string | null;
     messageId: string | null;

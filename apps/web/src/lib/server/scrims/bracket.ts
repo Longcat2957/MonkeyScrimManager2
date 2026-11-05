@@ -14,6 +14,7 @@ import type { Database, Transaction } from '../db/types.ts';
 import {
     games,
     matches,
+    matchLineups,
     scrimBracketNodes,
     scrimBracketSlots,
     scrimParticipantRegistrations,
@@ -23,6 +24,7 @@ import {
     scrimTeams
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { copyInitialMatchLineup } from '../matches/lineup-bootstrap.ts';
 import { findScrim, readGuild } from './queries.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
 import type { RevisionInput, ScrimAccessDependencies } from './service.ts';
@@ -180,6 +182,7 @@ export async function removeUnplayedMatches(tx: Transaction, scrimId: string): P
         .for('update');
     await assertNoGames(tx, scrimId);
     await tx.update(scrimBracketNodes).set({ matchId: null }).where(eq(scrimBracketNodes.scrimId, scrimId));
+    await tx.delete(matchLineups).where(eq(matchLineups.scrimId, scrimId));
     await tx.delete(matches).where(eq(matches.scrimId, scrimId));
 }
 
@@ -457,7 +460,14 @@ export async function createResolvedMatches(tx: Transaction, row: ScrimRow): Pro
                 status: 'in_progress',
                 startedAt: new Date()
             })
-            .returning({ id: matches.id });
+            .returning();
+        await copyInitialMatchLineup(
+            tx,
+            match!,
+            node.id,
+            row.formationMethod === 'manual',
+            row.bracketConfirmedByUserId
+        );
         await tx
             .update(scrimBracketNodes)
             .set({ matchId: match!.id })

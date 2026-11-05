@@ -11,6 +11,7 @@ export const PATCH: RequestHandler = ({ request, params }) =>
             'revision',
             'outcome',
             'messageId',
+            'channelId',
             'errorCode',
             'retryAfterSeconds'
         ]);

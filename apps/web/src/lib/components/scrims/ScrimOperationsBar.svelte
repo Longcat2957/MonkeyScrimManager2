@@ -21,21 +21,41 @@
         cancellable: boolean;
         settings: ScrimSettings;
         editable: ScrimSettingsField[];
+        notifyParticipants?: boolean;
+        notifications?: { pending: number; sent: number; blocked: number; uncertain: number } | null;
     };
 
-    let { nextAction, revert, endEarly, cancellable, settings, editable }: Props = $props();
+    let {
+        nextAction,
+        revert,
+        endEarly,
+        cancellable,
+        settings,
+        editable,
+        notifyParticipants = false,
+        notifications = null
+    }: Props = $props();
 
-    type MenuItem = { key: 'settings' | 'revert' | 'endEarly' | 'cancel'; action: ActionProps };
+    type MenuItem = {
+        key: 'settings' | 'revert' | 'endEarly' | 'cancel' | 'notifyParticipants';
+        action: ActionProps;
+    };
 
     let menuOpen = $state(false);
     let editing = $state(false);
     let advancing = $state(false);
+    let notifying = $state(false);
     let trigger = $state<HTMLElement | null>(null);
 
     // 단계마다 쓸 수 있는 항목만 둔다. 되돌릴 수 없는 단계면 이유를 설명 줄에 쓰고 비활성으로 둔다.
     const menu = $derived.by(() => {
         const items: MenuItem[] = [];
         if (editable.length) items.push({ key: 'settings', action: { content: '내전 설정 수정' } });
+        if (notifyParticipants)
+            items.push({
+                key: 'notifyParticipants',
+                action: { content: '참가 안내 보내기', disabled: notifying }
+            });
         if (revert)
             items.push({
                 key: 'revert',
@@ -77,7 +97,19 @@
         menuOpen = false;
         const key = menu[index]?.key;
         if (key === 'settings') editing = true;
-        else if (key === 'revert' && revert) await run('revert', revert.message, revert.label);
+        else if (key === 'notifyParticipants') {
+            if (
+                !(await confirm(
+                    '선발된 참가자에게 Discord DM으로 참가 안내를 보낼까요? 이미 안내한 사람에게는 다시 보내지 않아요.',
+                    '참가 안내 보내기'
+                ))
+            )
+                return;
+            notifying = true;
+            const failure = await postAction('notifyParticipants', {});
+            notifying = false;
+            if (failure) toast.error(failure);
+        } else if (key === 'revert' && revert) await run('revert', revert.message, revert.label);
         else if (key === 'endEarly')
             await run(
                 'endEarly',
@@ -140,6 +172,23 @@
             {/if}
         </div>
     </div>
+
+    {#if notifications && Object.values(notifications).some((count) => count > 0)}
+        <p role="status" class="px-4 pb-3 text-sm opacity-70">
+            참가 안내:
+            {[
+                notifications.pending ? `전송 대기 ${notifications.pending}명` : '',
+                notifications.sent ? `완료 ${notifications.sent}명` : '',
+                notifications.blocked ? `실패 ${notifications.blocked}명` : '',
+                notifications.uncertain ? `전달 확인 필요 ${notifications.uncertain}명` : ''
+            ]
+                .filter(Boolean)
+                .join(' · ')}
+            {#if notifications.blocked || notifications.uncertain}<span>
+                    · Discord의 /게시복구에서 확인하세요</span
+                >{/if}
+        </p>
+    {/if}
 
     <ActionMenu
         bind:open={menuOpen}

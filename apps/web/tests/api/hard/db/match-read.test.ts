@@ -6,6 +6,8 @@ import * as schema from '../../../../src/lib/server/db/schema.ts';
 import type { GameResolvers } from '../../../../src/lib/features/matches/types.ts';
 import { getMatch, listMatches } from '../../../../src/lib/server/matches/queries.ts';
 import { champion, createGameFixture, errorCode } from '../../support/domain-fixtures.ts';
+import { getMatchOperationContext } from '../../../../src/lib/server/matches/operation-context.ts';
+import { createMatchResultFixture } from '../../support/match-fixtures.ts';
 
 const icon = (id: number | null) => (id === null ? null : { id, name: `아이콘 ${id}`, iconUrl: null });
 const resolvers: GameResolvers = { champion, item: icon, spell: icon, rune: icon, splash: () => null };
@@ -129,4 +131,20 @@ test('아직 결과가 없는 실제 Match는 빈 경기와 빈 피어리스 안
     assert.equal(detail?.usedChampions, null);
     assert.equal(detail?.match.scoreA, 0);
     assert.equal(detail?.match.scoreB, 0);
+});
+
+test('경기 운영 조회는 공개되며 확정 출전자와 관리자의 업로드 권한만 제공한다', async (t) => {
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const anonymous = await getMatchOperationContext(f.db, null, f.guildId, f.match.id);
+    const player = await getMatchOperationContext(f.db, f.actors[2]!, f.guildId, f.match.id);
+    const nonPlayer = await getMatchOperationContext(f.db, f.actors[15]!, f.guildId, f.match.id);
+    const manager = await getMatchOperationContext(f.db, f.manager, f.guildId, f.match.id);
+    assert.equal(anonymous.lineup?.status, 'confirmed');
+    assert.equal(anonymous.can.upload, false);
+    assert.equal(player.can.upload, true);
+    assert.equal(nonPlayer.can.upload, false);
+    assert.equal(manager.can.upload, true);
+    assert.equal(player.can.releaseLineup, false);
+    assert.equal(manager.can.releaseLineup, true);
+    assert.equal(manager.nextGameNumber, 1);
 });

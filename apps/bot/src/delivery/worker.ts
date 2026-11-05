@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { BotPublication, BotPublicationResult } from '../../../../shared/bot-api.js';
 import type { BotApi } from '../api/client.js';
 import { BotApiError, errorCode } from '../api/client.js';
-import { DeliveryError } from './discord.js';
+import { DeliveryError, type DeliveryReceipt } from './discord.js';
 
 export interface WorkerHealth {
     running: boolean;
@@ -25,7 +25,7 @@ export class PublicationWorker {
     private pending: { publication: BotPublication; result: BotPublicationResult } | null = null;
     constructor(
         private readonly api: Pick<BotApi, 'claim' | 'complete'>,
-        private readonly deliver: (publication: BotPublication, deadline: number) => Promise<string | null>,
+        private readonly deliver: (publication: BotPublication, deadline: number) => Promise<DeliveryReceipt>,
         private readonly ready: () => boolean = () => true
     ) {}
 
@@ -44,12 +44,13 @@ export class PublicationWorker {
         let result: BotPublicationResult;
         try {
             if (Date.now() >= deadline) throw new DeliveryError('retry', 'DELIVERY_DEADLINE');
-            const messageId = await this.deliver(publication, deadline);
+            const { messageId, channelId } = await this.deliver(publication, deadline);
             result = {
                 leaseToken: publication.leaseToken,
                 revision: publication.revision,
                 outcome: 'sent',
-                ...(messageId ? { messageId } : {})
+                ...(messageId ? { messageId } : {}),
+                ...(channelId ? { channelId } : {})
             };
         } catch (error) {
             const failed =
@@ -59,6 +60,7 @@ export class PublicationWorker {
                 revision: publication.revision,
                 outcome: failed.outcome,
                 errorCode: failed.code,
+                ...(failed.channelId ? { channelId: failed.channelId } : {}),
                 ...(failed.retryAfterSeconds ? { retryAfterSeconds: failed.retryAfterSeconds } : {})
             };
         }

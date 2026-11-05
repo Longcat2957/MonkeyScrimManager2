@@ -35,6 +35,10 @@ import {
 } from '#lib/mocks/workflow.ts';
 import { findMockGuild, mockUser } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
+import {
+    getParticipantConfirmationSummary,
+    requestParticipantConfirmations
+} from '#lib/server/discord/publications.ts';
 import { actionFailure } from '#lib/server/actions.ts';
 import { routeError } from '#lib/server/http.ts';
 import { getScrimDetail, listRegistrationAccounts } from '#lib/server/scrims/queries.ts';
@@ -109,7 +113,13 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
                 settings: detail.scrim.canManage ? detail.settings : null,
                 editable: editableFields(detail.scrim.status),
                 finished: DONE.includes(detail.scrim.status),
+                notifications: detail.scrim.canManage
+                    ? await getParticipantConfirmationSummary(db, params.scrimId)
+                    : null,
                 can: {
+                    notifyParticipants:
+                        detail.scrim.canManage &&
+                        ['preparing', 'ready', 'in_progress'].includes(detail.scrim.status),
                     register: !detail.myRegistration && !registerBlockedReason,
                     registerBlockedReason,
                     editRegistration: Boolean(detail.myRegistration) && detail.scrim.status === 'recruit',
@@ -163,7 +173,9 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
         settings: scrim.canManage ? getMockScrimSettings(params.guildId, params.scrimId) : null,
         editable: editableFields(scrim.status),
         finished: DONE.includes(scrim.status),
+        notifications: null,
         can: {
+            notifyParticipants: false,
             register: !detail.myRegistration && !registerBlockedReason,
             registerBlockedReason,
             // 신청 수정·철회 마감 시점은 미결정이므로 모집 중에만 허용한다.
@@ -357,10 +369,31 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
 }
 
 // 개발 샘플 ID만 메모리 저장소를 사용한다. 실제 요청은 같은 이름의 DB 업무 함수로 연결한다.
-export const actions: Actions = Object.fromEntries(
-    Object.entries(previewActions).map(([name, preview]) => [
-        name,
-        (event: ActionEvent) =>
-            dev && findMockGuild(event.params.guildId) ? preview!(event) : runAction(name, event)
-    ])
-);
+export const actions: Actions = {
+    ...Object.fromEntries(
+        Object.entries(previewActions).map(([name, preview]) => [
+            name,
+            (event: ActionEvent) =>
+                dev && findMockGuild(event.params.guildId) ? preview!(event) : runAction(name, event)
+        ])
+    ),
+    notifyParticipants: async ({ request, params, locals, setHeaders }) => {
+        if (dev && findMockGuild(params.guildId)) error(404, '내전을 찾을 수 없습니다.');
+        try {
+            const data = await request.formData();
+            return await requestParticipantConfirmations(
+                getDb(),
+                locals.actor,
+                params.guildId,
+                params.scrimId,
+                {
+                    expectedRevision: data.has('expectedRevision')
+                        ? Number(data.get('expectedRevision'))
+                        : NaN
+                }
+            );
+        } catch (cause) {
+            return actionFailure(cause, setHeaders);
+        }
+    }
+};

@@ -10,8 +10,11 @@
     import GamePlayerDialog from '#lib/components/matches/GamePlayerDialog.svelte';
     import GameTeamTable from '#lib/components/matches/GameTeamTable.svelte';
     import RoflUploadDialog from '#lib/components/matches/RoflUploadDialog.svelte';
+    import MatchLineupBoard from '#lib/components/matches/MatchLineupBoard.svelte';
     import { MATCH_STATUS } from '#lib/features/labels.ts';
     import type { GamePlayer } from '#lib/features/matches/types.ts';
+    import { confirm } from '#lib/ui/confirm.ts';
+    import { postAction } from '#lib/ui/actions.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -33,7 +36,7 @@
             match.games.findIndex((game) => game.id === data.game?.id)
         )
     );
-    const labels = $derived(match.games.map((game) => ({ text: `${game.order}게임` })));
+    const labels = $derived(match.games.map((game) => ({ text: `${game.order}세트` })));
     const maxDamage = $derived(
         Math.max(
             0,
@@ -47,6 +50,26 @@
     let uploadOpen = $state(false);
     let detailOpen = $state(false);
     let detailPlayer = $state<GamePlayer | null>(null);
+    let reverting = $state(false);
+    let revertFailure = $state('');
+
+    async function revertResult() {
+        if (!data.operation?.latestGameId || reverting) return;
+        if (
+            !(await confirm(
+                '마지막 세트 결과와 MMR 반영을 취소할까요? 이후 경기나 점수가 변경됐다면 취소할 수 없어요.',
+                '마지막 세트 취소'
+            ))
+        )
+            return;
+        reverting = true;
+        revertFailure =
+            (await postAction('revertResult', {
+                expectedRevision: String(data.operation.revision),
+                gameId: data.operation.latestGameId
+            })) ?? '';
+        reverting = false;
+    }
 
     function selectGame(index: number) {
         const url = new URL(page.url.href);
@@ -118,15 +141,37 @@
         </p>
     </header>
 
+    {#if data.operation && ['pending', 'in_progress'].includes(match.status)}
+        <MatchLineupBoard operation={data.operation} />
+    {/if}
+
     {#if !data.game}
-        <SectionState state="empty" message="아직 기록된 게임이 없어요" />
+        <SectionState state="empty" message="아직 기록된 세트가 없어요" />
     {:else}
         <section aria-labelledby="game-heading" class="flex flex-col gap-4">
-            <h2 id="game-heading" class="sr-only">{data.game.order}게임</h2>
+            <h2 id="game-heading" class="sr-only">{data.game.order}세트</h2>
             {#if match.games.length > 1}
-                <div role="group" aria-label="게임 선택" class="border-b border-border">
+                <div role="group" aria-label="세트 선택" class="border-b border-border">
                     <Tab {labels} active={activeGame} onclickTab={selectGame} />
                 </div>
+            {/if}
+            {#if data.operation?.can.revertResult && data.operation.latestGameId === data.game.id}
+                <div class="flex justify-end">
+                    <Button
+                        fill="textState"
+                        state="error"
+                        size="auto"
+                        heightOut="0"
+                        heightIn="2"
+                        injClass="px-3 text-sm"
+                        loading={reverting ? {} : null}
+                        onclick={revertResult}>마지막 세트 취소</Button
+                    >
+                </div>
+            {/if}
+            {#if revertFailure}<p role="alert" class="text-sm text-error">{revertFailure}</p>{/if}
+            {#if data.operation?.blockedReason && data.operation.latestGameId === data.game.id}
+                <p class="text-sm opacity-70">결과 취소: {data.operation.blockedReason}</p>
             {/if}
             <GameHero game={data.game} />
             {#each data.game.sides as side (side.side)}
@@ -143,7 +188,7 @@
 
     {#if data.usedChampions}
         <section aria-labelledby="fearless" class="flex flex-col gap-3">
-            <h2 id="fearless" class="text-lg font-semibold">다음 게임에서 쓸 수 없는 챔피언</h2>
+            <h2 id="fearless" class="text-lg font-semibold">다음 세트에서 쓸 수 없는 챔피언</h2>
             <div class="grid gap-3 md:grid-cols-2">
                 {#each [[match.teamA, data.usedChampions.a], [match.teamB, data.usedChampions.b]] as const as [name, champions] (name)}
                     <div
@@ -174,5 +219,17 @@
     <GamePlayerDialog bind:open={detailOpen} player={detailPlayer} durationSec={data.game.durationSec} />
 {/if}
 {#if data.can.upload}
-    <RoflUploadDialog bind:open={uploadOpen} max={Math.max(1, remaining)} onrecorded={recorded} />
+    <RoflUploadDialog
+        bind:open={uploadOpen}
+        max={data.operation ? 1 : Math.max(1, remaining)}
+        teams={data.operation?.teams ?? []}
+        context={data.operation?.lineup
+            ? {
+                  expectedRevision: data.operation.revision,
+                  expectedGameNumber: data.operation.nextGameNumber,
+                  lineupId: data.operation.lineup.id
+              }
+            : undefined}
+        onrecorded={recorded}
+    />
 {/if}

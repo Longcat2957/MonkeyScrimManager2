@@ -4,7 +4,18 @@ import { getMockMatch, recordMockGame, type RawGame } from '#lib/mocks/matches.t
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { getMatch } from '#lib/server/matches/queries.ts';
-import { requireGuildMember } from '#lib/server/guild/access.ts';
+import { getMatchOperationContext } from '#lib/server/matches/operation-context.ts';
+import {
+    confirmMatchLineup,
+    releaseMatchLineup,
+    importMatchRofl,
+    revertLastMatchGame
+} from '#lib/server/matches/service.ts';
+import { requireUser } from '#lib/server/auth/guards.ts';
+import { actionFailure } from '#lib/server/actions.ts';
+import { DomainError } from '#lib/server/errors.ts';
+import { RiotError } from '#lib/server/riot/errors.ts';
+import type { LolPosition } from '#lib/features/guild/types.ts';
 import { routeError } from '#lib/server/http.ts';
 import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
@@ -38,7 +49,14 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
                       resolvers
                   );
         if (!result) error(404, '경기를 찾을 수 없습니다.');
-        return result;
+        if (dev && findMockGuild(params.guildId)) return { ...result, operation: null };
+        const operation = await getMatchOperationContext(
+            getDb(),
+            locals.actor,
+            params.guildId,
+            params.matchId
+        );
+        return { ...result, operation, can: { upload: operation.can.upload } };
     } catch (cause) {
         routeError(cause);
     }
@@ -66,16 +84,83 @@ function toRawGame(bytes: Uint8Array): RawGame | string {
     }
 }
 
+type ActionEvent = Parameters<NonNullable<Actions[string]>>[0];
+
+function integer(data: FormData, name: string) {
+    const value = data.get(name);
+    return typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN;
+}
+
+async function changeLineup(name: 'confirmLineup' | 'releaseLineup' | 'revertResult', event: ActionEvent) {
+    const { request, params, locals, setHeaders } = event;
+    try {
+        requireUser(locals.actor);
+        const data = await request.formData();
+        const input = {
+            expectedRevision: integer(data, 'expectedRevision')
+        };
+        const db = getDb();
+        if (name === 'confirmLineup') {
+            let players: { participantId: string; position: LolPosition }[];
+            try {
+                players = JSON.parse(String(data.get('players') ?? ''));
+                if (!Array.isArray(players)) throw new Error();
+            } catch {
+                throw new DomainError('INVALID_INPUT', '출전 선수를 다시 확인해 주세요');
+            }
+            await confirmMatchLineup(db, locals.actor, params.guildId, params.matchId, {
+                ...input,
+                players
+            });
+        } else if (name === 'releaseLineup') {
+            await releaseMatchLineup(db, locals.actor, params.guildId, params.matchId, {
+                ...input,
+                lineupId: String(data.get('lineupId') ?? '')
+            });
+        } else {
+            await revertLastMatchGame(db, locals.actor, params.guildId, params.matchId, {
+                expectedRevision: input.expectedRevision,
+                gameId: String(data.get('gameId') ?? ''),
+                reason: '운영자가 마지막 세트 결과를 취소함'
+            });
+        }
+        return { saved: true };
+    } catch (cause) {
+        return actionFailure(cause, setHeaders);
+    }
+}
+
 export const actions: Actions = {
-    upload: async ({ request, params, locals }) => {
+    confirmLineup: (event) => changeLineup('confirmLineup', event),
+    releaseLineup: (event) => changeLineup('releaseLineup', event),
+    revertResult: (event) => changeLineup('revertResult', event),
+    upload: async ({ request, params, locals, setHeaders }) => {
         if (!(dev && findMockGuild(params.guildId))) {
             try {
-                await requireGuildMember(locals.actor, params.guildId);
+                requireUser(locals.actor);
+                const data = await request.formData();
+                const file = data.get('file');
+                if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl'))
+                    return fail(400, { message: 'ROFL 파일을 골라 주세요' });
+                if (file.size > MAX_ROFL_BYTES) return fail(413, { message: '파일이 너무 커요' });
+                return await importMatchRofl(getDb(), locals.actor, params.guildId, params.matchId, {
+                    expectedRevision: integer(data, 'expectedRevision'),
+                    nextGameNumber: integer(data, 'expectedGameNumber'),
+                    lineupId: String(data.get('lineupId') ?? ''),
+                    blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
+                    bytes: new Uint8Array(await file.arrayBuffer())
+                });
             } catch (cause) {
-                routeError(cause);
+                if (cause instanceof RoflError) return fail(422, { message: '읽을 수 없는 ROFL 파일이에요' });
+                if (cause instanceof RiotError) {
+                    if (cause.retryAfterSeconds)
+                        setHeaders({ 'Retry-After': String(cause.retryAfterSeconds) });
+                    return fail(cause.status, {
+                        message: 'Riot 계정 정보를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요'
+                    });
+                }
+                return actionFailure(cause, setHeaders);
             }
-            // 참가자 식별·진영·경기 순서가 검증되기 전에는 목 저장소나 임의 추정으로 결과를 만들지 않는다.
-            return fail(503, { message: '현재 ROFL의 경기 정보를 검증할 수 없어요' });
         }
         const file = (await request.formData()).get('file');
         if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl'))
@@ -83,7 +168,7 @@ export const actions: Actions = {
         if (file.size > MAX_ROFL_BYTES) return fail(413, { message: '파일이 너무 커요' });
         const raw = toRawGame(new Uint8Array(await file.arrayBuffer()));
         if (typeof raw === 'string') return fail(422, { message: raw });
-        // TODO: 참가자 연결(ROFL 계정 ↔ 이 경기의 팀원) 검증을 실제 저장소와 함께 붙인다.
+        // 명시적 개발 샘플은 운영 DB와 분리된 메모리 예시만 변경한다.
         const result = await recordMockGame(params.guildId, params.matchId, raw);
         if ('status' in result) return fail(result.status, { message: result.message });
         return { order: result.order };

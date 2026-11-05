@@ -1,4 +1,37 @@
 import type { matchStatus } from '#lib/server/db/schema.ts';
+import type { LolPosition } from '#lib/features/guild/types.ts';
+
+/** 경기 전체에서 재사용하는 출전 라인업과 다음 세트 등록 권한이다. */
+export type MatchOperationContext = {
+    revision: number;
+    nextGameNumber: number;
+    lineup: {
+        id: string;
+        status: 'draft' | 'confirmed';
+        players: { participantId: string; position: LolPosition }[];
+    } | null;
+    teams: {
+        id: string;
+        slot: 'a' | 'b';
+        name: string;
+        players: {
+            participantId: string;
+            userId: string | null;
+            displayName: string;
+            riotId: string | null;
+            position: LolPosition | null;
+        }[];
+    }[];
+    can: {
+        editLineup: boolean;
+        confirmLineup: boolean;
+        releaseLineup: boolean;
+        upload: boolean;
+        revertResult: boolean;
+    };
+    latestGameId: string | null;
+    blockedReason?: string;
+};
 
 export type MatchStatus = (typeof matchStatus.enumValues)[number];
 

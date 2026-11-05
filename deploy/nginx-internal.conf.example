@@ -9,6 +9,8 @@ location ^~ /internal/ {
 
 # 웹 앱은 HOST=127.0.0.1로 실행하고 봇은 같은 호스트의 내부 주소로 호출한다.
 location / {
+    # 파일 본문은 앱에서 64MiB로 검사하며 multipart 형식의 여유를 둔다.
+    client_max_body_size 70m;
     proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;

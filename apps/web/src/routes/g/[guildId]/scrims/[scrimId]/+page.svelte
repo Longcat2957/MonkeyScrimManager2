@@ -46,6 +46,8 @@
                     cancellable={!data.finished}
                     settings={data.settings}
                     editable={data.editable}
+                    notifyParticipants={data.can.notifyParticipants}
+                    notifications={data.notifications}
                 />
             {/if}
             {#if choosingMethod}

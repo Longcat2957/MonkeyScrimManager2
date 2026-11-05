@@ -1,8 +1,17 @@
 import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
 import { MessageFlags } from 'discord.js';
 import type { BotApi } from '../api/client.js';
+import type { BotPublicationKind } from '../../../../shared/bot-api.js';
 import { BotApiError } from '../api/client.js';
-import { card, label, linkRow, notice, scrimUrl, webUrl } from '../messages/shared.js';
+import { card, linkRow, notice, scrimUrl, webUrl } from '../messages/shared.js';
+
+const PUBLICATION_LABELS: Record<BotPublicationKind, string> = {
+    recruitment: '모집',
+    entry: '팀 구성',
+    lineup: '출전 명단',
+    result: '경기 결과',
+    confirmation_dm: '참가 안내 DM'
+};
 
 export function scheduleFromKst(value: string | null): string | null {
     if (!value?.trim()) return null;
@@ -101,7 +110,10 @@ export async function handleAutocomplete(interaction: AutocompleteInteraction, a
                 .slice(0, 25)
                 .map((item) => ({
                     value: item.id,
-                    name: `${item.kind === 'entry' ? '팀 구성' : '모집'} · ${label(item.title, 50)} · ${item.state === 'uncertain' ? '전달 불명' : '게시 실패'}`
+                    name: `${PUBLICATION_LABELS[item.kind]} · ${item.title} · ${item.state === 'uncertain' ? '전달 불명' : '게시 실패'}`.slice(
+                        0,
+                        100
+                    )
                 }))
         );
     } catch (error) {

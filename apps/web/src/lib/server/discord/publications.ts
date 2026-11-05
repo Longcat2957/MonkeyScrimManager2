@@ -2,28 +2,34 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
 import type {
     BotPublication,
-    BotPublicationData,
+    BotPublicationKind,
     BotPublicationResult
 } from '../../../../../../shared/bot-api.js';
 import type { Database, Transaction } from '../db/types.ts';
+import type { Actor } from '../auth/types.ts';
+import { requireUser } from '../auth/guards.ts';
+import { requireGuildAdmin } from '../guild/access.ts';
+import { lockScrim, type RevisionInput, type ScrimAccessDependencies } from '../scrims/service.ts';
 import {
     discordPublicationJobs,
     guildDiscordSettings,
     guilds,
+    games,
+    matches,
+    matchLineups,
     scrimDiscordMessages,
-    scrimParticipantPreferences,
     scrimParticipantRegistrations,
     scrimParticipants,
-    scrims,
-    scrimTeams
+    scrims
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
-import { requireUuid } from '../scrims/validation.ts';
+import { requireRevision, requireUuid } from '../scrims/validation.ts';
 import { isDiscordId } from './client.ts';
+import { publicationData, matchPublicationData } from './publication-data.ts';
 
-type Kind = 'recruitment' | 'entry';
 type Job = typeof discordPublicationJobs.$inferSelect;
 const READY = ['ready', 'in_progress', 'completed', 'ended_early'];
+const DM_ALLOWED = ['preparing', 'ready', 'in_progress'];
 const clearLease = {
     leaseToken: null,
     leaseUntil: null,
@@ -34,6 +40,33 @@ const clearLease = {
 };
 function nonce() {
     return randomUUID().replaceAll('-', '').slice(0, 24);
+}
+
+function messageScope(job: Pick<Job, 'scrimId' | 'kind' | 'subjectId'>) {
+    return and(
+        eq(scrimDiscordMessages.scrimId, job.scrimId),
+        eq(scrimDiscordMessages.kind, job.kind),
+        eq(scrimDiscordMessages.subjectId, job.subjectId)
+    );
+}
+
+async function enqueue(tx: Transaction, scrimId: string, kind: BotPublicationKind, subjectId = 'scrim') {
+    await tx
+        .insert(discordPublicationJobs)
+        .values({ scrimId, kind, subjectId, nonce: nonce() })
+        .onConflictDoUpdate({
+            target: [
+                discordPublicationJobs.scrimId,
+                discordPublicationJobs.kind,
+                discordPublicationJobs.subjectId
+            ],
+            set: {
+                revision: sql`${discordPublicationJobs.revision} + 1`,
+                status: sql`case when ${discordPublicationJobs.status} in ('processing', 'uncertain') then ${discordPublicationJobs.status} else 'pending' end`,
+                nextAttemptAt: new Date(),
+                attempts: sql`case when ${discordPublicationJobs.status} in ('processing', 'uncertain') then ${discordPublicationJobs.attempts} else 0 end`
+            }
+        });
 }
 
 /** 최신 상태가 바뀌면 대기 작업 하나로 합친다. 처리 중·전달 불명 작업의 점유는 훼손하지 않는다. */
@@ -57,19 +90,119 @@ export async function enqueueScrimPublications(tx: Transaction, scrimId: string)
             .where(and(eq(discordPublicationJobs.scrimId, scrimId), eq(discordPublicationJobs.kind, kind)));
         if (!(channelId && needed) && !messages.some((message) => message.kind === kind) && !existing)
             continue;
-        await tx
-            .insert(discordPublicationJobs)
-            .values({ scrimId, kind, nonce: nonce() })
-            .onConflictDoUpdate({
-                target: [discordPublicationJobs.scrimId, discordPublicationJobs.kind],
-                set: {
-                    revision: sql`${discordPublicationJobs.revision} + 1`,
-                    status: sql`case when ${discordPublicationJobs.status} in ('processing', 'uncertain') then ${discordPublicationJobs.status} else 'pending' end`,
-                    nextAttemptAt: new Date(),
-                    attempts: sql`case when ${discordPublicationJobs.status} in ('processing', 'uncertain') then ${discordPublicationJobs.attempts} else 0 end`
-                }
-            });
+        await enqueue(tx, scrimId, kind);
     }
+    await enqueueGamePublications(tx, scrimId);
+}
+
+/** 저장된 경기만 게시한다. 해제·정정된 대상의 기존 글도 같은 작업으로 정리한다. */
+export async function enqueueGamePublications(tx: Transaction, scrimId: string): Promise<void> {
+    const [scrim] = await tx.select().from(scrims).where(eq(scrims.id, scrimId));
+    if (!scrim) return;
+    const [settings] = await tx
+        .select()
+        .from(guildDiscordSettings)
+        .where(eq(guildDiscordSettings.guildId, scrim.guildId));
+    const existing = await tx
+        .select()
+        .from(discordPublicationJobs)
+        .where(
+            and(
+                eq(discordPublicationJobs.scrimId, scrimId),
+                inArray(discordPublicationJobs.kind, ['lineup', 'result'])
+            )
+        );
+    const lineups = await tx
+        .select({ id: matchLineups.id, confirmedAt: matchLineups.confirmedAt })
+        .from(matchLineups)
+        .where(eq(matchLineups.scrimId, scrimId));
+    const results = await tx
+        .select({ id: games.id, status: games.status })
+        .from(games)
+        .where(eq(games.scrimId, scrimId));
+    const keys = new Map<string, { kind: 'lineup' | 'result'; id: string }>();
+    for (const job of existing)
+        keys.set(job.kind + ':' + job.subjectId, {
+            kind: job.kind as 'lineup' | 'result',
+            id: job.subjectId
+        });
+    if (settings?.entryChannelId)
+        for (const row of lineups)
+            if (row.confirmedAt) keys.set('lineup:' + row.id, { kind: 'lineup', id: row.id });
+    if (settings?.resultChannelId)
+        for (const row of results)
+            if (row.status === 'completed') keys.set('result:' + row.id, { kind: 'result', id: row.id });
+    for (const { kind, id } of keys.values()) await enqueue(tx, scrimId, kind, id);
+}
+
+/** 운영자가 요청한 선발자에게 내전당 한 번만 안내한다. 단순 상태 변경으로 DM을 생성하지 않는다. */
+export async function requestParticipantConfirmations(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    scrimId: string,
+    input: RevisionInput,
+    access?: ScrimAccessDependencies
+): Promise<{ queued: number; alreadyRequested: number; skipped: number }> {
+    const user = requireUser(actor);
+    requireUuid(scrimId, '내전');
+    const revision = requireRevision(input.expectedRevision);
+    await requireGuildAdmin(user, guildId, { ...access, db });
+    return db.transaction(async (tx) => {
+        const row = await lockScrim(tx, user, guildId, scrimId, true, revision);
+        if (!DM_ALLOWED.includes(row.status))
+            throw new DomainError('CONFLICT', '모집 마감 후 진행 중인 내전에서 참가 안내를 보낼 수 있어요');
+        const people = await tx
+            .select({ userId: scrimParticipants.userId })
+            .from(scrimParticipants)
+            .innerJoin(
+                scrimParticipantRegistrations,
+                eq(scrimParticipantRegistrations.scrimParticipantId, scrimParticipants.id)
+            )
+            .where(
+                and(
+                    eq(scrimParticipants.scrimId, scrimId),
+                    eq(scrimParticipantRegistrations.status, 'selected'),
+                    isNull(scrimParticipantRegistrations.withdrawnAt)
+                )
+            );
+        const result = { queued: 0, alreadyRequested: 0, skipped: 0 };
+        for (const person of people) {
+            if (!isDiscordId(person.userId)) {
+                result.skipped++;
+                continue;
+            }
+            const created = await tx
+                .insert(discordPublicationJobs)
+                .values({ scrimId, kind: 'confirmation_dm', subjectId: person.userId, nonce: nonce() })
+                .onConflictDoNothing({
+                    target: [
+                        discordPublicationJobs.scrimId,
+                        discordPublicationJobs.kind,
+                        discordPublicationJobs.subjectId
+                    ]
+                })
+                .returning({ id: discordPublicationJobs.id });
+            if (created.length) result.queued++;
+            else result.alreadyRequested++;
+        }
+        return result;
+    });
+}
+
+export async function getParticipantConfirmationSummary(db: Database, scrimId: string) {
+    const rows = await db
+        .select({ status: discordPublicationJobs.status })
+        .from(discordPublicationJobs)
+        .where(
+            and(
+                eq(discordPublicationJobs.scrimId, scrimId),
+                eq(discordPublicationJobs.kind, 'confirmation_dm')
+            )
+        );
+    const summary = { pending: 0, sent: 0, blocked: 0, uncertain: 0 };
+    for (const row of rows) summary[row.status === 'processing' ? 'pending' : row.status]++;
+    return summary;
 }
 
 /** 채널 설정을 바꾸면 진행 중 내전과 기존 게시물이 있는 내전의 위치도 다시 맞춘다. */
@@ -98,63 +231,14 @@ export async function enqueueGuildPublications(tx: Transaction, guildId: string)
     }
 }
 
-async function publicationData(tx: Transaction, scrimId: string): Promise<BotPublicationData> {
-    const [row] = await tx.select().from(scrims).where(eq(scrims.id, scrimId));
-    if (!row) throw new DomainError('NOT_FOUND', '내전을 찾을 수 없어요');
-    const people = await tx
-        .select({
-            id: scrimParticipants.id,
-            name: scrimParticipants.displayName,
-            teamId: scrimParticipants.teamId,
-            position: scrimParticipants.position,
-            status: scrimParticipantRegistrations.status
-        })
-        .from(scrimParticipantRegistrations)
-        .innerJoin(
-            scrimParticipants,
-            eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
-        )
-        .where(and(eq(scrimParticipants.scrimId, scrimId), isNull(scrimParticipantRegistrations.withdrawnAt)))
-        .orderBy(asc(scrimParticipantRegistrations.joinedAt), asc(scrimParticipantRegistrations.id));
-    const ids = people.map((person) => person.id);
-    const preferences = ids.length
-        ? await tx
-              .select()
-              .from(scrimParticipantPreferences)
-              .where(inArray(scrimParticipantPreferences.scrimParticipantId, ids))
-              .orderBy(asc(scrimParticipantPreferences.priority))
-        : [];
-    const teams = await tx
-        .select()
-        .from(scrimTeams)
-        .where(and(eq(scrimTeams.scrimId, scrimId), eq(scrimTeams.isActive, true)))
-        .orderBy(asc(scrimTeams.ordinal));
-    return {
-        title: row.title,
-        status: row.status,
-        scheduledAt: row.expectedStartAt?.toISOString() ?? null,
-        teamCount: row.teamCount,
-        formationMethod: row.formationMethod,
-        hardFearless: row.isHardFearless,
-        selected: people.filter((person) => person.status === 'selected').length,
-        standby: people.filter((person) => person.status === 'standby').length,
-        capacity: row.teamCount * 5 + row.reserveCapacity,
-        participants: people
-            .filter((person) => person.status === 'selected' || person.status === 'standby')
-            .map((person) => ({
-                name: person.name,
-                status: person.status as 'selected' | 'standby',
-                positions: preferences
-                    .filter((preference) => preference.scrimParticipantId === person.id)
-                    .map((preference) => preference.position)
-            })),
-        teams: teams.map((team) => ({
-            name: team.name,
-            players: people
-                .filter((person) => person.teamId === team.id && person.status === 'selected')
-                .map((person) => ({ name: person.name, position: person.position }))
-        }))
-    };
+export function publicationChannel(
+    kind: BotPublicationKind,
+    settings: typeof guildDiscordSettings.$inferSelect | null | undefined
+) {
+    if (kind === 'confirmation_dm') return null;
+    if (kind === 'recruitment') return settings?.recruitmentChannelId ?? null;
+    if (kind === 'result') return settings?.resultChannelId ?? null;
+    return settings?.entryChannelId ?? null;
 }
 
 async function targetFor(tx: Transaction, job: Job) {
@@ -168,19 +252,95 @@ async function targetFor(tx: Transaction, job: Job) {
         .select()
         .from(guildDiscordSettings)
         .where(eq(guildDiscordSettings.guildId, row.guildId));
-    const [message] = await tx
-        .select()
-        .from(scrimDiscordMessages)
-        .where(and(eq(scrimDiscordMessages.scrimId, job.scrimId), eq(scrimDiscordMessages.kind, job.kind)));
-    const channelId = job.kind === 'recruitment' ? settings?.recruitmentChannelId : settings?.entryChannelId;
-    const needed = job.kind === 'recruitment' ? row.status !== 'cancelled' : READY.includes(row.status);
+    const [message] = await tx.select().from(scrimDiscordMessages).where(messageScope(job));
+    const channelId = publicationChannel(job.kind, settings);
+    let needed = job.kind === 'recruitment' ? row.status !== 'cancelled' : READY.includes(row.status);
+    let waitsForPreviousResult = false;
+    if (job.kind === 'lineup') {
+        const [lineup] = await tx
+            .select({ confirmedAt: matchLineups.confirmedAt, status: matches.status })
+            .from(matchLineups)
+            .innerJoin(matches, eq(matches.id, matchLineups.matchId))
+            .where(and(eq(matchLineups.id, job.subjectId), eq(matchLineups.scrimId, job.scrimId)));
+        needed = !!lineup?.confirmedAt && lineup.status !== 'cancelled' && row.status !== 'cancelled';
+    } else if (job.kind === 'result') {
+        const [game] = await tx
+            .select()
+            .from(games)
+            .where(and(eq(games.id, job.subjectId), eq(games.scrimId, job.scrimId)));
+        needed = game?.status === 'completed';
+        if (needed && game) {
+            const cancelled = await tx
+                .select({ id: games.id })
+                .from(games)
+                .where(
+                    and(
+                        eq(games.matchId, game.matchId),
+                        eq(games.gameNumber, game.gameNumber),
+                        eq(games.status, 'cancelled')
+                    )
+                );
+            const ids = cancelled.map((previous) => previous.id);
+            if (ids.length) {
+                const previousMessages = await tx
+                    .select({ id: scrimDiscordMessages.messageId })
+                    .from(scrimDiscordMessages)
+                    .where(
+                        and(
+                            eq(scrimDiscordMessages.scrimId, job.scrimId),
+                            eq(scrimDiscordMessages.kind, 'result'),
+                            inArray(scrimDiscordMessages.subjectId, ids)
+                        )
+                    )
+                    .limit(1);
+                const unconfirmed = await tx
+                    .select({ id: discordPublicationJobs.id })
+                    .from(discordPublicationJobs)
+                    .where(
+                        and(
+                            eq(discordPublicationJobs.scrimId, job.scrimId),
+                            eq(discordPublicationJobs.kind, 'result'),
+                            inArray(discordPublicationJobs.subjectId, ids),
+                            inArray(discordPublicationJobs.status, ['processing', 'uncertain'])
+                        )
+                    )
+                    .limit(1);
+                waitsForPreviousResult = previousMessages.length > 0 || unconfirmed.length > 0;
+            }
+        }
+    } else if (job.kind === 'confirmation_dm') {
+        const [person] = await tx
+            .select({ id: scrimParticipants.id })
+            .from(scrimParticipants)
+            .innerJoin(
+                scrimParticipantRegistrations,
+                eq(scrimParticipantRegistrations.scrimParticipantId, scrimParticipants.id)
+            )
+            .where(
+                and(
+                    eq(scrimParticipants.scrimId, job.scrimId),
+                    eq(scrimParticipants.userId, job.subjectId),
+                    eq(scrimParticipantRegistrations.status, 'selected'),
+                    isNull(scrimParticipantRegistrations.withdrawnAt)
+                )
+            );
+        needed = !!person && DM_ALLOWED.includes(row.status);
+    }
     const desiredChannelId = needed ? (channelId ?? null) : null;
     // 채널 이동은 이전 글을 지운 뒤 새 위치에 게시한다.
-    const remove = message && message.channelId !== desiredChannelId;
+    const remove = job.kind !== 'confirmation_dm' && message && message.channelId !== desiredChannelId;
     return {
         ...row,
+        needed,
+        waitsForPreviousResult,
+        recipientId: job.kind === 'confirmation_dm' ? job.subjectId : null,
         desiredChannelId,
-        channelId: remove ? message.channelId : desiredChannelId,
+        channelId:
+            job.kind === 'confirmation_dm'
+                ? (message?.channelId ?? null)
+                : remove
+                  ? message.channelId
+                  : desiredChannelId,
         messageId: message?.messageId ?? null,
         operation: remove ? ('delete' as const) : ('upsert' as const)
     };
@@ -230,7 +390,26 @@ export async function claimPublication(
                     .where(eq(discordPublicationJobs.id, job.id));
                 continue;
             }
-            if (!target.channelId) {
+            if (target.waitsForPreviousResult) {
+                // 정정 전 결과 글의 삭제 또는 불명 전송 대조가 끝나기 전에는 새 결과를 만들지 않는다.
+                await tx
+                    .update(discordPublicationJobs)
+                    .set({
+                        nextAttemptAt: new Date(now.getTime() + 5000),
+                        errorCode: 'PREVIOUS_RESULT_PENDING',
+                        ...clearLease
+                    })
+                    .where(eq(discordPublicationJobs.id, job.id));
+                continue;
+            }
+            if (target.recipientId && !target.needed) {
+                await tx
+                    .update(discordPublicationJobs)
+                    .set({ status: 'blocked', errorCode: 'RECIPIENT_INELIGIBLE', ...clearLease })
+                    .where(eq(discordPublicationJobs.id, job.id));
+                continue;
+            }
+            if (!target.channelId && !target.recipientId) {
                 await tx
                     .update(discordPublicationJobs)
                     .set({ status: 'sent', errorCode: null, ...clearLease })
@@ -258,13 +437,20 @@ export async function claimPublication(
                     guildId: target.guildId,
                     scrimId: job.scrimId,
                     kind: job.kind,
+                    subjectId: job.subjectId,
                     revision: job.revision,
                     leaseToken,
                     operation: target.operation,
                     channelId: target.channelId,
+                    recipientId: target.recipientId,
                     messageId: target.messageId,
                     nonce: job.nonce,
-                    data: await publicationData(tx, job.scrimId)
+                    data: {
+                        ...(await publicationData(tx, job.scrimId)),
+                        ...(['lineup', 'result'].includes(job.kind)
+                            ? { match: await matchPublicationData(tx, job) }
+                            : {})
+                    }
                 }
             ];
         }
@@ -288,6 +474,8 @@ export async function completePublication(
         throw new DomainError('INVALID_INPUT', '게시 처리 결과가 올바르지 않아요');
     if (input.messageId !== undefined && !isDiscordId(input.messageId))
         throw new DomainError('INVALID_INPUT', '메시지 식별자가 올바르지 않아요');
+    if (input.channelId !== undefined && !isDiscordId(input.channelId))
+        throw new DomainError('INVALID_INPUT', '메시지 채널 식별자가 올바르지 않아요');
     if (input.errorCode !== undefined && !/^[A-Z0-9_:-]{1,100}$/.test(input.errorCode))
         throw new DomainError('INVALID_INPUT', '오류 코드가 올바르지 않아요');
     if (
@@ -328,29 +516,33 @@ export async function completePublication(
             if (job.leaseOperation === 'delete') {
                 await tx
                     .delete(scrimDiscordMessages)
-                    .where(
-                        and(
-                            eq(scrimDiscordMessages.scrimId, job.scrimId),
-                            eq(scrimDiscordMessages.kind, job.kind),
-                            eq(scrimDiscordMessages.messageId, job.leaseMessageId!)
-                        )
-                    );
+                    .where(and(messageScope(job), eq(scrimDiscordMessages.messageId, job.leaseMessageId!)));
             } else {
                 if (!input.messageId)
                     throw new DomainError('INVALID_INPUT', '게시한 메시지 식별자가 필요해요');
+                const channelId =
+                    job.kind === 'confirmation_dm'
+                        ? (input.channelId ?? job.leaseChannelId)
+                        : job.leaseChannelId;
+                if (!channelId) throw new DomainError('INVALID_INPUT', '게시한 메시지 채널이 필요해요');
                 await tx
                     .insert(scrimDiscordMessages)
                     .values({
                         scrimId: job.scrimId,
                         kind: job.kind,
-                        channelId: job.leaseChannelId!,
+                        subjectId: job.subjectId,
+                        channelId,
                         messageId: input.messageId,
                         publishedRevision: input.revision
                     })
                     .onConflictDoUpdate({
-                        target: [scrimDiscordMessages.scrimId, scrimDiscordMessages.kind],
+                        target: [
+                            scrimDiscordMessages.scrimId,
+                            scrimDiscordMessages.kind,
+                            scrimDiscordMessages.subjectId
+                        ],
                         set: {
-                            channelId: job.leaseChannelId!,
+                            channelId,
                             messageId: input.messageId,
                             publishedRevision: input.revision
                         }
@@ -382,7 +574,15 @@ export async function completePublication(
                 errorCode: input.errorCode ?? (exhausted ? 'RETRY_EXHAUSTED' : input.outcome.toUpperCase()),
                 nextAttemptAt: new Date(now.getTime() + seconds * 1000),
                 // 불명 전송의 대상과 nonce는 운영자가 실제 글과 대조할 때까지 보존한다.
-                ...(input.outcome === 'uncertain' ? { leaseToken: null, leaseUntil: null } : clearLease)
+                ...(input.outcome === 'uncertain'
+                    ? {
+                          leaseToken: null,
+                          leaseUntil: null,
+                          ...(job.kind === 'confirmation_dm' && input.channelId
+                              ? { leaseChannelId: input.channelId }
+                              : {})
+                      }
+                    : clearLease)
             })
             .where(eq(discordPublicationJobs.id, id));
     });

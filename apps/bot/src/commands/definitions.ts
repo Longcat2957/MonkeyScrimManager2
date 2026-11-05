@@ -51,6 +51,6 @@ export const commands = [
         .addBooleanOption((option) =>
             option
                 .setName('글없음확인')
-                .setDescription('대상 채널에 해당 글이 없음을 직접 확인한 경우에만 선택')
+                .setDescription('대상 글이 없음을 확인한 경우에만 선택. DM은 수신자에게 확인')
         )
 ];

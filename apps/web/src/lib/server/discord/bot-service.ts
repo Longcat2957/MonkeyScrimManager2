@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-o
 import type {
     BotCreateScrimInput,
     BotGuildSyncInput,
+    BotPublicationRetryInput,
     BotRegistrationContext,
     BotRegistrationInput
 } from '../../../../../../shared/bot-api.js';
@@ -43,7 +44,7 @@ import { requireUuid, validateRegistration, validateSettings } from '../scrims/v
 import { isDiscordId } from './client.ts';
 import { withBotReceipt } from './bot-receipts.ts';
 import { synchronizeGuildMembership } from './membership.ts';
-import { enqueueGuildPublications } from './publications.ts';
+import { enqueueGuildPublications, publicationChannel } from './publications.ts';
 
 export function botActor(actorId: string): Actor {
     if (!isDiscordId(actorId)) throw new DomainError('INVALID_INPUT', '사용자 식별자가 올바르지 않아요');
@@ -374,6 +375,7 @@ export async function listFailedPublications(
         .select({
             job: discordPublicationJobs,
             title: scrims.title,
+            recipientName: scrimParticipants.displayName,
             message: scrimDiscordMessages,
             settings: guildDiscordSettings
         })
@@ -383,57 +385,67 @@ export async function listFailedPublications(
             scrimDiscordMessages,
             and(
                 eq(scrimDiscordMessages.scrimId, scrims.id),
-                eq(scrimDiscordMessages.kind, discordPublicationJobs.kind)
+                eq(scrimDiscordMessages.kind, discordPublicationJobs.kind),
+                eq(scrimDiscordMessages.subjectId, discordPublicationJobs.subjectId)
             )
         )
         .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, scrims.guildId))
+        .leftJoin(
+            scrimParticipants,
+            and(
+                eq(scrimParticipants.scrimId, scrims.id),
+                eq(scrimParticipants.userId, discordPublicationJobs.subjectId),
+                eq(discordPublicationJobs.kind, 'confirmation_dm')
+            )
+        )
         .where(
             and(eq(scrims.guildId, guildId), inArray(discordPublicationJobs.status, ['blocked', 'uncertain']))
         )
         .orderBy(desc(discordPublicationJobs.updatedAt), asc(discordPublicationJobs.id))
         .limit(25);
     return {
-        publications: rows.map(({ job, title, message, settings }) => ({
+        publications: rows.map(({ job, title, recipientName, message, settings }) => ({
             id: job.id,
             scrimId: job.scrimId,
-            title,
+            title: job.kind === 'confirmation_dm' ? `${title} · ${recipientName ?? job.subjectId}` : title,
             kind: job.kind,
             state: job.status as 'blocked' | 'uncertain',
             channelId:
-                job.leaseChannelId ??
-                message?.channelId ??
-                (job.kind === 'recruitment' ? settings?.recruitmentChannelId : settings?.entryChannelId) ??
-                null,
+                job.leaseChannelId ?? message?.channelId ?? publicationChannel(job.kind, settings) ?? null,
             messageId: job.leaseMessageId ?? message?.messageId ?? null,
             errorCode: job.errorCode
         }))
     };
 }
 
-function containsScrimLink(value: unknown, basePath: string, depth = 0): boolean {
+function containsScrimLink(value: unknown, basePath: string, publicationId?: string, depth = 0): boolean {
     if (depth > 12 || !value || typeof value !== 'object') return false;
-    if (Array.isArray(value)) return value.some((child) => containsScrimLink(child, basePath, depth + 1));
+    if (Array.isArray(value))
+        return value.some((child) => containsScrimLink(child, basePath, publicationId, depth + 1));
     const object = value as Record<string, unknown>;
     if (typeof object.url === 'string') {
         try {
             const url = new URL(object.url);
             if (
                 ['http:', 'https:'].includes(url.protocol) &&
-                (url.pathname === basePath || url.pathname.startsWith(basePath + '/'))
+                (url.pathname === basePath || url.pathname.startsWith(basePath + '/')) &&
+                (!publicationId || url.searchParams.get('publication') === publicationId)
             )
                 return true;
         } catch {
             /* URL이 아닌 값은 복구 근거로 사용하지 않는다. */
         }
     }
-    return Object.values(object).some((child) => containsScrimLink(child, basePath, depth + 1));
+    return Object.values(object).some((child) =>
+        containsScrimLink(child, basePath, publicationId, depth + 1)
+    );
 }
 
 export async function retryBotPublication(
     db: Database,
     guildId: string,
     jobId: string,
-    input: { actorId: string; interactionId: string; messageId?: string; confirmAbsent?: boolean },
+    input: BotPublicationRetryInput,
     access?: ScrimAccessDependencies
 ): Promise<void> {
     requireGuildId(guildId);
@@ -464,7 +476,8 @@ export async function retryBotPublication(
             .where(
                 and(
                     eq(scrimDiscordMessages.scrimId, before.job.scrimId),
-                    eq(scrimDiscordMessages.kind, before.job.kind)
+                    eq(scrimDiscordMessages.kind, before.job.kind),
+                    eq(scrimDiscordMessages.subjectId, before.job.subjectId)
                 )
             );
         const settings = await db.query.guildDiscordSettings.findFirst({
@@ -473,7 +486,12 @@ export async function retryBotPublication(
         const channelId =
             before.job.leaseChannelId ??
             storedMessage?.channelId ??
-            (before.job.kind === 'recruitment' ? settings?.recruitmentChannelId : settings?.entryChannelId);
+            publicationChannel(before.job.kind, settings);
+        if (!channelId && before.job.kind === 'confirmation_dm')
+            throw new DomainError(
+                'CONFLICT',
+                'DM 채널을 확인할 수 없어요. 수신자에게 안내가 없음을 확인한 뒤 글없음확인으로 복구해 주세요'
+            );
         if (!channelId || !dependencies.discord.getMessage || !dependencies.discord.getCurrentUserId)
             throw new DomainError('SERVICE_UNAVAILABLE', '게시 메시지를 확인할 수 없어요');
         const [message, botId] = await Promise.all([
@@ -483,7 +501,11 @@ export async function retryBotPublication(
         if (
             !message ||
             message.authorId !== botId ||
-            !containsScrimLink(message.components, `/g/${guildId}/scrims/${before.job.scrimId}`)
+            !containsScrimLink(
+                message.components,
+                `/g/${guildId}/scrims/${before.job.scrimId}`,
+                ['lineup', 'result', 'confirmation_dm'].includes(before.job.kind) ? before.job.id : undefined
+            )
         )
             throw new DomainError('CONFLICT', '이 내전의 봇 게시 메시지가 아니에요');
         recovered = { id: message.id, channelId };
@@ -525,12 +547,17 @@ export async function retryBotPublication(
                         .values({
                             scrimId: job.scrimId,
                             kind: job.kind,
+                            subjectId: job.subjectId,
                             channelId: recovered.channelId,
                             messageId: recovered.id,
                             publishedRevision: job.leaseRevision ?? 0
                         })
                         .onConflictDoUpdate({
-                            target: [scrimDiscordMessages.scrimId, scrimDiscordMessages.kind],
+                            target: [
+                                scrimDiscordMessages.scrimId,
+                                scrimDiscordMessages.kind,
+                                scrimDiscordMessages.subjectId
+                            ],
                             set: {
                                 channelId: recovered.channelId,
                                 messageId: recovered.id,
@@ -543,7 +570,8 @@ export async function retryBotPublication(
                         .where(
                             and(
                                 eq(scrimDiscordMessages.scrimId, job.scrimId),
-                                eq(scrimDiscordMessages.kind, job.kind)
+                                eq(scrimDiscordMessages.kind, job.kind),
+                                eq(scrimDiscordMessages.subjectId, job.subjectId)
                             )
                         );
                 }

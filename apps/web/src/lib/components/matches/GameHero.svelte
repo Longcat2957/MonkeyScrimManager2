@@ -3,7 +3,7 @@
     import type { GameDetail } from '#lib/features/matches/types.ts';
     import { formatDuration, formatLongDate, kdaRatio } from '#lib/features/matches/format.ts';
 
-    // 게임 한 판의 머리: 이긴 진영, 진영별 킬 점수, 날짜·시간·패치, MVP. 배경은 MVP 챔피언 스플래시.
+    // 세트 한 판의 머리: 이긴 진영, 진영별 킬 점수, 날짜·시간·패치, MVP. 배경은 MVP 챔피언 스플래시.
     let { game }: { game: GameDetail } = $props();
 
     const blue = $derived(game.sides.find((side) => side.side === 'blue')!);
@@ -29,7 +29,7 @@
 
 <!-- 서버 홈 첫 카드처럼 화면 모드와 관계없이 어두운 바탕에 배경 아트를 깐다. -->
 <section
-    aria-label={`${game.order}게임 결과`}
+    aria-label={`${game.order}세트 결과`}
     class={[
         'relative isolate overflow-hidden rounded-(--radius-box) border-l-4 bg-bg-base-dark text-text-dark ring-1 ring-white/10',
         winner?.side === 'red'

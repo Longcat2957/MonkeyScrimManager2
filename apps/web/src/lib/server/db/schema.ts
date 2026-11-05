@@ -824,6 +824,7 @@ export const matches = pgTable(
         // Scrim 기본값을 생성 시 명시적으로 저장한다. 안내 기준은 이 Match의 이전 Game에서 양 팀이 사용한 픽이다.
         // 피어리스 위반은 안내로 처리하며 ROFL 업로드나 경기 결과 등록을 막지 않는다.
         isHardFearless: boolean('is_hard_fearless').notNull(),
+        revision: integer('revision').default(0).notNull(),
         status: matchStatus('status').default('pending').notNull(),
         // 정상 종료에만 시리즈 승자를 기록한다. 1:0·1:1 중도 종료에는 승자를 만들지 않는다.
         winnerTeamId: uuid('winner_team_id'),
@@ -856,6 +857,7 @@ export const matches = pgTable(
         index('matches_team_b_id_idx').on(table.teamBId),
         check('matches_distinct_teams', sql`${table.teamAId} <> ${table.teamBId}`),
         check('matches_best_of_allowed', sql`${table.bestOf} in (1, 3, 5)`),
+        check('matches_revision_nonnegative', sql`${table.revision} >= 0`),
         check(
             'matches_winner_is_competing_team',
             sql`${table.winnerTeamId} is null or ${table.winnerTeamId} in (${table.teamAId}, ${table.teamBId})`
@@ -869,6 +871,67 @@ export const matches = pgTable(
             'matches_scrim_end_restore_state',
             sql`(${table.statusBeforeScrimEnd} is null and ${table.endedAtBeforeScrimEnd} is null and ${table.endReasonBeforeScrimEnd} is null) or (${table.statusBeforeScrimEnd} is not null and ((${table.statusBeforeScrimEnd} = 'pending' and ${table.status} = 'cancelled') or (${table.statusBeforeScrimEnd} = 'in_progress' and ${table.status} = 'ended_early')))`
         )
+    ]
+);
+
+// 경기 전체의 출전 계획이다. 수동 편성의 확정 포지션은 복사하고, 경매는 경기별 한 번 확정한다.
+export const matchLineups = pgTable(
+    'match_lineups',
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        scrimId: uuid('scrim_id').notNull(),
+        matchId: uuid('match_id').notNull(),
+        confirmedAt: timestamp('confirmed_at', { withTimezone: true, precision: 3 }),
+        confirmedByUserId: text('confirmed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+        createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
+            .defaultNow()
+            .notNull()
+            .$onUpdate(() => new Date())
+    },
+    (table) => [
+        unique('match_lineups_match_unique').on(table.matchId),
+        unique('match_lineups_scrim_id_unique').on(table.scrimId, table.id),
+        unique('match_lineups_match_id_unique').on(table.matchId, table.id),
+        foreignKey({
+            columns: [table.scrimId, table.matchId],
+            foreignColumns: [matches.scrimId, matches.id],
+            name: 'match_lineups_match_fk'
+        }).onDelete('restrict'),
+        check(
+            'match_lineups_confirmation_valid',
+            sql`${table.confirmedAt} is not null or ${table.confirmedByUserId} is null`
+        )
+    ]
+);
+
+export const matchLineupPlayers = pgTable(
+    'match_lineup_players',
+    {
+        scrimId: uuid('scrim_id').notNull(),
+        lineupId: uuid('lineup_id').notNull(),
+        participantId: uuid('participant_id').notNull(),
+        teamId: uuid('team_id').notNull(),
+        position: lolPosition('position').notNull()
+    },
+    (table) => [
+        primaryKey({ columns: [table.lineupId, table.participantId] }),
+        unique('match_lineup_players_team_position_unique').on(table.lineupId, table.teamId, table.position),
+        foreignKey({
+            columns: [table.scrimId, table.lineupId],
+            foreignColumns: [matchLineups.scrimId, matchLineups.id],
+            name: 'match_lineup_players_lineup_fk'
+        }).onDelete('cascade'),
+        foreignKey({
+            columns: [table.scrimId, table.participantId],
+            foreignColumns: [scrimParticipants.scrimId, scrimParticipants.id],
+            name: 'match_lineup_players_participant_fk'
+        }).onDelete('restrict'),
+        foreignKey({
+            columns: [table.scrimId, table.teamId],
+            foreignColumns: [scrimTeams.scrimId, scrimTeams.id],
+            name: 'match_lineup_players_team_fk'
+        }).onDelete('restrict')
     ]
 );
 
@@ -889,7 +952,7 @@ export const games = pgTable(
         endedAt: timestamp('ended_at', { withTimezone: true, precision: 3 }),
         // 등록 권한·참가자 연결·중복·결과 일관성을 검증한 ROFL 결과를 자동 등록한다.
         // 같은 파일의 다른 projectionVersion을 별개 경기로 재등록하지 않도록 채택 시 서비스에서 검사한다.
-        // 채택본 교체 시 새 인덱스 매핑을 검증하고, 기존 출전 행 삭제·메타 교체·새 출전 행 생성을 한 트랜잭션에서 처리한다.
+        // 정정은 기존 Game·출전·메타를 남겨 취소하고, 새 결과를 별도 Game으로 등록한다.
         roflMetadataId: uuid('rofl_metadata_id')
             .unique()
             .references(() => roflMetadata.id, { onDelete: 'restrict' }),
@@ -900,8 +963,11 @@ export const games = pgTable(
             .$onUpdate(() => new Date())
     },
     (table) => [
-        unique('games_match_number_unique').on(table.matchId, table.gameNumber),
+        uniqueIndex('games_match_number_unique')
+            .on(table.matchId, table.gameNumber)
+            .where(sql`${table.status} <> 'cancelled'`),
         unique('games_scrim_id_id_unique').on(table.scrimId, table.id),
+        unique('games_match_id_id_unique').on(table.matchId, table.id),
         unique('games_id_rofl_metadata_unique').on(table.id, table.roflMetadataId),
         foreignKey({
             name: 'games_match_fk',
@@ -918,6 +984,43 @@ export const games = pgTable(
             sql`(${table.status} = 'completed' and ${table.winnerSide} is not null) or (${table.status} <> 'completed' and ${table.winnerSide} is null)`
         ),
         check('games_time_order', sql`${table.endedAt} >= ${table.startedAt}`)
+    ]
+);
+
+// 원본 파일 대신 검증된 결과 지문과 당시 요청 슬롯을 보존한다. 취소 후 재전송이 결과를 되살리지 않는다.
+export const matchRoflImports = pgTable(
+    'match_rofl_imports',
+    {
+        roflMetadataId: uuid('rofl_metadata_id')
+            .primaryKey()
+            .references(() => roflMetadata.id, { onDelete: 'restrict' }),
+        resultFingerprint: text('result_fingerprint').notNull().unique(),
+        matchId: uuid('match_id')
+            .notNull()
+            .references(() => matches.id, { onDelete: 'restrict' }),
+        gameId: uuid('game_id').notNull(),
+        lineupId: uuid('lineup_id').notNull(),
+        submittedRevision: integer('submitted_revision').notNull(),
+        createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.matchId, table.lineupId],
+            foreignColumns: [matchLineups.matchId, matchLineups.id],
+            name: 'match_rofl_imports_lineup_fk'
+        }).onDelete('restrict'),
+        foreignKey({
+            columns: [table.matchId, table.gameId],
+            foreignColumns: [games.matchId, games.id],
+            name: 'match_rofl_imports_game_fk'
+        }).onDelete('restrict'),
+        foreignKey({
+            columns: [table.gameId, table.roflMetadataId],
+            foreignColumns: [games.id, games.roflMetadataId],
+            name: 'match_rofl_imports_selected_rofl_fk'
+        }).onDelete('restrict'),
+        check('match_rofl_imports_fingerprint_valid', sql`${table.resultFingerprint} ~ '^[0-9a-f]{64}$'`),
+        check('match_rofl_imports_revision_nonnegative', sql`${table.submittedRevision} >= 0`)
     ]
 );
 
@@ -980,7 +1083,6 @@ export const gameParticipants = pgTable(
     ]
 );
 
-// MMR 반영에 필요한 사용자·포지션·시즌이 미확정이어도 ROFL과 Game 저장은 가능하다. 그 경우 반영 행을 아직 만들지 않는다.
 // 정상 결과는 Game·출전자·원장·현재 점수를 같은 트랜잭션으로 갱신한다. 채택 ROFL·실출전·동포지션 상대의 일치는 서비스에서 검사한다.
 export const gameMmrApplications = pgTable(
     'game_mmr_applications',
@@ -989,7 +1091,7 @@ export const gameMmrApplications = pgTable(
         scrimId: uuid('scrim_id').notNull(),
         gameId: uuid('game_id').notNull(),
         seasonId: uuid('season_id').notNull(),
-        // 당시 계산 근거를 보존한다. 현재 Game의 채택본과 복합 FK로 묶지 않아 ROFL 교체 후에도 이전 근거가 남는다.
+        // 당시 계산 근거와 역분개 이력을 보존한다. 정정한 새 결과는 새 Game의 별도 반영으로 기록한다.
         roflMetadataId: uuid('rofl_metadata_id')
             .notNull()
             .references(() => roflMetadata.id, { onDelete: 'restrict' }),
@@ -1292,7 +1394,11 @@ export const scrimDiscordMessages = pgTable(
         scrimId: uuid('scrim_id')
             .notNull()
             .references(() => scrims.id, { onDelete: 'restrict' }),
-        kind: text('kind').$type<'recruitment' | 'entry'>().default('recruitment').notNull(),
+        kind: text('kind')
+            .$type<'recruitment' | 'entry' | 'lineup' | 'result' | 'confirmation_dm'>()
+            .default('recruitment')
+            .notNull(),
+        subjectId: text('subject_id').default('scrim').notNull(),
         channelId: text('channel_id').notNull(),
         messageId: text('message_id').notNull().unique(),
         publishedRevision: integer('published_revision').default(0).notNull(),
@@ -1303,8 +1409,11 @@ export const scrimDiscordMessages = pgTable(
             .$onUpdate(() => new Date())
     },
     (table) => [
-        primaryKey({ columns: [table.scrimId, table.kind] }),
-        check('scrim_discord_messages_kind_valid', sql`${table.kind} in ('recruitment', 'entry')`),
+        primaryKey({ columns: [table.scrimId, table.kind, table.subjectId] }),
+        check(
+            'scrim_discord_messages_kind_valid',
+            sql`${table.kind} in ('recruitment', 'entry', 'lineup', 'result', 'confirmation_dm')`
+        ),
         check('scrim_discord_messages_revision_nonnegative', sql`${table.publishedRevision} >= 0`)
     ]
 );
@@ -1317,7 +1426,10 @@ export const discordPublicationJobs = pgTable(
         scrimId: uuid('scrim_id')
             .notNull()
             .references(() => scrims.id, { onDelete: 'restrict' }),
-        kind: text('kind').$type<'recruitment' | 'entry'>().notNull(),
+        kind: text('kind')
+            .$type<'recruitment' | 'entry' | 'lineup' | 'result' | 'confirmation_dm'>()
+            .notNull(),
+        subjectId: text('subject_id').default('scrim').notNull(),
         revision: integer('revision').default(1).notNull(),
         status: text('status')
             .$type<'pending' | 'processing' | 'sent' | 'blocked' | 'uncertain'>()
@@ -1342,9 +1454,12 @@ export const discordPublicationJobs = pgTable(
             .$onUpdate(() => new Date())
     },
     (table) => [
-        unique('discord_publication_jobs_scrim_kind_unique').on(table.scrimId, table.kind),
+        unique('discord_publication_jobs_scrim_kind_unique').on(table.scrimId, table.kind, table.subjectId),
         index('discord_publication_jobs_pending_idx').on(table.status, table.nextAttemptAt),
-        check('discord_publication_jobs_kind_valid', sql`${table.kind} in ('recruitment', 'entry')`),
+        check(
+            'discord_publication_jobs_kind_valid',
+            sql`${table.kind} in ('recruitment', 'entry', 'lineup', 'result', 'confirmation_dm')`
+        ),
         check(
             'discord_publication_jobs_status_valid',
             sql`${table.status} in ('pending', 'processing', 'sent', 'blocked', 'uncertain')`
@@ -1352,7 +1467,7 @@ export const discordPublicationJobs = pgTable(
         check('discord_publication_jobs_counts_valid', sql`${table.revision} > 0 and ${table.attempts} >= 0`),
         check(
             'discord_publication_jobs_lease_complete',
-            sql`${table.status} <> 'processing' or (${table.leaseToken} is not null and ${table.leaseUntil} is not null and ${table.leaseRevision} is not null and ${table.leaseChannelId} is not null and ${table.leaseOperation} is not null and ${table.leaseOperation} in ('upsert', 'delete'))`
+            sql`${table.status} <> 'processing' or (${table.leaseToken} is not null and ${table.leaseUntil} is not null and ${table.leaseRevision} is not null and (${table.leaseChannelId} is not null or ${table.kind} = 'confirmation_dm') and ${table.leaseOperation} is not null and ${table.leaseOperation} in ('upsert', 'delete'))`
         )
     ]
 );

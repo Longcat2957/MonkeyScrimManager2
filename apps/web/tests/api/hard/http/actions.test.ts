@@ -279,10 +279,18 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
         .insert(schema.scrimTeams)
         .values([1, 2].map((ordinal) => ({ scrimId: scrim!.id, name: ordinal + '팀', ordinal })))
         .returning();
+    const players = Array.from({ length: 10 }, (_, index) => ({
+        id: String(970000000000003000n + BigInt(index)),
+        username: '출전자 ' + index
+    }));
+    await f.db.insert(schema.users).values(players);
+    await f.db
+        .insert(schema.guildMembers)
+        .values(players.map((player) => ({ guildId: HTTP_IDS.guild, userId: player.id })));
     const people = await f.db
         .insert(schema.scrimParticipants)
         .values(
-            Array.from({ length: 10 }, (_, index) => ({ scrimId: scrim!.id, displayName: '출전자 ' + index }))
+            players.map((player) => ({ scrimId: scrim!.id, userId: player.id, displayName: player.username }))
         )
         .returning();
     await f.db
@@ -351,7 +359,7 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
     assert.equal((await f.db.select().from(schema.scrims))[0]!.status, 'ended_early');
     assertAction(await f.action(path, 'revert', { expectedRevision: await revision() }, admin.cookie), 200);
     assert.equal((await f.db.select().from(schema.matches))[0]!.status, 'in_progress');
-    assertAction(await f.action(guildPath + '/matches/' + match!.id, 'upload', {}, admin.cookie), 503);
+    assertAction(await f.action(guildPath + '/matches/' + match!.id, 'upload', {}, admin.cookie), 400);
     assert.equal((await f.db.select().from(schema.games)).length, 0);
 });
 

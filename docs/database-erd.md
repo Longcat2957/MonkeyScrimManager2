@@ -1,10 +1,10 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-05 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **37개 테이블·78개 외래키**.
+기준: 2026-11-05 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **40개 테이블·88개 외래키**.
 전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
 게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
-인증·서버별 계정·모집·수동 편성·대진·진행 상태는 실제 DB를 사용한다. ROFL 영구 등록과 MMR 자동 반영 등
-아직 소비 서비스가 없는 저장 모델은 현재 구현 범위와 구분한다.
+경기 라인업·결과 이력·게시 대상 확장은 [0003_match_results.sql](../apps/web/drizzle/0003_match_results.sql)에 포함한다.
+인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
 밴픽 진행·픽 순서·수동 결과 승인 모델과 원본 ROFL 보관 테이블은 없다.
@@ -43,6 +43,9 @@ erDiagram
     scrim_participants ||..o{ scrim_participant_registrations : 신청_이력
     scrims ||--o{ scrim_discord_messages : 종류별_게시물
     scrims ||..o{ discord_publication_jobs : 게시_작업
+    matches ||..o| match_lineups : 경기_전체_라인업
+    match_lineups ||--o{ match_lineup_players : 출전_포지션
+    matches ||..o{ match_rofl_imports : ROFL_등록_이력
     guilds ||..o{ discord_interaction_receipts : 요청_처리_기록
 
     scrims ||..o| auctions : 경매
@@ -55,9 +58,9 @@ erDiagram
     scrims ||..o{ scrim_rounds : 라운드
     scrim_rounds ||..o{ scrim_bracket_nodes : 계획_경기
     scrim_bracket_nodes ||--o{ scrim_bracket_slots : 대진_자리
-    matches |o..o| scrim_bracket_nodes : 실제_시리즈
-    scrims ||..o{ matches : 시리즈
-    matches ||..o{ games : 개별_경기
+    matches |o..o| scrim_bracket_nodes : 실제_경기
+    scrims ||..o{ matches : 경기
+    matches ||..o{ games : 개별_게임
     games ||--o{ game_participants : 출전_기록
     scrim_participants ||--o{ game_participants : 서비스_참가자
 
@@ -75,7 +78,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 스키마에 정의한 외래키 78개를 각각 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. 전체 제약은 88개이며 Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -248,11 +251,11 @@ MMR은 길드·시즌·Discord 사용자·포지션별로 관리한다. 길드 �
 
 길드별 활성 시즌과 Game별 유효 반영은 각각 하나다. Game 반영 회차·점수 변경 revision,
 반영별 사용자/참가자·원본당 역분개를 고유키로 구분한다. 변경 전·후 수치를 저장하고 증감은 두 값의 차로 구한다.
-원장은 ROFL 교체 때 재생성되는 출전 행 대신 보존되는 참가자·반영 회차를 참조한다.
+원장은 참가자·반영 회차를 참조한다. 정정할 때 기존 Game·출전·ROFL·원장을 보존하고 새 Game에 별도 결과를 등록한다.
 
 스키마는 예외 자료의 결과 보존과 MMR 미반영을 표현할 수 있다. 정상 결과 처리에는 MSM1처럼 확정 시즌·출전 라인업을 사용하고 Game·MMR을 같은 트랜잭션으로 반영한다.
 Elo 계산과 원장·현재값의 원자적 반영, 안전한 마지막 Game 역분개는 [내부 MMR 서비스](../apps/web/src/lib/server/mmr/README.md)에 구현했다.
-ROFL 결과 저장·시리즈·대진과의 연결은 남아 있으며 [MMR 저장 계약](mmr.md)을 따른다.
+ROFL 결과 저장·시리즈 종료·대진 진출도 같은 트랜잭션에서 처리하며 [MMR 저장 계약](mmr.md)을 따른다.
 
 ## 모집·팀 편성
 
@@ -307,6 +310,7 @@ erDiagram
     scrim_discord_messages {
         uuid scrim_id PK, FK
         text kind PK
+        text subject_id PK
         text channel_id
         text message_id UK
         integer published_revision
@@ -365,7 +369,8 @@ erDiagram
     discord_publication_jobs {
         uuid id PK
         uuid scrim_id FK
-        text kind "내전·종류별 유일"
+        text kind "내전·종류·대상별 유일"
+        text subject_id
         integer revision
         text status
         integer attempts
@@ -396,6 +401,21 @@ erDiagram
 전송은 DB 트랜잭션 밖에서 수행하고 점유 토큰·만료·처리 버전으로 오래된 응답을 거절한다.
 채널 이동은 이전 글 삭제 뒤 새 글 생성으로 처리한다. 신규 전송 응답 유실은 `uncertain`으로 남겨 운영자가 대조한다.
 요청 기록의 actor ID는 원래 실행자의 식별값을 보존하며 사용자의 현재 권한을 대신하지 않는다.
+
+`scrim_discord_messages`의 기본키와 `discord_publication_jobs`의 고유키는 모두 `(scrim_id, kind, subject_id)`다.
+대상의 귀속은 서비스에서 확인하며 `subject_id`는 아래 종류에 따라 해석한다.
+
+| kind | subject_id | 게시 대상 |
+| --- | --- | --- |
+| `recruitment` | `scrim` | 모집 안내와 신청 버튼 |
+| `entry` | `scrim` | 확정된 내전 팀 구성 |
+| `lineup` | `match_lineups.id` | 경기 전체의 확정 출전 라인업 |
+| `result` | `games.id` | 채택한 Game의 결과 |
+| `confirmation_dm` | Discord 사용자 ID | 선발 확정 개인 알림 |
+
+`processing`에는 점유 토큰·만료·버전·작업 종류가 필수다. 길드 게시에는 채널 ID도 필요하지만,
+DM은 봇이 채널을 열기 전까지 `lease_channel_id`가 null일 수 있다. 성공 ACK가 실제 채널·메시지 ID를 저장한다.
+정정 후 새 결과 게시는 이전 결과 글 삭제와 불명 전송 상태 해소를 기다린다.
 
 ## 경매·구매 이력
 
@@ -504,6 +524,7 @@ erDiagram
         uuid team_b_id FK
         integer best_of
         boolean is_hard_fearless
+        integer revision
         enum status
         uuid winner_team_id "NULL 허용, A 또는 B를 CHECK"
         enum status_before_scrim_end "NULL 허용"
@@ -550,16 +571,72 @@ erDiagram
     rofl_participants ||..o| game_participants : "rofl_metadata_id, rofl_participant_index"
 ```
 
-`Match`는 두 팀의 시리즈이고 `Game`은 개별 한 판이다. 점수는 완료 Game에서 집계한다.
+`Match`는 두 팀이 BO 전체를 진행하는 경기이고 `Game`은 그 안의 한 판이다. 점수는 완료 Game에서 집계한다.
+`matches.revision`은 라인업·결과 변경의 동시 수정 검사에 사용하며 내전의 revision과 구분한다.
 `winner_team_id`는 별도 FK가 아니라 A/B 팀 중 하나인지 확인하는 `CHECK`로 제한한다.
 대진 자리는 직접 지정한 팀 또는 이전 대진의 승자 중 하나를 참조하며 둘 다 미정일 수도 있다.
 2·3·4팀 대진과 라운드별 BO 1·3·5, 활성 팀 순서, 중복 직접 시드에 DB 제약을 둔다.
 시작 시 양 팀이 정해진 노드만 Match를 만들며, 중도 종료의 복원 필드는 그 동작이 멈춘 Match만 재개하는 데 쓴다.
+`games`의 `(match_id, game_number)` 고유 인덱스는 `status <> 'cancelled'`인 행에만 적용한다.
+정정한 이전 Game은 취소 상태로 남고 같은 번호의 새 Game을 별도 ID로 등록한다.
 
 출전 기록의 ROFL 참조는 필수다. `(game_id, rofl_metadata_id)` FK가 해당 Game의 채택본과 연결되도록 하고,
 `(rofl_metadata_id, rofl_participant_index)` FK가 실제 ROFL 참가자 존재를 보장한다.
 Game의 채택 메타 고유키와 Game별 ROFL 인덱스 고유키 때문에 ROFL 참가자당 출전 기록은 최대 하나다.
 같은 두 ROFL 참조 열에는 역조회용 복합 인덱스가 있다.
+
+## 경기 출전·ROFL 등록 이력
+
+```mermaid
+erDiagram
+    match_lineups {
+        uuid id PK
+        uuid scrim_id FK
+        uuid match_id FK, UK
+        timestamptz confirmed_at "NULL 허용"
+        text confirmed_by_user_id FK "NULL 허용"
+    }
+    match_lineup_players {
+        uuid lineup_id PK, FK
+        uuid participant_id PK, FK
+        uuid scrim_id FK
+        uuid team_id FK
+        enum position
+    }
+    match_rofl_imports {
+        uuid rofl_metadata_id PK, FK
+        text result_fingerprint UK
+        uuid match_id FK
+        uuid game_id FK
+        uuid lineup_id FK
+        integer submitted_revision
+        timestamptz created_at
+    }
+
+    matches ||..o| match_lineups : "scrim_id, match_id"
+    users |o..o{ match_lineups : confirmed_by_user_id
+    match_lineups ||--o{ match_lineup_players : "scrim_id, lineup_id"
+    scrim_participants ||--o{ match_lineup_players : "scrim_id, participant_id"
+    scrim_teams ||..o{ match_lineup_players : "scrim_id, team_id"
+    rofl_metadata ||--o| match_rofl_imports : rofl_metadata_id
+    matches ||..o{ match_rofl_imports : match_id
+    match_lineups ||..o{ match_rofl_imports : "match_id, lineup_id"
+    games ||..o| match_rofl_imports : "match_id, game_id"
+    games ||..o| match_rofl_imports : "game_id, rofl_metadata_id"
+```
+
+경기당 라인업은 하나이며 Game 번호나 진영을 라인업에 저장하지 않는다. `confirmed_at`으로 초안과 확정을 구분한다.
+수동 편성은 이미 확정한 포지션을 첫 Match에 복사·확정하고, 경매는 경기별 한 번 확정한다.
+진출한 팀의 직전 확정 포지션은 다음 경기로 복사한다. 경매는 복사한 초안을 확정하며 같은 경기의 후속 Game은 라인업을 그대로 사용한다.
+취소 이력을 포함해 Game이 생긴 경기의 출전 라인업은 변경할 수 없다.
+
+라인업별 참가자와 `(lineup_id, team_id, position)`은 유일하다. 같은 내전의 참가자·팀만 연결하는 복합 FK를 두고,
+선발 상태·해당 Match의 양 팀·열 명의 사용자 유일성·다섯 포지션 완전성은 서비스에서 검증한다.
+
+`match_rofl_imports`는 채택 ROFL의 정규화 지문과 Match revision을 보존한다. 복합 FK는 같은 Match의 라인업·Game과
+그 Game이 채택한 ROFL만 연결하게 한다. 파일 SHA-256은 별도로 `rofl_metadata`에 저장한다.
+같은 성공 요청은 기존 Game을 반환하고, 다른 파일의 동일 결과나 다른 경기 재사용은 거절한다.
+결과 취소 뒤에도 등록 이력을 남겨 늦은 재전송이 취소한 결과를 다시 적용하지 못하게 한다.
 
 ## ROFL 공통 메타·버전별 결과
 
@@ -609,12 +686,15 @@ erDiagram
 
 원본 파일·전체 메타데이터·패킷은 저장하지 않는다. 지문·버전과 P0~P2 선별 결과만 저장한다.
 `(file_sha256, projection_version)`은 고유하고 V1 하위 모델은 공통 메타의 버전 1만 참조한다.
-서비스 참가자를 아직 연결하지 못한 ROFL 참가자는 공통 키와 버전별 결과에 남기며,
-ROFL 근거 없는 `game_participants` 행을 먼저 만들지 않는다.
+정상 업로드는 참가자 열 명을 모두 검증한 뒤 선별 자료·Game·출전·MMR·진출·게시 예약을 함께 커밋한다.
+연결 실패 자료만 별도로 저장하거나 ROFL 근거 없는 출전 행을 먼저 만들지 않는다.
+Riot API로 검증한 계정과 파일의 명시적 `TEAM_POSITION`을 확정 라인업에 대조한다. 미연결 부계정도 팀·포지션으로
+확인되면 `riot_accounts`와 당시 `game_participants`에 기록하지만 서버 연결·대표 계정은 자동 변경하지 않는다.
+리플레이 원시 PUUID와 배열 순서는 계정·포지션 연결 근거로 사용하지 않는다.
 
 ## 함께 적용되는 제약
 
 - 복합 FK의 `scrim_id`는 서로 다른 내전의 팀·참가자·Match·Game·대진이 연결되지 않도록 한다.
 - 사용자 삭제 시 멤버십·개인 설정은 삭제되고, 과거 참가·업로더·작업자 연결은 `SET NULL`로 해제된다. 경기·경매 이력의 참조는 `RESTRICT`로 보호한다.
 - 하드 피어리스는 안내 규칙이며 업로드를 막는 DB 제약이 없다.
-- 팀 정원·경매 예산 합계·대진 순환·시리즈 종료 점수는 단일 행의 관계만으로 보장하지 않는다. 이 문서의 ERD가 해당 동작의 구현 완료를 뜻하지는 않는다.
+- 팀 정원·경매 예산 합계·대진 순환·경기 종료 점수는 단일 행 제약 대신 각 업무 서비스의 트랜잭션에서 검사한다.

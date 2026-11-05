@@ -41,6 +41,7 @@ pnpm test:hard:db --test-name-pattern=세션
 | `recruitment.test.ts` | 날짜·정원·신청·선발·대기 승급·revision·단계별 설정 |
 | `auction.test.ts` | 정수 포인트, 0점 낙찰, 양수 시작 예산, 팀장 중복·설정 입력 |
 | `mmr.test.ts` | 초기 1500·K32·동포지션 상대, 양쪽 반영 전 값, 소수·입력 불변성 |
+| `rofl-identity.test.ts` | 파일의 명시된 팀·포지션 추출, 누락·중복·잘못된 값과 배열 순서 독립성 |
 | `riot-contract.test.ts` | 호스트/경로/헤더 검증, 오류·제한·timeout·동시 요청 제한 |
 | `riot-client-contract.test.ts` | ACCOUNT·LoL 클라이언트 응답 검증. 환경 모듈과 fetch는 해당 테스트 프로세스에서만 대체 |
 | `ddragon-contract.test.ts` | 카탈로그 검증, 캐시·중복 요청·제한·오류 복구 |
@@ -83,6 +84,9 @@ Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 
 | `records.test.ts` | 현재 시즌·유효 기록, 과거 사용자 귀속, 실제 0과 null, 조회의 무부수효과 |
 | `ranking.test.ts` | 현재 멤버·실적, 채택본·실출전·원장 일치, 페이지·본인 순위·대표 챔피언 |
 | `match-read.test.ts` | 공개 경기 목록·상세, 검색·서버 경계·당시 출전·피어리스·처리 상태 |
+| `match-results.test.ts` | 경기 단위 라인업·ROFL 실사용 계정 식별·중복·동시 등록·롤백·MMR·승자 포지션 전파·마지막 결과 취소 |
+| `rofl-account-concurrency.test.ts` | ROFL 등록과 다른 서버의 동일 Riot 계정 연결을 실제 서비스·연결·잠금 장벽으로 병행하고 교착 방지·서버별 소유권 보존 검증 |
+| `publications.test.ts` | 확정 라인업·결과 게시 자료, 참가 안내 DM 대상·중복·상태·복구 |
 
 서비스가 요구하는 Discord·Riot 응답은 고정된 의존성으로 제공한다. 실제 권한 계산·DB 조회·업무 함수는 실행 대상이다.
 
@@ -104,6 +108,7 @@ adapter-node의 `PROTOCOL_HEADER`로 HTTPS 프록시 뒤 HTTP 연결을 재현�
 | `public-reads.test.ts` | 실제 DB 제목·사용자 표시, 공개 조회, 다른 서버·개발 샘플 404, 순위 JSON·입력 오류, 관리 페이지 권한 |
 | `actions.test.ts` | 기존 39개 action의 비로그인 차단, 모집 생성·신청·철회·revision, 계정·설정, 수동 편성→대진→시작, 경매 낙찰·되돌리기 |
 | `external-api.test.ts` | Riot·LoL endpoint의 JSON·오류·Retry-After·no-store, Data Dragon 공개 캐시 |
+| `match-results.test.ts` | 실제 multipart ROFL 등록·세션/출전자 권한·오류·stale 요청·결과 취소·참가 안내 DM 예약 |
 
 SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/`failure`는 본문의 `status`, `error`는 `error.status`를 확인한다.
 반환값 없는 성공은 HTTP 200과 결과 status 204를 사용한다. 업무 저장은 응답과 DB 행을 함께 확인한다.
@@ -111,7 +116,7 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 ## 검증 경계
 
 - HTTP의 모든 action에 대한 비로그인 검사를 정상 업무 전체의 HTTP 완주로 설명하지 않는다. 주요 업무 HTTP 시나리오와 세부 DB 시나리오를 함께 사용한다.
-- 현재 ROFL 운영 action의 503·결과 미생성은 검증 대상으로 두되, 아직 없는 영구 등록·라인업 확정·자동 결과 전파를 구현된 성공으로 만들지 않는다.
+- ROFL 성공은 HTTP 응답뿐 아니라 Game·실출전·MMR 원장·승자 진출·게시 작업의 실제 DB 상태로 검증한다. 외부 Riot 식별 응답은 고정 자료이며 실제 Riot 서버 호출 검증은 별도다.
 - Discord Gateway·interaction·실제 메시지 게시, 실제 Riot/Discord 자격 증명, 브라우저 UI·드래그 조작은 이 API 테스트의 실행 범위가 아니다.
 - 기존 프론트 목·표현 테스트와 ROFL 파서 테스트를 새 API 저장 기능의 검증 수로 계산하지 않는다.
 
@@ -153,4 +158,30 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 
 테스트 schema·연결·HTTP 앱 프로세스가 남지 않았고 테스트 DB의 public 테이블은 0개였다.
 일반 앱 DB에는 봇용 마이그레이션까지 적용되어 public 테이블 37개·외래키 78개·업무 행 0개를 확인했다.
+실제 Discord 로그인·명령 등록·메시지 발송은 실행하지 않았다.
+
+
+2026-11-05, 경기 라인업·ROFL 결과·Discord 결과 게시/참가 안내 구현 후 다시 검증했다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `pnpm test` | 웹 414개 + 봇 57개 = 471개 통과 |
+| `pnpm test:hard` | 웹 빌드 성공, 실제 PostgreSQL·HTTP 284개 통과 |
+| `pnpm check:tests` | 웹·봇 테스트 타입 검사 통과 |
+| `pnpm check` | 포맷·브랜딩·웹·봇 검사 통과, 오류·경고 0개 |
+| `pnpm build:bot` | 봇 운영 빌드 성공 |
+| `pnpm db:migrate` | `0003_match_results.sql`까지 적용 성공 |
+
+실패·취소·건너뜀은 모두 0개다. 새 테스트는 경기 전체 라인업 재사용, 미등록 부계정의 팀·포지션 기반 귀속,
+소유자 충돌 거부, 같은 파일·동일 결과 중복, 결과/MMR/진출의 원자성, 취소 이력과 승자 포지션 전파를 포함한다.
+ROFL 등록과 다른 서버 계정 연결의 경합은 실제 서비스·PostgreSQL 연결·행 잠금 장벽으로 재현했다.
+현재 `KEY SHARE`는 양쪽 커밋을 완료하며, 테스트 사본에서 업로드의 구 `NO KEY UPDATE` 쿼리를 복원한 음성 대조는 `40P01`로 실패했다.
+
+별도 Chromium 확인에서는 실제 테스트용 SvelteKit 앱·격리 DB를 사용해 360/768/1024/1440px 배치,
+드래그와 키보드 교환, 경기 라인업 확정, 업로드 오류/성공·실제 저장, 모바일 다크 모드와 참가 안내 확인창을 점검했다.
+팝업을 연 채 화면 폭을 바꿔도 업로드 입력이 중복되지 않는다. 이 확인은 API 테스트 개수에 포함하지 않으며,
+외부 글꼴·챔피언 이미지 요청은 차단한 상태로 대체 표시를 확인했다.
+
+일반 앱 DB는 public 테이블 40개·외래키 88개·업무 행 0개·마이그레이션 기록 4개다.
+종료 후 테스트 schema·연결·HTTP 앱 프로세스와 테스트 DB public 테이블은 모두 0개였다.
 실제 Discord 로그인·명령 등록·메시지 발송은 실행하지 않았다.

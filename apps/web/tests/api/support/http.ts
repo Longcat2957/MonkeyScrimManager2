@@ -208,6 +208,7 @@ export async function createHttpFixture(
         RIOT_ACCOUNT_REGION: 'asia',
         RIOT_PLATFORM: 'kr',
         RIOT_API_TIMEOUT_MS: '1000',
+        BODY_SIZE_LIMIT: '70M',
         BOT_STATUS_URL: '',
         MSM2_TEST_UPSTREAMS: JSON.stringify([...overrides, ...fixtureUpstreams()])
     };
@@ -327,7 +328,12 @@ export async function createHttpFixture(
         await checkpoint();
         return response;
     }
-    async function action(path: string, name: string, fields: Record<string, string>, cookie?: string) {
+    async function action(
+        path: string,
+        name: string,
+        fields: Record<string, string | Blob>,
+        cookie?: string
+    ) {
         const body = new FormData();
         for (const [key, value] of Object.entries(fields)) body.set(key, value);
         const response = await request(path + '?/' + name, {

@@ -26,6 +26,8 @@ export function publication(patch: Partial<BotPublication> = {}): BotPublication
         guildId: GUILD,
         scrimId: SCRIM,
         kind: 'recruitment',
+        subjectId: 'scrim',
+        recipientId: null,
         revision: 2,
         leaseToken: '50000000-0000-4000-8000-000000000001',
         operation: 'upsert',
