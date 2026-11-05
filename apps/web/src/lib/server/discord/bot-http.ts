@@ -1,3 +1,4 @@
+import { BOT_INTERNAL_TOKEN } from '$app/env/private';
 import { DomainError } from '../errors.ts';
 import { DiscordError } from './client.ts';
 import { requireBotAuthorization } from './bot-auth.ts';
@@ -7,7 +8,7 @@ const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store
 /** 내부 API는 브라우저 세션 대신 전용 봇 인증만 사용한다. */
 export async function botResponse(request: Request, operation: () => Promise<unknown>): Promise<Response> {
     try {
-        requireBotAuthorization(request.headers.get('authorization'), process.env.BOT_INTERNAL_TOKEN);
+        requireBotAuthorization(request.headers.get('authorization'), BOT_INTERNAL_TOKEN);
         return new Response(JSON.stringify(await operation()), { status: 200, headers });
     } catch (cause) {
         if (cause instanceof DomainError)

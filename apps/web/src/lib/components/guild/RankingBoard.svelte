@@ -28,6 +28,19 @@
     let scroller: HTMLDivElement | null = $state(null);
     let loading = $state(false);
     let failed = $state(false);
+    let controller: AbortController | null = null;
+
+    $effect(() => {
+        void guildId;
+        void ranking;
+        loading = false;
+        failed = false;
+        // 서버·첫 쪽 데이터가 바뀌거나 화면을 떠나면 이전 요청의 결과를 사용하지 않는다.
+        return () => {
+            controller?.abort();
+            controller = null;
+        };
+    });
 
     function selectPosition(index: number) {
         active = index;
@@ -36,23 +49,50 @@
     }
 
     async function loadMore() {
+        if (loading) return;
         const key = position.key;
         const current = pages[key];
         if (!current?.hasMore) return;
+        const requestGuild = guildId;
+        const source = ranking;
+        const request = new AbortController();
+        controller = request;
+        const activeRequest = () =>
+            controller === request &&
+            !request.signal.aborted &&
+            guildId === requestGuild &&
+            ranking === source;
+        const fetchPage = async (offset: number): Promise<RankingPage> => {
+            const response = await fetch(
+                `${resolve('/g/[guildId]/ranking', { guildId: requestGuild })}?position=${key}&offset=${offset}`,
+                { signal: request.signal }
+            );
+            if (!response.ok) throw new Error(String(response.status));
+            return response.json();
+        };
         // STDF InfiniteScroll은 onload 뒤 잠기고, loading이 true에서 false로 돌아올 때 다시 풀린다.
         loading = true;
         try {
-            const response = await fetch(
-                `${resolve('/g/[guildId]/ranking', { guildId })}?position=${key}&offset=${current.entries.length}`
-            );
-            if (!response.ok) throw new Error(String(response.status));
-            const next: RankingPage = await response.json();
-            pages = { ...pages, [key]: { ...next, entries: [...current.entries, ...next.entries] } };
-            failed = false;
+            const next = await fetchPage(current.entries.length);
+            if (!activeRequest()) return;
+            const entries = [...current.entries, ...next.entries];
+            if (new Set(entries.map((entry) => entry.userId)).size !== entries.length) {
+                // 순위 변동으로 쪽이 겹치면 빠진 사용자를 임의로 건너뛰지 않고 첫 쪽부터 다시 시작한다.
+                const first = await fetchPage(0);
+                if (!activeRequest()) return;
+                pages = { ...pages, [key]: first };
+                if (position.key === key) scroller?.scrollTo({ top: 0 });
+            } else {
+                pages = { ...pages, [key]: { ...next, entries } };
+            }
+            if (position.key === key) failed = false;
         } catch {
-            failed = true;
+            if (activeRequest() && position.key === key) failed = true;
         } finally {
-            loading = false;
+            if (controller === request) {
+                controller = null;
+                loading = false;
+            }
         }
     }
 

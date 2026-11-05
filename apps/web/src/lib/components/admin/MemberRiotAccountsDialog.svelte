@@ -50,6 +50,10 @@
     }
 
     const submitLookup: SubmitFunction = ({ formData, cancel }) => {
+        if (pending || !member) {
+            cancel();
+            return;
+        }
         if (!parseRiotId(riotId)) {
             error = RIOT_ID_FORMAT_ERROR;
             cancel();
@@ -67,9 +71,14 @@
         };
     };
 
-    const submitLink: SubmitFunction = ({ formData }) => {
-        formData.set('riotId', riotId);
-        formData.set('userId', member?.userId ?? '');
+    const submitLink: SubmitFunction = ({ formData, cancel }) => {
+        if (pending || !found || !member) {
+            cancel();
+            return;
+        }
+        // 연결 대상은 확인 화면에 표시한 조회 결과로 고정한다.
+        formData.set('riotId', `${found.gameName}#${found.tagLine}`);
+        formData.set('userId', member.userId);
         error = '';
         pending = true;
         return async ({ result, update }) => {
@@ -163,6 +172,7 @@
                         titlePosition="out"
                         placeholder="이름#태그"
                         bind:value={riotId}
+                        disabled={pending}
                         state={error ? 'error' : 'theme'}
                         tip={error || null}
                         autocomplete={false}

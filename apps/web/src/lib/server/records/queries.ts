@@ -102,13 +102,18 @@ async function recordsInTransaction(
               )
               .orderBy(asc(gameParticipants.roflParticipantIndex))
         : [];
+    const participantsByGame = new Map<string, typeof participants>();
+    for (const entry of participants) {
+        const gameId = entry.participant.gameId;
+        const roster = participantsByGame.get(gameId);
+        if (roster) roster.push(entry);
+        else participantsByGame.set(gameId, [entry]);
+    }
     const players = new Map<string, GuildPlayerRecords>();
     const allGames: PlayerGame[] = [];
     const recordedGames = completed.map(({ game, result }) => {
-        const roster = participants.filter(
-            (entry) =>
-                entry.participant.gameId === game.id &&
-                entry.participant.roflMetadataId === game.roflMetadataId
+        const roster = (participantsByGame.get(game.id) ?? []).filter(
+            (entry) => entry.participant.roflMetadataId === game.roflMetadataId
         );
         const kills = roster.map((entry) => entry.data?.stats.kills ?? null);
         return {
@@ -121,10 +126,8 @@ async function recordsInTransaction(
         };
     });
     for (const { game, scrimTitle, result } of completed) {
-        const roster = participants.filter(
-            (entry) =>
-                entry.participant.gameId === game.id &&
-                entry.participant.roflMetadataId === game.roflMetadataId
+        const roster = (participantsByGame.get(game.id) ?? []).filter(
+            (entry) => entry.participant.roflMetadataId === game.roflMetadataId
         );
         for (const { participant, userId, user, data } of roster) {
             const s = data?.stats;

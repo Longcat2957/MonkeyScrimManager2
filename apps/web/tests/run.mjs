@@ -10,13 +10,17 @@ const scopes = {
     lite: ['api/lite'],
     hard: ['api/hard/db', 'api/hard/http'],
     'hard:db': ['api/hard/db'],
-    'hard:http': ['api/hard/http']
+    'hard:http': ['api/hard/http'],
+    browser: ['browser']
 };
 if (!Object.hasOwn(scopes, mode))
-    throw new Error('테스트 범위는 default, lite, hard, hard:db, hard:http 중 하나여야 합니다.');
+    throw new Error('테스트 범위는 default, lite, hard, hard:db, hard:http, browser 중 하나여야 합니다.');
 
 const hard = mode.startsWith('hard');
-if (hard) {
+const browser = mode === 'browser';
+const database = hard || browser;
+const http = mode === 'hard' || mode === 'hard:http' || browser;
+if (database) {
     try {
         process.loadEnvFile(fileURLToPath(new URL('../.env.test', import.meta.url)));
     } catch (cause) {
@@ -24,7 +28,7 @@ if (hard) {
     }
     if (!process.env.TEST_DATABASE_URL?.trim()) {
         console.error(
-            'hard 테스트에는 TEST_DATABASE_URL이 필요합니다. apps/web/.env.test.example을 참고해 .env.test를 설정해 주세요.'
+            'DB·HTTP·브라우저 테스트에는 TEST_DATABASE_URL이 필요합니다. apps/web/.env.test.example을 참고해 .env.test를 설정해 주세요.'
         );
         process.exit(1);
     }
@@ -46,11 +50,12 @@ const environment = {
     DISCORD_CLIENT_SECRET: '',
     DISCORD_REDIRECT_URI: '',
     DISCORD_BOT_TOKEN: '',
+    BOT_INTERNAL_TOKEN: '',
     RIOT_API_KEY: '',
     BOT_STATUS_URL: '',
-    MSM2_ALLOW_TEST_HTTP: mode === 'hard' || mode === 'hard:http' ? '1' : '0'
+    MSM2_ALLOW_TEST_HTTP: http ? '1' : '0'
 };
-if (!hard) delete environment.TEST_DATABASE_URL;
+if (!database) delete environment.TEST_DATABASE_URL;
 
 async function execute(args) {
     return new Promise((resolve, reject) => {
@@ -75,8 +80,8 @@ async function execute(args) {
     });
 }
 
-if (mode === 'hard' || mode === 'hard:http') {
-    // HTTP hard는 방금 작성한 운영 코드로 매번 빌드한다. 이전 build 디렉터리를 성공 근거로 재사용하지 않는다.
+if (http) {
+    // HTTP·브라우저는 방금 작성한 운영 코드로 매번 빌드한다. 이전 build를 성공 근거로 재사용하지 않는다.
     const result = await execute(['node_modules/vite/bin/vite.js', 'build']);
     if (result !== 0) process.exit(result);
 }
@@ -92,7 +97,7 @@ const result = await execute([
     '--import',
     './tests/api/support/network-guard.mjs',
     '--test',
-    '--test-concurrency=2',
+    `--test-concurrency=${browser ? 1 : 2}`,
     ...extra,
     ...files
 ]);

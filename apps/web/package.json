@@ -19,6 +19,7 @@
         "test:hard": "node tests/run.mjs hard",
         "test:hard:db": "node tests/run.mjs hard:db",
         "test:hard:http": "node tests/run.mjs hard:http",
+        "test:browser": "node tests/run.mjs browser",
         "check:tests": "tsc --noEmit -p tests/tsconfig.json"
     },
     "devDependencies": {
@@ -28,7 +29,9 @@
         "@tailwindcss/vite": "^4.3.0",
         "@types/node": "^22",
         "@types/pg": "8.23.1",
+        "devalue": "5.9.4",
         "drizzle-kit": "0.31.11",
+        "playwright": "1.64.1",
         "svelte": "^5.57.1",
         "svelte-check": "^4.6.0",
         "tailwindcss": "^4.3.0",

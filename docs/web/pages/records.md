@@ -96,7 +96,7 @@
                         items: (LoadoutIcon | null)[7], spells, keystone, secondaryStyle,
                         score, badge: 'mvp' | 'ace' | null, fearlessViolation }[] }[]
   } | null,
-  usedChampions: { a: ChampionRef[], b: ChampionRef[] } | null,   // 하드 피어리스 진행 중만
+  usedChampions: ChampionRef[] | null,   // 하드 피어리스 진행 중 양 팀 공통 목록
   operation: MatchOperationContext | null, // 경기 전체 라인업·팀별 선수·다음 세트·revision·조작 권한
   can: { upload: boolean }
 }
@@ -134,7 +134,7 @@
 | 세트 머리 | `GameHero` | 이긴 진영·팀, 진영별 킬, 확인된 날짜·시간·패치. MMR 미반영 자료에는 대기 `StatusTag`를 표시할 수 있지만 정상 ROFL 등록은 MMR까지 함께 저장. MVP 카드는 개발 샘플만 표시 |
 | 진영 표 | `GameTeamTable` (`<table>` + `caption`) | 진영색 머리에 결과·총 골드·K/D/A. 열: 선수, 평점(`sm` 이상), KDA(비율), 딜량·받은 피해 막대(두 진영 최대값 기준)·시야(`lg` 이상), CS·최종 아이템(`md` 이상), `상세`. 아이템 7칸은 `xl` 미만에서 4칸씩 두 줄. `sm` 미만은 선수·KDA·상세만 남고 주문·룬 아이콘도 숨김 |
 | 평점·배지 | 평점 열, MVP(이긴 팀 1위)·ACE(진 팀 1위) | 실제 서버에서는 평점·배지가 null이다. 개발 샘플의 **임시 성과 점수**: (K+A)/max(1,D) + 킬 관여×4 + 팀 내 피해 비중×6. 소수 둘째 자리까지 표시하며 진영별 최고 점수 동점자 모두 배지를 받을 수 있다. 세트 머리는 첫 MVP 한 명만 표시 |
-| 피어리스 | 챔피언 옆 `StatusTag warning "피어리스"`, 하단 사용 챔피언 목록 | 같은 팀의 앞 세트 실출전자가 사용한 챔피언. 예정 로스터를 넣지 않으며 위반을 이유로 등록을 막지 않는 정책이다 |
+| 피어리스 | 챔피언 옆 `StatusTag warning "피어리스"`, 하단 양 팀 공통 사용 챔피언 목록 | 같은 경기의 앞선 유효 세트에서 양 팀 실출전자가 사용한 챔피언. 진영 변경과 무관하게 적용하고 취소한 세트·예정 로스터는 제외한다. 중복 챔피언은 한 번만 표시하며 위반을 이유로 등록을 막지 않는다 |
 | 행 상세 | `GamePlayerDialog` (`Popup` 데스크톱 오른쪽, 모바일 아래) | 주문·룬·아이템 이름, 피해·골드·CS·시야·회복·보호막·연속 킬·다중 킬 |
 
 ### ROFL 업로드 팝업

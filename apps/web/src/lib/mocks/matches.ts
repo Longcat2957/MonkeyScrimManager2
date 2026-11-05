@@ -286,7 +286,7 @@ function toGame(
     match: StoredMatch,
     game: StoredGame,
     resolvers: GameResolvers,
-    earlier: Record<'a' | 'b', Set<string>>
+    earlier: Set<string>
 ): GameDetail {
     const winnerSlot = winnerOf(game);
     const sides = ([100, 200] as const).map((teamId) => {
@@ -340,7 +340,7 @@ function toGame(
                 secondaryStyle: resolvers.rune(raw.loadout.secondaryRuneStyleId),
                 score: Math.round(score * 100) / 100,
                 badge: score === best ? (winnerSlot === slot ? 'mvp' : 'ace') : null,
-                fearlessViolation: match.hardFearless && earlier[slot].has(championId)
+                fearlessViolation: match.hardFearless && earlier.has(championId)
             };
         });
         return {
@@ -365,12 +365,12 @@ function toGame(
     };
 }
 
-function usedBy(match: StoredMatch, games: StoredGame[]) {
-    const used = { a: new Set<string>(), b: new Set<string>() };
+function usedBy(games: StoredGame[]) {
+    const used = new Set<string>();
     for (const game of games) {
         for (const player of game.raw.participants) {
             if (!player.champion) continue;
-            used[(player.teamId === 100) === (game.blueSlot === 'a') ? 'a' : 'b'].add(player.champion);
+            used.add(player.champion);
         }
     }
     return used;
@@ -403,20 +403,15 @@ export async function getMockMatch(
               match,
               selected,
               resolvers,
-              usedBy(
-                  match,
-                  match.games.filter((item) => item.order < selected.order)
-              )
+              usedBy(match.games.filter((item) => item.order < selected.order))
           )
         : null;
     // 하드 피어리스 진행 중 경기에서 다음 게임에 쓸 수 없는 챔피언이다.
-    const used = match.hardFearless && match.status === 'in_progress' ? usedBy(match, match.games) : null;
+    const used = match.hardFearless && match.status === 'in_progress' ? usedBy(match.games) : null;
     return {
         match: detail,
         game,
-        usedChampions: used
-            ? { a: [...used.a].map(resolvers.champion), b: [...used.b].map(resolvers.champion) }
-            : null,
+        usedChampions: used?.size ? [...used].map(resolvers.champion) : null,
         // TODO: 업로드 권한(운영자·참가자)을 정하면 함께 확인한다.
         can: { upload: match.status === 'in_progress' }
     };

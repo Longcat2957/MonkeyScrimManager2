@@ -53,6 +53,62 @@ test('공개 전적은 완료 Game·실출전만 집계하고 실제 0과 누락
     );
 });
 
+test('여러 세트의 출전자 집계는 경기 순서·챔피언·팀 킬과 누락 값을 보존한다', async (t) => {
+    const f = await fixture(t);
+    const third = await f.createGame(f.db, 3, f.match.id, 'a', {
+        startedAt: new Date('2026-02-01T00:00:00Z'),
+        champion: 'Lux',
+        durationMs: 900_000
+    });
+    await f.apply(third.id);
+    const records = await f.records();
+    assert.deepEqual(records.recordedGames, [
+        { id: third.id, durationSec: 900, kills: 18 },
+        { id: f.first.id, durationSec: 1200, kills: 18 },
+        { id: f.second.id, durationSec: 1200, kills: null }
+    ]);
+    assert.equal(records.allGames.length, 30);
+    assert.deepEqual(
+        records.allGames.map((game) => game.gameId),
+        [third.id, f.first.id, f.second.id].flatMap((id) => Array<string>(10).fill(id))
+    );
+    for (const player of records.players) {
+        assert.deepEqual(
+            player.games.map((game) => game.champion.id),
+            ['Lux', 'Ahri', 'unknown']
+        );
+        assert.equal(player.games[2]!.teamKills, null);
+        const teammates = player.games[0]!.teammates;
+        assert.equal(teammates.length, 4);
+        assert.deepEqual(player.games[1]!.teammates, teammates);
+        assert.deepEqual(player.games[2]!.teammates, teammates);
+    }
+    const manager = records.players.find((player) => player.userId === f.manager.userId)!;
+    assert.deepEqual(
+        manager.games.map((game) => [game.kills, game.teamKills, game.durationSec]),
+        [
+            [0, 8, 900],
+            [0, 8, 1200],
+            [null, null, 1200]
+        ]
+    );
+});
+
+test('개인 전적은 본인 경기와 별도로 서버 전체 비교 자료를 유지한다', async (t) => {
+    const f = await fixture(t);
+    const records = await f.records();
+    for (const userId of [f.manager.userId, f.users[15]!.id]) {
+        const profile = await getPlayerRecords(f.db, null, f.guildId, userId, champion);
+        assert.deepEqual(profile.players, records.players);
+        assert.deepEqual(profile.allGames, records.allGames);
+        assert.deepEqual(profile.recordedGames, records.recordedGames);
+        assert.deepEqual(
+            profile.games,
+            records.players.find((player) => player.userId === userId)?.games ?? []
+        );
+    }
+});
+
 test('현재 Riot 계정 소유자가 바뀌어도 과거 출전자는 재귀속하지 않는다', async (t) => {
     const f = await fixture(t);
     await f.db

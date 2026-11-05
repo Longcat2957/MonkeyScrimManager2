@@ -201,16 +201,10 @@ export async function getMatch(
             }))
         };
         const usedBefore = (number: number) => {
-            const used = { a: new Set<string>(), b: new Set<string>() };
+            const used = new Set<string>();
             for (const item of recorded.filter((item) => item.game.gameNumber < number)) {
                 for (const player of players.filter((player) => player.player.gameId === item.game.id)) {
-                    const slot =
-                        player.player.side === 'blue'
-                            ? item.game.blueTeamSlot
-                            : item.game.blueTeamSlot === 'a'
-                              ? 'b'
-                              : 'a';
-                    if (player.data?.champion) used[slot].add(player.data.champion);
+                    if (player.data?.champion) used.add(player.data.champion);
                 }
             }
             return used;
@@ -305,7 +299,7 @@ export async function getMatch(
                                     badge: null,
                                     fearlessViolation:
                                         row.match.isHardFearless &&
-                                        Boolean(data?.champion && previous[slot].has(data.champion))
+                                        Boolean(data?.champion && previous.has(data.champion))
                                 };
                             })
                     };
@@ -317,10 +311,7 @@ export async function getMatch(
         return {
             match,
             game,
-            usedChampions:
-                used && (used.a.size || used.b.size)
-                    ? { a: [...used.a].map(resolvers.champion), b: [...used.b].map(resolvers.champion) }
-                    : null,
+            usedChampions: used?.size ? [...used].map(resolvers.champion) : null,
             // 서버의 ROFL 귀속 검증이 연결되면 운영자와 실제 출전자에게 업로드를 연다.
             can: { upload: false }
         };

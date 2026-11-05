@@ -45,7 +45,7 @@ test('경기 목록은 서버·상태·페이지를 구분하고 검색의 SQL �
     );
 });
 
-test('경기 상세는 당시 표시값·실제 0·누락 null과 팀별 피어리스를 보존한다', async (t) => {
+test('경기 상세는 당시 표시값·실제 0·누락 null과 공통 피어리스를 보존한다', async (t) => {
     const f = await createGameFixture(t);
     const first = await f.createGame(f.db, 1);
     await f.apply(first.id);
@@ -82,7 +82,7 @@ test('경기 상세는 당시 표시값·실제 0·누락 null과 팀별 피어�
     assert.equal(player.items[2], null);
     assert.equal(player.fearlessViolation, true);
     assert.deepEqual(
-        detail.usedChampions?.a.map((value) => value.id),
+        detail.usedChampions?.map((value) => value.id),
         ['Ahri']
     );
     assert.equal(detail.can.upload, false);

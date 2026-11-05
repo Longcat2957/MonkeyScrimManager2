@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test, { type TestContext } from 'node:test';
 import { and, eq, isNull, sql } from 'drizzle-orm';
-import type { BotRegistrationInput } from '../../../../../../shared/bot-api.js';
+import type { BotPublication, BotRegistrationInput } from '../../../../../../shared/bot-api.js';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import {
     createBotScrim,
@@ -567,6 +567,146 @@ test('이미 식별된 글의 재시도는 지정한 시각 이후 동일 메시
     assert.notEqual(retry?.leaseToken, update.leaseToken);
 });
 
+for (const kind of ['recruitment', 'entry'] as const) {
+    test(`${kind} 복구는 같은 채널의 다른 종류 불명 글을 거절하고 자기 작업의 글만 연결한다`, async (t) => {
+        const f = await createFormationFixture(t);
+        const channelId = '990000000000000094';
+        const botId = '990000000000000095';
+        await f.db.insert(schema.guildDiscordSettings).values({
+            guildId: f.guildId,
+            recruitmentChannelId: channelId,
+            entryChannelId: channelId
+        });
+        await f.fill();
+        await confirmManualFormation(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+        const publications: BotPublication[] = [];
+        for (let index = 0; index < 2; index++) {
+            const [job] = await claimPublication(f.db, 'first-worker');
+            assert.ok(job);
+            publications.push(job);
+            await completePublication(f.db, job.id, {
+                leaseToken: job.leaseToken,
+                revision: job.revision,
+                outcome: 'uncertain'
+            });
+        }
+        const job = publications.find((publication) => publication.kind === kind)!;
+        const other = publications.find((publication) => publication.kind !== kind)!;
+        assert.ok(job && other);
+        let messageJob = other;
+        const discord = {
+            ...f.access.discord,
+            getCurrentUserId: async () => botId,
+            getMessage: async (channel: string, id: string) => ({
+                id,
+                channelId: channel,
+                authorId: botId,
+                components: [
+                    {
+                        url: `https://monkeybot.test/g/${f.guildId}/scrims/${f.scrimId}${messageJob.kind === 'entry' ? '/bracket' : ''}?publication=${messageJob.id}`
+                    }
+                ]
+            })
+        };
+        const retry = () =>
+            retryBotPublication(
+                f.db,
+                f.guildId,
+                job.id,
+                { actorId: f.manager.userId, interactionId: nextInteractionId(), messageId },
+                { discord }
+            );
+        await assert.rejects(retry(), errorCode('CONFLICT'));
+        assert.equal((await f.db.select().from(schema.scrimDiscordMessages)).length, 0);
+        assert.ok(
+            (await f.db.select().from(schema.discordPublicationJobs)).every(
+                (publication) => publication.status === 'uncertain'
+            )
+        );
+        messageJob = job;
+        await retry();
+        const [recovered] = await claimPublication(f.db, 'next-worker');
+        assert.equal(recovered?.id, job.id);
+        assert.equal(recovered?.kind, kind);
+        assert.equal(recovered?.messageId, messageId);
+    });
+}
+
+test('식별자가 없는 이전 형식의 불명 글은 추정 연결하지 않고 부재 확인 후에만 재생성한다', async (t) => {
+    const f = await createBotFixture(t);
+    const [first] = await claimPublication(f.db, 'first-worker');
+    assert.ok(first);
+    await completePublication(f.db, first.id, {
+        leaseToken: first.leaseToken,
+        revision: first.revision,
+        outcome: 'uncertain'
+    });
+    const discord = {
+        ...f.discord,
+        getMessage: async (channelId: string, id: string) => ({
+            id,
+            channelId,
+            authorId: f.ids.bot,
+            components: [{ url: `https://monkeybot.test/g/${f.ids.guild}/scrims/${f.scrimId}` }]
+        })
+    };
+    await assert.rejects(
+        retryBotPublication(
+            f.db,
+            f.ids.guild,
+            first.id,
+            { actorId: f.ids.owner, interactionId: nextInteractionId(), messageId },
+            { discord }
+        ),
+        errorCode('CONFLICT')
+    );
+    assert.equal((await f.db.select().from(schema.scrimDiscordMessages)).length, 0);
+    assert.deepEqual(await claimPublication(f.db, 'next-worker'), []);
+    await retryBotPublication(
+        f.db,
+        f.ids.guild,
+        first.id,
+        { actorId: f.ids.owner, interactionId: nextInteractionId(), confirmAbsent: true },
+        f.dependencies
+    );
+    const [recreated] = await claimPublication(f.db, 'next-worker');
+    assert.equal(recreated?.id, first.id);
+    assert.equal(recreated?.messageId, null);
+    assert.notEqual(recreated?.nonce, first.nonce);
+});
+
+test('이미 저장된 이전 형식의 글은 메시지 옵션 없는 실패 재시도로 같은 ID를 유지한다', async (t) => {
+    const f = await createBotFixture(t);
+    const [first] = await claimPublication(f.db, 'first-worker');
+    assert.ok(first);
+    await completePublication(f.db, first.id, {
+        leaseToken: first.leaseToken,
+        revision: first.revision,
+        outcome: 'sent',
+        messageId
+    });
+    await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, f.input(), f.dependencies);
+    const [update] = await claimPublication(f.db, 'first-worker');
+    assert.ok(update);
+    await completePublication(f.db, update.id, {
+        leaseToken: update.leaseToken,
+        revision: update.revision,
+        outcome: 'blocked',
+        errorCode: 'DISCORD_50013'
+    });
+    await retryBotPublication(
+        f.db,
+        f.ids.guild,
+        update.id,
+        { actorId: f.ids.owner, interactionId: nextInteractionId() },
+        f.dependencies
+    );
+    const [retry] = await claimPublication(f.db, 'next-worker');
+    assert.equal(retry?.id, first.id);
+    assert.equal(retry?.messageId, messageId);
+    assert.equal(retry?.nonce, first.nonce);
+});
+
 test('채널 제거·모집 취소는 기존 모집 글 삭제를 예약하고 참가 이력을 보존한다', async (t) => {
     const f = await createBotFixture(t);
     const joined = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, f.input(), f.dependencies);
@@ -817,7 +957,9 @@ test('불명 메시지 복구와 참가 신청이 실제 잠금에서 경합해�
             id,
             channelId,
             authorId: f.ids.bot,
-            components: [{ url: `https://monkeybot.test/g/${f.ids.guild}/scrims/${f.scrimId}` }]
+            components: [
+                { url: `https://monkeybot.test/g/${f.ids.guild}/scrims/${f.scrimId}?publication=${first.id}` }
+            ]
         })
     };
     await registerWhilePublicationWaits(f, () =>

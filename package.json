@@ -25,6 +25,7 @@
         "test:hard": "pnpm --filter @msm2/web test:hard",
         "test:hard:db": "pnpm --filter @msm2/web test:hard:db",
         "test:hard:http": "pnpm --filter @msm2/web test:hard:http",
+        "test:browser": "pnpm --filter @msm2/web test:browser",
         "check:tests": "pnpm --filter @msm2/web check:tests && pnpm --filter @msm2/bot check:tests",
         "format": "prettier --write .",
         "check:format": "prettier --check .",

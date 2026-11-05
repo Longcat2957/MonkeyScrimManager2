@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import type { BotPublication } from '../../../../shared/bot-api.js';
-import { card, label, POSITIONS, scrimUrl, webUrl } from './shared.js';
+import { card, label, POSITIONS, publicationUrl, webUrl } from './shared.js';
 
 export function renderMatch(publication: BotPublication, origin: URL) {
     const match = publication.data.match;
@@ -49,8 +49,6 @@ export function renderMatch(publication: BotPublication, origin: URL) {
         ? `${label(winner ?? '팀', 30)} 승리\n시리즈 ${label(match.teamAName, 30)} ${match.scoreA} : ${match.scoreB} ${label(match.teamBName, 30)}` +
           (match.seriesWinnerName ? `\n시리즈 승자 · ${label(match.seriesWinnerName, 30)}` : '')
         : '확정 출전 명단';
-    const scrim = new URL(scrimUrl(origin, publication.guildId, publication.scrimId));
-    scrim.searchParams.set('publication', publication.id);
     return {
         flags: MessageFlags.IsComponentsV2 as const,
         components: [
@@ -62,7 +60,10 @@ export function renderMatch(publication: BotPublication, origin: URL) {
                     .setStyle(ButtonStyle.Link)
                     .setLabel('경기 열기')
                     .setURL(webUrl(origin, `/g/${publication.guildId}/matches/${match.id}`)),
-                new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('내전 열기').setURL(scrim.href)
+                new ButtonBuilder()
+                    .setStyle(ButtonStyle.Link)
+                    .setLabel('내전 열기')
+                    .setURL(publicationUrl(origin, publication))
             )
         ],
         allowedMentions: { parse: [] as never[] }

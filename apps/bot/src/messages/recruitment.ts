@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import type { BotPublication } from '../../../../shared/bot-api.js';
-import { card, label, POSITIONS, scrimUrl, STATUSES } from './shared.js';
+import { card, label, POSITIONS, publicationUrl, STATUSES } from './shared.js';
 
 export function renderRecruitment(publication: BotPublication, origin: URL) {
     const data = publication.data;
@@ -26,7 +26,7 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
             .setLabel('내전 열기')
-            .setURL(scrimUrl(origin, publication.guildId, publication.scrimId))
+            .setURL(publicationUrl(origin, publication))
             .setStyle(ButtonStyle.Link)
     );
     return {

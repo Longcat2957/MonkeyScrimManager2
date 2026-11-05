@@ -7,7 +7,7 @@ import {
     TextDisplayBuilder,
     escapeMarkdown
 } from 'discord.js';
-import type { BotPosition, BotScrimStatus } from '../../../../shared/bot-api.js';
+import type { BotPosition, BotPublication, BotScrimStatus } from '../../../../shared/bot-api.js';
 
 export const POSITIONS: Record<BotPosition, string> = {
     top: '탑',
@@ -37,6 +37,12 @@ export function webUrl(origin: URL, path: string): string {
 
 export function scrimUrl(origin: URL, guildId: string, scrimId: string): string {
     return webUrl(origin, `/g/${encodeURIComponent(guildId)}/scrims/${encodeURIComponent(scrimId)}`);
+}
+
+export function publicationUrl(origin: URL, publication: BotPublication, suffix = ''): string {
+    const url = new URL(scrimUrl(origin, publication.guildId, publication.scrimId) + suffix);
+    url.searchParams.set('publication', publication.id);
+    return url.href;
 }
 
 export function card(text: string) {

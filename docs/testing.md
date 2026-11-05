@@ -12,12 +12,13 @@
 | `pnpm test:hard:db` | `tests/api/hard/db` | 실제 서버 함수와 격리 PostgreSQL |
 | `pnpm test:hard:http` | `tests/api/hard/http` | 웹 빌드 후 SvelteKit 자식 프로세스와 격리 PostgreSQL |
 | `pnpm test:hard` | DB·HTTP hard 전체 | 웹 빌드는 실행 시작 시 한 번 수행 |
+| `pnpm test:browser` | `tests/browser` | 웹 빌드 후 격리 PostgreSQL·SvelteKit 앱·Chromium으로 실제 사용자 조작 검증 |
 | `pnpm test` | 웹 API lite + 기존 최상위 `tests/*.test.ts` + 봇 테스트 | 프론트 목·표현·ROFL 파서 회귀도 보존 |
 | `pnpm test:db` | DB hard | 기존 명령의 호환 별칭 |
 | `pnpm check:tests` | 웹·봇 테스트 TypeScript | 타입만 검사. 테스트 함수·DB·앱을 실행하지 않음 |
 
 실행 스크립트는 `apps/web/tests/run.mjs`다. 파일 경로·실행 순서를 셸 glob에 맡기지 않고 범위별로 정렬해 전달한다.
-테스트 프로세스 병렬 수는 2로 제한하고, DB 경합은 해당 시나리오 안에서 여러 실제 연결로 만든다.
+테스트 프로세스 병렬 수는 2, 브라우저 범위는 1로 제한하고, DB 경합은 해당 시나리오 안에서 여러 실제 연결로 만든다.
 Node의 이름 필터는 다음처럼 전달한다.
 
 ```sh
@@ -34,8 +35,6 @@ pnpm test:hard:db --test-name-pattern=세션
 | 파일 | 계약 |
 | --- | --- |
 | `bot-auth.test.ts` | 내부 API 전용 토큰·미설정·잘못된 인증 헤더 |
-| `publication-search.test.ts` | 기존 내부 GET의 검색어 검증, 오래된 항목 검색·대상 표시·인증·권한·서버 경계 |
-| `guild-view-refresh.test.ts` | 61초 만료·layout 재사용 요청의 권한 갱신, 회수·탈퇴·503·비로그인 공개 열람 |
 | `auth.test.ts` | OAuth 설정·복귀 주소·state·PKCE·서명·만료, 세션 해시·표시 사용자 |
 | `errors.test.ts` | 인증·서비스 운영 권한, 업무 오류의 상태/필드 변환, Retry-After, 예상하지 못한 오류 전파 |
 | `permissions.test.ts` | 웹에서 사용하는 Discord 권한 비트·timeout·역할/채널 overwrite 계산 |
@@ -52,6 +51,29 @@ pnpm test:hard:db --test-name-pattern=세션
 외부 API 계약은 메모리의 `Response`를 주입한다. 실제 Riot·Discord 연결 성공을 뜻하지 않는다.
 실제 시간을 짧게 기다리는 대신 명시적인 시계·타이머·Promise gate를 사용한다.
 Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 조건과 저장 검증은 hard에 둔다.
+
+## 브라우저
+
+브라우저 회귀도 `node:test`를 사용하며 Playwright 1.64.1은 Chromium 조작에만 쓴다.
+`pnpm test`·`test:lite`·`test:hard`의 기존 범위에는 포함하지 않고 `pnpm test:browser`로 실행한다.
+처음에는 Chromium을 설치하고 아래 hard DB와 같은 `.env.test`의 `TEST_DATABASE_URL`을 준비한다.
+
+```sh
+pnpm --filter @msm2/web exec playwright install chromium
+pnpm test:browser
+pnpm test:browser --test-name-pattern=계정
+```
+
+DB 설정·접속 또는 Chromium 실행 파일이 없으면 실패하며 건너뛰지 않는다. 실행 스크립트는 실제 키와
+앱 DB 주소를 비운 뒤 매번 웹을 새로 빌드한다. `tests/browser/support/browser.ts`는 기존 HTTP fixture의
+격리 앱과 세션을 사용하며, 테스트용 localhost 요청에만 TLS 프록시 헤더를 전달한다.
+브라우저의 외부 이미지·폰트 요청은 차단하고 서버의 Riot·Discord 응답은 HTTP fixture로 고정한다.
+테스트가 끝나면 Chromium과 격리 앱·schema를 정리한다. `pnpm check:tests`에 브라우저 코드도 포함한다.
+
+| 파일 | 검증 |
+| --- | --- |
+| `accounts.test.ts` | 360/1440px 계정 조회 중 입력 잠금·중복 제출 방지. 조회 중 원문 입력 상태를 강제로 바꿔도 확인 화면의 canonical Riot ID만 POST·실제 DB에 연결되는지 검증 |
+| `ranking.test.ts` | 360/1440px 순위 중복 후 첫 쪽 재조회·스크롤 복귀·다음 쪽 정상 조회, 재조회 실패 후 기존 목록 유지·수동 재시도, 서버 이동·화면 종료 시 요청 취소. 순위 응답만 바꾸고 실제 운영 번들·라우터·컴포넌트를 사용 |
 
 ## hard DB
 
@@ -72,7 +94,7 @@ Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 
 
 | 파일 | 핵심 검증 |
 | --- | --- |
-| `bot.test.ts` | interaction 멱등성·동시 신청·롤백·게시 점유·불명 복구·초기 시즌·동기화, 게시 완료/복구와 신청의 잠금 경합 |
+| `bot.test.ts` | interaction 멱등성·동시 신청·롤백·게시 점유·불명 복구·초기 시즌·동기화, 게시 완료/복구와 신청의 잠금 경합, 다른 종류의 글·구형 불명 글 복구 거절과 저장된 구형 메시지 재시도 |
 | `schema.test.ts` | 실제 초기 SQL, 복합 FK, 활성 행 유일성, CHECK·이력 보존 |
 | `sessions.test.ts` | 실제 세션 저장·교체·검증·만료·삭제, 관리자 권한 보존, 중간 실패 롤백 |
 | `guild-access.test.ts` | 공개 조회, 만료 소속의 사전 갱신·권한 회수·탈퇴·외부 장애, 읽기 전용 계약, 신선도·활성 서버·운영 역할 |
@@ -83,9 +105,10 @@ Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 
 | `auction.test.ts` | 후보·lot·팀장·잔액·정원, 0점/수동 구분, 되돌리기·이력·동시 낙찰 |
 | `bracket-workflow.test.ts` | 2/3/4팀 대진·BO·확정·시작·복귀·중도 종료와 기록 보존 |
 | `mmr.test.ts` | 멱등 반영, 고정 시즌·운영 슬롯, 안전한 역분개, 후속 변경 차단, 동시 반영·전체 롤백 |
-| `records.test.ts` | 현재 시즌·유효 기록, 과거 사용자 귀속, 실제 0과 null, 조회의 무부수효과 |
+| `records.test.ts` | 현재 시즌·유효 기록, 과거 사용자 귀속, 실제 0과 null, 조회의 무부수효과, 여러 경기의 출전자·순서·통계 구분과 개인 조회의 서버 비교 자료 보존 |
 | `ranking.test.ts` | 현재 멤버·실적, 채택본·실출전·원장 일치, 페이지·본인 순위·대표 챔피언 |
 | `match-read.test.ts` | 공개 경기 목록·상세, 검색·서버 경계·당시 출전·피어리스·처리 상태 |
+| `match-fearless.test.ts` | 양 팀 공통 피어리스, 진영 변경·과거 세트 선택·취소 제외·설정 해제와 정상 ROFL/MMR 반영 |
 | `match-results.test.ts` | 경기 단위 라인업·ROFL 실사용 계정 식별·중복·동시 등록·롤백·MMR·승자 포지션 전파·마지막 결과 취소 |
 | `match-result-restoration.test.ts` | 취소한 동일 파일의 새 Game 복구·진영 정정·계정 귀속 보존·동시 재요청·반복 복구·롤백·진출 |
 | `rofl-restoration-migration.test.ts` | 취소 데이터가 있는 0003 구조에 실제 0004 SQL 적용, 역분개 시각·근거 보존과 복구 |
@@ -109,6 +132,7 @@ adapter-node의 `PROTOCOL_HEADER`로 HTTPS 프록시 뒤 HTTP 연결을 재현�
 | 파일 | HTTP 계약 |
 | --- | --- |
 | `bot.test.ts` | 실제 내부 라우트 인증·JSON 검증·권한·생성·신청·웹 변경의 게시 예약 |
+| `bot-env.test.ts` | 실제 Vite 서버가 프로세스 변수 없이 임시 `.env`의 내부 봇 토큰을 읽는지 확인. 인증 뒤 입력 검증에서 끝내며 DB·Discord를 호출하지 않음 |
 | `publication-search.test.ts` | 기존 내부 GET의 검색어 검증, 오래된 항목 검색·대상 표시·인증·권한·서버 경계 |
 | `guild-view-refresh.test.ts` | 61초 만료·layout 재사용 요청의 권한 갱신, 회수·탈퇴·503·비로그인 공개 열람 |
 | `auth.test.ts` | 개인 페이지 인증, 세션 만료, OAuth 시작·고정 프로필 콜백, 쿠키 속성, POST/출처 검사와 로그아웃 |
@@ -126,6 +150,7 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 - HTTP의 모든 action에 대한 비로그인 검사를 정상 업무 전체의 HTTP 완주로 설명하지 않는다. 주요 업무 HTTP 시나리오와 세부 DB 시나리오를 함께 사용한다.
 - ROFL 성공은 HTTP 응답뿐 아니라 Game·실출전·MMR 원장·승자 진출·게시 작업의 실제 DB 상태로 검증한다. 외부 Riot 식별 응답은 고정 자료이며 실제 Riot 서버 호출 검증은 별도다.
 - Discord Gateway·interaction·실제 메시지 게시, 실제 Riot/Discord 자격 증명, 브라우저 UI·드래그 조작은 이 API 테스트의 실행 범위가 아니다.
+- 별도 브라우저 명령은 계정 연결과 순위 갱신 회귀를 검증한다. 전체 UI·드래그 조작의 자동 검증 완료를 뜻하지 않는다.
 - 기존 프론트 목·표현 테스트와 ROFL 파서 테스트를 새 API 저장 기능의 검증 수로 계산하지 않는다.
 
 ## 실행 기록
@@ -222,3 +247,38 @@ ROFL 등록과 다른 서버 계정 연결의 경합은 실제 서비스·Postgr
 개발 DB는 public 테이블 40개·외래키 88개·업무 행 0개·migration 기록 5개다.
 최종 정리 후 앱/테스트 DB에 테스트 schema와 잔여 연결이 없으며, 테스트 DB public 테이블과 HTTP 자식 프로세스도 0개다.
 외부 Riot·Discord 응답은 고정하고 브라우저의 외부 자산 요청은 차단했다. 실제 Discord 로그인·명령 등록·메시지/DM 발송은 실행하지 않았다.
+
+
+2026-11-05, 전체 코드 검토에서 재현한 6건을 계정 연결 → 게시 복구 → 순위 갱신 → 개발 환경 인증 → 피어리스 → 전적 성능 순서로 수정하고 최종 검증했다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `pnpm test` | 웹 415개 + 봇 65개 = 480개 통과. API lite 포함 |
+| `pnpm test:hard` | 최신 웹 빌드 성공, 실제 PostgreSQL·HTTP 322개 통과 |
+| `pnpm test:browser` | 최신 웹 빌드 성공, Chromium 계정·순위 회귀 7개 통과 |
+| `pnpm check:tests` | 웹·봇·브라우저 테스트 타입 검사 통과 |
+| `pnpm check` | 포맷·브랜딩·웹·봇 검사 통과, Svelte 오류·경고 0개 |
+| `pnpm build:bot` | 봇 운영 빌드 성공 |
+
+실패·취소·건너뜀은 모두 0개다. 계정 조회 중 입력 상태를 강제로 바꿔도 확인한 계정만 저장되며,
+순위 중복은 첫 쪽 재조회로 복구한다. 재조회 실패 후 재시도, 서버 이동과 화면 종료 시 이전 요청 취소도 검증했다.
+개발 환경 인증 회귀는 실제 Vite 서버에 별도 `.env`만 제공하여 올바른 토큰과 잘못된 토큰을 구분한다.
+게시 복구는 다른 종류의 글과 식별자가 없는 구형 불명 글을 거절하고, 이미 저장된 구형 메시지의 일반 재시도는 유지한다.
+
+피어리스는 실제 ROFL 등록과 MMR 반영을 포함한 DB 회귀에 더해 360/768/1024/1440px 화면에서 확인했다.
+빈 기록·첫 세트·상대 팀 챔피언 재사용·과거 세트 선택·설정 해제 상태, 모바일 최초 진입과 세트 탭 이동이 정상이다.
+양 팀의 사용 챔피언은 공통 목록에 한 번씩 표시되며 안정화된 화면에서 가로 넘침과 JavaScript 오류가 없었다.
+
+전적 성능은 변경 전후 운영 코드의 조회 이후 가공 부분을 그대로 추출해 같은 합성 자료로 비교했다.
+경기당 10명, DB와 같은 참가자 순번 정렬을 사용하고 새 Map 분류 비용도 포함했다. 각 규모를 3회 측정하여
+전체 반환값이 9회 모두 일치함을 확인했다. 아래는 **DB 조회·네트워크·HTTP를 제외한 동기 CPU 처리 시간 중앙값**이다.
+일반 회귀 테스트는 시간 임계값 대신 통계 결과와 비교 자료의 보존을 검사한다.
+
+| 시즌 경기 수 | 수정 전 | 수정 후 |
+| ---: | ---: | ---: |
+| 1,000 | 455ms | 14ms |
+| 2,500 | 2,695ms | 34ms |
+| 5,000 | 12,308ms | 42ms |
+
+최종 정리 후 테스트 schema·잔여 연결·public 테이블·HTTP 자식 프로세스·임시 Vite 환경 디렉터리는 모두 0개였다.
+외부 Riot·Discord 응답은 고정했으며 브라우저 외부 자산은 차단했다. 실제 Discord 로그인·명령 등록·메시지/DM 발송은 실행하지 않았다.

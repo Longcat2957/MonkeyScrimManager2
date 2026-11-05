@@ -475,7 +475,7 @@ export async function listFailedPublications(
     };
 }
 
-function containsScrimLink(value: unknown, basePath: string, publicationId?: string, depth = 0): boolean {
+function containsScrimLink(value: unknown, basePath: string, publicationId: string, depth = 0): boolean {
     if (depth > 12 || !value || typeof value !== 'object') return false;
     if (Array.isArray(value))
         return value.some((child) => containsScrimLink(child, basePath, publicationId, depth + 1));
@@ -486,7 +486,7 @@ function containsScrimLink(value: unknown, basePath: string, publicationId?: str
             if (
                 ['http:', 'https:'].includes(url.protocol) &&
                 (url.pathname === basePath || url.pathname.startsWith(basePath + '/')) &&
-                (!publicationId || url.searchParams.get('publication') === publicationId)
+                url.searchParams.get('publication') === publicationId
             )
                 return true;
         } catch {
@@ -561,10 +561,10 @@ export async function retryBotPublication(
             !containsScrimLink(
                 message.components,
                 `/g/${guildId}/scrims/${before.job.scrimId}`,
-                ['lineup', 'result', 'confirmation_dm'].includes(before.job.kind) ? before.job.id : undefined
+                before.job.id
             )
         )
-            throw new DomainError('CONFLICT', '이 내전의 봇 게시 메시지가 아니에요');
+            throw new DomainError('CONFLICT', '이 게시 작업의 봇 메시지인지 확인할 수 없어요');
         recovered = { id: message.id, channelId };
     }
     await db.transaction(async (tx) =>

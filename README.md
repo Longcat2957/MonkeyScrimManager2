@@ -327,11 +327,14 @@ pnpm test:lite
 pnpm test:hard:db
 pnpm test:hard:http
 pnpm test:hard
+pnpm test:browser
 pnpm check:tests
 ```
 
 `pnpm test:db`는 `test:hard:db`의 호환 별칭이다. `check:tests`는 웹·봇 테스트를 실행하지 않고 타입만 검사한다.
-2026-11-05 문서 정합성·검토 결함 수정 후 기본 테스트 웹 414개·봇 63개, DB·HTTP hard 312개가 모두 통과했다. 타입·브랜딩·포맷 검사와 웹·봇 빌드, 브라우저 검증을 통과했으며 개발 DB에 `0004`까지 적용했다.
+`test:browser`는 같은 격리 DB와 최신 웹 빌드에서 Chromium으로 계정 연결·순위 갱신을 확인하는 별도 명령이다.
+최초 실행 전 `pnpm --filter @msm2/web exec playwright install chromium`으로 브라우저를 설치한다.
+2026-11-05 전체 코드 검토에서 확인한 6건을 수정한 뒤 기본 테스트 웹 415개·봇 65개, DB·HTTP hard 322개, 브라우저 회귀 7개가 모두 통과했다. 타입·브랜딩·포맷 검사와 웹·봇 빌드도 통과했다.
 구조·검증 범위·실행 조건과 기록은 [API 테스트 문서](docs/testing.md)를 따른다.
 
 운영 서버의 기본 포트는 `3000`이다. VPS의 서비스 관리자에서 환경 변수를

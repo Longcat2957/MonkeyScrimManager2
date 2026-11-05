@@ -9,6 +9,24 @@ import type { BotPosition } from '../../../shared/bot-api.js';
 
 const origin = new URL('https://monkeybot.example');
 
+for (const kind of ['recruitment', 'entry'] as const) {
+    test(`${kind} 링크는 게시 작업을 식별하고 기존 목적지를 유지한다`, () => {
+        const job = publication({ kind });
+        const rendered = kind === 'recruitment' ? renderRecruitment(job, origin) : renderEntry(job, origin);
+        const row = rendered.components[1]!.toJSON();
+        assert.ok('components' in row);
+        const button = row.components.find((component) => 'url' in component);
+        assert.ok(button && 'url' in button && typeof button.url === 'string');
+        const url = new URL(button.url);
+        assert.equal(url.origin, origin.origin);
+        assert.equal(
+            url.pathname,
+            `/g/${job.guildId}/scrims/${job.scrimId}${kind === 'entry' ? '/bracket' : ''}`
+        );
+        assert.equal(url.searchParams.get('publication'), job.id);
+    });
+}
+
 test('선발 정원이 차도 모집 카드의 내 신청 버튼을 유지한다', () => {
     const job = publication();
     job.data.selected = 10;

@@ -5,6 +5,7 @@ import {
     getMockMatch,
     listMockMatches,
     recordMockGame,
+    setMockMatchStatus,
     type GameResolvers,
     type RawGame
 } from '../src/lib/mocks/matches.ts';
@@ -51,6 +52,23 @@ test('게임 결과에서 진영·MVP·ACE·피어리스 위반을 만든다', a
     assert.equal((await getMockMatch(guildId, 'devMatch003', 'unknown', resolvers))!.game!.order, 3);
 });
 
+test('피어리스 안내는 양 팀의 사용 챔피언을 한 목록에 표시하고 빈 경기는 숨긴다', async () => {
+    const live = (await getMockMatch(guildId, 'devMatch001', null, resolvers))!;
+    assert.ok(Array.isArray(live.usedChampions));
+    assert.equal(live.usedChampions.length, 20);
+    assert.equal(new Set(live.usedChampions.map((champion) => champion.id)).size, 20);
+    assert.ok(live.usedChampions.some((champion) => champion.id === 'Renekton'));
+    assert.ok(live.usedChampions.some((champion) => champion.id === 'Zaahen'));
+    setMockMatchStatus(guildId, 'devMatch005', 'in_progress');
+    try {
+        const empty = (await getMockMatch(guildId, 'devMatch005', null, resolvers))!;
+        assert.equal(empty.game, null);
+        assert.equal(empty.usedChampions, null);
+    } finally {
+        setMockMatchStatus(guildId, 'devMatch005', 'completed');
+    }
+});
+
 test('업로드한 게임을 기록하고 같은 파일·종료된 경기는 거절한다', async () => {
     const raw = { ...(sample as RawGame), gameLengthMs: 1_234_567 };
     assert.deepEqual(await recordMockGame(guildId, 'devMatch001', raw), { order: 3 });
@@ -58,5 +76,8 @@ test('업로드한 게임을 기록하고 같은 파일·종료된 경기는 거
     const detail = (await getMockMatch(guildId, 'devMatch001', null, resolvers))!;
     assert.equal(detail.match.status, 'completed');
     assert.equal(detail.can.upload, false);
+    // 1세트와 진영이 바뀌어 상대 팀이 사용했던 챔피언을 골라도 하드 피어리스에 해당한다.
+    assert.ok(detail.game!.sides.flatMap((side) => side.players).every((player) => player.fearlessViolation));
+    assert.equal(detail.usedChampions, null);
     assert.equal(((await recordMockGame(guildId, 'devMatch002', raw)) as { status: number }).status, 409);
 });

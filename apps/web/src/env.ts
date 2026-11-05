@@ -6,6 +6,7 @@ export const variables = defineEnvVars({
     DISCORD_CLIENT_SECRET: { schema: (value) => value ?? '' },
     DISCORD_REDIRECT_URI: { schema: (value) => value ?? '' },
     DISCORD_BOT_TOKEN: { schema: (value) => value ?? '' },
+    BOT_INTERNAL_TOKEN: { schema: (value) => value ?? '' },
     RIOT_API_KEY: { schema: (value) => value ?? '' },
     RIOT_ACCOUNT_REGION: { schema: (value) => value ?? 'asia' },
     RIOT_PLATFORM: { schema: (value) => value ?? 'kr' },

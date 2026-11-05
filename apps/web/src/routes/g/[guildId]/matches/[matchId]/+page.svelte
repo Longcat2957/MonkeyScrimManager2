@@ -189,28 +189,21 @@
     {#if data.usedChampions}
         <section aria-labelledby="fearless" class="flex flex-col gap-3">
             <h2 id="fearless" class="text-lg font-semibold">다음 세트에서 쓸 수 없는 챔피언</h2>
-            <div class="grid gap-3 md:grid-cols-2">
-                {#each [[match.teamA, data.usedChampions.a], [match.teamB, data.usedChampions.b]] as const as [name, champions] (name)}
-                    <div
-                        class="flex flex-col gap-2 rounded-(--radius-box) border border-border bg-bg-surface p-4 dark:bg-bg-surface-dark"
+            <ul
+                class="flex flex-wrap gap-2 rounded-(--radius-box) border border-border bg-bg-surface p-4 dark:bg-bg-surface-dark"
+            >
+                {#each data.usedChampions as champion (champion.id)}
+                    <li
+                        class="flex items-center gap-1.5 rounded-(--radius-small) bg-bg-highlight/60 py-1 pr-2 pl-1 text-xs dark:bg-bg-highlight-dark/60"
                     >
-                        <h3 class="text-sm font-semibold">{name}</h3>
-                        <ul class="flex flex-wrap gap-2">
-                            {#each champions as champion (champion.id)}
-                                <li
-                                    class="flex items-center gap-1.5 rounded-(--radius-small) bg-bg-highlight/60 py-1 pr-2 pl-1 text-xs dark:bg-bg-highlight-dark/60"
-                                >
-                                    {#if champion.iconUrl}<img
-                                            src={champion.iconUrl}
-                                            alt=""
-                                            class="size-6 rounded-(--radius-small) grayscale"
-                                        />{/if}{champion.name}
-                                </li>
-                            {/each}
-                        </ul>
-                    </div>
+                        {#if champion.iconUrl}<img
+                                src={champion.iconUrl}
+                                alt=""
+                                class="size-6 rounded-(--radius-small) grayscale"
+                            />{/if}{champion.name}
+                    </li>
                 {/each}
-            </div>
+            </ul>
         </section>
     {/if}
 </div>
