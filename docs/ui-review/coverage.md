@@ -1,8 +1,23 @@
 # 전체 화면 검토 범위
 
-후속 재평가: 푸시 커밋 `897eddf`의 **Impeccable 디자인 품질은 부분 충족**이다. 아래 기존 작업 목록의 구현·회귀 확인과 구분해 [최신 전후 품질 평가](recheck.md)의 남은 항목을 함께 읽는다.
+후속 완료: 전체20페이지 검토 중 부족했던6페이지를 실제 수정·재검증했고 DQ-01~13의 완료 조건을 충족했다. 최신 범위는 바로 아래 표와 [최종 기록](followup.md)을 기준으로 읽는다. 최초20페이지 검토와 [당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 정책2페이지는 승인 본문 대기다.
 
 2026-11-14. 기준 주소: `http://127.0.0.1:5173`. 운영 18개 + 개발 전용 2개 = 전체 20개 화면. HTTP API·OAuth 핸들러는 별도 페이지로 세지 않는다.
+
+## 후속 6페이지의 최신 확인 범위
+
+최초 전체20페이지 검토 뒤 부분 충족으로 남은6페이지를 실제 수정했다. 시작·참가 흐름(홈·안내·모집 요약)과 편성·실력 판단(수동·선수·통계)의 세 페이지씩을 검증했다. 아래 링크는 이 후속 수정의 이미지이며 최초20페이지 표·재평가 이미지는 이력으로 보존한다. 양 테마는 primary/dark다.
+
+| 화면·실제 URL | 역할·주요 상태 | 확인한 폭·테마 | 문제·진행 | 수정 전 → 수정 후 |
+| --- | --- | --- | --- | --- |
+| 홈 `/` | 실제 비로그인, 격리 실제 로그인 세션의 서버2개·빈 목록·조회503 | 1440/768/390/320 양테마, 실제세션1440/390 양테마 | DQ-03·10 완료 | [D 전](../../artifacts/ui-review/followup/public/before/home-desktop.png)·[M 전](../../artifacts/ui-review/followup/public/before/home-mobile.png) → [D 후](../../artifacts/ui-review/followup/public/after/home-desktop.png)·[M 후](../../artifacts/ui-review/followup/public/after/home-mobile.png) |
+| 안내 `/docs` | 공개, 참가·기록/운영 목차, 6앵커·FAQ 펼침 | 1440/768/390/320 양테마 | DQ-06 완료 | [D 전](../../artifacts/ui-review/followup/public/before/docs-desktop.png)·[M 전](../../artifacts/ui-review/followup/public/before/docs-mobile.png) → [D 후](../../artifacts/ui-review/followup/public/after/docs-desktop.png)·[M 후](../../artifacts/ui-review/followup/public/after/docs-mobile.png) |
+| 요약 `/g/devGuild001/scrims/devScrim001` | 개발 관리자·선발 관리, 003참가자·006정원마감·005종료, 요청실패/중복 | 1440/768/390/320·720×500 양테마, 관리640 추가 | DQ-07·08 완료 | [D 전](../../artifacts/ui-review/followup/workflow/before/scrim-primary-desktop.png)·[M 전](../../artifacts/ui-review/followup/workflow/before/scrim-primary-mobile.png) → [D 후](../../artifacts/ui-review/followup/workflow/after/scrim-primary-desktop.png)·[M 후](../../artifacts/ui-review/followup/workflow/after/scrim-primary-mobile.png) |
+| 수동 `/g/devGuild001/scrims/devScrim007/manual` | 개발 관리자, 6/10·선택/교환/해제/취소·실패복구·읽기전용·긴이름 | 1440/768/390/320·720×500 양테마, 360/640 추가 | DQ-01·04·11 완료 | [D 전](../../artifacts/ui-review/followup/workflow/before/manual-primary-desktop.png)·[M 전](../../artifacts/ui-review/followup/workflow/before/manual-primary-mobile.png) → [D 후](../../artifacts/ui-review/followup/workflow/after/manual-primary-desktop.png)·[M 후](../../artifacts/ui-review/followup/workflow/after/manual-primary-mobile.png) |
+| 선수 `/g/devGuild001/players/devUser001` | 공개 개발표본, 전체/탑 필터·15지표·MMR·레이더 | 1440/768/390/320 양테마 | DQ-05·12 완료 | [D 전](../../artifacts/ui-review/followup/before/player-primary-desktop.png)·[M 전](../../artifacts/ui-review/followup/before/player-primary-mobile.png) → [D 후](../../artifacts/ui-review/followup/after/player-primary-desktop.png)·[M 후](../../artifacts/ui-review/followup/after/player-primary-mobile.png) |
+| 통계 `/g/devGuild001/stats` | 공개 개발표본, 긴한/영이름·7지표정렬·키보드/터치·좁은챔피언표 | 1440/768/390/320 양테마, Tab640 추가 | DQ-02·09·13 완료 | [D 전](../../artifacts/ui-review/followup/data/before/stats-primary-1440.png)·[M 전](../../artifacts/ui-review/followup/data/before/stats-primary-390.png) → [D 후](../../artifacts/ui-review/followup/data/after/stats-primary-1440.png)·[M 후](../../artifacts/ui-review/followup/data/after/stats-primary-390.png) |
+
+원본 상태·샘플은 검증 후6/10의 정확한 선수/자리로 복원한다. 세션 fixture의 외부 origin 차단으로 실제세션 PNG는 웹폰트 fallback이므로 폰트 검증과 분리한다. 실제 서버 OAuth·실운영 쓰기·실기기·Safari·스크린리더는 확인하지 않았다. 정책2페이지는 승인 본문이 없어 콘텐츠 보류다. 상세 측정·직접 읽은 이미지·해시는 [후속 기록](followup.md)의 증거 색인을 따른다.
 
 ## 진행 기준
 

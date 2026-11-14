@@ -1,0 +1,63 @@
+{
+    "source_commit": "897eddf34308b45d01dcbab7c848ed09391dce40",
+    "copies": [
+        {
+            "from": "artifacts/ui-review/recheck/workflow/manual-primary-desktop.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-primary-desktop.png",
+            "sha256": "289b7f37bf02fb4a3c50017feaf887264144273649ad70c2403d4499a6b2c9f1"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/manual-primary-mobile.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-primary-mobile.png",
+            "sha256": "1b33fe62aeed2b5f5cd75acd03496bbccae03d8d6b963810f969c4664b1ee6ad"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/manual-dark-desktop.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-dark-desktop.png",
+            "sha256": "3006396172651fdfc24148143c9db568513e3ac73c24bd77640acac00ab7de62"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/manual-dark-mobile.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-dark-mobile.png",
+            "sha256": "cd70743cdfbe3f9578a63c3dbbfe9daf6e6da555c31de46c3912fb191dd31cc9"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/scrim-primary-desktop.png",
+            "to": "artifacts/ui-review/followup/workflow/before/scrim-primary-desktop.png",
+            "sha256": "101064270b9265a8cffdad057f059c301782f4ff12e2a4f44d2c3c3f3d9799cc"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/scrim-primary-mobile.png",
+            "to": "artifacts/ui-review/followup/workflow/before/scrim-primary-mobile.png",
+            "sha256": "d52cfbc18cd7f6549e176769bc022a3442aada43806aba06e2e94d6554bc026e"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/scrim-dark-desktop.png",
+            "to": "artifacts/ui-review/followup/workflow/before/scrim-dark-desktop.png",
+            "sha256": "4c58564a0296023ce2de897afc5bfb516867ffe86a43238a70d76375f2fecc72"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/scrim-dark-mobile.png",
+            "to": "artifacts/ui-review/followup/workflow/before/scrim-dark-mobile.png",
+            "sha256": "b8957240aaf597b21d2f5d61da5d49de7f3e244f5c000cd1cd79316da7780583"
+        },
+        {
+            "from": "artifacts/ui-review/recheck/workflow/manual-selection-context-mobile.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-selection-context-mobile.png",
+            "sha256": "63476de19489aebf64dc1d05cf5dfbe04ae0854556d962bf1301f770d9aa8d6d"
+        },
+        {
+            "from": "artifacts/ui-review/followup/workflow/after/manual-primary-narrow.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-mmr-primary-narrow.png",
+            "phase": "before DQ11",
+            "sha256": "d4fc3826d5bc8d61c1baa6be22a88fca41978ffb9a08d0cf05c5a01a76a32a41"
+        },
+        {
+            "from": "artifacts/ui-review/followup/workflow/after/manual-dark-narrow.png",
+            "to": "artifacts/ui-review/followup/workflow/before/manual-mmr-dark-narrow.png",
+            "phase": "before DQ11",
+            "sha256": "4f02fecda6ac7afcfa09b83bd9f4935b5ba3cd3247e83bea1751d1a29d6f6af2"
+        }
+    ],
+    "images_actually_read": 9
+}

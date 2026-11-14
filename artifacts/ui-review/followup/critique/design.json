@@ -1,0 +1,194 @@
+{
+    "assessment": "A",
+    "agent": "/root/final_design",
+    "method": "independent source and live-browser design review",
+    "independence": {
+        "detector_executed": false,
+        "assessment_b_read": false,
+        "prior_scores_or_reports_read": false,
+        "context_reexecuted": false
+    },
+    "live_url": "http://127.0.0.1:5173",
+    "targets": [
+        "/",
+        "/docs",
+        "/g/devGuild001/scrims/devScrim001",
+        "/g/devGuild001/scrims/devScrim007/manual",
+        "/g/devGuild001/players/devUser001",
+        "/g/devGuild001/stats"
+    ],
+    "mock_context": "devGuild001 mock administrator preview, not an authenticated session",
+    "mock_writes": false,
+    "heuristics": [
+        {
+            "id": 1,
+            "name": "Visibility of System Status",
+            "score": 3,
+            "evidence": "현재 메뉴·단계·정원·배치 수·비활성 이유·선택 상태를 표시한다. 실제 저장 상태의 모든 경계는 미검증이다."
+        },
+        {
+            "id": 2,
+            "name": "Match Between System and Real World",
+            "score": 4,
+            "evidence": "모집·편성·대진·ROFL 기록과 경기/세트 용어 및 라인업 문맥이 실제 내전 운영과 일치한다."
+        },
+        {
+            "id": 3,
+            "name": "User Control and Freedom",
+            "score": 3,
+            "evidence": "수동 선택 Escape 취소, 순위 팝업 Escape 닫기와 트리거 복귀를 확인했다. 실제 되돌리기 쓰기는 실행하지 않았다."
+        },
+        {
+            "id": 4,
+            "name": "Consistency and Standards",
+            "score": 3,
+            "evidence": "STDF 조작·Slate 표면·Noto Sans KR·범위 탐색이 일관되고 표·차트는 일반적인 의미 구조다."
+        },
+        {
+            "id": 5,
+            "name": "Error Prevention",
+            "score": 3,
+            "evidence": "6/10에서 확정을 막고 조건을 표시한다. 좁은 자리에서 MMR과 희망 외가 보존된다. 실제 action 경계는 미검증이다."
+        },
+        {
+            "id": 6,
+            "name": "Recognition Rather Than Recall",
+            "score": 3,
+            "evidence": "단일 진입, 과업 목차, sticky 선택 안내, 고정 이름 열, 보이는 차트 상위%/방향 설명이 문맥을 제공한다."
+        },
+        {
+            "id": 7,
+            "name": "Flexibility and Efficiency of Use",
+            "score": 3,
+            "evidence": "키보드 선택·취소·펼침, 표 가로 이동·정렬, 추가 지표 공개를 확인했다."
+        },
+        {
+            "id": 8,
+            "name": "Aesthetic and Minimalist Design",
+            "score": 3,
+            "evidence": "역할에 맞는 순서와 추가 지표 접기로 과업을 먼저 읽는다. 검토 범위에서 불필요한 중복 동작/설명을 확인하지 못했다."
+        },
+        {
+            "id": 9,
+            "name": "Help Users Recognize Diagnose and Recover from Errors",
+            "score": 3,
+            "evidence": "FAQ가 파일 손상·연결 단절·중복 기록의 다음 행동을 구분한다. 실제 실패는 재현하지 않았다."
+        },
+        {
+            "id": 10,
+            "name": "Help and Documentation",
+            "score": 3,
+            "evidence": "참가·기록/운영 단일 목차, 단계별 절차와 FAQ가 있다. 앵커가 헤더 아래 제목에 포커스를 준다."
+        }
+    ],
+    "total_score": 31,
+    "max_score": 40,
+    "na_heuristics": [],
+    "rating": "Good",
+    "design_specificity": {
+        "verdict": "authored for Monkeybot",
+        "judgment": "챔피언 아트·포지션·MMR·정원·경기/세트·ROFL이 실제 작업 구조를 만든다. 기존 Slate와 STDF의 익숙함은 운영 모드에 적합하다."
+    },
+    "priority_issues": [],
+    "priority_counts": {
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "P3": 0
+    },
+    "strengths": [
+        "역할과 DOM/읽기 순서가 일치한다.",
+        "모바일에서 선택 문맥·지표·경고를 보존하고 추가 정보는 점진 공개한다.",
+        "홈 진입과 과업별 문서가 구체적인 다음 행동을 제공한다."
+    ],
+    "cognitive_load": {
+        "failed_items": ["chunking_at_most_4", "choices_at_most_4"],
+        "failed_count": 2,
+        "total_items": 8,
+        "rating": "moderate by strict checklist",
+        "visible_options": {
+            "server_kpis": 6,
+            "position_filters": 6,
+            "achievement_choices": 16,
+            "formation_slots": 10
+        },
+        "interpretation": "포지션·팀 자리는 도메인 구조로 묶이고 업적은 별도 팝업에 있다. 개수만으로 삭제/새 분류를 권하지 않는다."
+    },
+    "emotional_journey": "명확한 진입→조건과 선택 문맥으로 운영 불확실성 감소→실제 수치/챔피언 이미지로 기록과 성취 확인. 실제 쓰기의 성공/실패 구간은 미검증이다.",
+    "personas": [
+        {
+            "name": "Jordan",
+            "red_flags": [],
+            "task": "소개 진입과 ROFL 도움말 찾기"
+        },
+        {
+            "name": "Sam",
+            "red_flags": [],
+            "task": "키보드 펼침·표 스크롤/정렬·팝업 닫기",
+            "unverified": "실제 스크린리더 발화"
+        },
+        {
+            "name": "Casey",
+            "red_flags": [],
+            "task": "320/390 모바일에서 편성 선택·취소와 긴 이름 읽기"
+        },
+        {
+            "name": "프로젝트 운영자",
+            "red_flags": [],
+            "task": "참가자·수동 편성 선택 문맥 확인"
+        },
+        {
+            "name": "프로젝트 공개 열람자",
+            "red_flags": [],
+            "task": "공개 안내와 목 기록 읽기",
+            "unverified": "실제 인증·권한별 전체 상태"
+        }
+    ],
+    "minor_observations": [
+        "320px 페이지 번호 두 줄과 일부 기록 부제 줄임표는 상세 이동을 보존한다.",
+        "긴 한영 혼합 이름은 고정 열의 행 높이를 늘리며 페이지 가로 넘침은 없다.",
+        "홈 개발 링크는 dev 전용이며 운영 홈의 정보량으로 세지 않는다.",
+        "챔피언 아트는 조회마다 달라질 수 있다."
+    ],
+    "validated": [
+        "6페이지 1440/390 양테마 신규 탭 실화면",
+        "6페이지 320 기본 화면",
+        "수동 360/640·768 상세·390 선택 후 둘째팀·Escape 취소",
+        "최종 수동 1440/390/320/640 양테마와 마지막 320/640 교환 대상/취소",
+        "전적 세부9지표/12챔피언 펼침·320 긴 이름",
+        "최종 전적 1440/390/320 양테마 차트 수치·방향·간격",
+        "통계 ArrowRight scrollLeft40·시야 정렬·업적 이동·순위 Escape복귀·320 긴 이름",
+        "마지막 ParticipantBoard 관리 상태320/390/640 양테마 열기→Enter 행선택→완료/보기복귀, POST0"
+    ],
+    "unverified": [
+        "실제 인증 세션별 전체 상태",
+        "서버 쓰기와 네트워크 실패/경합/재전송",
+        "실기기 터치·스크린리더 발화",
+        "전 UI의 대비·성능"
+    ],
+    "evidence_files": ["screenshots-a.json", "browser-evidence-a.json", "source-fingerprints-a.json"],
+    "final_evidence_note": "수동/전적의 최종 보완은 a-final-* 및 마지막 수동 a-final2-*를 근거로 한다. 그 이전 같은 화면 PNG는 최종 source를 대표하지 않는다. ParticipantBoard 마지막 관리 보완은 a-management-* 18개 PNG와 supplemental_review를 근거로 한다.",
+    "questions_skipped": "최종 Priority Issues 0개; 사용자가 문서·코드에 근거한 자율 수정과 재검증을 명시함",
+    "supplemental_review": {
+        "target": "ParticipantBoard 선발 관리 상태",
+        "source": "apps/web/src/lib/components/scrims/ParticipantBoard.svelte",
+        "scope": "마지막 container 보완만 독립 신규 탭에서 검증. 앞선 A 판단을 다른 상태로 확대하지 않음.",
+        "viewports": [320, 390, 640],
+        "themes": ["primary", "dark"],
+        "states": ["선발 관리 열기", "행을 Enter로 선택", "완료로 보기 복귀"],
+        "observed": [
+            "6조건 모두 선택 가능한 11개 행에 이름·희망 포지션·상태가 구분된다.",
+            "320px 관리 영역에서 이름/Riot ID와 포지션/상태가 두 줄로 분리되어 실제 이름과 ID를 읽을 수 있다.",
+            "390/640px은 한 줄 구성과 참가자 이름을 유지하며 상태와 겹치지 않는다.",
+            "행 Enter 선택은 aria-pressed=true와 1/11 표시를 제공하고 관리 행의 프로필 링크는 없다.",
+            "완료 뒤 관리 fieldset은 제거되고 선발 관리 트리거·보기 필터는 각각 한 곳으로 복귀한다.",
+            "신청 11/12명·선발 10/10명은 유지되며 모든 조건에서 문서 가로 넘침이 없다.",
+            "POST 0개. 선발·대기·제외 적용은 실행하지 않았다."
+        ],
+        "judgment": "추가 검증한 관리 상태에서 남은 디자인 문제를 확인하지 못했다.",
+        "priority_issues": [],
+        "screenshots": 18,
+        "evidence_pattern": "a-management-{width}-{theme}-{open|selected|returned}.png",
+        "limitations": "실제 일괄 상태 저장·실패/경합·스크린리더 발화는 추가 검증 범위에 포함하지 않았다."
+    }
+}

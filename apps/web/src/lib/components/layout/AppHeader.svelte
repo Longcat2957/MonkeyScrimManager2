@@ -83,14 +83,20 @@
 {#snippet sessionControl()}
     {#if page.data.authenticated}
         <form method="POST" action={resolve('/auth/logout')}>
-            <Button type="submit" fill="text" size="auto" heightOut="0" heightIn="2">로그아웃</Button>
+            <Button type="submit" fill="text" size="auto" heightOut="0" heightIn="2" injClass="min-h-11"
+                >로그아웃</Button
+            >
         </form>
     {:else}
         <a
             href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + page.url.search)}`}
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
-            class="inline-flex min-h-11 items-center px-3 text-sm font-semibold">로그인</a
+            class={[
+                'inline-flex min-h-11 items-center px-3 text-sm font-semibold',
+                pathname === '/' &&
+                    'rounded-(--radius-form) bg-primary text-text-on-primary hover:bg-primary-700 focus-visible:outline-primary dark:bg-dark dark:text-text-on-dark dark:hover:bg-dark-500 dark:focus-visible:outline-dark'
+            ]}>로그인</a
         >
     {/if}
 {/snippet}

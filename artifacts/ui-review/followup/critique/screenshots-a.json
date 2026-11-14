@@ -1,0 +1,706 @@
+[
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-1440-dark.png",
+        "sha256": "89747a1e6c768e6641aedb3bd5c4805d98f04398a33e8c1d2a6651df7285ad29",
+        "width": 1440,
+        "height": 2658,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-1440-primary.png",
+        "sha256": "5f6b1b143dcd3f4fed331697295270f71694706f1305e1661921a61da88802b3",
+        "width": 1440,
+        "height": 2658,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-320-primary.png",
+        "sha256": "98aee129cd822ac70d08722d54f986132f069540fd2c3727afd5bcb363418096",
+        "width": 320,
+        "height": 4734,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-390-dark.png",
+        "sha256": "d50e6f63df75b366217ef453768c179a6a0834aeb6ca9e6bbed8ec51be14bfe3",
+        "width": 390,
+        "height": 4106,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-390-primary.png",
+        "sha256": "7af0af1ee88a348338abf652029b788d7feaac63d96ecaee191e1b83cbaa70c5",
+        "width": 390,
+        "height": 4106,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-anchor-390.png",
+        "sha256": "b6ac75123874ceb9855ad15d27c337fb59a213bee51b0ebd7fd60d8dfe893318",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-docs-faq-390.png",
+        "sha256": "1e8bc23090339019b6d5bae6a3214f39bc9f0ea5fc0ae6c1dfdaf7e75d33db3c",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-1440-dark.png",
+        "sha256": "4fc299159ba9b2a1723789df6f22807700683c3de3776fca60b2c78fb21e43e8",
+        "width": 1440,
+        "height": 1296,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-1440-primary.png",
+        "sha256": "f3e0d1d4bcfcad7d341054633a2650514fb29a2441187837754de9b3c9a3df5f",
+        "width": 1440,
+        "height": 1296,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-320-dark.png",
+        "sha256": "cb1cee2d1bf4f83151b445587bfacd5d39b974839d0e2ed5486d7ae6a571a657",
+        "width": 320,
+        "height": 1965,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-320-primary.png",
+        "sha256": "396737709befcf7453d05273a6666cffcd1c303d16aa168c74caef091de6c879",
+        "width": 320,
+        "height": 1965,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-390-dark.png",
+        "sha256": "5c9d9c4068d9e36f161090540afb6ba2b8848b58ad75258794aa7ea8e6da23db",
+        "width": 390,
+        "height": 1941,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-390-primary.png",
+        "sha256": "0965ce8eca2084185816a05f3845c2b60168a8d83ea495b1bb8ba69af4578a68",
+        "width": 390,
+        "height": 1941,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-640-dark.png",
+        "sha256": "f3dfef49ee58ffe12761d705809b426b832aeb3b46fb4a8e3a78c0f5c51fb39c",
+        "width": 640,
+        "height": 1316,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-640-primary.png",
+        "sha256": "31be9999268a5963d0785614ba9aaa4de85942ac373eb584158383faa5c4b436",
+        "width": 640,
+        "height": 1316,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-targeting-320-dark.png",
+        "sha256": "5d6b624c5b1ae9b08f757b111238c16e1513f53e39ba9c1255dd011fe771ccf5",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-targeting-320-primary.png",
+        "sha256": "9f9a54948c68eed57344162398adf957f869e746ee689a293ee987175402ef6d",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-targeting-640-dark.png",
+        "sha256": "b8136aa99b074be178fa414a1ad387338ddfef7b116c51c0adbef2773f4f109f",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-manual-targeting-640-primary.png",
+        "sha256": "9c2b188caaeeca327381bc521e4e150b333ca522db2236290c9f0f0aa5cf62c1",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-player-1440-dark.png",
+        "sha256": "25e8bf26def547c6e936a2e420a3ed73c046bdc6eb2591aa20bf05c9ebcfa525",
+        "width": 1440,
+        "height": 2000,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-player-1440-primary.png",
+        "sha256": "2da96fb35c0cb7ffd0faf2c57874ee1dd20aec6430bc5bda89f4e4eb435d12e1",
+        "width": 1440,
+        "height": 2000,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-player-320-dark.png",
+        "sha256": "8e5dce65304dc88b81fc3cbe02246a8e9055bffcc305a485db9fc97e2b79b40a",
+        "width": 320,
+        "height": 3490,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-player-320-primary.png",
+        "sha256": "56cceb0f9d326b5ddae30ed7d2e73752d50457d0f644269d538165728d588e26",
+        "width": 320,
+        "height": 3490,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-player-390-dark.png",
+        "sha256": "670c9e1a3004cd6c3edb3b9a36a6c6472d9590d54a99ecec45cfb13b98ded936",
+        "width": 390,
+        "height": 3492,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final-player-390-primary.png",
+        "sha256": "8d9669829fe288bb50e3ce6a67a0cb4110ce979d7b8b9dd7a60bf9918a9f32b9",
+        "width": 390,
+        "height": 3492,
+        "directly_viewed": true,
+        "phase": "final_manual_player"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-320-dark-cancelled.png",
+        "sha256": "bfc2f4ca3d6099f38ceedcb2c3b67bcc6d9581ffc31464fdf8f2a00e3c4b1a3b",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-320-dark-targeting.png",
+        "sha256": "7016a785e5cc658e6bb6ad0fa70d12cd02cd1fa731a1273f38916c9b4929de55",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-320-primary-cancelled.png",
+        "sha256": "6f6843953102b33dcc316d06cfb820db4612f6b667583065039a410e6b8fd044",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-320-primary-targeting.png",
+        "sha256": "9ef8a45921e0b9fbb17cce7c2e7b82cdbe9c5f822992d5b77be122fe35a548ed",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-640-dark-cancelled.png",
+        "sha256": "04c1d251bdd47ba9e9c7a34681b6209f6b8b5cdbad512586195150b7647b5917",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-640-dark-targeting.png",
+        "sha256": "da328e779471e1ca66719afa6a1e96b94ace0dd3be9ebd5646ec84bb38e4993e",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-640-primary-cancelled.png",
+        "sha256": "4c6b9c1aed49ca8e482870309883515659f0731aa45fd70eabbb6c907edb2d04",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-final2-manual-640-primary-targeting.png",
+        "sha256": "b96c3022d440a8747b4c2b49a213642426e53ad92fb85cd7f33d7964e73df83c",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_manual_targeting"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-home-1440-dark.png",
+        "sha256": "bc56c1b7c961d381b51b4ccdacf200be6ffad60300ef6b95768c449cedf1b621",
+        "width": 1440,
+        "height": 1128,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-home-1440-primary.png",
+        "sha256": "c5aa9c28bd14429c48be2d7fa0eb13b370f9b12015d5fe5655980287b8110293",
+        "width": 1440,
+        "height": 1128,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-home-320-primary.png",
+        "sha256": "420af8239ec02e67c606d0290096aec9666634039b814932b3ae4041bfa27c2d",
+        "width": 320,
+        "height": 2573,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-home-390-dark.png",
+        "sha256": "ca1218196682cc5b3822d8e27e647ada65c915cfad9928bb3c066f627fac7f9a",
+        "width": 390,
+        "height": 2416,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-home-390-primary.png",
+        "sha256": "1f1eb170908c4fb5e3d74a463a74d33826d7302017f72352a02119a4485a4598",
+        "width": 390,
+        "height": 2416,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-1440-dark.png",
+        "sha256": "8a471822d500e590602dfc3b022af3f67c671b271037937694a21ca57493f8f8",
+        "width": 1440,
+        "height": 1296,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-1440-primary.png",
+        "sha256": "dced0448b3d8719fc456b69987beb3da3b3410623a2be128921afe56dd7c2318",
+        "width": 1440,
+        "height": 1296,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-320-primary.png",
+        "sha256": "7adaa2e5d182f09391c0f8bc93589f50b2b5536754c863121354e5660f19dd79",
+        "width": 320,
+        "height": 1965,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-390-dark.png",
+        "sha256": "f741c8090d430fecdd186f1b659de4e9540585c39263a72351f54c1e920caad8",
+        "width": 390,
+        "height": 1941,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-390-primary.png",
+        "sha256": "7be536b8acdee105cbc40865b1d7ed16745eecd27cf9f5b82b9962fbaf957e9b",
+        "width": 390,
+        "height": 1941,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-details-768.png",
+        "sha256": "b931de6507e25d2c174a639d2b96083ae1fac269ed1380018502b92a6b513437",
+        "width": 768,
+        "height": 1569,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-offlane-320-dark.png",
+        "sha256": "a20f8be22c04bb3c83ca8224a09b317203ba6e3e715c44064c8d924123505551",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-offlane-360.png",
+        "sha256": "9f3d228aec6e681603b4280390346f2f0aeb1224bea99be40db27b05671ae931",
+        "width": 360,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-offlane-640.png",
+        "sha256": "36c7f38b414a7bc972b88d877a820c947ce4d1d86c58842c98070cdcd8ece14d",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-manual-selected-second-team-390.png",
+        "sha256": "107bc8779f37f8ccc46cff2dd9d6bacc8b96b7d958c206dfa05f0ee826a331e4",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-1440-dark.png",
+        "sha256": "9aaf15d2a44bfaaf22b77b06379fd5c572d945803f06c915c35f64441ee30d76",
+        "width": 1440,
+        "height": 2000,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-1440-primary.png",
+        "sha256": "d125d158053371aa4bb2c4adfc5b31d5aec57eed7e2eb75c2acbda2360db70c6",
+        "width": 1440,
+        "height": 2000,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-320-primary.png",
+        "sha256": "d575287c90fb1940ae19955f4bbd473ce79b25fd0fd3a5cfbfb6e3e9f3324851",
+        "width": 320,
+        "height": 3470,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-390-dark.png",
+        "sha256": "15360d28b477bfda7b53a344e5ecb470ff26dd2bd2ae578f9ad58b2dfb8466b9",
+        "width": 390,
+        "height": 3472,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-390-primary.png",
+        "sha256": "4aa763aab7994e4c6395bfcc5bf0d72437b9ad1324fc9c411596bae2534e8744",
+        "width": 390,
+        "height": 3472,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-expanded-390.png",
+        "sha256": "479958090bab7dfbfc30ff234153c4bc6f8ddb1cf2cc83de17221110a369de8a",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-player-longname-320-dark.png",
+        "sha256": "7a4841bd3edd7197f446ab9f2ab6ce081a2600d4b1dc9c48e85adbc28c3f8ba5",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-scrim-1440-dark.png",
+        "sha256": "f33968bc3653f5beb8ff469c02eaeaf7438f0bbe7cbf8bf0152c0da1c83c07f6",
+        "width": 1440,
+        "height": 1831,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-scrim-1440-primary.png",
+        "sha256": "288f03d05fb95a1698364addcc84f51de969b121034427b650cad00b96320ac2",
+        "width": 1440,
+        "height": 1831,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-scrim-320-primary.png",
+        "sha256": "8a248e2ce832ae905b177005d25d80849a2063c09a4f0f8334bf96612f23beff",
+        "width": 320,
+        "height": 2048,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-scrim-390-dark.png",
+        "sha256": "83f738d7a19a250660ddc5dbe1e63d7b7aba58adcac858181a82c46b6807d341",
+        "width": 390,
+        "height": 2006,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-scrim-390-primary.png",
+        "sha256": "24893f7ed58dcd7f0fa949d0863ff1f29c3ba7ba9067897d7c657bcab49fa0a2",
+        "width": 390,
+        "height": 2006,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-1440-dark.png",
+        "sha256": "abaa7f7141a022326c7ec1fa351bef230183ac3668aace6eb6f579340290b42e",
+        "width": 1440,
+        "height": 3284,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-1440-primary.png",
+        "sha256": "1def4db8942aeeae27a9b97556c6b30948b7d3e4eb22086bb6878f4ee75332fb",
+        "width": 1440,
+        "height": 3284,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-320-primary.png",
+        "sha256": "b3c663de5f9363c34b7e49a927edfd2bad4961063eda0d6a169f2cd0bef4a7d5",
+        "width": 320,
+        "height": 3670,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-390-dark.png",
+        "sha256": "83a10e2979a0859ac5568e5799a4d96a3a094bd55ba3991e1277e2527f320639",
+        "width": 390,
+        "height": 3548,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-390-primary.png",
+        "sha256": "9fde1c193cc94c58b39b93476ea7023cf61cb57ac3345b621ff8462088ff4bfe",
+        "width": 390,
+        "height": 3548,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-horizontal-keyboard-390.png",
+        "sha256": "7c441187e8c6f23e74796d094103ff0d26b4fb30ee2dc92fbaeeb9013eec61d1",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-longname-320-dark.png",
+        "sha256": "77d30d997f8266398a1f74b4375195cb694730d1429097d3743c6f0973069953",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-next-achievement-390.png",
+        "sha256": "41e2483ede5ee8694135b6e5f8eb58e1424ee998b1f646217243a0b567313174",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-ranking-390.png",
+        "sha256": "5087d60b7da6e820f6f5e5bb3beae2a63d848b8edf60f42b65194bcf973e95ca",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-stats-vision-sort-390.png",
+        "sha256": "ac4c0c933926296c33349db3c05ac4b9414d4b1867e03bbe248acf067cd5d233",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "initial_and_unchanged_routes"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-320-dark-open.png",
+        "sha256": "bdc2041ab1be02d52115e06d8fbd7d0bed12129fc0ee77b8a6aef807303d764c",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-320-dark-returned.png",
+        "sha256": "f2aaaecb6b4cdd5df134473fbddfe0b50e6bca8b358f760f1779c726318ec366",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-320-dark-selected.png",
+        "sha256": "f33dbec55b1321ef2880a7257104c38c240207711c89862cadaa0e7fd3536e2d",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-320-primary-open.png",
+        "sha256": "7beb4480d58a809f54618ed23998cd2b0b878c9471fab37ffcaa8aad822a76c2",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-320-primary-returned.png",
+        "sha256": "6c27def9b4ed2d16797d8b54432b0b12df30635fc3fee5f2e6a79cbee1c07b61",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-320-primary-selected.png",
+        "sha256": "40f2b8122d2b19d7c8afe2808ef107f8c712de84757c19c15f48f8345f492fc1",
+        "width": 320,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-390-dark-open.png",
+        "sha256": "fdbce8f0012c7ab8c7f9529a3bfbcdfabf4080485f77fdbc0f8ca0b740467b0a",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-390-dark-returned.png",
+        "sha256": "bdc7307bc4d907ec449190bc6b6d7bbc888baf24cc3645ada88b523e00e6fb45",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-390-dark-selected.png",
+        "sha256": "9f745878c574fec3cd2427f7e7b06b323c4efc7dc7746f4038815d45381fd9f6",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-390-primary-open.png",
+        "sha256": "424d611184f4e1b5270709a1463386d731a3bdd3338c16923d1c8ef54e75796d",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-390-primary-returned.png",
+        "sha256": "f0d648e003b33589ed5c69b7c04d9d0940ec29df7c9a5247753c337f85135125",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-390-primary-selected.png",
+        "sha256": "acd03dc39f26ca35d63e773c486f1ae37d57dc3b18e3f680f84983fef753dc11",
+        "width": 390,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-640-dark-open.png",
+        "sha256": "aac64573c70d6030f8b1a9e4cf3e6eed1ad4621d5b9885b057655a748ec9b0b0",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-640-dark-returned.png",
+        "sha256": "904a37ba263b91176d67febba75797b08d829ea2b26a6891218e97d0616d20d7",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-640-dark-selected.png",
+        "sha256": "9cb736fa36da8d6c6c98350e9b5bac4b9663839a89146b69f2552870e03b746b",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-640-primary-open.png",
+        "sha256": "b5be0e089ede3d2b491f91cf015cf326f58b7ea169f7b6490c8338db7ad8669c",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-640-primary-returned.png",
+        "sha256": "1a4eaa8797730d4e7a09dbbcf547fb09d2e8227ab76339f71f20c708bfd207ff",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    },
+    {
+        "file": "artifacts/ui-review/followup/critique/a-management-640-primary-selected.png",
+        "sha256": "ab986c6967211099454585827ee35756561bb000f2cce9a470c5f94987899b13",
+        "width": 640,
+        "height": 844,
+        "directly_viewed": true,
+        "phase": "final_participant_management"
+    }
+]

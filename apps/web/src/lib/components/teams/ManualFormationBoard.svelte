@@ -37,6 +37,7 @@
     let pending = $state(0);
     let busy = $state(false);
     let details = $state(false);
+    let selectionHeight = $state(0);
     let queue: { participantId: string; slot: SlotKey | null }[] = [];
     let processing = false;
 
@@ -130,7 +131,8 @@
 <section
     aria-labelledby="manual-formation"
     aria-busy={pending > 0 || busy}
-    class="w-full min-w-0 overflow-hidden rounded-(--radius-box) border border-border bg-border"
+    class="manual-board w-full min-w-0 overflow-clip rounded-(--radius-box) border border-border bg-border"
+    style:--selection-height={`${selectedId ? selectionHeight : 0}px`}
 >
     <!-- 도구 줄 -->
     <div
@@ -190,19 +192,29 @@
     </div>
 
     {#if editable && (selectedId || confirmBlocked)}
-        <!-- 선택 상태와 확정 조건을 같은 자리에서 한 줄로 알린다. -->
+        <!-- 선택 상태와 확정 조건을 같은 자리에서 알리고 선택 안내는 스크롤 중에도 유지한다. -->
         <p
-            class="flex min-h-10 flex-wrap items-center gap-2 bg-bg-surface px-4 text-sm dark:bg-bg-surface-dark"
+            bind:clientHeight={selectionHeight}
+            class={[
+                'flex min-h-10 items-center gap-2 bg-bg-surface px-4 py-1 text-sm dark:bg-bg-surface-dark',
+                selectedId && 'sticky top-(--app-header-height) z-20 border-b border-border'
+            ]}
             aria-live="polite"
         >
             {#if selectedId}
-                <span><strong>{selectedName}</strong> 선택됨 · 놓을 자리를 누르거나 끌어 놓으세요</span>
+                <span class="min-w-0 flex-1">
+                    <span class="flex min-w-0 items-baseline gap-1">
+                        <strong class="truncate">{selectedName}</strong>
+                        <span class="shrink-0">선택됨</span>
+                    </span>
+                    <span class="text-xs text-text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
+                </span>
                 <Button
                     fill="text"
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="min-h-11 px-2 text-sm"
+                    injClass="min-h-11 shrink-0 px-2 text-sm"
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >
             {:else}
@@ -280,3 +292,9 @@
         {/if}
     </div>
 </section>
+
+<style>
+    .manual-board :global(button) {
+        scroll-margin-block-start: var(--selection-height);
+    }
+</style>

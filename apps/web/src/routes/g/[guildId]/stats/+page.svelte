@@ -189,11 +189,17 @@
 
             <section aria-labelledby="champion-stats" class="flex flex-col gap-3">
                 <h2 id="champion-stats" class="text-lg font-semibold">챔피언</h2>
+                <!-- svelte-ignore a11y_no_noninteractive_tabindex (좁은 표의 가로 스크롤에 키보드 진입점을 제공한다.) -->
                 <div
-                    class="overflow-hidden rounded-(--radius-box) border border-border bg-bg-surface dark:bg-bg-surface-dark"
+                    role="region"
+                    aria-labelledby="champion-stats-caption"
+                    tabindex="0"
+                    class="relative overflow-x-auto rounded-(--radius-box) border border-border bg-bg-surface dark:bg-bg-surface-dark"
                 >
-                    <table class="w-full text-sm">
-                        <caption class="sr-only">챔피언별 픽·승률, 픽 많은 순</caption>
+                    <table class="w-full min-w-80 text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+                        <caption id="champion-stats-caption" class="sr-only"
+                            >챔피언별 픽·승률, 픽 많은 순</caption
+                        >
                         <thead class="text-xs opacity-60">
                             <tr class="border-b border-border">
                                 <th scope="col" class="px-4 py-2 text-left font-medium">챔피언</th>

@@ -211,29 +211,69 @@
         </div>
         {#if changing}<p role="status" class="text-sm text-text-muted">전적을 불러오는 중</p>{/if}
 
+        <!-- 먼저 지표와 포지션별 실력을 확인하고, 챔피언·개별 기록과 보조 분석을 이어 읽는다. -->
         <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div class="flex min-w-0 flex-col gap-8">
-                <section aria-labelledby="summary" class="flex flex-col gap-3">
-                    <h2 id="summary" class="text-lg font-semibold">핵심 지표</h2>
-                    <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
-                        {#each primaryTiles as [key, label, value, note] (key)}
-                            <Grid><StatTile {label} {value} {note} /></Grid>
-                        {/each}
-                    </Grids>
-                    <AccessibleAccordion
-                        items={[{ title: `세부 지표 ${secondaryTiles.length}개` }]}
-                        border="solid"
-                    >
-                        {#snippet children()}
-                            <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
-                                {#each secondaryTiles as [key, label, value, note] (key)}
-                                    <Grid><StatTile {label} {value} {note} /></Grid>
-                                {/each}
-                            </Grids>
-                        {/snippet}
-                    </AccessibleAccordion>
-                </section>
+            <section aria-labelledby="summary" class="flex flex-col gap-3">
+                <h2 id="summary" class="text-lg font-semibold">핵심 지표</h2>
+                <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
+                    {#each primaryTiles as [key, label, value, note] (key)}
+                        <Grid><StatTile {label} {value} {note} /></Grid>
+                    {/each}
+                </Grids>
+                <AccessibleAccordion
+                    items={[{ title: `세부 지표 ${secondaryTiles.length}개` }]}
+                    border="solid"
+                >
+                    {#snippet children()}
+                        <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
+                            {#each secondaryTiles as [key, label, value, note] (key)}
+                                <Grid><StatTile {label} {value} {note} /></Grid>
+                            {/each}
+                        </Grids>
+                    {/snippet}
+                </AccessibleAccordion>
+            </section>
 
+            <section aria-labelledby="mmr" class="flex min-w-0 flex-col gap-3">
+                <h2 id="mmr" class="text-lg font-semibold">포지션별 MMR</h2>
+                <table
+                    class="w-full overflow-hidden rounded-(--radius-box) border border-border bg-bg-surface text-sm dark:bg-bg-surface-dark"
+                >
+                    <caption class="sr-only">포지션별 MMR</caption>
+                    <thead class="text-xs opacity-60">
+                        <tr class="border-b border-border">
+                            <th scope="col" class="px-3 py-2 text-left font-medium">포지션</th>
+                            <th scope="col" class="px-3 py-2 text-right font-medium">MMR</th>
+                            <th scope="col" class="px-3 py-2 text-right font-medium">게임</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each data.mmr as row (row.position)}
+                            <tr class="border-b border-border last:border-b-0">
+                                <th scope="row" class="px-3 py-2 text-left font-medium"
+                                    ><span class="flex items-center gap-2"
+                                        ><PositionIcon position={row.position} size="sm" />{laneText(
+                                            row.position
+                                        )}</span
+                                    ></th
+                                >
+                                <td class="px-3 py-2 text-right font-semibold tabular-nums"
+                                    >{row.rating.toLocaleString('ko-KR')}</td
+                                >
+                                <td class="px-3 py-2 text-right tabular-nums opacity-70">{row.games}</td>
+                            </tr>
+                        {:else}
+                            <tr
+                                ><td colspan="3" class="px-3 py-4 text-center opacity-60"
+                                    >아직 반영된 MMR이 없어요</td
+                                ></tr
+                            >
+                        {/each}
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="flex min-w-0 flex-col gap-8">
                 <section aria-labelledby="champions" class="flex flex-col gap-3">
                     <h2 id="champions" class="text-lg font-semibold">챔피언별 성적</h2>
                     <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -354,44 +394,7 @@
                         <RadarChart title="서버 내 상위 % 기준 플레이 성향" axes={radar} />
                     </section>
                 {/if}
-                <section aria-labelledby="mmr" class="flex flex-col gap-3">
-                    <h2 id="mmr" class="text-lg font-semibold">포지션별 MMR</h2>
-                    <table
-                        class="w-full overflow-hidden rounded-(--radius-box) border border-border bg-bg-surface text-sm dark:bg-bg-surface-dark"
-                    >
-                        <caption class="sr-only">포지션별 MMR</caption>
-                        <thead class="text-xs opacity-60">
-                            <tr class="border-b border-border">
-                                <th scope="col" class="px-3 py-2 text-left font-medium">포지션</th>
-                                <th scope="col" class="px-3 py-2 text-right font-medium">MMR</th>
-                                <th scope="col" class="px-3 py-2 text-right font-medium">게임</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {#each data.mmr as row (row.position)}
-                                <tr class="border-b border-border last:border-b-0">
-                                    <th scope="row" class="px-3 py-2 text-left font-medium"
-                                        ><span class="flex items-center gap-2"
-                                            ><PositionIcon position={row.position} size="sm" />{laneText(
-                                                row.position
-                                            )}</span
-                                        ></th
-                                    >
-                                    <td class="px-3 py-2 text-right font-semibold tabular-nums"
-                                        >{row.rating.toLocaleString('ko-KR')}</td
-                                    >
-                                    <td class="px-3 py-2 text-right tabular-nums opacity-70">{row.games}</td>
-                                </tr>
-                            {:else}
-                                <tr
-                                    ><td colspan="3" class="px-3 py-4 text-center opacity-60"
-                                        >아직 반영된 MMR이 없어요</td
-                                    ></tr
-                                >
-                            {/each}
-                        </tbody>
-                    </table>
-                </section>
+
                 <DuoList title="베스트 듀오" records={data.duos.best} {guildId} tone="success" />
                 <DuoList title="워스트 듀오" records={data.duos.worst} {guildId} tone="error" />
             </aside>

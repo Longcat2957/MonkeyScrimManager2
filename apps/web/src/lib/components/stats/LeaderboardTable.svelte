@@ -61,6 +61,13 @@
         }
         sortMessage = `${COLUMNS.find((column) => column.key === key)?.label} ${descending ? '높은' : '낮은'} 순으로 정렬했어요`;
     }
+
+    // 키보드로 도달한 열 머리가 고정 이름 열이나 표의 오른쪽 경계에 가려지지 않게 한다.
+    function revealColumn(event: FocusEvent) {
+        if (event.target instanceof HTMLButtonElement) {
+            event.target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+        }
+    }
 </script>
 
 <p id={`${id}-hint`} class="text-xs text-text-muted lg:hidden">
@@ -72,11 +79,11 @@
     aria-labelledby={id}
     aria-describedby={`${id}-hint`}
     tabindex="0"
-    class="relative overflow-x-auto rounded-(--radius-box) border border-border bg-bg-surface dark:bg-bg-surface-dark"
+    class="relative overflow-x-auto scroll-ps-[9.5rem] scroll-pe-2 rounded-(--radius-box) border border-border bg-bg-surface sm:scroll-ps-[14.5rem] dark:bg-bg-surface-dark"
 >
     <table class="w-full min-w-[44rem] text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
         <caption {id} class="sr-only">사용자별 지표</caption>
-        <thead class="text-xs">
+        <thead class="text-xs" onfocusin={revealColumn}>
             <tr class="border-b border-border">
                 <th scope="col" class="w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium text-text-muted"
                     >순위</th
@@ -129,7 +136,7 @@
                     >
                     <th
                         scope="row"
-                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2.5 text-left font-normal dark:bg-bg-surface-dark"
+                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2 text-left font-normal dark:bg-bg-surface-dark"
                     >
                         <div class="flex min-w-0 items-center gap-2">
                             <a
@@ -137,10 +144,12 @@
                                     guildId,
                                     userId: row.userId
                                 })}
-                                class="flex min-w-0 items-center gap-3 hover:underline"
+                                class="flex min-h-11 min-w-0 flex-1 items-center gap-2 hover:underline"
                             >
-                                <PlayerFace name={row.displayName} imageUrl={row.iconUrl} />
-                                <span class="truncate font-semibold">{row.displayName}</span>
+                                <PlayerFace name={row.displayName} imageUrl={row.iconUrl} size="sm" />
+                                <span class="min-w-0 font-semibold leading-5 whitespace-normal wrap-anywhere"
+                                    >{row.displayName}</span
+                                >
                             </a>
                             {#if row.badges.length}
                                 <ul aria-label="1위 업적" class="hidden shrink-0 gap-1 sm:flex">

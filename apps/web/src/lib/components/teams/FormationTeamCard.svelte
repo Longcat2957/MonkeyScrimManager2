@@ -75,7 +75,9 @@
                 aria-label={`${team.name} ${laneText(lane)} 자리`}
                 class={[
                     'grid min-h-0 items-stretch gap-2 border p-1.5 transition',
-                    interactive ? 'grid-cols-[3rem_minmax(0,1fr)_2.75rem]' : 'grid-cols-[3rem_minmax(0,1fr)]',
+                    interactive && !targeting
+                        ? 'grid-cols-[3rem_minmax(0,1fr)_2.75rem]'
+                        : 'grid-cols-[3rem_minmax(0,1fr)]',
                     drag.over === slot
                         ? 'rounded-(--radius-form) border-primary/70 bg-primary/10 ring-1 ring-primary/40 dark:border-dark/70 dark:bg-dark/15'
                         : player
@@ -98,7 +100,7 @@
                     <PlayerFace name={item.displayName} imageUrl={item.iconUrl} size="md" />
                     <span class="flex min-w-0 flex-1 flex-col text-left">
                         <span class="truncate text-sm font-semibold">{item.displayName}</span>
-                        <span class="truncate text-[0.6875rem] text-text-muted tabular-nums dark:text-dark">
+                        <span class="text-[0.6875rem] leading-4 text-text-muted tabular-nums dark:text-dark">
                             MMR {formatMmr(item.mmr[lane])}
                             {#if offLane}<span class="text-warning"> · 희망 외</span>{/if}
                         </span>
@@ -153,15 +155,15 @@
                     >
                 {/if}
 
-                {#if interactive}
+                {#if interactive && !targeting}
                     <span class="flex items-center justify-center">
-                        {#if player && !targeting}
+                        {#if player}
                             <Button
                                 fill="text"
                                 size="auto"
                                 heightOut="0"
                                 heightIn="2"
-                                injClass="h-full w-full"
+                                injClass="min-h-11 min-w-11 h-full w-full"
                                 onclick={() => onremove(player.participantId)}
                             >
                                 <span aria-hidden="true" class="text-xl leading-none opacity-60">×</span>

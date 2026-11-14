@@ -1,0 +1,2281 @@
+{
+    "issue": "DQ02",
+    "date": "2026-11-14",
+    "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+    "status": "passed",
+    "sourceFiles": [
+        "apps/web/src/lib/components/stats/LeaderboardTable.svelte",
+        "apps/web/src/routes/g/[guildId]/stats/+page.svelte"
+    ],
+    "summary": {
+        "conditions": 8,
+        "sortActions": 112,
+        "ordinaryNameCases": 24,
+        "longSharedPrefixCases": 32,
+        "nameClippingCases": 0,
+        "keyboardProfileNavigations": 3,
+        "touchProfileNavigations": 3,
+        "pageErrors": 0,
+        "writeRequests": 0
+    },
+    "conditions": [
+        {
+            "theme": "primary",
+            "viewport": {
+                "width": 320,
+                "height": 844
+            },
+            "beforeImage": "before/stats-primary-320.png",
+            "afterImage": "after/stats-primary-320.png",
+            "stressImage": "after/names-primary-320.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 72,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 3
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 40,
+                "stickyAfterScroll": {
+                    "x": 1,
+                    "position": "sticky",
+                    "scroll": 436,
+                    "client": 268,
+                    "total": 704
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 268,
+                "scrollWidth": 320,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 40,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "beforeImage": "before/stats-primary-390.png",
+            "afterImage": "after/stats-primary-390.png",
+            "stressImage": "after/names-primary-390.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 72,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 3
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 40,
+                "stickyAfterScroll": {
+                    "x": 1,
+                    "position": "sticky",
+                    "scroll": 366,
+                    "client": 338,
+                    "total": 704
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 338,
+                "scrollWidth": 338,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 0,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "primary",
+            "viewport": {
+                "width": 768,
+                "height": 1000
+            },
+            "beforeImage": "before/stats-primary-768.png",
+            "afterImage": "after/stats-primary-768.png",
+            "stressImage": "after/names-primary-768.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 164,
+                    "scrollWidth": 164,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 2
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 40,
+                "stickyAfterScroll": {
+                    "x": 1,
+                    "position": "sticky",
+                    "scroll": 138,
+                    "client": 636,
+                    "total": 774
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 636,
+                "scrollWidth": 636,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 0,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "beforeImage": "before/stats-primary-1440.png",
+            "afterImage": "after/stats-primary-1440.png",
+            "stressImage": "after/names-primary-1440.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 164,
+                    "scrollWidth": 164,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 2
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 0,
+                "stickyAfterScroll": {
+                    "x": 49,
+                    "position": "sticky",
+                    "scroll": 0,
+                    "client": 1260,
+                    "total": 1260
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 1260,
+                "scrollWidth": 1260,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 0,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "dark",
+            "viewport": {
+                "width": 320,
+                "height": 844
+            },
+            "beforeImage": "before/stats-dark-320.png",
+            "afterImage": "after/stats-dark-320.png",
+            "stressImage": "after/names-dark-320.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 72,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 3
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 40,
+                "stickyAfterScroll": {
+                    "x": 1,
+                    "position": "sticky",
+                    "scroll": 436,
+                    "client": 268,
+                    "total": 704
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 268,
+                "scrollWidth": 320,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 40,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "beforeImage": "before/stats-dark-390.png",
+            "afterImage": "after/stats-dark-390.png",
+            "stressImage": "after/names-dark-390.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 72,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 72,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 3
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 84,
+                    "scrollWidth": 84,
+                    "height": 60,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 60,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 3
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 40,
+                "stickyAfterScroll": {
+                    "x": 1,
+                    "position": "sticky",
+                    "scroll": 366,
+                    "client": 338,
+                    "total": 704
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 338,
+                "scrollWidth": 338,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 0,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "dark",
+            "viewport": {
+                "width": 768,
+                "height": 1000
+            },
+            "beforeImage": "before/stats-dark-768.png",
+            "afterImage": "after/stats-dark-768.png",
+            "stressImage": "after/names-dark-768.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 164,
+                    "scrollWidth": 164,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 2
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 40,
+                "stickyAfterScroll": {
+                    "x": 1,
+                    "position": "sticky",
+                    "scroll": 138,
+                    "client": 636,
+                    "total": 774
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 636,
+                "scrollWidth": 636,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 0,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        },
+        {
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "beforeImage": "before/stats-dark-1440.png",
+            "afterImage": "after/stats-dark-1440.png",
+            "stressImage": "after/names-dark-1440.png",
+            "ordinaryNameComparisons": [
+                {
+                    "text": "원딜은억울해",
+                    "before": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "원딜은억울해",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u04",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "와드박는기계",
+                    "before": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "와드박는기계",
+                        "clientWidth": 77,
+                        "scrollWidth": 77,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u08",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                },
+                {
+                    "text": "서폿장인 몽키",
+                    "before": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20
+                    },
+                    "after": {
+                        "text": "서폿장인 몽키",
+                        "clientWidth": 81,
+                        "scrollWidth": 81,
+                        "height": 20,
+                        "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "whiteSpace": "normal",
+                        "textOverflow": "clip",
+                        "linkHeight": 44,
+                        "href": "/g/devGuild001/players/u05",
+                        "suffixInside": true,
+                        "lines": 1
+                    }
+                }
+            ],
+            "all20NormalNamesFullyVisible": true,
+            "minimumProfileLinkHeight": 44,
+            "longSharedPrefixNames": [
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_정글",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g40",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "아주아주긴닉네임을쓰는사람_서포터",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/u04",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Alpha",
+                    "clientWidth": 132,
+                    "scrollWidth": 132,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g27",
+                    "suffixInside": true,
+                    "lines": 2
+                },
+                {
+                    "text": "VeryLongSharedPrefixPlayer_Beta",
+                    "clientWidth": 164,
+                    "scrollWidth": 164,
+                    "height": 40,
+                    "font": "600 14px / 20px \"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                    "fontSize": "14px",
+                    "lineHeight": "20px",
+                    "whiteSpace": "normal",
+                    "textOverflow": "clip",
+                    "linkHeight": 44,
+                    "href": "/g/devGuild001/players/g8",
+                    "suffixInside": true,
+                    "lines": 2
+                }
+            ],
+            "leaderboard": {
+                "sorts": [
+                    {
+                        "metric": "KDA",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "KDA",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "승률",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "게임",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "킬 관여",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "CS/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "피해/분",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "descending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    },
+                    {
+                        "metric": "시야",
+                        "direction": "ascending",
+                        "numericOrderPass": true,
+                        "activeAriaSortCount": 1,
+                        "rowsChecked": 20
+                    }
+                ],
+                "keyboardScrollLeft": 0,
+                "stickyAfterScroll": {
+                    "x": 49,
+                    "position": "sticky",
+                    "scroll": 0,
+                    "client": 1260,
+                    "total": 1260
+                },
+                "sevenMetricsPreserved": true
+            },
+            "champion": {
+                "visibleClientWidth": 1260,
+                "scrollWidth": 1260,
+                "columns": 4,
+                "focusableTabIndex": 0,
+                "keyboardScrollLeft": 0,
+                "all45NumericFragmentsSingleLine": true,
+                "numericFragmentCount": 45,
+                "firstRowNumbers": ["111", "42%", "2.19"]
+            },
+            "pageHorizontalOverflow": false,
+            "duplicateProfileLinks": [],
+            "duplicateIds": []
+        }
+    ],
+    "profileAndGestureValidation": {
+        "keyboard": [
+            {
+                "name": "원딜은억울해",
+                "visible": true,
+                "outline": "oklch(0.208 0.042 265.755) solid 2px",
+                "href": "/g/devGuild001/players/u04",
+                "height": 44,
+                "duplicates": 1,
+                "url": "http://127.0.0.1:5173/g/devGuild001/players/u04",
+                "heading": ["원딜은억울해"]
+            },
+            {
+                "name": "와드박는기계",
+                "visible": true,
+                "outline": "oklch(0.208 0.042 265.755) solid 2px",
+                "href": "/g/devGuild001/players/u08",
+                "height": 44,
+                "duplicates": 1,
+                "url": "http://127.0.0.1:5173/g/devGuild001/players/u08",
+                "heading": ["와드박는기계"]
+            },
+            {
+                "name": "서폿장인 몽키",
+                "visible": true,
+                "outline": "oklch(0.208 0.042 265.755) solid 2px",
+                "href": "/g/devGuild001/players/u05",
+                "height": 44,
+                "duplicates": 1,
+                "url": "http://127.0.0.1:5173/g/devGuild001/players/u05",
+                "heading": ["서폿장인 몽키"]
+            }
+        ],
+        "touch": [
+            {
+                "name": "원딜은억울해",
+                "height": 44,
+                "duplicates": 1,
+                "url": "http://127.0.0.1:5173/g/devGuild001/players/u04",
+                "heading": ["원딜은억울해"]
+            },
+            {
+                "name": "와드박는기계",
+                "height": 44,
+                "duplicates": 1,
+                "url": "http://127.0.0.1:5173/g/devGuild001/players/u08",
+                "heading": ["와드박는기계"]
+            },
+            {
+                "name": "서폿장인 몽키",
+                "height": 44,
+                "duplicates": 1,
+                "url": "http://127.0.0.1:5173/g/devGuild001/players/u05",
+                "heading": ["서폿장인 몽키"]
+            }
+        ],
+        "gestures": {
+            "horizontal": {
+                "scrollLeft": 219,
+                "pageBefore": 713,
+                "pageAfter": 713
+            },
+            "vertical": {
+                "before": 713,
+                "after": 865
+            }
+        }
+    },
+    "inputMethod": "Headless Chromium native keyboard; Chromium CDP touchStart/move/end and touchscreen.tap, not a physical device",
+    "stressMethod": "브라우저 DOM에서 네 표시 이름만 긴 동일 접두어 문자열로 치환했다. CSS와 API·사용자 데이터는 바꾸지 않았다.",
+    "errors": [],
+    "writeRequests": [],
+    "svelteCheck": {
+        "command": "pnpm --filter @msm2/web check",
+        "errors": 0,
+        "warnings": 0
+    },
+    "limits": [
+        "Headless Chromium native keyboard/CDP touch emulation; no physical iOS/Android device claim.",
+        "Synthetic long names alter rendered text only in an isolated test tab; no API or persisted data mutation.",
+        "RankingBoard bounded InfiniteScroll list unchanged; P3 bottom partial row is outside this targeted correction."
+    ]
+}

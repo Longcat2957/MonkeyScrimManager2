@@ -63,12 +63,18 @@
                 y={ly}
                 text-anchor="middle"
                 dominant-baseline="middle"
-                class="fill-text-primary text-[13px] font-semibold dark:fill-text-dark">{axis.label}</text
+                class="fill-text-primary text-[13px] font-semibold dark:fill-text-dark"
+                >{axis.label}<tspan
+                    x={lx}
+                    dy="1.4em"
+                    class="fill-text-primary font-normal dark:fill-text-dark">{axis.detail}</tspan
+                ></text
             >
         {/each}
     </svg>
-    <figcaption class="sr-only">
-        <ul>
+    <figcaption class="text-center text-xs leading-5 text-text-muted">
+        바깥쪽일수록 서버 내 순위가 높아요.
+        <ul class="sr-only">
             {#each axes as axis (axis.label)}<li>{axis.label} {axis.detail}</li>{/each}
         </ul>
     </figcaption>

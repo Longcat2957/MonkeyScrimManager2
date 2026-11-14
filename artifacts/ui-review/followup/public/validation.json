@@ -1,0 +1,2671 @@
+{
+    "issues": ["DQ03", "DQ06", "A-PUB-03"],
+    "date": "2026-11-14",
+    "status": "passed",
+    "scope": ["/", "/docs"],
+    "sourceFiles": ["apps/web/src/routes/+page.svelte", "apps/web/src/routes/docs/+page.svelte"],
+    "parentOwnedSharedSource": "apps/web/src/lib/components/layout/AppHeader.svelte",
+    "summary": {
+        "pages": 2,
+        "beforeImagesActuallyRead": 16,
+        "afterDefaultConditions": 16,
+        "loginKeyboardFocusConditions": 8,
+        "actualSessionConditions": 12,
+        "afterImagesActuallyRead": 36,
+        "docsKeyboardAnchorNavigations": 48,
+        "faqKeyboardExpandCollapseConditions": 4,
+        "devShortcutsPreserved": 14,
+        "pageErrors": 0,
+        "actualSessionWriteRequests": 0,
+        "allFixturesCleaned": true
+    },
+    "conditions": [
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "primary",
+            "size": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/home-desktop.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "36px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "primary",
+            "size": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/home-mobile.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "30px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "primary",
+            "size": "tablet",
+            "width": 768,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/home-tablet.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "36px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "primary",
+            "size": "narrow",
+            "width": 320,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/home-narrow.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "30px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "dark",
+            "size": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/home-dark-desktop.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "36px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "dark",
+            "size": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/home-dark-mobile.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "30px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "dark",
+            "size": "tablet",
+            "width": 768,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/home-dark-tablet.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "36px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "home",
+            "path": "/",
+            "mode": "dark",
+            "size": "narrow",
+            "width": 320,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/home-dark-narrow.png",
+            "h1": ["디스코드 내전, 모집부터 전적까지"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "디스코드 내전, 모집부터 전적까지",
+                    "size": "30px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전이 있는 서버에서 시작해요",
+                    "size": "20px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "내전은 이렇게 이어져요",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "개발 바로가기",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집·참가",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀·대진 운영",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "기록·통계",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "계정·관리",
+                    "size": "16px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [],
+            "stepDescription": [
+                {
+                    "text": "Riot 계정과 희망 포지션으로 참가 인원을 모아요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "운영자가 직접 나누거나 경매로 팀을 꾸려요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                },
+                {
+                    "text": "리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                    "size": "14px",
+                    "lineHeight": "20px"
+                }
+            ],
+            "anchors": []
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "primary",
+            "size": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/docs-desktop.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 44
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 92,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 573,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "primary",
+            "size": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/docs-mobile.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 44
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 369,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "primary",
+            "size": "tablet",
+            "width": 768,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/docs-tablet.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 44
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 573,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "primary",
+            "size": "narrow",
+            "width": 320,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/docs-narrow.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "primary",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 56
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 313,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "dark",
+            "size": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/docs-dark-desktop.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 44
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 92,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 573,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "dark",
+            "size": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/docs-dark-mobile.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 44
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 369,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "dark",
+            "size": "tablet",
+            "width": 768,
+            "height": 1000,
+            "image": "artifacts/ui-review/followup/public/after/docs-dark-tablet.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 44
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 573,
+                    "urlHash": "#faq"
+                }
+            ]
+        },
+        {
+            "name": "docs",
+            "path": "/docs",
+            "mode": "dark",
+            "size": "narrow",
+            "width": 320,
+            "height": 844,
+            "image": "artifacts/ui-review/followup/public/after/docs-dark-narrow.png",
+            "h1": ["이용 안내"],
+            "overflow": false,
+            "duplicateIds": [],
+            "theme": "dark",
+            "headings": [
+                {
+                    "tag": "H1",
+                    "text": "이용 안내",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "14px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "참가·기록",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "모집 참여",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "ROFL 업로드",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "운영하기",
+                    "size": "24px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "팀 편성",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "수동 편성",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H4",
+                    "text": "경매",
+                    "size": "16px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "대진",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H3",
+                    "text": "되돌리기·중도 종료",
+                    "size": "18px"
+                },
+                {
+                    "tag": "H2",
+                    "text": "자주 묻는 질문",
+                    "size": "24px"
+                }
+            ],
+            "loginControls": 1,
+            "docsDestinations": 1,
+            "anchorLinks": [
+                {
+                    "href": "#recruit",
+                    "height": 44
+                },
+                {
+                    "href": "#rofl",
+                    "height": 44
+                },
+                {
+                    "href": "#teams",
+                    "height": 44
+                },
+                {
+                    "href": "#bracket",
+                    "height": 44
+                },
+                {
+                    "href": "#operations",
+                    "height": 56
+                },
+                {
+                    "href": "#faq",
+                    "height": 44
+                }
+            ],
+            "stepDescription": [],
+            "anchors": [
+                {
+                    "href": "#recruit",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#recruit"
+                },
+                {
+                    "href": "#rofl",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#rofl"
+                },
+                {
+                    "href": "#teams",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#teams"
+                },
+                {
+                    "href": "#bracket",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#bracket"
+                },
+                {
+                    "href": "#operations",
+                    "focused": true,
+                    "visibleTop": 80,
+                    "urlHash": "#operations"
+                },
+                {
+                    "href": "#faq",
+                    "focused": true,
+                    "visibleTop": 313,
+                    "urlHash": "#faq"
+                }
+            ]
+        }
+    ],
+    "loginKeyboardFocus": [
+        {
+            "mode": "primary",
+            "size": "desktop",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 4,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-primary-desktop.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 7.24857664979112,
+            "outlineContrast": 7.24857664979112,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "primary",
+            "size": "mobile",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 3,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-primary-mobile.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 7.24857664979112,
+            "outlineContrast": 7.24857664979112,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "primary",
+            "size": "tablet",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 3,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-primary-tablet.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 7.24857664979112,
+            "outlineContrast": 7.24857664979112,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "primary",
+            "size": "narrow",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 3,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-primary-narrow.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 7.24857664979112,
+            "outlineContrast": 7.24857664979112,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "dark",
+            "size": "desktop",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 4,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-dark-desktop.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 13.56011544268685,
+            "outlineContrast": 13.56011544268685,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "dark",
+            "size": "mobile",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 3,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-dark-mobile.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 13.56011544268685,
+            "outlineContrast": 13.56011544268685,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "dark",
+            "size": "tablet",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 3,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-dark-tablet.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 13.56011544268685,
+            "outlineContrast": 13.56011544268685,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        },
+        {
+            "mode": "dark",
+            "size": "narrow",
+            "width": 62.640625,
+            "height": 44,
+            "tabCount": 3,
+            "image": "artifacts/ui-review/followup/public/after/home-login-focus-dark-narrow.png",
+            "focusedLogin": true,
+            "focusVisible": true,
+            "textContrast": 13.56011544268685,
+            "outlineContrast": 13.56011544268685,
+            "outlineWidth": "2px",
+            "href": "/auth/discord?returnTo=%2F",
+            "loginControls": 1,
+            "publicViewingGuidance": true
+        }
+    ],
+    "faqAndUrlTextInteractions": [
+        {
+            "mode": "primary",
+            "size": "desktop",
+            "expanded": "true",
+            "answerVisible": true,
+            "collapsed": true,
+            "focusPreserved": true,
+            "devUrlLabels": [
+                {
+                    "href": "/g/devGuild001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim007/manual",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim002/auction",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim008/bracket",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim005/result",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches/devMatch001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/players/devUser001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/stats",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/me?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/backoffice?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/admin",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/components",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/error",
+                    "exactUrl": true
+                }
+            ]
+        },
+        {
+            "mode": "primary",
+            "size": "mobile",
+            "expanded": "true",
+            "answerVisible": true,
+            "collapsed": true,
+            "focusPreserved": true,
+            "devUrlLabels": [
+                {
+                    "href": "/g/devGuild001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim007/manual",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim002/auction",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim008/bracket",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim005/result",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches/devMatch001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/players/devUser001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/stats",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/me?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/backoffice?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/admin",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/components",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/error",
+                    "exactUrl": true
+                }
+            ]
+        },
+        {
+            "mode": "dark",
+            "size": "desktop",
+            "expanded": "true",
+            "answerVisible": true,
+            "collapsed": true,
+            "focusPreserved": true,
+            "devUrlLabels": [
+                {
+                    "href": "/g/devGuild001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim007/manual",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim002/auction",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim008/bracket",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim005/result",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches/devMatch001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/players/devUser001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/stats",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/me?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/backoffice?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/admin",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/components",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/error",
+                    "exactUrl": true
+                }
+            ]
+        },
+        {
+            "mode": "dark",
+            "size": "mobile",
+            "expanded": "true",
+            "answerVisible": true,
+            "collapsed": true,
+            "focusPreserved": true,
+            "devUrlLabels": [
+                {
+                    "href": "/g/devGuild001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim007/manual",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim002/auction",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim008/bracket",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/scrims/devScrim005/result",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/matches/devMatch001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/players/devUser001",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/stats",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/me?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/backoffice?mock=1",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/g/devGuild001/admin",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/components",
+                    "exactUrl": true
+                },
+                {
+                    "href": "/dev/error",
+                    "exactUrl": true
+                }
+            ]
+        }
+    ],
+    "actualSession": {
+        "kind": "existing isolated database, session and upstream API fixture; no product mock endpoint added",
+        "normal": "manager role, two accessible guilds, keyboard selection opens actual guild URL",
+        "empty": "outsider role; controlled upstream member lookup 404 responses",
+        "unavailable": "manager role; controlled upstream bot guild list 503 response",
+        "externalFontLimitation": "Fixture blocks all non-fixture origins. Its PNGs validate auth state, copy, layout and navigation. Loaded brand/body font validation uses the default and focus captures from the development server.",
+        "results": [
+            {
+                "role": "multiple",
+                "results": [
+                    {
+                        "role": "multiple",
+                        "mode": "primary",
+                        "size": "desktop",
+                        "width": 1440,
+                        "height": 1000,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-multiple-primary-desktop.png",
+                        "serverCount": 2,
+                        "destination": "/g/970000000000000001",
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n상단 서버 선택에서 서버를 연 뒤, 내전 메뉴에서 참가할 모집을 찾아요. 서버 운영자는 같은 목록에서 모집을 만들 수 있어요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 1,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "다크 모드로 전환",
+                                "height": 44
+                            },
+                            {
+                                "name": "H\n계정 메뉴: HTTP 사용자",
+                                "height": 48
+                            },
+                            {
+                                "name": "로그아웃",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "multiple",
+                        "mode": "primary",
+                        "size": "mobile",
+                        "width": 390,
+                        "height": 844,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-multiple-primary-mobile.png",
+                        "serverCount": 2,
+                        "destination": "/g/970000000000000001",
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n상단 서버 선택에서 서버를 연 뒤, 내전 메뉴에서 참가할 모집을 찾아요. 서버 운영자는 같은 목록에서 모집을 만들 수 있어요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 0,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "메뉴",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "multiple",
+                        "mode": "dark",
+                        "size": "desktop",
+                        "width": 1440,
+                        "height": 1000,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-multiple-dark-desktop.png",
+                        "serverCount": 2,
+                        "destination": "/g/970000000000000001",
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n상단 서버 선택에서 서버를 연 뒤, 내전 메뉴에서 참가할 모집을 찾아요. 서버 운영자는 같은 목록에서 모집을 만들 수 있어요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 1,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "라이트 모드로 전환",
+                                "height": 44
+                            },
+                            {
+                                "name": "H\n계정 메뉴: HTTP 사용자",
+                                "height": 48
+                            },
+                            {
+                                "name": "로그아웃",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "multiple",
+                        "mode": "dark",
+                        "size": "mobile",
+                        "width": 390,
+                        "height": 844,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-multiple-dark-mobile.png",
+                        "serverCount": 2,
+                        "destination": "/g/970000000000000001",
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n상단 서버 선택에서 서버를 연 뒤, 내전 메뉴에서 참가할 모집을 찾아요. 서버 운영자는 같은 목록에서 모집을 만들 수 있어요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 0,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "메뉴",
+                                "height": 44
+                            }
+                        ]
+                    }
+                ],
+                "events": [],
+                "mutations": []
+            },
+            {
+                "role": "empty",
+                "results": [
+                    {
+                        "role": "empty",
+                        "mode": "primary",
+                        "size": "desktop",
+                        "width": 1440,
+                        "height": 1000,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-empty-primary-desktop.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n서버 선택에는 봇이 참여 중이고 내가 소속된 Discord 서버가 보여요. 함께할 서버의 운영자에게 이용할 서버를 확인해 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 1,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "다크 모드로 전환",
+                                "height": 44
+                            },
+                            {
+                                "name": "H\n계정 메뉴: HTTP 사용자",
+                                "height": 48
+                            },
+                            {
+                                "name": "로그아웃",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "empty",
+                        "mode": "primary",
+                        "size": "mobile",
+                        "width": 390,
+                        "height": 844,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-empty-primary-mobile.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n서버 선택에는 봇이 참여 중이고 내가 소속된 Discord 서버가 보여요. 함께할 서버의 운영자에게 이용할 서버를 확인해 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 0,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "메뉴",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "empty",
+                        "mode": "dark",
+                        "size": "desktop",
+                        "width": 1440,
+                        "height": 1000,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-empty-dark-desktop.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n서버 선택에는 봇이 참여 중이고 내가 소속된 Discord 서버가 보여요. 함께할 서버의 운영자에게 이용할 서버를 확인해 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 1,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "라이트 모드로 전환",
+                                "height": 44
+                            },
+                            {
+                                "name": "H\n계정 메뉴: HTTP 사용자",
+                                "height": 48
+                            },
+                            {
+                                "name": "로그아웃",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "empty",
+                        "mode": "dark",
+                        "size": "mobile",
+                        "width": 390,
+                        "height": 844,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-empty-dark-mobile.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n서버 선택에는 봇이 참여 중이고 내가 소속된 Discord 서버가 보여요. 함께할 서버의 운영자에게 이용할 서버를 확인해 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 0,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "메뉴",
+                                "height": 44
+                            }
+                        ]
+                    }
+                ],
+                "events": [],
+                "mutations": []
+            },
+            {
+                "role": "unavailable",
+                "results": [
+                    {
+                        "role": "unavailable",
+                        "mode": "primary",
+                        "size": "desktop",
+                        "width": 1440,
+                        "height": 1000,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-unavailable-primary-desktop.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n화면을 새로고친 뒤 상단 서버 선택을 다시 열어 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 1,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "다크 모드로 전환",
+                                "height": 44
+                            },
+                            {
+                                "name": "H\n계정 메뉴: HTTP 사용자",
+                                "height": 48
+                            },
+                            {
+                                "name": "로그아웃",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "unavailable",
+                        "mode": "primary",
+                        "size": "mobile",
+                        "width": 390,
+                        "height": 844,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-unavailable-primary-mobile.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n화면을 새로고친 뒤 상단 서버 선택을 다시 열어 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 0,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "메뉴",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "unavailable",
+                        "mode": "dark",
+                        "size": "desktop",
+                        "width": 1440,
+                        "height": 1000,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-unavailable-dark-desktop.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n화면을 새로고친 뒤 상단 서버 선택을 다시 열어 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 1,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "라이트 모드로 전환",
+                                "height": 44
+                            },
+                            {
+                                "name": "H\n계정 메뉴: HTTP 사용자",
+                                "height": 48
+                            },
+                            {
+                                "name": "로그아웃",
+                                "height": 44
+                            }
+                        ]
+                    },
+                    {
+                        "role": "unavailable",
+                        "mode": "dark",
+                        "size": "mobile",
+                        "width": 390,
+                        "height": 844,
+                        "image": "artifacts/ui-review/followup/public/after/home-session-unavailable-dark-mobile.png",
+                        "serverCount": 0,
+                        "destination": null,
+                        "mainText": "디스코드 내전, 모집부터 전적까지\n\nMonkeybot은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.\n\n내전이 있는 서버에서 시작해요\n\n화면을 새로고친 뒤 상단 서버 선택을 다시 열어 주세요.\n\n공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.\n\n내전은 이렇게 이어져요\n1\n모집\nRiot 계정과 희망 포지션으로 참가 인원을 모아요\n2\n팀 편성\n운영자가 직접 나누거나 경매로 팀을 꾸려요\n3\n대진\n팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요\n4\nROFL 기록\n리플레이 파일을 올리면 결과와 전적이 바로 쌓여요",
+                        "loginControls": 0,
+                        "logoutControls": 0,
+                        "overflow": false,
+                        "headerButtons": [
+                            {
+                                "name": "서버 선택\n▾",
+                                "height": 44
+                            },
+                            {
+                                "name": "메뉴",
+                                "height": 44
+                            }
+                        ]
+                    }
+                ],
+                "events": [],
+                "mutations": []
+            }
+        ],
+        "fixturesCleaned": true
+    },
+    "preservation": {
+        "previousDocsParagraphAndListFragments": 31,
+        "allPreviousDocsParagraphAndListFragmentsRetained": true,
+        "faqItemsRetained": 5,
+        "anchorIdsRetained": ["recruit", "rofl", "teams", "bracket", "operations", "faq"],
+        "loginHrefUnchanged": "/auth/discord?returnTo=%2F",
+        "devShortcutsStayDevOnly": true,
+        "noNewBusinessApiOrAuthRule": true
+    },
+    "baselineProvenance": {
+        "desktopMobile": "Eight byte-identical copies of previously actually read artifacts/ui-review/recheck/public captures before the home/docs followup and home header emphasis.",
+        "tabletNarrow": "Eight fresh before captures: body content unchanged before this followup; the parent-owned home header login emphasis had already landed."
+    },
+    "events": [],
+    "checks": {
+        "installedSvelteCompiler": "Both modified Svelte files compiled without warnings; full project check/build/tests owned by root.",
+        "officialSveltePlugin": "No callable Svelte plugin was exposed; used official docs and installed compiler.",
+        "fullProjectGate": "See root final check/build/test results; intentionally not duplicated in this batch."
+    },
+    "limitations": [
+        "No live Discord OAuth-provider login or production write operation.",
+        "No physical touch device, Safari or screen-reader session.",
+        "No performance improvement claim."
+    ],
+    "sourceSha256": {
+        "apps/web/src/routes/+page.svelte": "16df5a65fd394d93bd695caca8cdc462cae211e68a273685821ba6618a3d8ba2",
+        "apps/web/src/routes/docs/+page.svelte": "564b410c1dc52d825111a359628c8629549f02ae7d92f3c8400310d17bebb44f"
+    }
+}
