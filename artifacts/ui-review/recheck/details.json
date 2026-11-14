@@ -1,0 +1,798 @@
+{
+    "commit": "897eddf34308b45d01dcbab7c848ed09391dce40",
+    "results": [
+        {
+            "slug": "match",
+            "path": "/g/devGuild001/matches/devMatch001",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "theme": "primary",
+            "status": 200,
+            "metrics": {
+                "title": "포로팀 vs 칼날부리팀 · 경기 | Monkeybot",
+                "theme": "primary",
+                "h1": ["포로팀\n1 :\n대\n 1\n칼날부리팀"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "1세트",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "2세트",
+                        "pressed": "true",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "detailTarget": {
+                    "text": "상세, 개발자",
+                    "width": 44,
+                    "height": 44
+                },
+                "dialog": {
+                    "count": 1,
+                    "name": "개발자 상세",
+                    "closed": true,
+                    "focusReturned": true
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/match-primary-desktop.png"
+        },
+        {
+            "slug": "match",
+            "path": "/g/devGuild001/matches/devMatch001",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "theme": "dark",
+            "status": 200,
+            "metrics": {
+                "title": "포로팀 vs 칼날부리팀 · 경기 | Monkeybot",
+                "theme": "dark",
+                "h1": ["포로팀\n1 :\n대\n 1\n칼날부리팀"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "1세트",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "2세트",
+                        "pressed": "true",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "detailTarget": {
+                    "text": "상세, 개발자",
+                    "width": 44,
+                    "height": 44
+                },
+                "dialog": {
+                    "count": 1,
+                    "name": "개발자 상세",
+                    "closed": true,
+                    "focusReturned": true
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/match-dark-desktop.png"
+        },
+        {
+            "slug": "match",
+            "path": "/g/devGuild001/matches/devMatch001",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "theme": "primary",
+            "status": 200,
+            "metrics": {
+                "title": "포로팀 vs 칼날부리팀 · 경기 | Monkeybot",
+                "theme": "primary",
+                "h1": ["포로팀\n1 :\n대\n 1\n칼날부리팀"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "1세트",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "2세트",
+                        "pressed": "true",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "detailTarget": {
+                    "text": "상세, 개발자",
+                    "width": 44,
+                    "height": 44
+                },
+                "dialog": {
+                    "count": 1,
+                    "name": "개발자 상세",
+                    "closed": true,
+                    "focusReturned": true
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/match-primary-mobile.png"
+        },
+        {
+            "slug": "match",
+            "path": "/g/devGuild001/matches/devMatch001",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "theme": "dark",
+            "status": 200,
+            "metrics": {
+                "title": "포로팀 vs 칼날부리팀 · 경기 | Monkeybot",
+                "theme": "dark",
+                "h1": ["포로팀\n1 :\n대\n 1\n칼날부리팀"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "1세트",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "2세트",
+                        "pressed": "true",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "detailTarget": {
+                    "text": "상세, 개발자",
+                    "width": 44,
+                    "height": 44
+                },
+                "dialog": {
+                    "count": 1,
+                    "name": "개발자 상세",
+                    "closed": true,
+                    "focusReturned": true
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/match-dark-mobile.png"
+        },
+        {
+            "slug": "player",
+            "path": "/g/devGuild001/players/devUser001",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "theme": "primary",
+            "status": 200,
+            "metrics": {
+                "title": "개발자 전적 | Monkeybot",
+                "theme": "primary",
+                "h1": ["개발자"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "전체 35",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "탑 14",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "미드 21",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "details": {
+                    "expanded": "true",
+                    "panel": "s1-panel-0",
+                    "focusStays": true,
+                    "collapsed": "false"
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/player-primary-desktop.png"
+        },
+        {
+            "slug": "player",
+            "path": "/g/devGuild001/players/devUser001",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "theme": "dark",
+            "status": 200,
+            "metrics": {
+                "title": "개발자 전적 | Monkeybot",
+                "theme": "dark",
+                "h1": ["개발자"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "전체 35",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "탑 14",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "미드 21",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "details": {
+                    "expanded": "true",
+                    "panel": "s1-panel-0",
+                    "focusStays": true,
+                    "collapsed": "false"
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/player-dark-desktop.png"
+        },
+        {
+            "slug": "player",
+            "path": "/g/devGuild001/players/devUser001",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "theme": "primary",
+            "status": 200,
+            "metrics": {
+                "title": "개발자 전적 | Monkeybot",
+                "theme": "primary",
+                "h1": ["개발자"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "전체 35",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "탑 14",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "미드 21",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "details": {
+                    "expanded": "true",
+                    "panel": "s1-panel-0",
+                    "focusStays": true,
+                    "collapsed": "false"
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/player-primary-mobile.png"
+        },
+        {
+            "slug": "player",
+            "path": "/g/devGuild001/players/devUser001",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "theme": "dark",
+            "status": 200,
+            "metrics": {
+                "title": "개발자 전적 | Monkeybot",
+                "theme": "dark",
+                "h1": ["개발자"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "전체 35",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "탑 14",
+                        "pressed": "false",
+                        "height": 44
+                    },
+                    {
+                        "name": "미드 21",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "details": {
+                    "expanded": "true",
+                    "panel": "s1-panel-0",
+                    "focusStays": true,
+                    "collapsed": "false"
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/player-dark-mobile.png"
+        },
+        {
+            "slug": "admin",
+            "path": "/g/devGuild001/admin",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "theme": "primary",
+            "status": 200,
+            "metrics": {
+                "title": "서버 관리 | Monkeybot",
+                "theme": "primary",
+                "h1": ["서버 관리"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "멤버",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "Discord 연동",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "accountTarget": {
+                    "width": 85.875,
+                    "height": 44,
+                    "name": "Riot 계정관리, 개발자"
+                },
+                "invalid": {
+                    "focused": true,
+                    "invalid": "true",
+                    "error": "이름#태그 형식으로 입력해 주세요",
+                    "unnamedButtons": 0,
+                    "closed": true,
+                    "focusReturned": true
+                },
+                "discord": {
+                    "selected": "true",
+                    "settings": [
+                        " 멤버",
+                        " Discord 연동",
+                        "  운영자 역할 바꾸기, 현재@운영진  ",
+                        "  모집 채널 바꾸기, 현재#내전-모집  ",
+                        "  엔트리 채널 바꾸기, 현재#내전-엔트리  ",
+                        "  결과 채널 바꾸기, 현재설정 안 함  "
+                    ],
+                    "overflow": false
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/admin-primary-desktop.png"
+        },
+        {
+            "slug": "admin",
+            "path": "/g/devGuild001/admin",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "theme": "dark",
+            "status": 200,
+            "metrics": {
+                "title": "서버 관리 | Monkeybot",
+                "theme": "dark",
+                "h1": ["서버 관리"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "멤버",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "Discord 연동",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "accountTarget": {
+                    "width": 85.875,
+                    "height": 44,
+                    "name": "Riot 계정관리, 개발자"
+                },
+                "invalid": {
+                    "focused": true,
+                    "invalid": "true",
+                    "error": "이름#태그 형식으로 입력해 주세요",
+                    "unnamedButtons": 0,
+                    "closed": true,
+                    "focusReturned": true
+                },
+                "discord": {
+                    "selected": "true",
+                    "settings": [
+                        " 멤버",
+                        " Discord 연동",
+                        "  운영자 역할 바꾸기, 현재@운영진  ",
+                        "  모집 채널 바꾸기, 현재#내전-모집  ",
+                        "  엔트리 채널 바꾸기, 현재#내전-엔트리  ",
+                        "  결과 채널 바꾸기, 현재설정 안 함  "
+                    ],
+                    "overflow": false
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/admin-dark-desktop.png"
+        },
+        {
+            "slug": "admin",
+            "path": "/g/devGuild001/admin",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "theme": "primary",
+            "status": 200,
+            "metrics": {
+                "title": "서버 관리 | Monkeybot",
+                "theme": "primary",
+                "h1": ["서버 관리"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "멤버",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "Discord 연동",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "accountTarget": {
+                    "width": 85.875,
+                    "height": 44,
+                    "name": "Riot 계정관리, 개발자"
+                },
+                "invalid": {
+                    "focused": true,
+                    "invalid": "true",
+                    "error": "이름#태그 형식으로 입력해 주세요",
+                    "unnamedButtons": 0,
+                    "closed": true,
+                    "focusReturned": true
+                },
+                "discord": {
+                    "selected": "true",
+                    "settings": [
+                        " 멤버",
+                        " Discord 연동",
+                        "  운영자 역할 바꾸기, 현재@운영진  ",
+                        "  모집 채널 바꾸기, 현재#내전-모집  ",
+                        "  엔트리 채널 바꾸기, 현재#내전-엔트리  ",
+                        "  결과 채널 바꾸기, 현재설정 안 함  "
+                    ],
+                    "overflow": false
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/admin-primary-mobile.png"
+        },
+        {
+            "slug": "admin",
+            "path": "/g/devGuild001/admin",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "theme": "dark",
+            "status": 200,
+            "metrics": {
+                "title": "서버 관리 | Monkeybot",
+                "theme": "dark",
+                "h1": ["서버 관리"],
+                "overflow": false,
+                "unlabelledInputs": [],
+                "duplicateIds": [],
+                "duplicateVisibleDestinations": [],
+                "brandingFailures": [],
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+                "selectionButtons": [
+                    {
+                        "name": "멤버",
+                        "pressed": "true",
+                        "height": 44
+                    },
+                    {
+                        "name": "Discord 연동",
+                        "pressed": "false",
+                        "height": 44
+                    }
+                ]
+            },
+            "actions": {
+                "accountTarget": {
+                    "width": 85.875,
+                    "height": 44,
+                    "name": "Riot 계정관리, 개발자"
+                },
+                "invalid": {
+                    "focused": true,
+                    "invalid": "true",
+                    "error": "이름#태그 형식으로 입력해 주세요",
+                    "unnamedButtons": 0,
+                    "closed": true,
+                    "focusReturned": true
+                },
+                "discord": {
+                    "selected": "true",
+                    "settings": [
+                        " 멤버",
+                        " Discord 연동",
+                        "  운영자 역할 바꾸기, 현재@운영진  ",
+                        "  모집 채널 바꾸기, 현재#내전-모집  ",
+                        "  엔트리 채널 바꾸기, 현재#내전-엔트리  ",
+                        "  결과 채널 바꾸기, 현재설정 안 함  "
+                    ],
+                    "overflow": false
+                }
+            },
+            "screenshot": "artifacts/ui-review/recheck/details/admin-dark-mobile.png"
+        }
+    ],
+    "events": [],
+    "posts": [],
+    "images": [
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-dark-desktop-discord.png",
+            "sha256": "93301bd7b2752940a1bb629f66e2bd0d744f0ad0385e2fc81f4e5c8106a4205d",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-dark-desktop-invalid.png",
+            "sha256": "7e9b6af1032d7e948d8d00bbe7fb4d182e74ae07a3873f815cfdde6d4654f3fc",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-dark-desktop.png",
+            "sha256": "f83a749ddfa254f30291975a11f46369d29efa7ccb414ec8d9aae07108bcc750",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-dark-mobile-discord.png",
+            "sha256": "b68a68ab8e88395bb8a60ee05fa1440b275b9b07a5123452fbd4abd38c9144c2",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-dark-mobile-invalid.png",
+            "sha256": "c1c2ca320ad6c2531c872ff865f9f6b6f61adc7f73a7d9d3ef4b08ca0cb7437a",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-dark-mobile.png",
+            "sha256": "347e375cca3a0482c2ff49a4f604db45f06c70df896c66f409cde95aa1ac8057",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-primary-desktop-discord.png",
+            "sha256": "1b63d1df33a927793f8579f7f2844fd4b4201a3d9b717d30f92180930ea40b8a",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-primary-desktop-invalid.png",
+            "sha256": "ebf0024e93e2bca7e9ba913a90b92b8b0f9fa18b430c192f66135391eceb1ecf",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-primary-desktop.png",
+            "sha256": "c00ccf9ea8025d7c4237ab5a47af67ff368ae3b9ccbd89063613c63841a6a1f5",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-primary-mobile-discord.png",
+            "sha256": "fe3b3a4f8af64857af95ba998f34fa044ffd49361dc24caf4b883464a7c99067",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-primary-mobile-invalid.png",
+            "sha256": "2267e854e6083949496eea040dc8d332c57851995584906f6d07d288179853cb",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/admin-primary-mobile.png",
+            "sha256": "53924c5d457c9e81b42d4d64fb43d2f906e67f0a9f5bae7ad43044bfeb5f5a5a",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-dark-desktop-dialog.png",
+            "sha256": "caca85b971c4e4db4bf997970409ef975aae9003787147414049815aa750c0ab",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-dark-desktop.png",
+            "sha256": "f39fd11d534b4831d6f6e09a569a5a9788d1267196aa5b76b24aef78dd911f59",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-dark-mobile-dialog.png",
+            "sha256": "7b36c23995cda89d6ed268ce07d096b1b42753818ffa1d2fcc0a9958e4266cfc",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-dark-mobile.png",
+            "sha256": "a3f30a57d73aeb4440c4781a7e6b47460bbaaddc5fa4751247d0d45a725bc18f",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-primary-desktop-dialog.png",
+            "sha256": "1e80e9c012ea84a0edf59f7180aa87b00ff51293a3b6ba04cd8906e424e28484",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-primary-desktop.png",
+            "sha256": "f7a54cda8ab6cf4aae8f0282de6a7a6032c526544f3b06dc246db260c33e7faa",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-primary-mobile-dialog.png",
+            "sha256": "d9321c56776c5c5baf103c09e79aacd5f2288e2b905d20db8d513e6e1b64e6f1",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/match-primary-mobile.png",
+            "sha256": "4bfd0ef7ac5ad2ac4bb3e1a78397e41844aa3c102ddaa83ed4a9c27b22f0369e",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-dark-desktop-expanded.png",
+            "sha256": "86606143c42af73ed6bb772127f7195d95d683f555b9efa3433f7d3ac4c143dc",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-dark-desktop.png",
+            "sha256": "2206fb643a9d92c483608159446bed9123f3ab17ffbafdea8f598bc7a23ef329",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-dark-mobile-expanded.png",
+            "sha256": "277796c7203ff8056b6054dec530abfc0e3ac081a26faadf975a2a4a40919e49",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-dark-mobile.png",
+            "sha256": "8ac01fd3f01d4498a6fd2176a214025994d1c5acda8609bb83bfa03d78e6a265",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-primary-desktop-expanded.png",
+            "sha256": "98d8cb64a9527ab6a36665cf83628b6057fa37db49d9a3821f2a85213c28c183",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-primary-desktop.png",
+            "sha256": "94a78a61fd44c4c510127cfc3cbe21694d097c33d997d894d084d72e0e9e5ab1",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-primary-mobile-expanded.png",
+            "sha256": "c2469ff1080a251226088e032a7c71de89af835cc9bd81d1217c23e4b8006816",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        },
+        {
+            "path": "artifacts/ui-review/recheck/details/player-primary-mobile.png",
+            "sha256": "8be016c39e1ead8810f3b70a3542ea49cc46cc2e18f42a2e36abc30044f7ab1d",
+            "actuallyRead": true,
+            "reviewer": "/root"
+        }
+    ],
+    "beforeActuallyRead": [
+        "artifacts/ui-review/before/match-desktop.png",
+        "artifacts/ui-review/before/match-mobile.png",
+        "artifacts/ui-review/before/player-desktop.png",
+        "artifacts/ui-review/before/player-mobile.png",
+        "artifacts/ui-review/before/admin-desktop.png",
+        "artifacts/ui-review/before/admin-mobile.png"
+    ],
+    "limits": [
+        "Read-only recheck on pushed897eddf: no POST, no fixture mutation.",
+        "Primary before images and new light/dark images were actually compared. No before dark capture exists, so no dark before-after claim.",
+        "DOM validity and unchanged source hashes support implementation coverage; visual design outcome is evaluated separately in design-details.md."
+    ]
+}

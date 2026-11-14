@@ -1,0 +1,2141 @@
+{
+    "commit": "897eddf34308b45d01dcbab7c848ed09391dce40",
+    "scope": "푸시 후 전체 라우트·UI-01~21 소스와 기존 검증 증거의 보조 매핑. 디자인 효과 판정은 별도 design-workflow.md를 기준으로 한다.",
+    "route_count": 20,
+    "page_svelte_files": 19,
+    "error_surfaces": 1,
+    "routes": [
+        {
+            "name": "home",
+            "url": "/",
+            "role_state": "비로그인",
+            "issues": "UI-11",
+            "source": "apps/web/src/routes/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": ["ActionMenu", "ConfirmDialog", "SwitchCell"],
+            "canonical_images": [
+                "artifacts/ui-review/after/home-desktop.png",
+                "artifacts/ui-review/after/home-mobile.png",
+                "artifacts/ui-review/after/home-dark-desktop.png",
+                "artifacts/ui-review/after/home-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "docs",
+            "url": "/docs",
+            "role_state": "비로그인",
+            "issues": "UI-10, UI-11",
+            "source": "apps/web/src/routes/docs/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "AccessibleAccordion",
+                "ActionMenu",
+                "ConfirmDialog",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/docs-desktop.png",
+                "artifacts/ui-review/after/docs-mobile.png",
+                "artifacts/ui-review/after/docs-dark-desktop.png",
+                "artifacts/ui-review/after/docs-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "terms",
+            "url": "/terms",
+            "role_state": "비로그인",
+            "issues": "UI-11 (공통만), 정책 본문 후속",
+            "source": "apps/web/src/routes/terms/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": ["ActionMenu", "ConfirmDialog", "SwitchCell"],
+            "canonical_images": [
+                "artifacts/ui-review/after/terms-desktop.png",
+                "artifacts/ui-review/after/terms-mobile.png",
+                "artifacts/ui-review/after/terms-dark-desktop.png",
+                "artifacts/ui-review/after/terms-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "privacy",
+            "url": "/privacy",
+            "role_state": "비로그인",
+            "issues": "UI-11 (공통만), 정책 본문 후속",
+            "source": "apps/web/src/routes/privacy/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": ["ActionMenu", "ConfirmDialog", "SwitchCell"],
+            "canonical_images": [
+                "artifacts/ui-review/after/privacy-desktop.png",
+                "artifacts/ui-review/after/privacy-mobile.png",
+                "artifacts/ui-review/after/privacy-dark-desktop.png",
+                "artifacts/ui-review/after/privacy-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "me",
+            "url": "/me?mock=1",
+            "role_state": "명시적 개발 목 미리보기",
+            "issues": "UI-11, UI-16",
+            "source": "apps/web/src/routes/me/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/me-desktop.png",
+                "artifacts/ui-review/after/me-mobile.png",
+                "artifacts/ui-review/after/me-dark-desktop.png",
+                "artifacts/ui-review/after/me-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "backoffice",
+            "url": "/backoffice?mock=1",
+            "role_state": "명시적 개발 목 미리보기",
+            "issues": "UI-08, UI-11, UI-15, UI-16",
+            "source": "apps/web/src/routes/backoffice/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/backoffice-desktop.png",
+                "artifacts/ui-review/after/backoffice-mobile.png",
+                "artifacts/ui-review/after/backoffice-dark-desktop.png",
+                "artifacts/ui-review/after/backoffice-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "guild",
+            "url": "/g/devGuild001",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-04, UI-05, UI-09, UI-11, UI-15",
+            "source": "apps/web/src/routes/g/[guildId]/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "AvatarStack",
+                "ConfirmDialog",
+                "DateBadge",
+                "LinkCell",
+                "PlayerFace",
+                "SectionState",
+                "SelectionTabs",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/guild-desktop.png",
+                "artifacts/ui-review/after/guild-mobile.png",
+                "artifacts/ui-review/after/guild-dark-desktop.png",
+                "artifacts/ui-review/after/guild-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "scrims",
+            "url": "/g/devGuild001/scrims",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-06, UI-10, UI-11, UI-12, UI-18, UI-20",
+            "source": "apps/web/src/routes/g/[guildId]/scrims/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "AvatarStack",
+                "ConfirmDialog",
+                "DateBadge",
+                "LinkCell",
+                "PageNav",
+                "SectionState",
+                "SelectionTabs",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/scrims-desktop.png",
+                "artifacts/ui-review/after/scrims-mobile.png",
+                "artifacts/ui-review/after/scrims-dark-desktop.png",
+                "artifacts/ui-review/after/scrims-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "scrim",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-06, UI-08, UI-10, UI-11, UI-12, UI-20",
+            "source": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": [
+                "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/+layout.svelte",
+                "apps/web/src/routes/+layout.svelte"
+            ],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PlayerFace",
+                "PlayerName",
+                "SelectionTabs",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/scrim-desktop.png",
+                "artifacts/ui-review/after/scrim-mobile.png",
+                "artifacts/ui-review/after/scrim-dark-desktop.png",
+                "artifacts/ui-review/after/scrim-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "manual",
+            "url": "/g/devGuild001/scrims/devScrim007/manual",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-01, UI-08, UI-10, UI-11, UI-21",
+            "source": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/manual/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": [
+                "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/+layout.svelte",
+                "apps/web/src/routes/+layout.svelte"
+            ],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PlayerFace",
+                "PositionIcon",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/manual-desktop.png",
+                "artifacts/ui-review/after/manual-mobile.png",
+                "artifacts/ui-review/after/manual-dark-desktop.png",
+                "artifacts/ui-review/after/manual-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "auction",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-02, UI-08, UI-09, UI-10, UI-11, UI-13",
+            "source": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": [
+                "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/+layout.svelte",
+                "apps/web/src/routes/+layout.svelte"
+            ],
+            "common_components_reachable": [
+                "AccessibleAccordion",
+                "ActionMenu",
+                "ConfirmDialog",
+                "PlayerFace",
+                "PositionIcon",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/auction-desktop.png",
+                "artifacts/ui-review/after/auction-mobile.png",
+                "artifacts/ui-review/after/auction-dark-desktop.png",
+                "artifacts/ui-review/after/auction-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "bracket",
+            "url": "/g/devGuild001/scrims/devScrim008/bracket",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-08, UI-11",
+            "source": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/bracket/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": [
+                "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/+layout.svelte",
+                "apps/web/src/routes/+layout.svelte"
+            ],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PlayerFace",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/bracket-desktop.png",
+                "artifacts/ui-review/after/bracket-mobile.png",
+                "artifacts/ui-review/after/bracket-dark-desktop.png",
+                "artifacts/ui-review/after/bracket-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "result",
+            "url": "/g/devGuild001/scrims/devScrim005/result",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-11",
+            "source": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/result/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": [
+                "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/+layout.svelte",
+                "apps/web/src/routes/+layout.svelte"
+            ],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PlayerFace",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/result-desktop.png",
+                "artifacts/ui-review/after/result-mobile.png",
+                "artifacts/ui-review/after/result-dark-desktop.png",
+                "artifacts/ui-review/after/result-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "matches",
+            "url": "/g/devGuild001/matches",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-10, UI-11, UI-18",
+            "source": "apps/web/src/routes/g/[guildId]/matches/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PageNav",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/matches-desktop.png",
+                "artifacts/ui-review/after/matches-mobile.png",
+                "artifacts/ui-review/after/matches-dark-desktop.png",
+                "artifacts/ui-review/after/matches-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "match",
+            "url": "/g/devGuild001/matches/devMatch001",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-08, UI-09, UI-10, UI-11, UI-15",
+            "source": "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PositionIcon",
+                "SectionState",
+                "SelectionTabs",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/match-desktop.png",
+                "artifacts/ui-review/after/match-mobile.png",
+                "artifacts/ui-review/after/match-dark-desktop.png",
+                "artifacts/ui-review/after/match-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "player",
+            "url": "/g/devGuild001/players/devUser001",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-04, UI-06, UI-11, UI-14, UI-18, UI-19",
+            "source": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "AccessibleAccordion",
+                "ActionMenu",
+                "ConfirmDialog",
+                "LinkCell",
+                "PageNav",
+                "PlayerFace",
+                "PositionIcon",
+                "SectionState",
+                "SelectionTabs",
+                "StatTile",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/player-desktop.png",
+                "artifacts/ui-review/after/player-mobile.png",
+                "artifacts/ui-review/after/player-dark-desktop.png",
+                "artifacts/ui-review/after/player-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "stats",
+            "url": "/g/devGuild001/stats",
+            "role_state": "개발 샘플 관리자·공개 조회",
+            "issues": "UI-03, UI-04, UI-06, UI-09, UI-10, UI-11, UI-15, UI-18",
+            "source": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PageNav",
+                "PlayerFace",
+                "SectionState",
+                "SelectionTabs",
+                "StatTile",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/stats-desktop.png",
+                "artifacts/ui-review/after/stats-mobile.png",
+                "artifacts/ui-review/after/stats-dark-desktop.png",
+                "artifacts/ui-review/after/stats-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "admin",
+            "url": "/g/devGuild001/admin",
+            "role_state": "개발 샘플 관리자·권한 제한",
+            "issues": "UI-06, UI-08, UI-10, UI-11, UI-15, UI-17, UI-18",
+            "source": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "PageNav",
+                "PlayerFace",
+                "SectionState",
+                "SelectionTabs",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/admin-desktop.png",
+                "artifacts/ui-review/after/admin-mobile.png",
+                "artifacts/ui-review/after/admin-dark-desktop.png",
+                "artifacts/ui-review/after/admin-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "components",
+            "url": "/dev/components",
+            "role_state": "비로그인",
+            "issues": "UI-11, UI-16",
+            "source": "apps/web/src/routes/dev/components/+page.svelte",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": [
+                "ActionMenu",
+                "ConfirmDialog",
+                "LinkCell",
+                "SectionState",
+                "StatusTag",
+                "SwitchCell"
+            ],
+            "canonical_images": [
+                "artifacts/ui-review/after/components-desktop.png",
+                "artifacts/ui-review/after/components-mobile.png",
+                "artifacts/ui-review/after/components-dark-desktop.png",
+                "artifacts/ui-review/after/components-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        },
+        {
+            "name": "error",
+            "url": "/dev/error?status=403",
+            "role_state": "비로그인",
+            "issues": "UI-07, UI-11",
+            "source": "apps/web/src/routes/dev/error/+page.ts",
+            "route_match_count": 1,
+            "layout_sources": ["apps/web/src/routes/+layout.svelte"],
+            "common_components_reachable": ["ActionMenu", "ConfirmDialog", "SwitchCell"],
+            "canonical_images": [
+                "artifacts/ui-review/after/error-desktop.png",
+                "artifacts/ui-review/after/error-mobile.png",
+                "artifacts/ui-review/after/error-dark-desktop.png",
+                "artifacts/ui-review/after/error-dark-mobile.png"
+            ],
+            "canonical_images_exist": true
+        }
+    ],
+    "issues": [
+        {
+            "id": "UI-01",
+            "priority_scope": "P1 수동 편성",
+            "original_basis": "모바일에서 둘째 팀·자리 잘림, 30/56rem 최소 폭",
+            "completion_condition": "adapt·layout·polish: 모든 자리와 선택→배치→교환→해제 접근",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/teams/ManualFormationBoard.svelte",
+                    "exists": true,
+                    "sha256": "46c57b72ffde9a0da783d0dd2c79b2e5609a84be73f80498ac144041c5895525"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/FormationPool.svelte",
+                    "exists": true,
+                    "sha256": "64ae5bcf1546b24c75b671be37a52abdcf0d0aa4f913658d943a59b56e5d8e98"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/FormationTeamCard.svelte",
+                    "exists": true,
+                    "sha256": "57362d1dc8888dc755930a0df8bdc4eeb68bd89480c18d58b18671b9a168671c"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/FormationSynergyRail.svelte",
+                    "exists": true,
+                    "sha256": "361697db672f6c03dcfd08c0c3460ce2587d1a6fb9082b7c38a70560df61a5a7"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/FormationHeadToHead.svelte",
+                    "exists": true,
+                    "sha256": "7ef710bc948ab9ffa34fe2d1016964608243570017378658a8e441b111a7d608"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/workflow-team-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/workflow-readonly-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-02",
+            "priority_scope": "P1 경매 준비",
+            "original_basis": "선택 안내·저장·시작이 후보 아래 멀리 위치",
+            "completion_condition": "layout·clarify·onboard·distill: 목표·팀장 선택·저장/시작을 먼저 파악",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                    "exists": true,
+                    "sha256": "9f55f9e9fc9716129d40c60051eb5e6e7ec9e0894873e39a39b2b292a178a4cb"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/AuctionTeamCard.svelte",
+                    "exists": true,
+                    "sha256": "40644d0d0349e59714dd1cc79769070adba65701ac374e0656f88e8d495134e9"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/workflow-team-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-03",
+            "priority_scope": "P1 통계",
+            "original_basis": "모바일에서 일곱 지표 중 다섯 개와 정렬 제거",
+            "completion_condition": "adapt·layout: 일곱 지표 유지·양방향 정렬·키보드 스크롤",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/stats/LeaderboardTable.svelte",
+                    "exists": true,
+                    "sha256": "b7f89790f495e6cd4d6acd12832561c128cff96537c995ac23dd1a3bfc6364f1"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/data-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-04",
+            "priority_scope": "P2 정보 위계",
+            "original_basis": "업적이 운영 현황보다 먼저, 선수 15지표 동일 비중",
+            "completion_condition": "distill·quieter·typeset·layout: 현황 먼저, 6핵심+9세부 지표 보존",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/g/[guildId]/+page.svelte",
+                    "exists": true,
+                    "sha256": "1604ff079b7e3dd8b3899c16557ae9330ed993919c2d95d38cbc00cf741c057e"
+                },
+                {
+                    "path": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                    "exists": true,
+                    "sha256": "71101725603ef1a4afb7e914987fa2c5e7b31d02fc4c000473c505bab6836e42"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/data-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/detail-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-05",
+            "priority_scope": "P2 서버 홈",
+            "original_basis": "지난 일정도 시작까지 0초로 표시",
+            "completion_condition": "harden·clarify: 상태를 추정하지 않고 경과 문구·일정 변경·만료 처리",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/guild/NextScrimHero.svelte",
+                    "exists": true,
+                    "sha256": "892eb973dcbe88c0bffa6b8a9a873a8af2e768ab10ea21cecd05912bd6864e27"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/data-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-06",
+            "priority_scope": "P1 공통 선택",
+            "original_basis": "실제 STDF Tab 버튼에 선택 상태 없음",
+            "completion_condition": "extract·harden: 8사용처 aria-pressed·native 키보드·44px",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/common/SelectionTabs.svelte",
+                    "exists": true,
+                    "sha256": "f4b668deb3d2dc34ebab8c7394c6dc693b5fa541c72ec9ba1598ae48b18538a5"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/selection-tabs-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-07",
+            "priority_scope": "P2 오류",
+            "original_basis": "401에 일시 조회 실패 문구",
+            "completion_condition": "clarify·harden: 로그인 필요와 단일 로그인 경로 안내",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/+error.svelte",
+                    "exists": true,
+                    "sha256": "0b00739a10a4f4b51ad001850847586dfbd96d4d3317afbed573aa5d977542a7"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/public-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/account-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-08",
+            "priority_scope": "P1 공통 요청",
+            "original_basis": "통신 실패 뒤 복구 재조회도 reject 가능(소스 확인)",
+            "completion_condition": "harden: 결과 불명·저장 후 갱신 실패 구분, 입력 보존",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/ui/actions.ts",
+                    "exists": true,
+                    "sha256": "a287c2ed861c1ed4ca228b4e6976808903cf21eddf34af84898031bd8e2fa09b"
+                },
+                {
+                    "path": "apps/web/src/lib/components/common/SectionState.svelte",
+                    "exists": true,
+                    "sha256": "b8f9ad7451db20281afbd5aff844cb5262df8e844ad69f79993603d28ee2cd47"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/forms-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/upload-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/admin-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/account-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-09",
+            "priority_scope": "P2 업적·히어로",
+            "original_basis": "작은 선택 점·어두운 아트 위 약한 상태색",
+            "completion_condition": "adapt·colorize·polish: 44px·독립된 바탕·양 테마 대비",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/stats/AchievementCarousel.svelte",
+                    "exists": true,
+                    "sha256": "e27410b0bcdd8f556b641a4d003e9a46d20e779d2cbb0033f3c7ee1f9b1df43e"
+                },
+                {
+                    "path": "apps/web/src/lib/components/scrims/ScrimSummary.svelte",
+                    "exists": true,
+                    "sha256": "49343a23994a63fccf0cfa5a391398306217847c0e4cd0390a9e6634cf4370e6"
+                },
+                {
+                    "path": "apps/web/src/lib/components/guild/NextScrimHero.svelte",
+                    "exists": true,
+                    "sha256": "892eb973dcbe88c0bffa6b8a9a873a8af2e768ab10ea21cecd05912bd6864e27"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/data-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/inverse-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/contrast-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-10",
+            "priority_scope": "P2 폼·문서",
+            "original_basis": "검색 이름 없음, 같은 팀 입력 이름, Input 문서 오류",
+            "completion_condition": "clarify·extract·harden·document: 보이는 이름·오류 연결·실제 API 문서",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/ui/form.ts",
+                    "exists": true,
+                    "sha256": "6c144b9cf4eb09ff733be3fa2b7ff438bed8ca9076fbf115e5ee14935c3770e2"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                    "exists": true,
+                    "sha256": "9f55f9e9fc9716129d40c60051eb5e6e7ec9e0894873e39a39b2b292a178a4cb"
+                },
+                {
+                    "path": "apps/web/src/routes/docs/+page.svelte",
+                    "exists": true,
+                    "sha256": "fb7bf14425609ae50070c2b95b1cd26e005692195ce1c3b202eee3d3426478e4"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/forms-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/data-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/admin-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/public-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-11",
+            "priority_scope": "P2 공통·개발",
+            "original_basis": "작은 메뉴/푸터 조작·문서 위계·중복 h1",
+            "completion_condition": "typeset·polish·adapt: 공유 영역 포함 단일 h1·읽기 순서·키보드",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/layout/AppHeader.svelte",
+                    "exists": true,
+                    "sha256": "580874178b027509b37fdd09ad6086666e725569ca22a01aca1e96fd93a92de4"
+                },
+                {
+                    "path": "apps/web/src/lib/components/layout/AppFooter.svelte",
+                    "exists": true,
+                    "sha256": "1c65f9367b49278d522fab1d5fe8fb2e1b7d1469276a7c82525b9bd22c310b93"
+                },
+                {
+                    "path": "apps/web/src/lib/components/layout/MenuButton.svelte",
+                    "exists": true,
+                    "sha256": "1080dccf3e0ab7656de04edf98d4dcc8415d4e665923e54db12cb45e61d479bb"
+                },
+                {
+                    "path": "apps/web/src/lib/components/scrims/ScrimSummary.svelte",
+                    "exists": true,
+                    "sha256": "49343a23994a63fccf0cfa5a391398306217847c0e4cd0390a9e6634cf4370e6"
+                },
+                {
+                    "path": "apps/web/src/routes/layout.css",
+                    "exists": true,
+                    "sha256": "f629d8ddd66446540be39c2dcf9e48b2af20dc448ff31105e13b4299f171e4d9"
+                },
+                {
+                    "path": "apps/web/src/routes/dev/components/+page.svelte",
+                    "exists": true,
+                    "sha256": "cfcee843c86462deb07c47e66c7c297b5b048daa799614cf09b6c3f2a0e6ac24"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/public-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/account-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-12",
+            "priority_scope": "P1 모집 설정",
+            "original_basis": "Calendar 320이 320vh로 해석되어 작업 줄 밀림",
+            "completion_condition": "harden·adapt: 공식 높이 32%·내부 스크롤·저장/취소 접근",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                    "exists": true,
+                    "sha256": "59af78330fa4a4c30a70ca2b72a667ac7e62b99eaa981bfe82a971dcac2af584"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/forms-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/calendar-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-13",
+            "priority_scope": "P2 경매 입찰",
+            "original_basis": "감소는 우클릭만 가능, ± 문구 모호",
+            "completion_condition": "adapt·clarify: −50/−10/+10/+50을 키보드·터치로 조작",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+                    "exists": true,
+                    "sha256": "11b5dbf53b375c62df310920577242e6eecf93e0a7154fe9fef57f71d97cfac8"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/workflow-team-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-14",
+            "priority_scope": "P2 선수 전적",
+            "original_basis": "최근 아이콘과 목 기록이 같은 게임 URL을 반복",
+            "completion_condition": "distill·extract: 모든 기록 보존·목적지 이동은 한 곳",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                    "exists": true,
+                    "sha256": "71101725603ef1a4afb7e914987fa2c5e7b31d02fc4c000473c505bab6836e42"
+                },
+                {
+                    "path": "apps/web/src/lib/components/common/LinkCell.svelte",
+                    "exists": true,
+                    "sha256": "c99b363e52956be224cdcf08fa9d60ed7bcaf59e4a24b9ddfcbf0c2b35bfd6eb"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/detail-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/detail-extra-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-15",
+            "priority_scope": "P2 대비",
+            "original_basis": "밝은 상태 배지 4.44:1·placeholder 3.29:1·업적 점 2.31:1",
+            "completion_condition": "colorize·harden·polish: 일반 글자 4.5:1·의미 있는 점 3:1",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/layout.css",
+                    "exists": true,
+                    "sha256": "f629d8ddd66446540be39c2dcf9e48b2af20dc448ff31105e13b4299f171e4d9"
+                },
+                {
+                    "path": "apps/web/src/lib/components/stats/AchievementCarousel.svelte",
+                    "exists": true,
+                    "sha256": "e27410b0bcdd8f556b641a4d003e9a46d20e779d2cbb0033f3c7ee1f9b1df43e"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/contrast-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/final-flat-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-16",
+            "priority_scope": "P2 계정·개발",
+            "original_basis": "긴 이름, 예제 파일 선택 미연결·버튼 무응답",
+            "completion_condition": "onboard·clarify·harden: 실제 선택·결과·실패→복구·긴 이름 처리",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/me/+page.svelte",
+                    "exists": true,
+                    "sha256": "91c8a9ac243e1079a4e36f16582b8893c459cb239d7a936d4ef45300d058332f"
+                },
+                {
+                    "path": "apps/web/src/routes/backoffice/+page.svelte",
+                    "exists": true,
+                    "sha256": "8f81bf37866f49693011cd029a52aac5215a1eacb7e26bdc458f4be747304ca7"
+                },
+                {
+                    "path": "apps/web/src/routes/dev/components/+page.svelte",
+                    "exists": true,
+                    "sha256": "cfcee843c86462deb07c47e66c7c297b5b048daa799614cf09b6c3f2a0e6ac24"
+                },
+                {
+                    "path": "apps/web/src/lib/components/me/RiotAccountList.svelte",
+                    "exists": true,
+                    "sha256": "05f72cab22d39b98cf2ebb04e0abbc7b4ce943711e066360b151f228307995a1"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/account-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-17",
+            "priority_scope": "P1 서버 관리",
+            "original_basis": "설정·계정 요청 중 다른 조작 가능, 시트 높이 무제한",
+            "completion_condition": "harden·adapt·clarify: 요청 잠금·입력 보존·복구·단일 팝업",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                    "exists": true,
+                    "sha256": "41d951c66581285e9b5a00a3fa5abc53124862d371e3785f76db8b4abae059f2"
+                },
+                {
+                    "path": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+                    "exists": true,
+                    "sha256": "80464e6401d54161d0ef82e0931d7a95cdae9d05d9b5c7a9ba8eb251e1b9a62f"
+                },
+                {
+                    "path": "apps/web/src/lib/components/admin/DiscordSettingRow.svelte",
+                    "exists": true,
+                    "sha256": "2ab7229899a8b4798ffc51698d6d15e942ab36993ad26f2c4163c908a15cd86c"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/admin-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-18",
+            "priority_scope": "P2 쪽 이동",
+            "original_basis": "실제 버튼 40px, 작은 폭에서 너비도 40px",
+            "completion_condition": "adapt·harden·polish: 44px·DOM 순서·생략 목록·키보드 유지",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/common/PageNav.svelte",
+                    "exists": true,
+                    "sha256": "816d56b2f146fd3a67175651f920857787a4479a711b07edec1fb2373ed080af"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/pagination-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-19",
+            "priority_scope": "P2 장문·펼침 상태",
+            "original_basis": "긴 영문 이름 넘침, 펼친 지표 이름 3.86:1·다크 순위 2.16:1",
+            "completion_condition": "harden·typeset·colorize: 장문 줄바꿈·불투명 보조색·순위 글자 대비",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                    "exists": true,
+                    "sha256": "71101725603ef1a4afb7e914987fa2c5e7b31d02fc4c000473c505bab6836e42"
+                },
+                {
+                    "path": "apps/web/src/lib/components/guild/RankingBoard.svelte",
+                    "exists": true,
+                    "sha256": "1fa65aced2b5e6ed998abb38bc96721d6f743aa491f76c254eeb54372fd57ea4"
+                },
+                {
+                    "path": "apps/web/src/lib/components/common/StatTile.svelte",
+                    "exists": true,
+                    "sha256": "2a9631edcc0b258fc43ab3b56b1b7cb2cca09a9bf5a34528a0cd7cc761e4779d"
+                },
+                {
+                    "path": "apps/web/src/routes/layout.css",
+                    "exists": true,
+                    "sha256": "f629d8ddd66446540be39c2dcf9e48b2af20dc448ff31105e13b4299f171e4d9"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/detail-extra-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/final-flat-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-20",
+            "priority_scope": "P1 모집 달력",
+            "original_basis": "빈 칸 Tab 대상·날짜 이름 중복, 요일 열 하루 불일치·선택 후 body 포커스",
+            "completion_condition": "harden·adapt·clarify·colorize: 날짜 열 교정·전체 날짜 이름·빈 칸 제외·시각 포커스·선택 상태",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/routes/+layout.svelte",
+                    "exists": true,
+                    "sha256": "6e081b8598cc58d35a2b1dda48b39aae0dd1ebf799583e8e8d7a3134c2effe0c"
+                },
+                {
+                    "path": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                    "exists": true,
+                    "sha256": "59af78330fa4a4c30a70ca2b72a667ac7e62b99eaa981bfe82a971dcac2af584"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/calendar-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/zoom-validation.json",
+                    "exists": true
+                }
+            ]
+        },
+        {
+            "id": "UI-21",
+            "priority_scope": "P2 수동 편성 상태 대비",
+            "original_basis": "후보 MMR 4.47:1·빈 자리 2.60:1·교환/hover MMR 3.92:1",
+            "completion_condition": "colorize·polish: 기존 의미 전경으로 기본·hover·선택·배정 상태 4.5:1 이상",
+            "reported_status": "완료",
+            "sources": [
+                {
+                    "path": "apps/web/src/lib/components/teams/FormationPool.svelte",
+                    "exists": true,
+                    "sha256": "64ae5bcf1546b24c75b671be37a52abdcf0d0aa4f913658d943a59b56e5d8e98"
+                },
+                {
+                    "path": "apps/web/src/lib/components/teams/FormationTeamCard.svelte",
+                    "exists": true,
+                    "sha256": "57362d1dc8888dc755930a0df8bdc4eeb68bd89480c18d58b18671b9a168671c"
+                }
+            ],
+            "evidence": [
+                {
+                    "path": "artifacts/ui-review/manual-contrast-validation.json",
+                    "exists": true
+                },
+                {
+                    "path": "artifacts/ui-review/final-fixture-validation.json",
+                    "exists": true
+                }
+            ]
+        }
+    ],
+    "common_components": {
+        "PlayerFace": [
+            {
+                "file": "apps/web/src/lib/components/common/PlayerName.svelte",
+                "lines": [26],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/FormationPool.svelte",
+                "lines": [49],
+                "static_calls": 1,
+                "reachable_routes": ["manual"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/CandidateListDialog.svelte",
+                "lines": [38],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                "lines": [225, 310],
+                "static_calls": 2,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/FormationTeamCard.svelte",
+                "lines": [98],
+                "static_calls": 1,
+                "reachable_routes": ["manual"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+                "lines": [351],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionTeamCard.svelte",
+                "lines": [204],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/bracket/BracketTeamContent.svelte",
+                "lines": [18],
+                "static_calls": 1,
+                "reachable_routes": ["bracket", "result"]
+            },
+            {
+                "file": "apps/web/src/lib/components/stats/LeaderboardTable.svelte",
+                "lines": [142],
+                "static_calls": 1,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/lib/components/stats/AchievementRankingDialog.svelte",
+                "lines": [80],
+                "static_calls": 1,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/lib/components/stats/AchievementCarousel.svelte",
+                "lines": [85],
+                "static_calls": 1,
+                "reachable_routes": ["guild", "stats"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [235],
+                "static_calls": 1,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [133],
+                "static_calls": 1,
+                "reachable_routes": ["player"]
+            }
+        ],
+        "ActionMenu": [
+            {
+                "file": "apps/web/src/lib/components/admin/DiscordSettingRow.svelte",
+                "lines": [54],
+                "static_calls": 1,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/lib/components/layout/MenuButton.svelte",
+                "lines": [31],
+                "static_calls": 1,
+                "reachable_routes": [
+                    "home",
+                    "docs",
+                    "terms",
+                    "privacy",
+                    "me",
+                    "backoffice",
+                    "guild",
+                    "scrims",
+                    "scrim",
+                    "manual",
+                    "auction",
+                    "bracket",
+                    "result",
+                    "matches",
+                    "match",
+                    "player",
+                    "stats",
+                    "admin",
+                    "components",
+                    "error"
+                ]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimOperationsBar.svelte",
+                "lines": [219],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            }
+        ],
+        "SelectionTabs": [
+            {
+                "file": "apps/web/src/lib/components/guild/ActivityBoard.svelte",
+                "lines": [42],
+                "static_calls": 1,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/guild/RankingBoard.svelte",
+                "lines": [179],
+                "static_calls": 1,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ParticipantBoard.svelte",
+                "lines": [179],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [166],
+                "static_calls": 1,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+                "lines": [104],
+                "static_calls": 1,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/scrims/+page.svelte",
+                "lines": [90],
+                "static_calls": 1,
+                "reachable_routes": ["scrims"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [206],
+                "static_calls": 1,
+                "reachable_routes": ["player"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte",
+                "lines": [160],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            }
+        ],
+        "PageNav": [
+            {
+                "file": "apps/web/src/lib/components/stats/LeaderboardTable.svelte",
+                "lines": [189],
+                "static_calls": 1,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/+page.svelte",
+                "lines": [105],
+                "static_calls": 1,
+                "reachable_routes": ["matches"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [265],
+                "static_calls": 1,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+                "lines": [231],
+                "static_calls": 1,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/scrims/+page.svelte",
+                "lines": [124],
+                "static_calls": 1,
+                "reachable_routes": ["scrims"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [341],
+                "static_calls": 1,
+                "reachable_routes": ["player"]
+            }
+        ],
+        "StatusTag": [
+            {
+                "file": "apps/web/src/lib/components/teams/ManualFormationBoard.svelte",
+                "lines": [143, 145],
+                "static_calls": 2,
+                "reachable_routes": ["manual"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+                "lines": [193],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/MatchLineupBoard.svelte",
+                "lines": [132],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/MatchTable.svelte",
+                "lines": [111],
+                "static_calls": 1,
+                "reachable_routes": ["matches"]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/GameHero.svelte",
+                "lines": [67],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/GameTeamTable.svelte",
+                "lines": [130],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/MatchListRow.svelte",
+                "lines": [55],
+                "static_calls": 1,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/bracket/BracketMatchBox.svelte",
+                "lines": [160],
+                "static_calls": 1,
+                "reachable_routes": ["bracket", "result"]
+            },
+            {
+                "file": "apps/web/src/lib/components/bracket/BracketBoard.svelte",
+                "lines": [117],
+                "static_calls": 1,
+                "reachable_routes": ["bracket", "result"]
+            },
+            {
+                "file": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+                "lines": [168],
+                "static_calls": 1,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/lib/components/me/RiotAccountList.svelte",
+                "lines": [37],
+                "static_calls": 1,
+                "reachable_routes": ["me"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimListRow.svelte",
+                "lines": [51],
+                "static_calls": 1,
+                "reachable_routes": ["guild", "scrims"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/FormationMethodChooser.svelte",
+                "lines": [68],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/MyRegistrationBar.svelte",
+                "lines": [52],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ParticipantBoard.svelte",
+                "lines": [88],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            },
+            {
+                "file": "apps/web/src/routes/backoffice/+page.svelte",
+                "lines": [91],
+                "static_calls": 1,
+                "reachable_routes": ["backoffice"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [241],
+                "static_calls": 1,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [324],
+                "static_calls": 1,
+                "reachable_routes": ["player"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte",
+                "lines": [131],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            },
+            {
+                "file": "apps/web/src/routes/dev/components/+page.svelte",
+                "lines": [85, 102],
+                "static_calls": 2,
+                "reachable_routes": ["components"]
+            }
+        ],
+        "PlayerName": [
+            {
+                "file": "apps/web/src/lib/components/scrims/ParticipantBoard.svelte",
+                "lines": [97],
+                "static_calls": 1,
+                "reachable_routes": ["scrim"]
+            }
+        ],
+        "SwitchCell": [
+            {
+                "file": "apps/web/src/lib/components/layout/AppHeader.svelte",
+                "lines": [276],
+                "static_calls": 1,
+                "reachable_routes": [
+                    "home",
+                    "docs",
+                    "terms",
+                    "privacy",
+                    "me",
+                    "backoffice",
+                    "guild",
+                    "scrims",
+                    "scrim",
+                    "manual",
+                    "auction",
+                    "bracket",
+                    "result",
+                    "matches",
+                    "match",
+                    "player",
+                    "stats",
+                    "admin",
+                    "components",
+                    "error"
+                ]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                "lines": [332],
+                "static_calls": 1,
+                "reachable_routes": ["scrims", "scrim"]
+            }
+        ],
+        "StatTile": [
+            {
+                "file": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+                "lines": [84],
+                "static_calls": 1,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [220, 230],
+                "static_calls": 2,
+                "reachable_routes": ["player"]
+            }
+        ],
+        "LinkCell": [
+            {
+                "file": "apps/web/src/lib/components/matches/MatchListRow.svelte",
+                "lines": [35],
+                "static_calls": 1,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/guild/RankingBoard.svelte",
+                "lines": [105],
+                "static_calls": 1,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimListRow.svelte",
+                "lines": [34],
+                "static_calls": 1,
+                "reachable_routes": ["guild", "scrims"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [292],
+                "static_calls": 1,
+                "reachable_routes": ["player"]
+            },
+            {
+                "file": "apps/web/src/routes/dev/components/+page.svelte",
+                "lines": [95, 105],
+                "static_calls": 2,
+                "reachable_routes": ["components"]
+            }
+        ],
+        "AccessibleAccordion": [
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+                "lines": [498],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/routes/docs/+page.svelte",
+                "lines": [169],
+                "static_calls": 1,
+                "reachable_routes": ["docs"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [223],
+                "static_calls": 1,
+                "reachable_routes": ["player"]
+            }
+        ],
+        "PositionIcon": [
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                "lines": [237],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/FormationTeamCard.svelte",
+                "lines": [93],
+                "static_calls": 1,
+                "reachable_routes": ["manual"]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+                "lines": [329, 336],
+                "static_calls": 2,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/MatchLineupBoard.svelte",
+                "lines": [214],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [306, 375],
+                "static_calls": 2,
+                "reachable_routes": ["player"]
+            }
+        ],
+        "ConfirmDialog": [
+            {
+                "file": "apps/web/src/routes/+layout.svelte",
+                "lines": [48],
+                "static_calls": 1,
+                "reachable_routes": [
+                    "home",
+                    "docs",
+                    "terms",
+                    "privacy",
+                    "me",
+                    "backoffice",
+                    "guild",
+                    "scrims",
+                    "scrim",
+                    "manual",
+                    "auction",
+                    "bracket",
+                    "result",
+                    "matches",
+                    "match",
+                    "player",
+                    "stats",
+                    "admin",
+                    "components",
+                    "error"
+                ]
+            }
+        ],
+        "DateBadge": [
+            {
+                "file": "apps/web/src/lib/components/matches/MatchListRow.svelte",
+                "lines": [37],
+                "static_calls": 1,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimListRow.svelte",
+                "lines": [36],
+                "static_calls": 1,
+                "reachable_routes": ["guild", "scrims"]
+            }
+        ],
+        "AvatarStack": [
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimListRow.svelte",
+                "lines": [42],
+                "static_calls": 1,
+                "reachable_routes": ["guild", "scrims"]
+            }
+        ],
+        "SectionState": [
+            {
+                "file": "apps/web/src/lib/components/guild/ActivityBoard.svelte",
+                "lines": [48, 72],
+                "static_calls": 2,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/guild/RankingBoard.svelte",
+                "lines": [168, 170],
+                "static_calls": 2,
+                "reachable_routes": ["guild"]
+            },
+            {
+                "file": "apps/web/src/lib/components/bracket/BracketBoard.svelte",
+                "lines": [102],
+                "static_calls": 1,
+                "reachable_routes": ["bracket", "result"]
+            },
+            {
+                "file": "apps/web/src/lib/components/me/RiotAccountList.svelte",
+                "lines": [44],
+                "static_calls": 1,
+                "reachable_routes": ["me"]
+            },
+            {
+                "file": "apps/web/src/routes/backoffice/+page.svelte",
+                "lines": [81],
+                "static_calls": 1,
+                "reachable_routes": ["backoffice"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/+page.svelte",
+                "lines": [77],
+                "static_calls": 1,
+                "reachable_routes": ["matches"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [189, 221],
+                "static_calls": 2,
+                "reachable_routes": ["admin"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+                "lines": [69, 152, 186],
+                "static_calls": 3,
+                "reachable_routes": ["stats"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/scrims/+page.svelte",
+                "lines": [83, 102],
+                "static_calls": 2,
+                "reachable_routes": ["scrims"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte",
+                "lines": [18],
+                "static_calls": 1,
+                "reachable_routes": ["auction"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/manual/+page.svelte",
+                "lines": [26],
+                "static_calls": 1,
+                "reachable_routes": ["manual"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+                "lines": [202, 333],
+                "static_calls": 2,
+                "reachable_routes": ["player"]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte",
+                "lines": [153],
+                "static_calls": 1,
+                "reachable_routes": ["match"]
+            },
+            {
+                "file": "apps/web/src/routes/dev/components/+page.svelte",
+                "lines": [112, 113, 117],
+                "static_calls": 3,
+                "reachable_routes": ["components"]
+            }
+        ]
+    },
+    "helper_callers": {
+        "inputLabel": [
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                "lines": [193]
+            },
+            {
+                "file": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+                "lines": [223]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                "lines": [226]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/+page.svelte",
+                "lines": [56]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [203]
+            },
+            {
+                "file": "apps/web/src/routes/dev/components/+page.svelte",
+                "lines": [234]
+            }
+        ],
+        "inputFeedback": [
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                "lines": [277]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionTeamCard.svelte",
+                "lines": [149]
+            },
+            {
+                "file": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+                "lines": [224]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                "lines": [202, 227, 250]
+            },
+            {
+                "file": "apps/web/src/routes/dev/components/+page.svelte",
+                "lines": [234]
+            }
+        ],
+        "stepperLabels": [
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                "lines": [302, 314]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+                "lines": [168]
+            }
+        ],
+        "nonSubmitButtons": [
+            {
+                "file": "apps/web/src/lib/components/bracket/BracketFormatControl.svelte",
+                "lines": [47]
+            },
+            {
+                "file": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+                "lines": [220, 257]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/RegistrationDialog.svelte",
+                "lines": [141]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+                "lines": [194]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/+page.svelte",
+                "lines": [55]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [202]
+            },
+            {
+                "file": "apps/web/src/routes/dev/components/+page.svelte",
+                "lines": [231]
+            }
+        ],
+        "postAction": [
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+                "lines": [106, 128]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/ManualFormationBoard.svelte",
+                "lines": [74, 104]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+                "lines": [104]
+            },
+            {
+                "file": "apps/web/src/lib/components/teams/ChangeMethodButton.svelte",
+                "lines": [23]
+            },
+            {
+                "file": "apps/web/src/lib/components/matches/MatchLineupBoard.svelte",
+                "lines": [90, 108]
+            },
+            {
+                "file": "apps/web/src/lib/components/bracket/BracketBoard.svelte",
+                "lines": [58]
+            },
+            {
+                "file": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+                "lines": [60]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/FormationMethodChooser.svelte",
+                "lines": [31]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/MyRegistrationBar.svelte",
+                "lines": [35]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ParticipantBoard.svelte",
+                "lines": [72]
+            },
+            {
+                "file": "apps/web/src/lib/components/scrims/ScrimOperationsBar.svelte",
+                "lines": [88, 100, 122]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+                "lines": [66]
+            },
+            {
+                "file": "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte",
+                "lines": [70]
+            }
+        ]
+    },
+    "source_hash_checks": [
+        {
+            "path": "apps/web/src/lib/components/admin/DiscordSettingRow.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/bracket/BracketBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/bracket/BracketMatchBox.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/common/LinkCell.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/common/PageNav.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/common/SectionState.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/common/StatTile.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/guild/ActivityBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/guild/NextScrimHero.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/guild/RankingBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/layout/AppFooter.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/layout/AppHeader.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/layout/MenuButton.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/matches/GameHero.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/matches/GamePlayerDialog.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/matches/GameTeamTable.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/matches/RoflUploadDialog.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/me/RiotAccountList.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/scrims/MyRegistrationBar.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/scrims/ParticipantBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/scrims/RegistrationDialog.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/scrims/ScrimOperationsBar.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/scrims/ScrimSummary.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/stats/AchievementCarousel.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/stats/AchievementRankingDialog.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/stats/LeaderboardTable.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionTeamCard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/ChangeMethodButton.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/FormationHeadToHead.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/FormationPool.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/FormationSynergyRail.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/FormationTeamCard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/ManualFormationBoard.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/ui/actions.ts",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/ui/form.ts",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/+error.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/+layout.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/backoffice/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/dev/components/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/docs/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/admin/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/matches/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/result/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/layout.css",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/routes/me/+page.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/common/AccessibleAccordion.svelte",
+            "matches": true
+        },
+        {
+            "path": "apps/web/src/lib/components/common/SelectionTabs.svelte",
+            "matches": true
+        }
+    ],
+    "findings": {
+        "undocumented_page_sources": [],
+        "missing_evidence_files": [],
+        "source_hash_mismatches": [],
+        "missing_canonical_images": []
+    },
+    "limitations": [
+        "정적 호출과 전이 의존성은 실행 경로가 있다는 뜻이다. 모든 역할·상태에서 동시에 렌더링된다고 주장하지 않는다.",
+        "컴포넌트와 코드 존재 자체를 디자인 개선 성공으로 판정하지 않는다.",
+        "기존 증거는 최초 구현의 검증이다. 푸시 후 fresh 운영5페이지20조건은 workflow.json에 따로 기록한다."
+    ],
+    "source_verification_notes": {
+        "native_component_migration": "Tab·Accordion·Pagination의 직접 렌더는 해당 공통 컴포넌트 내부에만 남는다. Stepper는 설정2개·통계1개 사용처에 필드별 이름 attachment가 있다.",
+        "possible_remaining_scope": [
+            {
+                "file": "apps/web/src/lib/components/teams/CandidateListDialog.svelte",
+                "line": 58,
+                "observation": "열린 Popup 위치에 desktop.current를 직접 사용한다. 다른 주요 팝업의 위치 고정 패턴과 다르다.",
+                "status": "현재 경매 준비fixture에서는 열리지 않아 resize 복제 여부를 재현하지 못했다. 확정 결함으로 판정하지 않는다."
+            }
+        ],
+        "design_effect_report": "artifacts/ui-review/recheck/design-workflow.md"
+    }
+}
