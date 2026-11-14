@@ -6,5 +6,11 @@ dist
 samples
 pnpm-lock.yaml
 apps/web/drizzle
+# 설치된 스킬과 훅의 로컬 실행 산출물은 생성 도구의 형식을 유지한다.
+.agents/skills/impeccable
+.codex/hooks.json
+**/.impeccable/config.local.json
+**/.impeccable/hook.cache.json
+**/.impeccable/live/
 # 문서의 표와 줄바꿈은 기존 작성 형식을 유지한다.
 *.md

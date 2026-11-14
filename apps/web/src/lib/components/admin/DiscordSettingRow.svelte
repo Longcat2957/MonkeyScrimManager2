@@ -10,10 +10,11 @@
         value: string;
         actions: ActionProps[];
         busy: boolean;
+        disabled: boolean;
         onselect: (index: number) => void;
     };
 
-    let { label, description, value, actions, busy, onselect }: Props = $props();
+    let { label, description, value, actions, busy, disabled, onselect }: Props = $props();
     let open = $state(false);
     let trigger: HTMLElement | null = $state(null);
 </script>
@@ -24,17 +25,22 @@
         <span class="font-medium">{label}</span>
         <span class="text-xs opacity-60">{description}</span>
     </span>
-    <span bind:this={trigger} class="inline-flex sm:ml-auto">
+    <span bind:this={trigger} class="inline-flex min-w-0 max-w-full sm:ml-auto">
         <Button
             fill="lineLight"
             size="auto"
             heightOut="0"
             heightIn="2"
-            injClass="gap-1.5 px-3 text-sm"
+            injClass="min-h-11 max-w-full gap-1.5 px-3 text-sm"
             loading={busy ? {} : null}
-            onclick={() => (open = !open)}
+            {disabled}
+            onclick={() => {
+                if (!disabled) open = !open;
+            }}
         >
-            <span class="sr-only">{label} 바꾸기, 현재 </span>{value}
+            <span class="sr-only">{label} 바꾸기, 현재 </span><span class="min-w-0 wrap-anywhere"
+                >{value}</span
+            >
             <svg
                 aria-hidden="true"
                 viewBox="0 0 24 24"
@@ -50,6 +56,9 @@
         {label}
         {actions}
         {trigger}
-        onselect={(index) => ((open = false), onselect(index))}
+        onselect={(index) => {
+            open = false;
+            if (!disabled) onselect(index);
+        }}
     />
 </li>

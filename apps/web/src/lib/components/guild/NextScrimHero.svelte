@@ -1,18 +1,19 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import { CountDown, Progress } from 'stdf';
     import type { NextScrim } from '#lib/features/guild/types.ts';
     import { MY_REGISTRATION, formatSchedule, formationMethodLabel } from '#lib/features/labels.ts';
 
     let { next, href }: { next: NextScrim | null; href: string | null } = $props();
 
-    // 남은 시간은 브라우저 시각 기준이라 SSR과 맞지 않으므로 마운트 후에만 센다.
+    // 남은 시간은 브라우저에서만 계산하고 내전·일정이 바뀌면 현재 시각에서 다시 센다.
     let now = $state<number | null>(null);
-    onMount(() => {
-        now = Date.now();
-    });
 
     const scrim = $derived(next?.scrim);
+    $effect(() => {
+        void scrim?.id;
+        void scrim?.scheduledAt;
+        now = Date.now();
+    });
     const live = $derived(scrim?.status === 'in_progress');
     const remaining = $derived(
         now !== null && scrim?.scheduledAt ? Math.max(0, Date.parse(scrim.scheduledAt) - now) : null
@@ -43,7 +44,7 @@
 -->
 <section
     aria-labelledby="next-scrim"
-    class="relative isolate overflow-hidden rounded-(--radius-box) bg-bg-base-dark text-text-dark ring-1 ring-white/10"
+    class="inverse-surface relative isolate overflow-hidden rounded-(--radius-box) bg-bg-base-dark text-text-dark ring-1 ring-white/10"
 >
     {#if next?.artUrl}
         <img
@@ -64,7 +65,7 @@
                 >
                     {#if live}
                         <span
-                            class="inline-flex items-center gap-1.5 rounded-full bg-error/90 px-2 py-0.5 text-white"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-error/90 px-2 py-0.5 text-text-on-dark"
                         >
                             <span
                                 class="size-1.5 animate-pulse rounded-full bg-white motion-reduce:animate-none"
@@ -76,9 +77,9 @@
                     {#if mine}
                         <span
                             class={[
-                                'rounded-full px-2 py-0.5',
-                                scrim.myRegistration === 'selected' && 'bg-success/20 text-success',
-                                scrim.myRegistration === 'standby' && 'bg-info/20 text-info'
+                                'rounded-full bg-bg-base-dark/90 px-2 py-0.5',
+                                scrim.myRegistration === 'selected' && 'text-success',
+                                scrim.myRegistration === 'standby' && 'text-info'
                             ]}
                         >
                             {mine}
@@ -92,6 +93,8 @@
             <!-- 시작 시각은 위 문구가 전달하므로 매초 바뀌는 카운트다운은 보조기기에 읽히지 않게 한다. -->
             {#if live}
                 <p class="text-3xl font-bold md:text-4xl">지금 진행 중</p>
+            {:else if remaining === 0}
+                <p class="text-lg font-semibold">예정 시각이 지났어요</p>
             {:else if scrim.scheduledAt}
                 <div aria-hidden="true" class="flex flex-col gap-2">
                     <span class="text-xs font-semibold tracking-wider text-text-dark/60">시작까지</span>
@@ -108,11 +111,13 @@
                         </span>
                     {/snippet}
                     {#if remaining !== null}
-                        <CountDown time={remaining}>
-                            {#snippet children({ days, hours, minutes, seconds })}
-                                {@render clock(String(days), pad(hours), pad(minutes), pad(seconds))}
-                            {/snippet}
-                        </CountDown>
+                        {#key `${scrim.id}:${scrim.scheduledAt}`}
+                            <CountDown time={remaining} onfinish={() => (now = Date.now())}>
+                                {#snippet children({ days, hours, minutes, seconds })}
+                                    {@render clock(String(days), pad(hours), pad(minutes), pad(seconds))}
+                                {/snippet}
+                            </CountDown>
+                        {/key}
                     {:else}
                         {@render clock('-', '--', '--', '--')}
                     {/if}

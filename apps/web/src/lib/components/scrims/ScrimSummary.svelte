@@ -9,8 +9,14 @@
     let {
         scrim,
         artUrl = null,
-        compact = false
-    }: { scrim: ScrimContext; artUrl?: string | null; compact?: boolean } = $props();
+        compact = false,
+        headingLevel = 1
+    }: {
+        scrim: ScrimContext;
+        artUrl?: string | null;
+        compact?: boolean;
+        headingLevel?: 1 | 2 | 3;
+    } = $props();
 
     const STEP_TITLES = ['모집', '편성', '대진', '진행', '종료'];
     // STDF Steps의 current는 1부터 센다. 종료는 마지막 단계까지 완료로 표시한다.
@@ -64,7 +70,7 @@
 -->
 {#if compact}
     <header class="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 class="text-lg font-semibold">{scrim.title}</h1>
+        <svelte:element this={`h${headingLevel}`} class="text-lg font-semibold">{scrim.title}</svelte:element>
         <p class="text-sm opacity-60">
             {[formatSchedule(scrim.scheduledAt), scrim.hardFearless ? '하드 피어리스' : null]
                 .filter(Boolean)
@@ -74,7 +80,7 @@
 {:else}
     <header class="mb-8 flex flex-col gap-6 border-b border-border pb-6">
         <div
-            class="relative isolate overflow-hidden rounded-(--radius-box) bg-bg-base-dark text-text-dark ring-1 ring-white/10"
+            class="inverse-surface relative isolate overflow-hidden rounded-(--radius-box) bg-bg-base-dark text-text-dark ring-1 ring-white/10"
         >
             {#if artUrl}
                 <img
@@ -88,7 +94,10 @@
             {/if}
             <div class="flex min-h-44 flex-col justify-end gap-3 p-6 md:p-8 lg:max-w-[40rem]">
                 <div class="flex flex-wrap items-center gap-3">
-                    <h1 class="text-2xl font-bold text-balance md:text-3xl">{scrim.title}</h1>
+                    <svelte:element
+                        this={`h${headingLevel}`}
+                        class="text-2xl font-bold text-balance md:text-3xl">{scrim.title}</svelte:element
+                    >
                     <span
                         class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm"
                     >

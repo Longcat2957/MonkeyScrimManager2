@@ -31,13 +31,13 @@
             미배정 <span class="font-normal opacity-60 tabular-nums">{players.length}명</span>
         </h3>
         {#if interactive && players.length > 0 && !selectedId}
-            <span class="text-xs opacity-60">탭 선택 / 드래그</span>
+            <span class="text-xs opacity-60">선택 후 자리 배치</span>
         {/if}
     </header>
     {#if players.length === 0}
         {#if interactive}
             <p class="px-3 pb-5 text-center text-sm text-gray-500 dark:text-gray-400">
-                여기로 끌어 놓으면 배치를 해제해요
+                배정 해제는 각 자리의 × 버튼을 사용해요
             </p>
         {/if}
     {:else}
@@ -51,7 +51,7 @@
                         <span class="truncate text-sm font-semibold">{player.displayName}</span>
                         <span class="flex items-center gap-2">
                             <PositionChips positions={player.positions} />
-                            <span class="text-xs text-gray-500 tabular-nums dark:text-gray-400"
+                            <span class="text-xs text-text-muted tabular-nums"
                                 >{formatMmr(bestMmr(player))}</span
                             >
                         </span>

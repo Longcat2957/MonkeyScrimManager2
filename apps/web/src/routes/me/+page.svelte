@@ -21,7 +21,7 @@
                     alt=""
                     width="56"
                     height="56"
-                    class="size-14 rounded-full object-cover"
+                    class="size-14 shrink-0 rounded-full object-cover"
                 />
             {:else}
                 <span
@@ -32,7 +32,7 @@
                 </span>
             {/if}
             <div class="flex min-w-0 flex-col">
-                <span class="truncate text-lg font-semibold">{data.me.displayName}</span>
+                <span class="text-lg font-semibold">{data.me.displayName}</span>
                 <span class="text-sm opacity-70">Discord 계정으로 로그인했어요</span>
             </div>
         </div>

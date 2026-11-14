@@ -1,0 +1,14 @@
+[    2860ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5173/g/devGuild001/admin?/lookup:1
+[    3489ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://127.0.0.1:5173/g/devGuild001/admin?/lookup:1
+[    5497ms] [ERROR] Failed to load resource: the server responded with a status of 409 (Conflict) @ http://127.0.0.1:5173/g/devGuild001/admin?/link:1
+[    7374ms] [WARNING] %c[svelte] derived_inert
+%cReading a derived belonging to a now-destroyed effect may result in stale values
+https://svelte.dev/e/derived_inert font-weight: bold font-weight: normal @ http://127.0.0.1:5173/@vite/client:368
+[    9581ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://127.0.0.1:5173/g/devGuild001/admin?/lookup:1
+[    9581ms] [WARNING] %c[sveltekit] hmr_reload_after_error
+%cThe next HMR update will cause the page to reload
+https://svelte.dev/e/kit/hmr_reload_after_error font-weight: bold font-weight: normal @ http://127.0.0.1:5173/@vite/client:368
+[    9581ms] [ERROR] TypeError: Failed to fetch
+    at window.fetch (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/client/fetcher.js?v=225af5a4:65:10)
+    at HTMLFormElement.handle_submit (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/app/forms/client.js?v=225af5a4:182:27) @ http://127.0.0.1:5173/@vite/client:368
+[   10032ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:5173/g/devGuild002/admin:1

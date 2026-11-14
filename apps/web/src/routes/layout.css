@@ -45,14 +45,16 @@
     --color-bg-highlight-dark: oklch(0.372 0.044 257.287);
     --color-text-primary: oklch(0.208 0.042 265.755);
     --color-text-dark: oklch(0.968 0.007 247.896);
+    /* 보조 정보는 불투명 색으로 읽히게 한다. 강조 행을 포함해 양쪽 테마에서 대비를 확인했다. */
+    --color-text-muted: var(--color-primary);
     --color-text-on-primary: oklch(0.984 0.003 247.858);
     --color-text-on-dark: oklch(0.129 0.042 264.695);
     --color-border: color-mix(in oklch, var(--color-text-primary) 18%, var(--color-bg-base));
     --color-border-strong: color-mix(in oklch, var(--color-text-primary) 28%, var(--color-bg-base));
 
     /* 상태 의미를 구분하는 색상은 유지한다. */
-    --color-success: oklch(0.508 0.118 165.612);
-    --color-warning: oklch(0.555 0.163 48.998);
+    --color-success: oklch(0.432 0.095 166.913);
+    --color-warning: oklch(0.473 0.137 46.201);
     --color-error: oklch(0.514 0.222 16.935);
     --color-info: oklch(0.5 0.134 242.749);
     /* 서버 순위 1~3위 표시. 숫자와 함께 쓰며 색만으로 순위를 전달하지 않는다. */
@@ -79,14 +81,19 @@
     }
 
     html[data-mode='dark'] {
+        --color-text-muted: var(--color-dark-700);
         --color-border: color-mix(in oklch, var(--color-text-dark) 26%, var(--color-bg-base-dark));
         --color-border-strong: color-mix(in oklch, var(--color-text-dark) 38%, var(--color-bg-base-dark));
-        /* 상태색은 밝은 바탕 기준이라 어두운 바탕에서 글자가 묻힌다. 다크 모드에서는 한 단계 밝게 쓴다. */
+        color-scheme: dark;
+    }
+
+    /* 페이지 테마와 관계없이 어두운 표면에서는 같은 밝은 상태색을 쓴다. */
+    html[data-mode='dark'],
+    .inverse-surface {
         --color-success: oklch(0.765 0.153 163.2);
         --color-warning: oklch(0.769 0.165 61.3);
         --color-error: oklch(0.71 0.166 15.3);
         --color-info: oklch(0.746 0.13 237.3);
-        color-scheme: dark;
     }
 }
 
@@ -144,5 +151,12 @@
     :focus-visible {
         outline: 2px solid currentColor;
         outline-offset: 2px;
+    }
+
+    /* 입력 예시도 양쪽 테마의 보조 정보 대비를 유지한다. */
+    input::placeholder,
+    textarea::placeholder {
+        color: var(--color-text-muted);
+        opacity: 1;
     }
 }

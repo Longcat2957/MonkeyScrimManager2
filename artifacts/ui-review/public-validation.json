@@ -1,0 +1,264 @@
+{
+    "public-check": {
+        "pages": [
+            {
+                "name": "home",
+                "path": "/",
+                "view": "desktop",
+                "status": 200,
+                "title": "Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 1344,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "docs",
+                "path": "/docs",
+                "view": "desktop",
+                "status": 200,
+                "title": "이용 안내 | Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 1344,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "terms",
+                "path": "/terms",
+                "view": "desktop",
+                "status": 200,
+                "title": "이용약관 | Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 1344,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "privacy",
+                "path": "/privacy",
+                "view": "desktop",
+                "status": 200,
+                "title": "개인정보 처리방침 | Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 1344,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "home",
+                "path": "/",
+                "view": "mobile",
+                "status": 200,
+                "title": "Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 382,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "docs",
+                "path": "/docs",
+                "view": "mobile",
+                "status": 200,
+                "title": "이용 안내 | Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 382,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "terms",
+                "path": "/terms",
+                "view": "mobile",
+                "status": 200,
+                "title": "이용약관 | Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 382,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            },
+            {
+                "name": "privacy",
+                "path": "/privacy",
+                "view": "mobile",
+                "status": 200,
+                "title": "개인정보 처리방침 | Monkeybot",
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "mainWidth": 382,
+                "bodyFont": "\"Noto Sans KR\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+            }
+        ],
+        "console": [],
+        "errors": [],
+        "loginClosed": {
+            "rendered": 1,
+            "accessible": 1
+        },
+        "loginOpen": {
+            "rendered": 1,
+            "accessible": 1,
+            "dialogCount": 1
+        },
+        "menuInitialFocus": {
+            "tag": "BUTTON",
+            "text": "",
+            "inDialog": true
+        },
+        "menuButtons": ["", " "],
+        "menuTabFocus": {
+            "tag": "BUTTON",
+            "inDialog": true
+        },
+        "menuEscFocus": true,
+        "toc": [
+            {
+                "text": "모집 참여",
+                "height": 44,
+                "width": 164
+            },
+            {
+                "text": "팀 편성",
+                "height": 44,
+                "width": 164
+            },
+            {
+                "text": "대진",
+                "height": 44,
+                "width": 164
+            },
+            {
+                "text": "되돌리기·중도 종료",
+                "height": 44,
+                "width": 164
+            },
+            {
+                "text": "ROFL 업로드",
+                "height": 44,
+                "width": 164
+            },
+            {
+                "text": "자주 묻는 질문",
+                "height": 44,
+                "width": 164
+            }
+        ],
+        "faqHeadingTop": 366,
+        "faq": {
+            "before": "false",
+            "expanded": "true",
+            "panelId": "s1-panel-0",
+            "panelVisible": true,
+            "collapsed": "false",
+            "focusRetained": true
+        },
+        "faqReduced": {
+            "expanded": "true",
+            "panelStyle": null
+        },
+        "medium": {
+            "overflow": false,
+            "toc": [44, 44, 44, 44, 44, 44]
+        }
+    },
+    "public-dark-check": {
+        "dark": [
+            {
+                "name": "home",
+                "view": "desktop",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "docs",
+                "view": "desktop",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "terms",
+                "view": "desktop",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "privacy",
+                "view": "desktop",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "home",
+                "view": "mobile",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "docs",
+                "view": "mobile",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "terms",
+                "view": "mobile",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            },
+            {
+                "name": "privacy",
+                "view": "mobile",
+                "mode": "dark",
+                "overflow": false,
+                "h1": 1
+            }
+        ],
+        "errors": [],
+        "console": [],
+        "loginOpen": {
+            "rendered": 1,
+            "accessible": 1,
+            "headerInert": true
+        },
+        "themeKeyboard": {
+            "mode": "dark",
+            "saved": "dark"
+        },
+        "focusReturned": true,
+        "themeReload": "dark",
+        "footer": [
+            {
+                "text": "문서",
+                "path": "http://127.0.0.1:5173/docs",
+                "h1": "이용 안내"
+            },
+            {
+                "text": "이용약관",
+                "path": "http://127.0.0.1:5173/terms",
+                "h1": "이용약관"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "path": "http://127.0.0.1:5173/privacy",
+                "h1": "개인정보 처리방침"
+            }
+        ],
+        "finalMode": "primary"
+    }
+}

@@ -9,6 +9,7 @@
     let pending = $state(false);
 
     async function change() {
+        if (disabled || pending) return;
         if (
             !(await confirm(
                 '지금까지의 편성을 지우고 수동 편성·경매 선택으로 돌아갈까요?',
@@ -16,10 +17,14 @@
             ))
         )
             return;
+        if (disabled || pending) return;
         pending = true;
-        const message = await postAction('changeMethod', {});
-        pending = false;
-        if (message) toast.error(message);
+        try {
+            const message = await postAction('changeMethod', {});
+            if (message) toast.error(message);
+        } finally {
+            pending = false;
+        }
     }
 </script>
 
@@ -28,7 +33,7 @@
     size="auto"
     heightOut="0"
     heightIn="2"
-    injClass="px-3 text-sm"
+    injClass="min-h-11 px-3 text-sm"
     disabled={disabled || pending}
     onclick={change}>방식 다시 고르기</Button
 >

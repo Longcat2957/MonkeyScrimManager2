@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { Button, CellGroup, List, Loading, Tab, toast } from 'stdf';
+    import { Button, CellGroup, List, Loading, toast } from 'stdf';
     import type { BatchActionProps } from 'stdf';
     import PlayerName from '#lib/components/common/PlayerName.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { REGISTRATION_STATUS } from '#lib/features/labels.ts';
     import type {
@@ -134,7 +135,7 @@
                         size="auto"
                         heightOut="0"
                         heightIn="2"
-                        injClass="px-3 text-sm"
+                        injClass="min-h-11 px-3 text-sm"
                         disabled={selectable.length === 0}
                         onclick={() => ((selected = []), (managing = true))}
                     >
@@ -175,7 +176,7 @@
                 class="border-b border-text-primary/5 px-2 py-1 dark:border-text-dark/5"
             >
                 <!-- 네 칸을 한 줄에 둔다. STDF Tab의 overflow 모드는 ResizeObserver 루프를 일으켜 쓰지 않는다. -->
-                <Tab
+                <SelectionTabs
                     {labels}
                     active={filter}
                     showNum={4}

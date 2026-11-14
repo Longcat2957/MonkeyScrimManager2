@@ -10,9 +10,12 @@
 <section aria-labelledby="riot-accounts" class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
         <h2 id="riot-accounts" class="text-lg font-semibold">Riot 계정</h2>
-        <p class="text-sm opacity-70">
-            연결과 대표 계정 지정은 서버별로 운영자가 관리해요. 해당 서버의 내전에 신청할 때 계정을 골라요.
-        </p>
+        {#if groups.length}
+            <p class="text-sm opacity-70">
+                연결과 대표 계정 지정은 서버별로 운영자가 관리해요. 해당 서버의 내전에 신청할 때 계정을
+                골라요.
+            </p>
+        {/if}
     </div>
 
     {#if groups.length}
@@ -26,7 +29,7 @@
                     {#each group.riotAccounts as account (account.id)}
                         <li class="flex items-center justify-between gap-4 px-3 py-4">
                             <span class="flex min-w-0 flex-col">
-                                <span class="truncate font-medium">{account.gameName}</span>
+                                <span class="font-medium">{account.gameName}</span>
                                 <span class="text-xs opacity-60"
                                     >#{account.tagLine} · {account.region} 서버</span
                                 >
@@ -38,6 +41,9 @@
             </div>
         {/each}
     {:else}
-        <SectionState state="empty" message="연결된 Riot 계정이 없어요" />
+        <SectionState
+            state="empty"
+            message="연결된 Riot 계정이 없어요. 참가할 서버의 운영자에게 계정 연결을 요청해 주세요."
+        />
     {/if}
 </section>

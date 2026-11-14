@@ -16,7 +16,11 @@
     import BracketMatchBox from './BracketMatchBox.svelte';
     import BracketTeamContent from './BracketTeamContent.svelte';
 
-    let { bracket, guildId }: { bracket: BracketView | null; guildId: string } = $props();
+    let {
+        bracket,
+        guildId,
+        title = '대진'
+    }: { bracket: BracketView | null; guildId: string; title?: string } = $props();
 
     let selectedId = $state<string | null>(null);
     let busy = $state(false);
@@ -48,18 +52,24 @@
     });
 
     async function run(name: string, fields: Record<string, string> = {}) {
+        if (busy) return false;
         busy = true;
-        const message = await postAction(name, fields);
-        busy = false;
-        if (message) toast.error(message);
-        return !message;
+        try {
+            const message = await postAction(name, fields);
+            if (message) toast.error(message);
+            return !message;
+        } finally {
+            busy = false;
+        }
     }
 
     function select(teamId: string) {
+        if (busy) return;
         selectedId = selectedId === teamId ? null : teamId;
     }
 
     async function place(seat: string, teamId: string | null) {
+        if (!editing || busy) return;
         selectedId = null;
         await run('place', { seat, teamId: teamId ?? '' });
     }
@@ -88,7 +98,7 @@
 
 {#if !bracket}
     <section aria-labelledby="bracket-board" class="flex flex-col gap-4">
-        <h2 id="bracket-board" class="text-xl font-semibold">대진</h2>
+        <h2 id="bracket-board" class="text-xl font-semibold">{title}</h2>
         <SectionState state="empty" message="팀 편성이 끝나면 대진을 만들 수 있어요" />
     </section>
 {:else}
@@ -103,11 +113,14 @@
         >
             <div class="flex min-w-0 flex-col">
                 <div class="flex items-center gap-2">
-                    <h2 id="bracket-board" class="text-xs font-semibold opacity-60">대진</h2>
-                    {#if bracket.confirmed}<StatusTag text="확정" state="success" />{/if}
+                    <h2 id="bracket-board" class="text-xl font-semibold">{title}</h2>
+                    {#if bracket.confirmed && bracket.can.unlock}<StatusTag
+                            text="확정"
+                            state="success"
+                        />{/if}
                     {#if busy}<Loading type="1_0" height="6" width="6" />{/if}
                 </div>
-                <p class="text-sm font-semibold tabular-nums">
+                <p class="text-sm opacity-70 tabular-nums">
                     {bracket.teams.length}팀{#if editing}
                         · {placed}/{seats.length} 배치{/if}
                 </p>
@@ -160,6 +173,10 @@
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >
             </p>
+        {:else if editing && pool.length}
+            <p class="bg-bg-surface px-4 pb-3 text-sm opacity-80 dark:bg-bg-surface-dark">
+                팀을 고른 뒤 대진의 빈 자리를 눌러 배치하세요.
+            </p>
         {/if}
 
         <div class={['grid gap-px pt-px', editing && 'lg:grid-cols-[18rem_minmax(0,1fr)]']}>
@@ -175,7 +192,7 @@
                     ondragleave={() => drag.leave('pool')}
                     ondrop={(event) => drag.drop(event, 'pool')}
                 >
-                    <h3 id="bracket-pool" class="px-3 py-2.5 text-sm font-semibold">팀 풀</h3>
+                    <h3 id="bracket-pool" class="px-3 py-2.5 text-sm font-semibold">배치할 팀</h3>
                     {#if pool.length}
                         <ul class="flex flex-col gap-1.5 px-2 pb-2">
                             {#each pool as team (team.id)}
@@ -183,6 +200,7 @@
                                     <button
                                         type="button"
                                         draggable="true"
+                                        disabled={busy}
                                         aria-pressed={selectedId === team.id}
                                         class={[
                                             'flex min-h-14 w-full cursor-grab items-center rounded-(--radius-small) border px-3 py-2 active:cursor-grabbing',
@@ -239,6 +257,7 @@
                                         {labelOf}
                                         {seatLabel}
                                         {editing}
+                                        disabled={busy}
                                         {selectedId}
                                         {drag}
                                         onselect={select}

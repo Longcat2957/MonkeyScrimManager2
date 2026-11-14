@@ -4,6 +4,10 @@
     import { SERVICE_NAME } from '#lib/branding.ts';
 
     const messages: Record<number, { title: string; description: string }> = {
+        401: {
+            title: '로그인이 필요해요',
+            description: '상단 메뉴의 로그인으로 Discord 계정을 연결해 주세요.'
+        },
         403: {
             title: '접근 권한이 없어요',
             description: '운영자에게 이용 권한을 요청해 주세요.'
@@ -22,13 +26,13 @@
 </script>
 
 <svelte:head>
-    <title>{page.status} | {SERVICE_NAME}</title>
+    <title>{message.title} | {SERVICE_NAME}</title>
     <meta name="robots" content="noindex" />
 </svelte:head>
 
 <section aria-labelledby="error-title" class="mx-auto max-w-lg py-16 text-center sm:py-24">
-    <p class="text-8xl font-semibold tracking-tight text-primary/60 dark:text-dark/60">{page.status}</p>
-    <h1 id="error-title" class="mt-6 text-2xl font-semibold text-balance">{message.title}</h1>
+    <h1 id="error-title" class="text-2xl font-semibold text-balance">{message.title}</h1>
+    <p class="mt-3 text-sm tabular-nums opacity-60">오류 {page.status}</p>
     <p class="mt-3 text-sm leading-relaxed text-pretty opacity-70">{message.description}</p>
     {#if page.status >= 500}
         <div class="mx-auto mt-8 w-36">

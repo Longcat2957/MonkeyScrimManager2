@@ -17,7 +17,14 @@
 </script>
 
 <span bind:this={trigger} class="inline-flex">
-    <Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2" onclick={() => (open = !open)}>
+    <Button
+        fill="text"
+        size="auto"
+        heightOut="0"
+        heightIn="2"
+        injClass="min-h-11 min-w-11 px-2"
+        onclick={() => (open = !open)}
+    >
         {@render children()}
     </Button>
 </span>

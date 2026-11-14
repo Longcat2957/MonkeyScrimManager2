@@ -1,0 +1,15 @@
+[    1224ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/draw:1
+[    1227ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction/__data.json?x-sveltekit-invalidated=1111:1
+[    1227ms] [WARNING] %c[sveltekit] hmr_reload_after_error
+%cThe next HMR update will cause the page to reload
+https://svelte.dev/e/kit/hmr_reload_after_error font-weight: bold font-weight: normal @ http://127.0.0.1:5173/@vite/client:368
+[    1228ms] [ERROR] TypeError: Failed to fetch
+    at window.fetch (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/client/fetcher.js?v=225af5a4:65:10)
+    at dev_fetch (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/client/fetcher.js?v=225af5a4:151:16)
+    at load_data (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/client/client.js?v=225af5a4:3617:20)
+    at load_route (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/client/client.js?v=225af5a4:1426:25)
+    at _invalidate (http://127.0.0.1:5173/@fs/home/qed/workspace/MonkeyScrimManager2/node_modules/.pnpm/@sveltejs+kit@3.1.0_@sveltejs+vite-plugin-svelte@7.3.1_svelte@5.57.3_vite@8.3.5_@types+_a9f8889a9bb381c743aad276f80304d7/node_modules/@sveltejs/kit/src/runtime/client/client.js?v=225af5a4:609:45)
+    at async postAction (http://127.0.0.1:5173/src/lib/ui/actions.ts:32:3)
+    at async eval (eval at evaluate (:370:30), <anonymous>:1:88)
+    at async <anonymous>:381:23 @ http://127.0.0.1:5173/@vite/client:368
+[    1230ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction/__data.json?x-sveltekit-invalidated=1:1

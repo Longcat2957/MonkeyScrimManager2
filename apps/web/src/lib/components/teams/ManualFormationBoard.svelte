@@ -12,6 +12,7 @@
     } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { desktop } from '#lib/ui/viewport.svelte.ts';
     import ChangeMethodButton from './ChangeMethodButton.svelte';
     import { DragState } from './drag.svelte.ts';
     import FormationHeadToHead from './FormationHeadToHead.svelte';
@@ -55,6 +56,7 @@
     const confirmBlocked = $derived(unassigned.length ? '모든 참가자를 배치해야 확정할 수 있어요' : null);
 
     function select(participantId: string) {
+        if (!editable || busy) return;
         selectedId = selectedId === participantId ? null : participantId;
     }
 
@@ -98,9 +100,12 @@
     async function run(name: 'reset' | 'confirm') {
         if (busy || pending) return;
         busy = true;
-        const message = await postAction(name, {});
-        busy = false;
-        if (message) toast.error(message);
+        try {
+            const message = await postAction(name, {});
+            if (message) toast.error(message);
+        } finally {
+            busy = false;
+        }
     }
 
     async function reset() {
@@ -119,7 +124,7 @@
 <svelte:window {onkeydown} />
 
 <!--
-	엔트리 편성 작업판: 도구 줄 → 팀 열(1px 경계로 붙음) → 미배정 목록.
+    엔트리 편성 작업판: 도구 줄 → 미배정 목록 → 팀 열(1px 경계로 붙음).
 	참가자를 끌어 자리에 놓거나 누른 뒤 자리를 누르면 배치되고, 자리에 사람이 있으면 서로 바뀐다.
 -->
 <section
@@ -133,7 +138,7 @@
     >
         <div class="flex min-w-0 flex-col">
             <div class="flex items-center gap-2">
-                <h2 id="manual-formation" class="text-xs font-semibold opacity-60">수동 편성</h2>
+                <h2 id="manual-formation" class="text-lg font-semibold">수동 편성</h2>
                 {#if confirmed}
                     <StatusTag text="확정" state="success" />
                 {:else if !editable}
@@ -154,7 +159,7 @@
                 size="auto"
                 heightOut="0"
                 heightIn="2"
-                injClass="px-3 text-sm"
+                injClass="min-h-11 px-3 text-sm"
                 onclick={() => (details = !details)}
             >
                 {details ? '상세 닫기' : '상세'}
@@ -166,7 +171,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-3 text-sm"
+                    injClass="min-h-11 px-3 text-sm"
                     disabled={placed === 0 || busy || pending > 0}
                     onclick={reset}>초기화</Button
                 >
@@ -174,7 +179,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-4 text-sm"
+                    injClass="min-h-11 px-4 text-sm"
                     disabled={Boolean(confirmBlocked) || busy || pending > 0}
                     onclick={confirmFormation}
                 >
@@ -197,7 +202,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-2 text-sm"
+                    injClass="min-h-11 px-2 text-sm"
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >
             {:else}
@@ -212,7 +217,7 @@
             {players}
             assignments={current}
             {selectedId}
-            interactive={editable}
+            interactive={editable && !busy}
             {drag}
             {details}
             onselect={select}
@@ -221,43 +226,57 @@
         />
     {/snippet}
 
-    <!-- 팀 열. 1px 간격으로 바탕 경계색이 비쳐 열 구분선이 된다. 좁은 화면에서는 가로로 넘긴다. -->
-    <div class="relative overflow-x-auto">
-        {#if details && teams.length === 2}
-            <div
-                class="grid min-w-[56rem] grid-cols-[8rem_minmax(0,1fr)_6rem_minmax(0,1fr)_8rem] gap-px pt-px"
-            >
+    {#if !confirmed && (editable || unassigned.length > 0)}
+        <div class="border-t border-border pt-px">
+            <FormationPool
+                players={unassigned}
+                {selectedId}
+                interactive={editable && !busy}
+                {drag}
+                onselect={select}
+            />
+        </div>
+    {/if}
+
+    <!-- 좁은 화면은 참가자를 먼저 고른 뒤 세로로 이어지는 팀 자리에 배치한다. -->
+    <div class="relative">
+        {#if details && desktop.current && teams.length === 2}
+            <div class="grid grid-cols-[8rem_minmax(0,1fr)_6rem_minmax(0,1fr)_8rem] gap-px pt-px">
                 <FormationSynergyRail team={teams[0]!} {players} assignments={current} {pairs} />
                 {@render teamColumn(teams[0]!)}
                 <FormationHeadToHead teams={[teams[0]!, teams[1]!]} {players} assignments={current} {pairs} />
                 {@render teamColumn(teams[1]!)}
                 <FormationSynergyRail team={teams[1]!} {players} assignments={current} {pairs} />
             </div>
-        {:else if details}
-            <div class="grid min-w-[56rem] grid-cols-[8rem_minmax(0,1fr)_8rem_minmax(0,1fr)] gap-px pt-px">
+        {:else if details && desktop.current}
+            <div class="grid grid-cols-[8rem_minmax(0,1fr)_8rem_minmax(0,1fr)] gap-px pt-px">
                 {#each teams as team (team.id)}
                     <FormationSynergyRail {team} {players} assignments={current} {pairs} />
                     {@render teamColumn(team)}
                 {/each}
             </div>
         {:else}
-            <div class="grid min-w-[30rem] grid-cols-2 gap-px pt-px">
+            <div class="grid gap-px pt-px sm:grid-cols-2">
                 {#each teams as team (team.id)}
-                    {@render teamColumn(team)}
+                    <div class="min-w-0 bg-bg-surface dark:bg-bg-surface-dark">
+                        {@render teamColumn(team)}
+                        {#if details}
+                            <FormationSynergyRail {team} {players} assignments={current} {pairs} compact />
+                        {/if}
+                    </div>
                 {/each}
             </div>
+            {#if details && teams.length === 2}
+                <div class="pt-px">
+                    <FormationHeadToHead
+                        teams={[teams[0]!, teams[1]!]}
+                        {players}
+                        assignments={current}
+                        {pairs}
+                        compact
+                    />
+                </div>
+            {/if}
         {/if}
     </div>
-
-    {#if !confirmed && (editable || unassigned.length > 0)}
-        <div class="pt-px">
-            <FormationPool
-                players={unassigned}
-                {selectedId}
-                interactive={editable}
-                {drag}
-                onselect={select}
-            />
-        </div>
-    {/if}
 </section>

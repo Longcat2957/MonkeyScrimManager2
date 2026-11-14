@@ -1,0 +1,980 @@
+{
+    "date": "2026-11-14",
+    "scope": ["/g/devGuild001/scrims/devScrim007/manual", "/g/devGuild001/scrims/devScrim002/auction"],
+    "implementationFiles": [
+        "apps/web/src/lib/components/teams/ManualFormationBoard.svelte",
+        "apps/web/src/lib/components/teams/FormationPool.svelte",
+        "apps/web/src/lib/components/teams/FormationSynergyRail.svelte",
+        "apps/web/src/lib/components/teams/FormationHeadToHead.svelte",
+        "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte",
+        "apps/web/src/lib/components/teams/AuctionTeamCard.svelte",
+        "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+        "apps/web/src/lib/components/teams/ChangeMethodButton.svelte",
+        "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte"
+    ],
+    "checks": {
+        "svelteCheck": {
+            "errors": 0,
+            "warnings": 0
+        },
+        "webTests": {
+            "passed": 415,
+            "failed": 0
+        },
+        "build": "passed",
+        "prettierNineFiles": "passed"
+    },
+    "manual": {
+        "results": [
+            "키보드 선택·모바일 빈 자리 배치·연속 클릭 1POST",
+            "기존 자리와 교환 확인",
+            "모바일 상세·시너지·5포지션 비교 확인",
+            "배정 해제·기존 배치 복원",
+            "이동 요청 실패 후 낙관적 배치 복구·조작 가능"
+        ],
+        "moves": [
+            {
+                "participantId": "devScrim007-r7",
+                "slot": "devScrim007-t2:jungle"
+            },
+            {
+                "participantId": "devScrim007-r7",
+                "slot": "devScrim007-t2:top"
+            },
+            {
+                "participantId": "devScrim007-r7",
+                "slot": "devScrim007-t2:jungle"
+            },
+            {
+                "participantId": "devScrim007-r7",
+                "slot": ""
+            },
+            {
+                "participantId": "devScrim007-r7",
+                "slot": "devScrim007-t2:jungle"
+            }
+        ],
+        "restored": true
+    },
+    "auction": {
+        "results": [
+            "네 팀 팀장 선택·미저장 포인트/팀장 재조회 보존",
+            "시작 포인트0거절·오류ARIA연결·수정후복구",
+            "저장중입력잠금·연속클릭1POST·실패입력보존",
+            "네팀설정저장·경매시작",
+            "네증감버튼·키보드증감·0하한·예산상한·초과오류",
+            "0점낙찰1POST·다음후보입찰초기화",
+            "개발샘플준비상태·초기포인트·팀장복원",
+            "완료경매읽기전용"
+        ],
+        "requests": [
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/setup",
+                "fields": {
+                    "teams": "[{\"captainId\":\"devScrim002-r1\",\"startPoints\":1200},{\"captainId\":\"devScrim002-r2\",\"startPoints\":900},{\"captainId\":\"devScrim002-r3\",\"startPoints\":1100},{\"captainId\":\"devScrim002-r4\",\"startPoints\":1000}]"
+                }
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/setup",
+                "fields": {
+                    "teams": "[{\"captainId\":\"devScrim002-r1\",\"startPoints\":1200},{\"captainId\":\"devScrim002-r2\",\"startPoints\":900},{\"captainId\":\"devScrim002-r3\",\"startPoints\":1100},{\"captainId\":\"devScrim002-r4\",\"startPoints\":1000}]"
+                }
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/start",
+                "fields": {}
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/draw",
+                "fields": {}
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/award",
+                "fields": {
+                    "teamId": "devScrim002-t1",
+                    "price": "0"
+                }
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/draw",
+                "fields": {}
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/reopenSetup",
+                "fields": {}
+            },
+            {
+                "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/setup",
+                "fields": {
+                    "teams": "[{\"captainId\":null,\"startPoints\":1000},{\"captainId\":null,\"startPoints\":1000},{\"captainId\":null,\"startPoints\":1000},{\"captainId\":null,\"startPoints\":1000}]"
+                }
+            }
+        ],
+        "errors": [],
+        "baselineRestored": true,
+        "voidedHistoryRemains": true
+    },
+    "touchAndReducedMotion": {
+        "results": [
+            "Chromium hasTouch 실제 touchscreen.tap 증감",
+            "reduced-motion 정적 성공 도장·색종이 숨김",
+            "다음 후보 전환 시 이전 낙찰 효과 정리"
+        ],
+        "animations": [
+            {
+                "class": "confetti absolute size-2 rounded-full bg-warning svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-success svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-info svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute size-2 rounded-full bg-error svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-primary dark:bg-dark svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-warning svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute size-2 rounded-full bg-success svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-info svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-error svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute size-2 rounded-full bg-primary dark:bg-dark svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-warning svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-success svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute size-2 rounded-full bg-info svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-error svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute h-2.5 w-1.5 rounded-[1px] bg-primary dark:bg-dark svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "confetti absolute size-2 rounded-full bg-warning svelte-1k3l65f",
+                "stamp": false,
+                "animation": "none",
+                "display": "none"
+            },
+            {
+                "class": "stamp border-2 border-warning bg-bg-surface/90 px-4 py-1.5 text-2xl font-black text-warning shadow-lg dark:bg-bg-surface-dark/90 svelte-1k3l65f",
+                "stamp": true,
+                "animation": "svelte-1k3l65f-stamp-still",
+                "display": "block"
+            }
+        ]
+    },
+    "captureConditions": [
+        {
+            "name": "manual-desktop",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+            "geometry": {
+                "viewport": 1440,
+                "scroll": 1440,
+                "headings": ["수동 편성 내전", "수동 편성", "미배정 4명", "포로팀", "칼날부리팀"],
+                "inputs": [],
+                "slotRects": [
+                    {
+                        "label": "포로팀 탑 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 정글 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 미드 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 원딜 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 서폿 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 탑 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 정글 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 미드 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 원딜 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 서폿 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    }
+                ]
+            }
+        },
+        {
+            "name": "manual-details-desktop-primary",
+            "overflow": false
+        },
+        {
+            "name": "manual-mobile",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+            "geometry": {
+                "viewport": 390,
+                "scroll": 390,
+                "headings": ["수동 편성 내전", "수동 편성", "미배정 4명", "포로팀", "칼날부리팀"],
+                "inputs": [],
+                "slotRects": [
+                    {
+                        "label": "포로팀 탑 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 정글 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 미드 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 원딜 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 서폿 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 탑 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 정글 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 미드 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 원딜 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 서폿 자리",
+                        "x": 34,
+                        "w": 322
+                    }
+                ]
+            }
+        },
+        {
+            "name": "manual-details-mobile-primary",
+            "overflow": false
+        },
+        {
+            "name": "manual-tablet",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+            "geometry": {
+                "viewport": 768,
+                "scroll": 768,
+                "headings": ["수동 편성 내전", "수동 편성", "미배정 4명", "포로팀", "칼날부리팀"],
+                "inputs": [],
+                "slotRects": [
+                    {
+                        "label": "포로팀 탑 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 정글 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 미드 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 원딜 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 서폿 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 탑 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 정글 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 미드 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 원딜 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 서폿 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    }
+                ]
+            }
+        },
+        {
+            "name": "manual-details-tablet-primary",
+            "overflow": false
+        },
+        {
+            "name": "auction-desktop",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction",
+            "geometry": {
+                "viewport": 1440,
+                "scroll": 1440,
+                "headings": [
+                    "경매 내전",
+                    "경매 준비",
+                    "팀장 후보",
+                    "포로팀",
+                    "칼날부리팀",
+                    "돌거북팀",
+                    "바위게팀"
+                ],
+                "inputs": [
+                    {
+                        "placeholder": "참가자 이름",
+                        "label": ["팀장 후보 검색"],
+                        "value": ""
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["포로팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["칼날부리팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["돌거북팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["바위게팀시작 포인트"],
+                        "value": "1000"
+                    }
+                ],
+                "slotRects": []
+            }
+        },
+        {
+            "name": "auction-mobile",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction",
+            "geometry": {
+                "viewport": 390,
+                "scroll": 390,
+                "headings": [
+                    "경매 내전",
+                    "경매 준비",
+                    "팀장 후보",
+                    "포로팀",
+                    "칼날부리팀",
+                    "돌거북팀",
+                    "바위게팀"
+                ],
+                "inputs": [
+                    {
+                        "placeholder": "참가자 이름",
+                        "label": ["팀장 후보 검색"],
+                        "value": ""
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["포로팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["칼날부리팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["돌거북팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["바위게팀시작 포인트"],
+                        "value": "1000"
+                    }
+                ],
+                "slotRects": []
+            }
+        },
+        {
+            "name": "auction-tablet",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction",
+            "geometry": {
+                "viewport": 768,
+                "scroll": 768,
+                "headings": [
+                    "경매 내전",
+                    "경매 준비",
+                    "팀장 후보",
+                    "포로팀",
+                    "칼날부리팀",
+                    "돌거북팀",
+                    "바위게팀"
+                ],
+                "inputs": [
+                    {
+                        "placeholder": "참가자 이름",
+                        "label": ["팀장 후보 검색"],
+                        "value": ""
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["포로팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["칼날부리팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["돌거북팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["바위게팀시작 포인트"],
+                        "value": "1000"
+                    }
+                ],
+                "slotRects": []
+            }
+        },
+        {
+            "name": "manual-desktop-dark",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+            "geometry": {
+                "viewport": 1440,
+                "scroll": 1440,
+                "headings": ["수동 편성 내전", "수동 편성", "미배정 4명", "포로팀", "칼날부리팀"],
+                "inputs": [],
+                "slotRects": [
+                    {
+                        "label": "포로팀 탑 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 정글 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 미드 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 원딜 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "포로팀 서폿 자리",
+                        "x": 98,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 탑 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 정글 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 미드 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 원딜 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    },
+                    {
+                        "label": "칼날부리팀 서폿 자리",
+                        "x": 728.5,
+                        "w": 613.5
+                    }
+                ]
+            }
+        },
+        {
+            "name": "manual-details-desktop-dark",
+            "overflow": false
+        },
+        {
+            "name": "manual-mobile-dark",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+            "geometry": {
+                "viewport": 390,
+                "scroll": 390,
+                "headings": ["수동 편성 내전", "수동 편성", "미배정 4명", "포로팀", "칼날부리팀"],
+                "inputs": [],
+                "slotRects": [
+                    {
+                        "label": "포로팀 탑 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 정글 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 미드 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 원딜 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "포로팀 서폿 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 탑 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 정글 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 미드 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 원딜 자리",
+                        "x": 34,
+                        "w": 322
+                    },
+                    {
+                        "label": "칼날부리팀 서폿 자리",
+                        "x": 34,
+                        "w": 322
+                    }
+                ]
+            }
+        },
+        {
+            "name": "manual-details-mobile-dark",
+            "overflow": false
+        },
+        {
+            "name": "manual-tablet-dark",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+            "geometry": {
+                "viewport": 768,
+                "scroll": 768,
+                "headings": ["수동 편성 내전", "수동 편성", "미배정 4명", "포로팀", "칼날부리팀"],
+                "inputs": [],
+                "slotRects": [
+                    {
+                        "label": "포로팀 탑 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 정글 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 미드 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 원딜 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "포로팀 서폿 자리",
+                        "x": 74,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 탑 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 정글 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 미드 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 원딜 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    },
+                    {
+                        "label": "칼날부리팀 서폿 자리",
+                        "x": 392.5,
+                        "w": 301.5
+                    }
+                ]
+            }
+        },
+        {
+            "name": "manual-details-tablet-dark",
+            "overflow": false
+        },
+        {
+            "name": "auction-desktop-dark",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction",
+            "geometry": {
+                "viewport": 1440,
+                "scroll": 1440,
+                "headings": [
+                    "경매 내전",
+                    "경매 준비",
+                    "팀장 후보",
+                    "포로팀",
+                    "칼날부리팀",
+                    "돌거북팀",
+                    "바위게팀"
+                ],
+                "inputs": [
+                    {
+                        "placeholder": "참가자 이름",
+                        "label": ["팀장 후보 검색"],
+                        "value": ""
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["포로팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["칼날부리팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["돌거북팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["바위게팀시작 포인트"],
+                        "value": "1000"
+                    }
+                ],
+                "slotRects": []
+            }
+        },
+        {
+            "name": "auction-mobile-dark",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction",
+            "geometry": {
+                "viewport": 390,
+                "scroll": 390,
+                "headings": [
+                    "경매 내전",
+                    "경매 준비",
+                    "팀장 후보",
+                    "포로팀",
+                    "칼날부리팀",
+                    "돌거북팀",
+                    "바위게팀"
+                ],
+                "inputs": [
+                    {
+                        "placeholder": "참가자 이름",
+                        "label": ["팀장 후보 검색"],
+                        "value": ""
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["포로팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["칼날부리팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["돌거북팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["바위게팀시작 포인트"],
+                        "value": "1000"
+                    }
+                ],
+                "slotRects": []
+            }
+        },
+        {
+            "name": "auction-tablet-dark",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction",
+            "geometry": {
+                "viewport": 768,
+                "scroll": 768,
+                "headings": [
+                    "경매 내전",
+                    "경매 준비",
+                    "팀장 후보",
+                    "포로팀",
+                    "칼날부리팀",
+                    "돌거북팀",
+                    "바위게팀"
+                ],
+                "inputs": [
+                    {
+                        "placeholder": "참가자 이름",
+                        "label": ["팀장 후보 검색"],
+                        "value": ""
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["포로팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["칼날부리팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["돌거북팀시작 포인트"],
+                        "value": "1000"
+                    },
+                    {
+                        "placeholder": "1000",
+                        "label": ["바위게팀시작 포인트"],
+                        "value": "1000"
+                    }
+                ],
+                "slotRects": []
+            }
+        }
+    ],
+    "pageErrors": [],
+    "restoredState": {
+        "devScrim007": "original 6 assigned, 4 unassigned",
+        "devScrim002": "setup, 4 null captains, 1000 starting points each; voided test history remains hidden until dev server restart",
+        "devScrim008": "untouched"
+    },
+    "limitations": [
+        "Chromium viewport emulation and synthesized touchscreen events; physical iOS/Android and Safari not tested",
+        "Actual OAuth/Discord/external account mutation not performed",
+        "No performance improvement percentages claimed"
+    ],
+    "docsAndKeyboard": [
+        {
+            "slug": "manual-pool",
+            "keyboard": {
+                "scrollTop": 42,
+                "lastButtonVisible": true,
+                "width": 322,
+                "height": 54
+            }
+        },
+        {
+            "slug": "auction-candidates",
+            "keyboard": {
+                "scrollTop": 1002,
+                "lastButtonVisible": true,
+                "width": 322,
+                "height": 58
+            }
+        },
+        {
+            "size": "desktop",
+            "newInstructions": "입찰가는 직접 입력하거나 −50·−10·+10·+50 버튼으로 조정해요.",
+            "oldRightClickInstruction": 0,
+            "overflow": false
+        },
+        {
+            "size": "mobile",
+            "newInstructions": "입찰가는 직접 입력하거나 −50·−10·+10·+50 버튼으로 조정해요.",
+            "oldRightClickInstruction": 0,
+            "overflow": false
+        }
+    ],
+    "documentationCopy": "apps/web/src/routes/docs/+page.svelte: 명시적 −50/−10/+10/+50 버튼 설명, 우클릭 안내 제거",
+    "timerClamp": {
+        "method": "Playwright Clock installed before navigation; rapid input changes followed by fastForward(15000)",
+        "result": {
+            "samples": [
+                {
+                    "seconds": 10,
+                    "width": 100
+                },
+                {
+                    "seconds": 10,
+                    "width": 100
+                },
+                {
+                    "seconds": 10,
+                    "width": 100
+                },
+                {
+                    "seconds": 10,
+                    "width": 100
+                },
+                {
+                    "seconds": 10,
+                    "width": 100
+                }
+            ],
+            "expired": {
+                "seconds": 0,
+                "width": 0
+            }
+        },
+        "passed": true,
+        "screenshots": [
+            "after/auction-live-mobile-primary.png",
+            "after/auction-live-desktop-primary.png",
+            "after/auction-live-mobile-dark.png",
+            "after/auction-live-desktop-dark.png"
+        ],
+        "sampleRestored": "devScrim002 setup, null captains, 1000 starting points",
+        "themeCapture": "theme-mode storage restored on reload;350ms settled transition;animations disabled only for screenshots"
+    }
+}

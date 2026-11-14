@@ -1,0 +1,3 @@
+[   15186ms] [WARNING] %c[svelte] derived_inert
+%cReading a derived belonging to a now-destroyed effect may result in stale values
+https://svelte.dev/e/derived_inert font-weight: bold font-weight: normal @ http://127.0.0.1:5173/@vite/client:368

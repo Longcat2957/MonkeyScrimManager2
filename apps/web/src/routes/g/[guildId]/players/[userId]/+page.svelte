@@ -1,15 +1,17 @@
 <script lang="ts">
-    import { Button, CellGroup, Grid, Grids, Tab } from 'stdf';
+    import { Button, CellGroup, Grid, Grids } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import { page } from '$app/state';
+    import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import AccessibleAccordion from '#lib/components/common/AccessibleAccordion.svelte';
     import LinkCell from '#lib/components/common/LinkCell.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
-    import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import StatTile from '#lib/components/common/StatTile.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import DuoList from '#lib/components/players/DuoList.svelte';
     import RadarChart from '#lib/components/players/RadarChart.svelte';
@@ -23,6 +25,7 @@
     let { data }: PageProps = $props();
 
     const guildId = $derived(page.params.guildId!);
+    const changing = $derived(navigating.to?.route.id === page.route.id);
     const laneText = (key: LolPosition) => POSITIONS.find((position) => position.key === key)?.text ?? key;
     const filters = $derived([{ key: 'all' as const, games: data.overallGames }, ...data.positions]);
     const active = $derived(filters.findIndex((filter) => filter.key === data.position));
@@ -43,26 +46,46 @@
         `${resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId })}?game=${gameId}`;
 
     const top = (key: RankedMetric) => (data.percents?.[key] != null ? `상위 ${data.percents[key]}%` : null);
-    const tiles = $derived.by((): [string, string, string | null, StatTone][] => {
+    const PRIMARY_METRICS = new Set([
+        'winRate',
+        'kda',
+        'killParticipation',
+        'csPerMin',
+        'damagePerMin',
+        'visionPerGame'
+    ]);
+    const tiles = $derived.by((): [RankedMetric | 'lossStreak', string, string, string | null][] => {
         const s = data.summary;
         if (!s) return [];
         return [
-            ['승률', percent(s.wins / s.games), top('winRate'), 'info'],
-            ['KDA', fixed(s.kda, 2), top('kda'), 'warning'],
-            ['킬 관여', percent(s.killParticipation), top('killParticipation'), 'success'],
-            ['최장 연승', withUnit(s.winStreak, '연승'), top('winStreak'), 'success'],
-            ['최장 연패', withUnit(s.lossStreak, '연패'), null, 'error'],
-            ['평균 킬', fixed(s.kills, 1), top('kills'), 'error'],
-            ['평균 데스', fixed(s.deaths, 1), top('deaths'), 'neutral'],
-            ['평균 어시스트', fixed(s.assists, 1), top('assists'), 'info'],
-            ['최다 킬', withUnit(s.maxKills, '킬'), top('maxKills'), 'error'],
-            ['챔피언 폭', withUnit(s.champions, '개'), top('champions'), 'neutral'],
-            ['분당 CS', fixed(s.csPerMin, 1), top('csPerMin'), 'success'],
-            ['분당 골드', integer(s.goldPerMin), top('goldPerMin'), 'warning'],
-            ['분당 피해량', integer(s.damagePerMin), top('damagePerMin'), 'error'],
-            ['분당 받은 피해', integer(s.damageTakenPerMin), top('damageTakenPerMin'), 'neutral'],
-            ['게임당 시야', fixed(s.visionPerGame, 1), top('visionPerGame'), 'info']
+            ['winRate', '승률', percent(s.wins / s.games), top('winRate')],
+            ['kda', 'KDA', fixed(s.kda, 2), top('kda')],
+            ['killParticipation', '킬 관여', percent(s.killParticipation), top('killParticipation')],
+            ['winStreak', '최장 연승', withUnit(s.winStreak, '연승'), top('winStreak')],
+            ['lossStreak', '최장 연패', withUnit(s.lossStreak, '연패'), null],
+            ['kills', '평균 킬', fixed(s.kills, 1), top('kills')],
+            ['deaths', '평균 데스', fixed(s.deaths, 1), top('deaths')],
+            ['assists', '평균 어시스트', fixed(s.assists, 1), top('assists')],
+            ['maxKills', '최다 킬', withUnit(s.maxKills, '킬'), top('maxKills')],
+            ['champions', '챔피언 폭', withUnit(s.champions, '개'), top('champions')],
+            ['csPerMin', '분당 CS', fixed(s.csPerMin, 1), top('csPerMin')],
+            ['goldPerMin', '분당 골드', integer(s.goldPerMin), top('goldPerMin')],
+            ['damagePerMin', '분당 피해량', integer(s.damagePerMin), top('damagePerMin')],
+            ['damageTakenPerMin', '분당 받은 피해', integer(s.damageTakenPerMin), top('damageTakenPerMin')],
+            ['visionPerGame', '게임당 시야', fixed(s.visionPerGame, 1), top('visionPerGame')]
         ];
+    });
+    const primaryTiles = $derived(tiles.filter(([key]) => PRIMARY_METRICS.has(key)));
+    const secondaryTiles = $derived(tiles.filter(([key]) => !PRIMARY_METRICS.has(key)));
+    // 같은 세트가 여러 기록에 나타나도 이동 조작은 처음 등장한 행 하나에만 둔다.
+    const historyRows = $derived.by(() => {
+        const visited = new Set<string>();
+        return data.history.map((game) => {
+            const destination = gameHref(game.matchId, game.gameId);
+            const href = visited.has(destination) ? null : destination;
+            visited.add(destination);
+            return { game, href };
+        });
     });
     // 성향 그래프는 상위 %를 0~1 점수로 바꿔 그린다. 바깥쪽일수록 서버에서 앞선다.
     const RADAR_AXES = [
@@ -104,15 +127,17 @@
     <title>{data.player.displayName} 전적 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col gap-8" aria-busy={changing}>
     <header class="flex flex-col gap-5">
         <div class="flex items-center gap-4">
             <PlayerFace name={data.player.displayName} imageUrl={data.player.iconUrl} size="lg" />
             <div class="flex min-w-0 flex-col gap-1">
                 <div class="flex min-w-0 flex-wrap items-center gap-2">
-                    <h1 class="truncate text-2xl font-semibold">{data.player.displayName}</h1>
+                    <h1 class="min-w-0 max-w-full text-2xl font-semibold [overflow-wrap:anywhere]">
+                        {data.player.displayName}
+                    </h1>
                     {#if data.badges.length}
-                        <ul aria-label="1위 업적" class="flex gap-1">
+                        <ul aria-label="1위 업적" class="flex flex-wrap gap-1">
                             {#each data.badges as badge (badge.id)}
                                 <li
                                     title={badge.title}
@@ -127,7 +152,7 @@
                     {/if}
                 </div>
                 {#if data.player.riotIds.length}
-                    <p class="truncate text-sm opacity-60">{data.player.riotIds.join(' · ')}</p>
+                    <p class="text-sm break-words text-text-muted">{data.player.riotIds.join(' · ')}</p>
                 {/if}
                 {#if data.recordWins !== null}
                     <p class="text-sm font-semibold tabular-nums">
@@ -146,8 +171,7 @@
                 <ol class="flex flex-wrap gap-1.5">
                     {#each data.recent as game, index (index)}
                         <li>
-                            <a
-                                href={gameHref(game.matchId, game.gameId)}
+                            <span
                                 class={[
                                     'block rounded-(--radius-form) ring-2',
                                     game.win ? 'ring-success' : 'ring-error'
@@ -166,7 +190,7 @@
                                     >
                                 {/if}
                                 <span class="sr-only">{game.champion.name} {game.win ? '승리' : '패배'}</span>
-                            </a>
+                            </span>
                         </li>
                     {/each}
                 </ol>
@@ -179,18 +203,35 @@
     {:else}
         <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙인다. 포지션 필터는 요약·챔피언·최근 게임에 함께 적용한다. -->
         <div role="group" aria-label="포지션 필터" class="border-b border-border">
-            <Tab {labels} {active} onclickTab={(index) => navigate({ position: filters[index]!.key })} />
+            <SelectionTabs
+                {labels}
+                {active}
+                onclickTab={(index) => navigate({ position: filters[index]!.key })}
+            />
         </div>
+        {#if changing}<p role="status" class="text-sm text-text-muted">전적을 불러오는 중</p>{/if}
 
         <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div class="flex min-w-0 flex-col gap-8">
                 <section aria-labelledby="summary" class="flex flex-col gap-3">
                     <h2 id="summary" class="text-lg font-semibold">핵심 지표</h2>
-                    <Grids cols={desktop.current ? '5' : '2'} gap="2" mx="0" my="0">
-                        {#each tiles as [label, value, note, tone] (label)}
-                            <Grid><StatTile {label} {value} {note} {tone} /></Grid>
+                    <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
+                        {#each primaryTiles as [key, label, value, note] (key)}
+                            <Grid><StatTile {label} {value} {note} /></Grid>
                         {/each}
                     </Grids>
+                    <AccessibleAccordion
+                        items={[{ title: `세부 지표 ${secondaryTiles.length}개` }]}
+                        border="solid"
+                    >
+                        {#snippet children()}
+                            <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
+                                {#each secondaryTiles as [key, label, value, note] (key)}
+                                    <Grid><StatTile {label} {value} {note} /></Grid>
+                                {/each}
+                            </Grids>
+                        {/snippet}
+                    </AccessibleAccordion>
                 </section>
 
                 <section aria-labelledby="champions" class="flex flex-col gap-3">
@@ -207,7 +248,7 @@
                                             class="size-11 rounded-(--radius-form)"
                                         />{/if}
                                     {#if index < 5}<span
-                                            class="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-warning text-[0.625rem] font-bold text-white"
+                                            class="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-warning text-[0.625rem] font-bold text-white dark:text-text-on-dark"
                                             >{index + 1}</span
                                         >{/if}
                                 </span>
@@ -233,7 +274,7 @@
                                 size="auto"
                                 heightOut="0"
                                 heightIn="2"
-                                injClass="px-3 text-sm"
+                                injClass="min-h-11 px-3 text-sm"
                                 onclick={() => (showAllChampions = !showAllChampions)}
                             >
                                 {showAllChampions ? '접기' : `챔피언 ${data.champions.length}개 모두 보기`}
@@ -246,10 +287,10 @@
                     <h2 id="history" class="text-lg font-semibold">게임 기록</h2>
                     <CellGroup my="0" mx="0" shadow="none">
                         <ul>
-                            {#each data.history as game, index (game.gameId + game.playedAt)}
+                            {#each historyRows as { game, href }, index (game.gameId + game.playedAt)}
                                 <li>
                                     <LinkCell
-                                        href={gameHref(game.matchId, game.gameId)}
+                                        {href}
                                         line={index < data.history.length - 1}
                                         subTitle={`${game.scrimTitle} · ${game.playedAt ? formatShortDate(game.playedAt) : '경기 일시 미확인'}`}
                                     >
@@ -286,6 +327,13 @@
                                             />
                                         {/snippet}
                                     </LinkCell>
+                                </li>
+                            {:else}
+                                <li>
+                                    <SectionState
+                                        state="empty"
+                                        message="이 쪽에는 게임 기록이 없어요. 아래 쪽 번호에서 다른 기록을 확인해 주세요."
+                                    />
                                 </li>
                             {/each}
                         </ul>

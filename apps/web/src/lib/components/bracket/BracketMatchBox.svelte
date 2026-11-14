@@ -17,14 +17,26 @@
         seatLabel: (seat: string) => string;
         // 배치 중이면 자리에 팀을 놓고 빼는 조작을 보여 준다. 확정 후에는 점수와 승자를 보여 준다.
         editing: boolean;
+        disabled?: boolean;
         selectedId: string | null;
         drag: DragState;
         onselect: (teamId: string) => void;
         onplace: (seat: string, teamId: string | null) => void;
     };
 
-    let { match, teams, guildId, labelOf, seatLabel, editing, selectedId, drag, onselect, onplace }: Props =
-        $props();
+    let {
+        match,
+        teams,
+        guildId,
+        labelOf,
+        seatLabel,
+        editing,
+        disabled = false,
+        selectedId,
+        drag,
+        onselect,
+        onplace
+    }: Props = $props();
 
     const teamOf = (id: string | null) => teams.find((team) => team.id === id) ?? null;
     const selectedName = $derived(teamOf(selectedId)?.name ?? '');
@@ -52,6 +64,7 @@
         {#if targeting}
             <button
                 type="button"
+                {disabled}
                 class="flex min-w-0 flex-1 items-center gap-2 rounded-(--radius-small) border border-dashed border-primary/60 px-3 hover:bg-primary/5 dark:border-dark/60 dark:hover:bg-dark/10"
                 onclick={() => onplace(seat, selectedId)}
             >
@@ -68,7 +81,8 @@
         {:else if team}
             <button
                 type="button"
-                draggable="true"
+                {disabled}
+                draggable={!disabled}
                 aria-pressed={selectedId === team.id}
                 class={[
                     'flex min-w-0 flex-1 cursor-grab items-center rounded-(--radius-small) px-3 active:cursor-grabbing',
@@ -88,7 +102,8 @@
                 size="auto"
                 heightOut="0"
                 heightIn="2"
-                injClass="w-10"
+                injClass="min-h-11 min-w-11"
+                {disabled}
                 onclick={() => onplace(seat, null)}
             >
                 <span aria-hidden="true" class="text-xl leading-none opacity-60">×</span>

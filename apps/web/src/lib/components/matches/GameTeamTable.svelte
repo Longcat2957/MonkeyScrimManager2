@@ -40,14 +40,14 @@
         <h3 id={`side-${side.side}`} class="flex flex-wrap items-baseline gap-x-2 text-lg font-bold">
             <span class={side.side === 'blue' ? 'text-info' : 'text-error'}>{sideText} · {side.teamName}</span
             >
-            <span class={['text-base', side.win ? 'text-success' : 'opacity-60']}
+            <span class={['text-base', side.win ? 'text-success' : 'text-text-muted']}
                 >{side.win ? '승리' : '패배'}</span
             >
             <span class="text-sm font-semibold text-warning tabular-nums"
                 >{formatNumber(total('gold'))} 골드</span
             >
         </h3>
-        <span class="text-sm opacity-60 tabular-nums"
+        <span class="text-sm text-text-muted tabular-nums"
             >{total('kills') ?? '-'} K · {total('deaths') ?? '-'} D · {total('assists') ?? '-'} A</span
         >
     </header>
@@ -192,7 +192,7 @@
                             size="auto"
                             heightOut="0"
                             heightIn="2"
-                            injClass="px-2 text-xs"
+                            injClass="min-h-11 min-w-11 px-2 text-xs"
                             onclick={() => ondetail(player)}
                         >
                             상세<span class="sr-only">, {player.displayName}</span>

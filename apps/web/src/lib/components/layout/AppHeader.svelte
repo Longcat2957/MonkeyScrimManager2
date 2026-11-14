@@ -90,7 +90,7 @@
             href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + page.url.search)}`}
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
-            class="px-3 py-2 text-sm font-semibold">로그인</a
+            class="inline-flex min-h-11 items-center px-3 text-sm font-semibold">로그인</a
         >
     {/if}
 {/snippet}
@@ -161,7 +161,14 @@
 {#snippet desktopTools()}
     <div class="flex items-center gap-1">
         {@render guildSwitcher()}
-        <Button fill="text" size="auto" heightOut="0" heightIn="2" injClass="px-2" onclick={toggleMode}>
+        <Button
+            fill="text"
+            size="auto"
+            heightOut="0"
+            heightIn="2"
+            injClass="min-h-11 min-w-11 px-2"
+            onclick={toggleMode}
+        >
             {@render modeIcon()}
             <span class="sr-only">{mode === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}</span>
         </Button>
@@ -189,12 +196,15 @@
 {#snippet mobileTools()}
     <div class="flex items-center gap-1">
         {@render guildSwitcher()}
+        {#if !page.data.authenticated}
+            {@render sessionControl()}
+        {/if}
         <Button
             fill="text"
             size="auto"
             heightOut="0"
             heightIn="2"
-            injClass="px-2"
+            injClass="min-h-11 min-w-11 px-2"
             onclick={() => (menuOpen = true)}
         >
             <svg
@@ -259,7 +269,9 @@
                         />
                     </section>
                 {/if}
-                {@render sessionControl()}
+                {#if page.data.authenticated}
+                    {@render sessionControl()}
+                {/if}
                 <CellGroup my="0" mx="0" shadow="none">
                     <SwitchCell title="다크 모드" active={mode === 'dark'} onchange={toggleMode} />
                 </CellGroup>

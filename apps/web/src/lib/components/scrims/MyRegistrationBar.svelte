@@ -28,11 +28,15 @@
     const account = $derived(accounts.find((item) => item.id === registration?.riotAccountId));
 
     async function withdraw() {
+        if (withdrawing) return;
         if (!(await confirm('신청을 철회할까요?', '신청 철회'))) return;
         withdrawing = true;
-        const message = await postAction('withdraw', {});
-        withdrawing = false;
-        if (message) toast.error(message);
+        try {
+            const message = await postAction('withdraw', {});
+            if (message) toast.error(message);
+        } finally {
+            withdrawing = false;
+        }
     }
 </script>
 
@@ -64,7 +68,7 @@
                 size="auto"
                 heightOut="0"
                 heightIn="2"
-                injClass="px-3 text-sm"
+                injClass="min-h-11 px-3 text-sm"
                 loading={withdrawing ? {} : null}
                 onclick={withdraw}
             >
@@ -75,7 +79,7 @@
                 size="auto"
                 heightOut="0"
                 heightIn="2"
-                injClass="px-3 text-sm"
+                injClass="min-h-11 px-3 text-sm"
                 disabled={withdrawing}
                 onclick={() => (dialogOpen = true)}
             >
@@ -88,7 +92,7 @@
                 size="auto"
                 heightOut="0"
                 heightIn="2"
-                injClass="px-4 text-sm"
+                injClass="min-h-11 px-4 text-sm"
                 onclick={() => (dialogOpen = true)}>신청하기</Button
             >
         </span>

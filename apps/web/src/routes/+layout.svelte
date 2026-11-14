@@ -12,6 +12,16 @@
 
     let { children }: LayoutProps = $props();
 
+    // STDF 3의 한국어 요일 배열을 실제 월요일·일요일 시작 날짜 열에 맞춘다.
+    const locale = {
+        ...ko_KR,
+        calendar: {
+            ...ko_KR.calendar,
+            weekTextList: ['월', '화', '수', '목', '금', '토', '일'],
+            weekSundayStartTextList: ['일', '월', '화', '수', '목', '금', '토']
+        }
+    };
+
     onMount(markHydrated);
 </script>
 
@@ -20,7 +30,7 @@
     <meta name="application-name" content={SERVICE_NAME} />
 </svelte:head>
 
-<ConfigProvider locale={ko_KR}>
+<ConfigProvider {locale}>
     <div class="flex min-h-dvh flex-col">
         <a
             href="#main-content"

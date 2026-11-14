@@ -1,18 +1,19 @@
 <script lang="ts">
-    import { Button, Input, Tab, toast } from 'stdf';
+    import { Button, Input, toast } from 'stdf';
     import type { ActionProps } from 'stdf';
     import { goto } from '$app/navigation';
-    import { page } from '$app/state';
+    import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import DiscordSettingRow from '#lib/components/admin/DiscordSettingRow.svelte';
     import MemberRiotAccountsDialog from '#lib/components/admin/MemberRiotAccountsDialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { DiscordChannel, GuildDiscordSettingKey } from '#lib/features/guild/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -59,11 +60,14 @@
     let savingKey = $state<GuildDiscordSettingKey | null>(null);
 
     async function saveDiscord(key: GuildDiscordSettingKey, value: string | null) {
-        if (!data.discord || data.discord.settings[key] === value) return;
+        if (savingKey || !data.discord || data.discord.settings[key] === value) return;
         savingKey = key;
-        const message = await postAction('discord', { key, value: value ?? '' });
-        savingKey = null;
-        if (message) toast.error(message);
+        try {
+            const message = await postAction('discord', { key, value: value ?? '' });
+            if (message) toast.error(message);
+        } finally {
+            savingKey = null;
+        }
     }
 
     const NONE = '설정 안 함';
@@ -159,7 +163,7 @@
 
     <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 내용은 영역 제목으로 알린다. -->
     <div role="group" aria-label="관리 항목" class="border-b border-border">
-        <Tab labels={TABS.map(({ text }) => ({ text }))} {active} onclickTab={selectTab} />
+        <SelectionTabs labels={TABS.map(({ text }) => ({ text }))} {active} onclickTab={selectTab} />
     </div>
 
     {#if data.tab === 'discord'}
@@ -176,6 +180,7 @@
                             value={item.value}
                             actions={item.actions}
                             busy={savingKey === item.key}
+                            disabled={Boolean(savingKey)}
                             onselect={(index) => saveDiscord(item.key, item.ids[index] ?? null)}
                         />
                     {/each}
@@ -193,7 +198,9 @@
             <form
                 role="search"
                 aria-label="멤버 검색"
+                aria-busy={Boolean(navigating.to)}
                 {@attach nonSubmitButtons}
+                {@attach inputLabel('멤버 이름 검색')}
                 class="-mx-2 -my-1"
                 onsubmit={(event) => {
                     event.preventDefault();
@@ -228,10 +235,12 @@
                                 <PlayerFace name={member.displayName} imageUrl={null} />
                                 <span class="flex min-w-0 flex-col">
                                     <span class="flex min-w-0 items-center gap-2">
-                                        <span class="truncate font-medium">{member.displayName}</span>
+                                        <span class="min-w-0 font-medium wrap-anywhere"
+                                            >{member.displayName}</span
+                                        >
                                         {#if member.isAdmin}<StatusTag text="관리자" state="theme" />{/if}
                                     </span>
-                                    <span class="text-xs opacity-60 sm:truncate">
+                                    <span class="text-xs opacity-60 wrap-anywhere">
                                         {primary
                                             ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
                                             : 'Riot 계정 없음'}
@@ -243,7 +252,7 @@
                                 size="auto"
                                 heightOut="0"
                                 heightIn="2"
-                                injClass="ml-auto px-3 text-sm"
+                                injClass="ml-auto min-h-11 px-3 text-sm"
                                 onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
                             >
                                 Riot 계정<span class="sr-only"> 관리, {member.displayName}</span>

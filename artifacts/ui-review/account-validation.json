@@ -1,0 +1,270 @@
+{
+    "batch": "account4",
+    "date": "2026-11-14",
+    "status": "complete",
+    "reviewedRouteCount": 4,
+    "modifiedFiles": [
+        "apps/web/src/routes/me/+page.svelte",
+        "apps/web/src/lib/components/me/RiotAccountList.svelte",
+        "apps/web/src/routes/backoffice/+page.svelte",
+        "apps/web/src/routes/dev/components/+page.svelte",
+        "apps/web/src/lib/components/scrims/ScrimSummary.svelte"
+    ],
+    "verifiedRootOwnedFiles": [
+        "apps/web/src/routes/+error.svelte",
+        "apps/web/src/routes/dev/error/+page.server.ts",
+        "apps/web/src/lib/components/common/SectionState.svelte"
+    ],
+    "techniques": {
+        "harden": [
+            "내 정보 긴 이름과 빈 상태",
+            "상태 재확인 중복·로딩·오프라인·복구",
+            "갤러리 폼 검증·resize·파일 선택 제한"
+        ],
+        "clarify": ["연결 계정 빈 상태 다음 행동", "상태 오류 안내", "데모 버튼 결과"],
+        "adapt": ["모바일 긴 이름 줄바꿈", "ImageList 파일명·선택 해제44px"],
+        "polish": ["갤러리 h1 하나·하위 제목3", "서로 다른 데모 링크 목적지"],
+        "onboard": ["연결 계정 없는 사용자에게 운영자 요청 안내"]
+    },
+    "baseCases": [
+        {
+            "url": "/me?mock=1",
+            "theme": "primary",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/me-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/me?mock=1",
+            "theme": "primary",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/me-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/me?mock=1",
+            "theme": "dark",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/me-dark-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/me?mock=1",
+            "theme": "dark",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/me-dark-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/backoffice?mock=1",
+            "theme": "primary",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/backoffice-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/backoffice?mock=1",
+            "theme": "primary",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/backoffice-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/backoffice?mock=1",
+            "theme": "dark",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/backoffice-dark-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/backoffice?mock=1",
+            "theme": "dark",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/backoffice-dark-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/components",
+            "theme": "primary",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/components-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/components",
+            "theme": "primary",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/components-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/components",
+            "theme": "dark",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/components-dark-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/components",
+            "theme": "dark",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/components-dark-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/error?status=403",
+            "theme": "primary",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/error-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/error?status=403",
+            "theme": "primary",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/error-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/error?status=403",
+            "theme": "dark",
+            "viewport": [1440, 1000],
+            "screenshot": "artifacts/ui-review/after/error-dark-desktop.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        },
+        {
+            "url": "/dev/error?status=403",
+            "theme": "dark",
+            "viewport": [390, 844],
+            "screenshot": "artifacts/ui-review/after/error-dark-mobile.png",
+            "h1Count": 1,
+            "horizontalOverflow": false,
+            "visuallyRead": true
+        }
+    ],
+    "stateScreenshots": [
+        {
+            "path": "artifacts/ui-review/after/components-selected-file-desktop.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/components-selected-file-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/me-empty-desktop.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/me-empty-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/me-long-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/backoffice-network-error-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/error-404-desktop.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/error-500-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/me-unauthenticated-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/components-retry-failed-desktop.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/components-retry-failed-mobile.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/backoffice-offline-desktop.png",
+            "visuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/after/backoffice-offline-mobile.png",
+            "visuallyRead": true
+        }
+    ],
+    "visuallyReviewedScreenshots": 29,
+    "browser": {
+        "tool": "Playwright MCP via /tmp/msm2-playwright-mcp.mjs, installed Chromium, isolated context",
+        "pageErrors": 0,
+        "themes": ["primary", "dark"],
+        "viewports": [
+            [1440, 1000],
+            [390, 844]
+        ],
+        "backendMutations": 0
+    },
+    "assertions": {
+        "galleryButtons": "3개 작업 버튼이 단일 role=status 결과를 바꿈",
+        "galleryLinks": "#status-demo와 #section-state-demo 실제 각각 이동",
+        "galleryRetry": "첫 재시도400ms후실패, 두번째 성공; Enter/Space로 확인; root공통수정후버튼높이44px양뷰포트",
+        "galleryPopup": "빈 제목 aria-invalid/describedby/focus,6회Tab순환,유효제목닫힘,열린중resize후form1개",
+        "galleryConfirm": "Escape취소,트리거포커스복귀",
+        "galleryFiles": "실제 filechooser/setFiles,긴한글.rofl선택·삭제,최대3개오류,10MB초과오류",
+        "accountEmpty": "관리설명중복없이운영자요청안내한번",
+        "accountLongName": "DOM주입긴한영닉네임이모바일2줄,ellipsis없음,문서가로넘침없음",
+        "backofficePending": "지연500ms중disabled/aria-busy;두번클릭GET1개",
+        "backofficePartialFailure": "__data GET abort후Kit문서재탐색으로자동복구,checkedAt실제갱신;오류정체로오인하지않음",
+        "backofficeOffline": "navigator.onLine false일때invalidate시작하지않고기존상태유지+role=alert;온라인뒤같은버튼으로새checkedAt갱신과오류해제양뷰포트",
+        "backofficePromise": "공개data.status동일참조시새확인실패안내;정상서비스상태값이같아도새Promise로갱신되어오탐없음",
+        "errors": "401실제/me,403/404/500 devfixture;noindex;500만재시도;500재시도실제reload"
+    },
+    "tests": {
+        "svelteCheck": "0 errors, 0 warnings",
+        "build": "passed",
+        "existingTests": "415 passed, 0 failed (before final narrow backoffice guards; final check/build rerun)",
+        "format": "5 files passed",
+        "branding": "passed"
+    },
+    "limitations": [
+        "실제Discord세션·서비스운영자역할은devmock으로확인,실운영인증변경없음",
+        "긴이름은테스트DOM주입이며실제저장하지않음",
+        "ROFL파일은UI선택검증용바이트;실제업로드·파싱검증은이갤러리범위밖",
+        "backoffice-network-error-mobile.png는__data실패후Kit자동복구한정상화면이며오류안내증거가아님;offline2장이실제차단오류와다음행동증거",
+        "연결중단이요청도중발생하거나navigator.onLine true인채모든문서재탐색까지실패하는환경은미검증;기존Kit invalidate계약유지",
+        "공개Promise불변가드분기는실제브라우저의__data실패에서자동복구되어직접도달하지않음"
+    ]
+}

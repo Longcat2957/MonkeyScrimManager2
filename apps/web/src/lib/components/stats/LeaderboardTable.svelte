@@ -18,14 +18,14 @@
     // 사용자별 지표 표. 열 머리를 누르면 그 지표로 정렬하고, 다시 누르면 방향을 바꾼다.
     let { rows, guildId }: { rows: Row[]; guildId: string } = $props();
 
-    const COLUMNS: { key: SortKey; label: string; className?: string }[] = [
-        { key: 'games', label: '게임', className: 'hidden md:table-cell' },
+    const COLUMNS: { key: SortKey; label: string }[] = [
         { key: 'kda', label: 'KDA' },
         { key: 'winRate', label: '승률' },
-        { key: 'killParticipation', label: '킬 관여', className: 'hidden md:table-cell' },
-        { key: 'csPerMin', label: 'CS/분', className: 'hidden lg:table-cell' },
-        { key: 'damagePerMin', label: '피해/분', className: 'hidden lg:table-cell' },
-        { key: 'visionPerGame', label: '시야', className: 'hidden lg:table-cell' }
+        { key: 'games', label: '게임' },
+        { key: 'killParticipation', label: '킬 관여' },
+        { key: 'csPerMin', label: 'CS/분' },
+        { key: 'damagePerMin', label: '피해/분' },
+        { key: 'visionPerGame', label: '시야' }
     ];
 
     const PAGE_SIZE = 20;
@@ -33,6 +33,8 @@
     let sortKey = $state<SortKey>('kda');
     let descending = $state(true);
     let current = $state(1);
+    let sortMessage = $state('');
+    const id = $props.id();
     // 조건이 바뀌어 행이 달라지면 첫 쪽으로 돌아간다.
     $effect(() => {
         void rows;
@@ -57,40 +59,50 @@
             sortKey = key;
             descending = true;
         }
+        sortMessage = `${COLUMNS.find((column) => column.key === key)?.label} ${descending ? '높은' : '낮은'} 순으로 정렬했어요`;
     }
 </script>
 
+<p id={`${id}-hint`} class="text-xs text-text-muted lg:hidden">
+    표를 가로로 스크롤해 모든 지표를 확인하세요.
+</p>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex (가로 표의 스크롤 영역에 키보드 진입점을 제공한다.) -->
 <div
+    role="region"
+    aria-labelledby={id}
+    aria-describedby={`${id}-hint`}
+    tabindex="0"
     class="relative overflow-x-auto rounded-(--radius-box) border border-border bg-bg-surface dark:bg-bg-surface-dark"
 >
-    <table class="w-full text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-        <caption class="sr-only"
-            >리더보드, {COLUMNS.find((column) => column.key === sortKey)?.label}
-            {descending ? '높은' : '낮은'} 순</caption
-        >
+    <table class="w-full min-w-[44rem] text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+        <caption {id} class="sr-only">사용자별 지표</caption>
         <thead class="text-xs">
             <tr class="border-b border-border">
-                <th scope="col" class="w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium opacity-60"
+                <th scope="col" class="w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium text-text-muted"
                     >순위</th
                 >
-                <th scope="col" class="px-3 py-2 text-left font-medium opacity-60">사용자</th>
+                <th
+                    scope="col"
+                    class="sticky left-0 z-20 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2 text-left font-medium text-text-muted dark:bg-bg-surface-dark"
+                    >사용자</th
+                >
                 {#each COLUMNS as column (column.key)}
                     <th
                         scope="col"
-                        class={['px-1 py-1 text-right font-medium', column.className]}
+                        class="px-1 py-1 text-right font-medium"
                         aria-sort={sortKey === column.key
                             ? descending
                                 ? 'descending'
                                 : 'ascending'
-                            : 'none'}
+                            : undefined}
                     >
                         <button
                             type="button"
                             class={[
-                                'inline-flex min-h-9 items-center gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark',
+                                'inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark',
                                 sortKey === column.key
                                     ? 'font-semibold text-primary dark:text-dark'
-                                    : 'opacity-60'
+                                    : 'text-text-muted'
                             ]}
                             onclick={() => sortBy(column.key)}
                         >
@@ -115,7 +127,10 @@
                     <td class="px-2 py-2.5 text-right font-semibold tabular-nums lg:px-3"
                         >{value(row, sortKey) === null ? '—' : index + 1}</td
                     >
-                    <td class="w-full max-w-0 min-w-28 px-3 py-2.5">
+                    <th
+                        scope="row"
+                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2.5 text-left font-normal dark:bg-bg-surface-dark"
+                    >
                         <div class="flex min-w-0 items-center gap-2">
                             <a
                                 href={resolve('/g/[guildId]/players/[userId]', {
@@ -142,11 +157,10 @@
                                 </ul>
                             {/if}
                         </div>
-                    </td>
-                    <td class="hidden px-3 py-2.5 text-right tabular-nums md:table-cell">{row.games}</td>
+                    </th>
                     <td class="px-3 py-2.5 text-right tabular-nums">
                         <span class="block font-semibold">{fixed(row.kda, 2)}</span>
-                        <span class="hidden text-xs opacity-60 sm:block"
+                        <span class="hidden text-xs text-text-muted sm:block"
                             >{fixed(row.kills, 1)} / {fixed(row.deaths, 1)} / {fixed(row.assists, 1)}</span
                         >
                     </td>
@@ -157,27 +171,21 @@
                                 row.wins / row.games >= 0.5 ? 'text-success' : 'text-error'
                             ]}>{percent(row.wins / row.games)}</span
                         >
-                        <span class="hidden text-xs opacity-60 sm:block"
+                        <span class="hidden text-xs text-text-muted sm:block"
                             >{row.wins}승 {row.games - row.wins}패</span
                         >
                     </td>
-                    <td class="hidden px-3 py-2.5 text-right tabular-nums md:table-cell"
-                        >{percent(row.killParticipation)}</td
-                    >
-                    <td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell"
-                        >{fixed(row.csPerMin, 1)}</td
-                    >
-                    <td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell"
-                        >{integer(row.damagePerMin)}</td
-                    >
-                    <td class="hidden px-3 py-2.5 text-right tabular-nums lg:table-cell"
-                        >{fixed(row.visionPerGame, 1)}</td
-                    >
+                    <td class="px-3 py-2.5 text-right tabular-nums">{row.games}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{percent(row.killParticipation)}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{fixed(row.csPerMin, 1)}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{integer(row.damagePerMin)}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{fixed(row.visionPerGame, 1)}</td>
                 </tr>
             {/each}
         </tbody>
     </table>
 </div>
+<p role="status" class="sr-only">{sortMessage}</p>
 <PageNav
     total={rows.length}
     pageSize={PAGE_SIZE}

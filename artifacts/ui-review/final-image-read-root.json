@@ -1,0 +1,112 @@
+{
+    "reviewer": "/root",
+    "method": "view_image, actual visual inspection of complete rendered pages including shared header/body/footer",
+    "images": [
+        {
+            "path": "artifacts/ui-review/after/admin-desktop.png",
+            "sha256": "c00ccf9ea8025d7c4237ab5a47af67ff368ae3b9ccbd89063613c63841a6a1f5",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/admin-mobile.png",
+            "sha256": "53924c5d457c9e81b42d4d64fb43d2f906e67f0a9f5bae7ad43044bfeb5f5a5a",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/admin-dark-desktop.png",
+            "sha256": "f83a749ddfa254f30291975a11f46369d29efa7ccb414ec8d9aae07108bcc750",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/admin-dark-mobile.png",
+            "sha256": "347e375cca3a0482c2ff49a4f604db45f06c70df896c66f409cde95aa1ac8057",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/player-desktop.png",
+            "sha256": "94a78a61fd44c4c510127cfc3cbe21694d097c33d997d894d084d72e0e9e5ab1",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/player-mobile.png",
+            "sha256": "8be016c39e1ead8810f3b70a3542ea49cc46cc2e18f42a2e36abc30044f7ab1d",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/player-dark-desktop.png",
+            "sha256": "2206fb643a9d92c483608159446bed9123f3ab17ffbafdea8f598bc7a23ef329",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/player-dark-mobile.png",
+            "sha256": "8ac01fd3f01d4498a6fd2176a214025994d1c5acda8609bb83bfa03d78e6a265",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/match-desktop.png",
+            "sha256": "f7a54cda8ab6cf4aae8f0282de6a7a6032c526544f3b06dc246db260c33e7faa",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/match-mobile.png",
+            "sha256": "4bfd0ef7ac5ad2ac4bb3e1a78397e41844aa3c102ddaa83ed4a9c27b22f0369e",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/match-dark-desktop.png",
+            "sha256": "f39fd11d534b4831d6f6e09a569a5a9788d1267196aa5b76b24aef78dd911f59",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/match-dark-mobile.png",
+            "sha256": "a3f30a57d73aeb4440c4781a7e6b47460bbaaddc5fa4751247d0d45a725bc18f",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/components-desktop.png",
+            "sha256": "69735dcbff2567addd4af3b4bddf0b069b7053962cfdfcb4b282e2e6e0ad7626",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/components-mobile.png",
+            "sha256": "a41678742bd964aa23a35285a518cad252b0ec972b0ba28b9b57f148ec187fa6",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/components-dark-desktop.png",
+            "sha256": "d435be755b507597f46bd8dd2caf85b216e781dc8aace7a8b55de1d505336ee5",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/components-dark-mobile.png",
+            "sha256": "7c0f1cc2dcd9f6252ce79bd78a4dabaf5be63439c3fa023c1f6848eaa4efe3d2",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/error-desktop.png",
+            "sha256": "5074f2b3940a8999c6ebcadbede5b98650d4e8537d68ee592a8c6591a78a0898",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/error-mobile.png",
+            "sha256": "d0a1b4e5a33beaa5b6a116c7bdb44933b0407db68cd1af36fb26b027f7886d8b",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/error-dark-desktop.png",
+            "sha256": "2bb093f12b1a23cf0f3f1449bb08e783a1c42b3722a15b7a9a9278720a913636",
+            "status": "pass"
+        },
+        {
+            "path": "artifacts/ui-review/after/error-dark-mobile.png",
+            "sha256": "80c648258edf0e8d18d80c5ceb0625282b36a85ec7aacb962520559dcdb27122",
+            "status": "pass"
+        }
+    ],
+    "notes": [
+        "Dark gallery captures with transient missing paint were rejected. Both canonical dark images were recaptured in a fresh settled page; DOM text/color/geometry and actual images verified. No persistent source UI defect reproduced.",
+        "Player detail accordion4 images and completed/early/empty match6 images were also actually read; invalid/unknown upload4 images read.",
+        "Canonical image reading combines this20 + public/account32 + data/workflow36 with overlaps; union is all80 actual final theme/viewport images.",
+        "2026-11-14 hash recheck: the two recaptured canonical dark gallery images were actually re-read by /root; both stored SHA-256 values match the current PNGs. This recheck updates integrity records only and does not claim another visual review by the verifier."
+    ]
+}

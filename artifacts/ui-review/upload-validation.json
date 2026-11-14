@@ -1,0 +1,72 @@
+{
+    "results": [
+        {
+            "size": "desktop",
+            "firstStatus": 422,
+            "firstPosts": 1,
+            "preservedFile": 2,
+            "pendingUploadDisabled": true,
+            "pendingCloseDisabled": true,
+            "pendingDialog": 1,
+            "retryPosts": 1,
+            "removedFile": 0,
+            "unknownPosts": 1,
+            "unknownUploadDisabled": true,
+            "closedDialog": 0,
+            "seriesScore": "포로팀\n1 :\n대\n 1\n칼날부리팀",
+            "overflow": false
+        },
+        {
+            "size": "mobile",
+            "firstStatus": 422,
+            "firstPosts": 1,
+            "preservedFile": 2,
+            "pendingUploadDisabled": true,
+            "pendingCloseDisabled": true,
+            "pendingDialog": 1,
+            "retryPosts": 1,
+            "removedFile": 0,
+            "unknownPosts": 1,
+            "unknownUploadDisabled": true,
+            "closedDialog": 0,
+            "seriesScore": "포로팀\n1 :\n대\n 1\n칼날부리팀",
+            "overflow": false
+        }
+    ],
+    "events": [
+        {
+            "current": "upload-desktop",
+            "type": "error",
+            "message": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+        },
+        {
+            "current": "upload-desktop",
+            "type": "error",
+            "message": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+        },
+        {
+            "current": "upload-desktop",
+            "type": "error",
+            "message": "Failed to load resource: net::ERR_FAILED"
+        },
+        {
+            "current": "upload-mobile",
+            "type": "error",
+            "message": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+        },
+        {
+            "current": "upload-mobile",
+            "type": "error",
+            "message": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+        },
+        {
+            "current": "upload-mobile",
+            "type": "error",
+            "message": "Failed to load resource: net::ERR_FAILED"
+        }
+    ],
+    "tool": "@playwright/mcp 0.0.85, installed Chromium via stdio helper",
+    "notes": [
+        "개발 샘플에서 검증; 손상 파일 422와 의도한 전송 차단은 예상 리소스 오류이며 페이지 JavaScript 예외와 구분한다."
+    ]
+}

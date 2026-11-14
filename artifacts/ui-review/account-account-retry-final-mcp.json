@@ -1,0 +1,12 @@
+{
+    "result": {
+        "content": [
+            {
+                "type": "text",
+                "text": "### Result\n[{\"view\":\"desktop\",\"before\":{\"x\":679.265625,\"y\":518,\"width\":81.453125,\"height\":44},\"after\":{\"x\":679.265625,\"y\":518,\"width\":81.453125,\"height\":44},\"keyboardEnterFailureSpaceRecovery\":true},{\"view\":\"mobile\",\"before\":{\"x\":154.265625,\"y\":440,\"width\":81.453125,\"height\":44},\"after\":{\"x\":154.265625,\"y\":460,\"width\":81.453125,\"height\":44},\"keyboardEnterFailureSpaceRecovery\":true}]\n### Ran Playwright code\n```js\nawait (async(page)=>{const results=[];for(const [view,width,height] of [['desktop',1440,1000],['mobile',390,844]]){const p=await page.context().newPage();await p.setViewportSize({width,height});await p.addInitScript(()=>localStorage.setItem('theme-mode','primary'));await p.goto('http://127.0.0.1:5173/dev/components');await p.waitForTimeout(450);const retry=p.getByRole('button',{name:'다시 시도',exact:true});await retry.scrollIntoViewIfNeeded();const before=await retry.boundingBox();if(before.height<44)throw new Error('retry below44 '+before.height);await retry.focus();await retry.press('Enter');await p.getByRole('alert').filter({hasText:'다시 불러오지 못했어요'}).waitFor({state:'visible'});const after=await retry.boundingBox();if(after.height<44)throw new Error('failed retry below44');await p.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));await p.waitForTimeout(150);await p.screenshot({path:'/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/after/components-retry-failed-'+view+'.png',fullPage:true});await retry.press('Space');await p.getByRole('status').filter({hasText:'목록을 다시 불러왔어요'}).waitFor({state:'visible'});results.push({view,before,after,keyboardEnterFailureSpaceRecovery:true});await p.close();}return results;})(page);\n```\n### Page\n- Page URL: about:blank"
+            }
+        ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+}

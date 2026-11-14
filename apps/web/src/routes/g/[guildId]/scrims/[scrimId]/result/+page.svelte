@@ -11,4 +11,8 @@
     <title>{data.scrim.title} · 결과 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<BracketBoard bracket={data.bracket} guildId={page.params.guildId!} />
+<BracketBoard
+    bracket={data.bracket}
+    guildId={page.params.guildId!}
+    title={data.scrim.status === 'ended_early' ? '중도 종료 결과' : '대진 결과'}
+/>

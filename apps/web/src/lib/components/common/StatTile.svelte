@@ -37,7 +37,7 @@
 
 <div class={['flex h-full flex-col gap-1 rounded-(--radius-box) border p-4', TONE[tone].box]}>
     <div class="flex items-start justify-between gap-2">
-        <p class="text-xs font-semibold opacity-70">{label}</p>
+        <p class="text-xs font-semibold text-text-muted">{label}</p>
         {#if icon}<span
                 aria-hidden="true"
                 class={[
@@ -47,5 +47,5 @@
             >{/if}
     </div>
     <p class={['text-2xl font-black tabular-nums', TONE[tone].accent]}>{value}</p>
-    {#if note}<p class="text-xs opacity-60 tabular-nums">{note}</p>{/if}
+    {#if note}<p class="text-xs text-text-muted tabular-nums">{note}</p>{/if}
 </div>

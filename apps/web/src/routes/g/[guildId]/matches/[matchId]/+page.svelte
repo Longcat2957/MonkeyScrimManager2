@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { Button, Tab } from 'stdf';
+    import { Button } from 'stdf';
     import { goto, invalidateAll } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import { page } from '$app/state';
+    import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import GameHero from '#lib/components/matches/GameHero.svelte';
     import GamePlayerDialog from '#lib/components/matches/GamePlayerDialog.svelte';
@@ -20,6 +21,7 @@
     let { data }: PageProps = $props();
 
     const guildId = $derived(page.params.guildId!);
+    const changing = $derived(navigating.to?.route.id === page.route.id);
     const match = $derived(data.match);
     const status = $derived(MATCH_STATUS[match.status]);
     // 정상 종료한 시리즈만 승자를 표시한다.
@@ -63,12 +65,15 @@
         )
             return;
         reverting = true;
-        revertFailure =
-            (await postAction('revertResult', {
-                expectedRevision: String(data.operation.revision),
-                gameId: data.operation.latestGameId
-            })) ?? '';
-        reverting = false;
+        try {
+            revertFailure =
+                (await postAction('revertResult', {
+                    expectedRevision: String(data.operation.revision),
+                    gameId: data.operation.latestGameId
+                })) ?? '';
+        } finally {
+            reverting = false;
+        }
     }
 
     function selectGame(index: number) {
@@ -91,7 +96,7 @@
 {#snippet team(name: string, side: 'a' | 'b')}
     <span
         class={[
-            'min-w-0 truncate text-lg font-semibold md:text-2xl',
+            'min-w-0 text-base font-semibold break-words md:text-2xl',
             winner && winner !== side && 'opacity-50'
         ]}
     >
@@ -102,13 +107,24 @@
 <div class="flex flex-col gap-6">
     <!-- 시리즈 머리 -->
     <header class="flex flex-col gap-4">
+        <h1
+            class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-(--radius-box) border border-border bg-bg-surface px-5 py-4 dark:bg-bg-surface-dark"
+        >
+            <span class="flex min-w-0 justify-end">{@render team(match.teamA, 'a')}</span>
+            <span class="text-4xl font-black tabular-nums"
+                >{match.scoreA} <span aria-hidden="true" class="opacity-40">:</span><span class="sr-only"
+                    >대</span
+                >
+                {match.scoreB}</span
+            >
+            <span class="flex min-w-0">{@render team(match.teamB, 'b')}</span>
+        </h1>
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="flex min-w-0 flex-col gap-1">
-                <h1 class="text-2xl font-semibold text-balance">{match.teamA} vs {match.teamB}</h1>
-                <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm opacity-80">
+                <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <a
                         href={resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: match.scrim.id })}
-                        class="underline-offset-4 hover:underline">{match.scrim.title}</a
+                        class="text-text-muted underline-offset-4 hover:underline">{match.scrim.title}</a
                     >
                     <span aria-hidden="true">·</span><span>BO{match.bestOf}</span>
                     {#if match.hardFearless}<span aria-hidden="true">·</span><span>하드 피어리스</span>{/if}
@@ -121,24 +137,12 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-4"
+                    injClass="min-h-11 px-4"
                     disabled={remaining === 0}
                     onclick={() => (uploadOpen = true)}>ROFL 업로드</Button
                 >
             {/if}
         </div>
-        <p
-            class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-(--radius-box) border border-border bg-bg-surface px-5 py-4 dark:bg-bg-surface-dark"
-        >
-            <span class="flex min-w-0 justify-end">{@render team(match.teamA, 'a')}</span>
-            <span class="text-4xl font-black tabular-nums"
-                >{match.scoreA} <span aria-hidden="true" class="opacity-40">:</span><span class="sr-only"
-                    >대</span
-                >
-                {match.scoreB}</span
-            >
-            <span class="flex min-w-0">{@render team(match.teamB, 'b')}</span>
-        </p>
     </header>
 
     {#if data.operation && ['pending', 'in_progress'].includes(match.status)}
@@ -148,11 +152,12 @@
     {#if !data.game}
         <SectionState state="empty" message="아직 기록된 세트가 없어요" />
     {:else}
-        <section aria-labelledby="game-heading" class="flex flex-col gap-4">
+        <section aria-labelledby="game-heading" class="flex flex-col gap-4" aria-busy={changing}>
             <h2 id="game-heading" class="sr-only">{data.game.order}세트</h2>
+            {#if changing}<p role="status" class="text-sm text-text-muted">세트를 불러오는 중</p>{/if}
             {#if match.games.length > 1}
                 <div role="group" aria-label="세트 선택" class="border-b border-border">
-                    <Tab {labels} active={activeGame} onclickTab={selectGame} />
+                    <SelectionTabs {labels} active={activeGame} onclickTab={selectGame} />
                 </div>
             {/if}
             {#if data.operation?.can.revertResult && data.operation.latestGameId === data.game.id}
@@ -163,7 +168,7 @@
                         size="auto"
                         heightOut="0"
                         heightIn="2"
-                        injClass="px-3 text-sm"
+                        injClass="min-h-11 px-3 text-sm"
                         loading={reverting ? {} : null}
                         onclick={revertResult}>마지막 세트 취소</Button
                     >

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Accordion } from 'stdf';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import AccessibleAccordion from '#lib/components/common/AccessibleAccordion.svelte';
 
     const TOC = [
         { id: 'recruit', text: '모집 참여' },
@@ -42,10 +42,14 @@
 <article class="doc">
     <h1>이용 안내</h1>
     <nav aria-label="목차" class="mt-4">
-        <ul class="flex! flex-wrap gap-x-4 gap-y-1 pl-0! text-sm [list-style:none]!">
+        <ul class="grid! grid-cols-2 gap-x-3 gap-y-1 pl-0! text-sm [list-style:none]! sm:flex! sm:flex-wrap">
             {#each TOC as item (item.id)}
                 <li class="mt-0!">
-                    <a href={`#${item.id}`} class="underline underline-offset-4">{item.text}</a>
+                    <a
+                        href={`#${item.id}`}
+                        class="inline-flex min-h-11 w-full items-center rounded-(--radius-small) px-2 py-2 underline underline-offset-4 hover:bg-bg-overlay dark:hover:bg-bg-overlay-dark"
+                        >{item.text}</a
+                    >
                 </li>
             {/each}
         </ul>
@@ -83,11 +87,21 @@
     <h3>경매</h3>
     <p>
         운영자가 팀장과 팀별 시작 포인트를 정한 뒤 경매를 시작해요. 후보가 한 명씩 올라오면 팀마다 입찰가를
-        정해 낙찰하거나 유찰해요. 입찰가는 직접 입력하거나 <strong>±10</strong>·<strong>±50</strong> 버튼으로
-        조정해요(누르면 올리고, 오른쪽 클릭은 내려요). 현재 후보는 팀으로 끌거나 후보 목록의
-        <strong>수동 배치</strong>로 가격 없이 배치할 수 있어요. 유찰된 후보도 후보 목록에서 다시 올리거나
-        팀에 바로 배치할 수 있어요. 모든 팀이 다 차면 경매가 끝나요.
+        정해 낙찰하거나 유찰해요.
     </p>
+    <ul>
+        <li>
+            입찰가는 직접 입력하거나 <strong>−50</strong>·<strong>−10</strong>·<strong>+10</strong>·<strong
+                >+50</strong
+            >
+            버튼으로 조정해요.
+        </li>
+        <li>
+            현재 후보는 팀으로 끌거나 후보 목록의 <strong>수동 배치</strong>로 가격 없이 배치할 수 있어요.
+        </li>
+        <li>유찰된 후보도 후보 목록에서 다시 올리거나 팀에 바로 배치할 수 있어요.</li>
+    </ul>
+    <p>모든 팀이 다 차면 경매가 끝나요.</p>
 
     <h2 id="bracket">대진</h2>
     <p>
@@ -152,10 +166,10 @@
 
     <h2 id="faq">자주 묻는 질문</h2>
     <div class="mt-3">
-        <Accordion items={FAQ.map((item) => ({ title: item.q }))} border="solid">
+        <AccessibleAccordion items={FAQ.map((item) => ({ title: item.q }))} border="solid">
             {#snippet children(_item: unknown, index: number)}
                 <p class="mt-0! pb-3 text-sm">{FAQ[index]?.a}</p>
             {/snippet}
-        </Accordion>
+        </AccessibleAccordion>
     </div>
 </article>

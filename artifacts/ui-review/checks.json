@@ -1,0 +1,121 @@
+{
+    "status": "passed",
+    "commands": [
+        {
+            "command": "pnpm check",
+            "result": "passed",
+            "format": "passed",
+            "branding": "passed",
+            "botTypeScript": "passed",
+            "svelteErrors": 0,
+            "svelteWarnings": 0
+        },
+        {
+            "command": "pnpm build",
+            "result": "passed",
+            "scope": "web and bot"
+        },
+        {
+            "command": "pnpm --filter @msm2/web test",
+            "result": "passed",
+            "tests": 415,
+            "failed": 0
+        },
+        {
+            "command": "pnpm test:bot",
+            "result": "passed",
+            "tests": 65,
+            "failed": 0
+        },
+        {
+            "command": "pnpm test:browser",
+            "result": "passed",
+            "tests": 7,
+            "failed": 0,
+            "scope": "fresh production web build, actual session, isolated test database"
+        },
+        {
+            "command": "pnpm check:tests",
+            "result": "passed",
+            "scope": "web and bot test TypeScript"
+        },
+        {
+            "command": "git diff --check",
+            "result": "passed"
+        }
+    ],
+    "browser": {
+        "baseRoutes": 20,
+        "baseConditions": 80,
+        "beforeBaseImagesActuallyRead": 40,
+        "afterBaseImagesActuallyRead": 80,
+        "engines": ["Chromium via actual Playwright MCP stdio"],
+        "calendarExtraConditions": 12,
+        "manualContrastStateConditions": 16
+    },
+    "changedWebSourceSha256": {
+        "apps/web/src/lib/components/admin/DiscordSettingRow.svelte": "2ab7229899a8b4798ffc51698d6d15e942ab36993ad26f2c4163c908a15cd86c",
+        "apps/web/src/lib/components/admin/MemberRiotAccountsDialog.svelte": "80464e6401d54161d0ef82e0931d7a95cdae9d05d9b5c7a9ba8eb251e1b9a62f",
+        "apps/web/src/lib/components/bracket/BracketBoard.svelte": "2e71770c14ed98b541370521f2c3eaf4913239c411d138a16caccf78bcc1b484",
+        "apps/web/src/lib/components/bracket/BracketMatchBox.svelte": "f380b454bc7aa56e4847103d402a77d527538b933869684db9d3880c46e81ec2",
+        "apps/web/src/lib/components/common/LinkCell.svelte": "c99b363e52956be224cdcf08fa9d60ed7bcaf59e4a24b9ddfcbf0c2b35bfd6eb",
+        "apps/web/src/lib/components/common/PageNav.svelte": "816d56b2f146fd3a67175651f920857787a4479a711b07edec1fb2373ed080af",
+        "apps/web/src/lib/components/common/SectionState.svelte": "b8f9ad7451db20281afbd5aff844cb5262df8e844ad69f79993603d28ee2cd47",
+        "apps/web/src/lib/components/common/StatTile.svelte": "2a9631edcc0b258fc43ab3b56b1b7cb2cca09a9bf5a34528a0cd7cc761e4779d",
+        "apps/web/src/lib/components/guild/ActivityBoard.svelte": "24938755afb07731e5f99e9c6a507c90823ccb5d3b292eb3a61565dd8eddf780",
+        "apps/web/src/lib/components/guild/NextScrimHero.svelte": "892eb973dcbe88c0bffa6b8a9a873a8af2e768ab10ea21cecd05912bd6864e27",
+        "apps/web/src/lib/components/guild/RankingBoard.svelte": "1fa65aced2b5e6ed998abb38bc96721d6f743aa491f76c254eeb54372fd57ea4",
+        "apps/web/src/lib/components/layout/AppFooter.svelte": "1c65f9367b49278d522fab1d5fe8fb2e1b7d1469276a7c82525b9bd22c310b93",
+        "apps/web/src/lib/components/layout/AppHeader.svelte": "580874178b027509b37fdd09ad6086666e725569ca22a01aca1e96fd93a92de4",
+        "apps/web/src/lib/components/layout/MenuButton.svelte": "1080dccf3e0ab7656de04edf98d4dcc8415d4e665923e54db12cb45e61d479bb",
+        "apps/web/src/lib/components/matches/GameHero.svelte": "462c0b9a3ab7ad199add432711b70299dd4edc71e5a02be116210ddb1bad9db1",
+        "apps/web/src/lib/components/matches/GamePlayerDialog.svelte": "857b135f2d3bf8c3e0c50cceeded09ad42e6dbc1d63a1984b7a052fc56c58b61",
+        "apps/web/src/lib/components/matches/GameTeamTable.svelte": "16ad633de7e7d0f84f9b413672f2b5a18ac3bdd289755a525fd0f0f9e429934b",
+        "apps/web/src/lib/components/matches/RoflUploadDialog.svelte": "7ac6e350e9c66c4c8bb2f36583b88d96bff6835195311a6322bfa6bf970f01be",
+        "apps/web/src/lib/components/me/RiotAccountList.svelte": "05f72cab22d39b98cf2ebb04e0abbc7b4ce943711e066360b151f228307995a1",
+        "apps/web/src/lib/components/scrims/MyRegistrationBar.svelte": "2d57fccaf42219385cbbccac078bb5e1bfefedcb0a374fd9c6d07a7cf9e542f1",
+        "apps/web/src/lib/components/scrims/ParticipantBoard.svelte": "fbca57976ef0a3e23ad32ebcee0432b0cd8a788d53864bd081f8f834bc8dd22c",
+        "apps/web/src/lib/components/scrims/RegistrationDialog.svelte": "02f67e7a75b8e5d1359f19c8cd9fd7cd8b939a4231dfa0a1d072f5f1c487b5a7",
+        "apps/web/src/lib/components/scrims/ScrimOperationsBar.svelte": "e1ce84f11345f9ad250a370e33ec8885032c263f5623f3d41f884822d2527ba8",
+        "apps/web/src/lib/components/scrims/ScrimSettingsDialog.svelte": "59af78330fa4a4c30a70ca2b72a667ac7e62b99eaa981bfe82a971dcac2af584",
+        "apps/web/src/lib/components/scrims/ScrimSummary.svelte": "49343a23994a63fccf0cfa5a391398306217847c0e4cd0390a9e6634cf4370e6",
+        "apps/web/src/lib/components/stats/AchievementCarousel.svelte": "e27410b0bcdd8f556b641a4d003e9a46d20e779d2cbb0033f3c7ee1f9b1df43e",
+        "apps/web/src/lib/components/stats/AchievementRankingDialog.svelte": "e8e2a93612d1e0f3471e334df3db0349972201a7f1e58066dfddc7db510bafe8",
+        "apps/web/src/lib/components/stats/LeaderboardTable.svelte": "b7f89790f495e6cd4d6acd12832561c128cff96537c995ac23dd1a3bfc6364f1",
+        "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte": "11b5dbf53b375c62df310920577242e6eecf93e0a7154fe9fef57f71d97cfac8",
+        "apps/web/src/lib/components/teams/AuctionSetupBoard.svelte": "9f55f9e9fc9716129d40c60051eb5e6e7ec9e0894873e39a39b2b292a178a4cb",
+        "apps/web/src/lib/components/teams/AuctionTeamCard.svelte": "40644d0d0349e59714dd1cc79769070adba65701ac374e0656f88e8d495134e9",
+        "apps/web/src/lib/components/teams/ChangeMethodButton.svelte": "6475f402013b0041e7bc163be94af8aa632d8596e54c1a9be109b267338a802a",
+        "apps/web/src/lib/components/teams/FormationHeadToHead.svelte": "7ef710bc948ab9ffa34fe2d1016964608243570017378658a8e441b111a7d608",
+        "apps/web/src/lib/components/teams/FormationPool.svelte": "64ae5bcf1546b24c75b671be37a52abdcf0d0aa4f913658d943a59b56e5d8e98",
+        "apps/web/src/lib/components/teams/FormationSynergyRail.svelte": "361697db672f6c03dcfd08c0c3460ce2587d1a6fb9082b7c38a70560df61a5a7",
+        "apps/web/src/lib/components/teams/FormationTeamCard.svelte": "57362d1dc8888dc755930a0df8bdc4eeb68bd89480c18d58b18671b9a168671c",
+        "apps/web/src/lib/components/teams/ManualFormationBoard.svelte": "46c57b72ffde9a0da783d0dd2c79b2e5609a84be73f80498ac144041c5895525",
+        "apps/web/src/lib/ui/actions.ts": "a287c2ed861c1ed4ca228b4e6976808903cf21eddf34af84898031bd8e2fa09b",
+        "apps/web/src/lib/ui/form.ts": "6c144b9cf4eb09ff733be3fa2b7ff438bed8ca9076fbf115e5ee14935c3770e2",
+        "apps/web/src/routes/+error.svelte": "0b00739a10a4f4b51ad001850847586dfbd96d4d3317afbed573aa5d977542a7",
+        "apps/web/src/routes/+layout.svelte": "6e081b8598cc58d35a2b1dda48b39aae0dd1ebf799583e8e8d7a3134c2effe0c",
+        "apps/web/src/routes/+page.svelte": "c417c89e22c5d436925c8a27cef45e9a5e5f61427360b0fa1919ef4776c33b8e",
+        "apps/web/src/routes/backoffice/+page.svelte": "8f81bf37866f49693011cd029a52aac5215a1eacb7e26bdc458f4be747304ca7",
+        "apps/web/src/routes/dev/components/+page.svelte": "cfcee843c86462deb07c47e66c7c297b5b048daa799614cf09b6c3f2a0e6ac24",
+        "apps/web/src/routes/docs/+page.svelte": "fb7bf14425609ae50070c2b95b1cd26e005692195ce1c3b202eee3d3426478e4",
+        "apps/web/src/routes/g/[guildId]/+page.svelte": "1604ff079b7e3dd8b3899c16557ae9330ed993919c2d95d38cbc00cf741c057e",
+        "apps/web/src/routes/g/[guildId]/admin/+page.svelte": "41d951c66581285e9b5a00a3fa5abc53124862d371e3785f76db8b4abae059f2",
+        "apps/web/src/routes/g/[guildId]/matches/+page.svelte": "14dc1760ffb63d7ddd92368f2d766865bd666e53ce3d762a1dcfc58666730294",
+        "apps/web/src/routes/g/[guildId]/matches/[matchId]/+page.svelte": "9dedb207c23ed02dda19132ff2390ea9fc1cdcf992d96226839b4665175788fa",
+        "apps/web/src/routes/g/[guildId]/players/[userId]/+page.svelte": "71101725603ef1a4afb7e914987fa2c5e7b31d02fc4c000473c505bab6836e42",
+        "apps/web/src/routes/g/[guildId]/scrims/+page.svelte": "5f47990abe84fd74739de80fd218e618956ca5191646dc2e72471c79f753b5e9",
+        "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte": "3bcf3faceb0a4aab445789b1b9b75033004a4de115f516298c6e96bfb2b7c85a",
+        "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/result/+page.svelte": "a726bbde56a57907a74e719a33e392e32ad7c1c816802b1a8dd4ef16b3613e3d",
+        "apps/web/src/routes/g/[guildId]/stats/+page.svelte": "e602954f0ebaac2935c6e2c724c04bc08167a7847ed6fcd49006b86cc79025a0",
+        "apps/web/src/routes/layout.css": "f629d8ddd66446540be39c2dcf9e48b2af20dc448ff31105e13b4299f171e4d9",
+        "apps/web/src/routes/me/+page.svelte": "91c8a9ac243e1079a4e36f16582b8893c459cb239d7a936d4ef45300d058332f",
+        "apps/web/src/lib/components/common/AccessibleAccordion.svelte": "52c59de0f44e9be5416c7044263f2bbe3ed6de1c8eb86f87c196915e51eb4c9a",
+        "apps/web/src/lib/components/common/SelectionTabs.svelte": "f4b668deb3d2dc34ebab8c7394c6dc693b5fa541c72ec9ba1598ae48b18538a5"
+    },
+    "notes": [
+        "Commands actually ran. Existing web tests and browser regression passed after Calendar code; the final manual changes only alter color classes and all final source passed check/build plus its16 actual browser states. Bot code was unchanged.",
+        "No claim of all production roles/states, physical mobile, Safari, real screen reader, actual IME, real OAuth/Discord writes or valid production ROFL upload.",
+        "Initial generated evidence JSON formatting failures were corrected. The final full check passed."
+    ]
+}

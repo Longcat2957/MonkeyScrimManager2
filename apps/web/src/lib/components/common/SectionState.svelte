@@ -8,12 +8,16 @@
 
     let props: Props = $props();
     let retrying = $state(false);
+    let retryError = $state('');
 
     async function retry() {
-        if (props.state !== 'error') return;
+        if (props.state !== 'error' || retrying) return;
         retrying = true;
+        retryError = '';
         try {
             await props.onretry();
+        } catch {
+            retryError = '다시 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.';
         } finally {
             retrying = false;
         }
@@ -37,13 +41,13 @@
         role="alert"
         class="flex flex-col items-center gap-3 rounded-(--radius-box) border border-dashed border-border px-4 py-6 text-center"
     >
-        <p class="text-sm text-error">{props.message}</p>
+        <p class="text-sm text-error">{retryError || props.message}</p>
         <Button
             fill="lineLight"
             size="auto"
             heightOut="0"
             heightIn="2"
-            injClass="px-3 text-sm"
+            injClass="min-h-11 px-3 text-sm"
             loading={retrying ? {} : null}
             onclick={retry}
         >

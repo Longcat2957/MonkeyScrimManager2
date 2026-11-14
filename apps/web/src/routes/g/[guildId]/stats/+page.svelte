@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, Grid, Grids, Stepper, Switch, Tab } from 'stdf';
+    import { Button, Grid, Grids, Stepper, Switch } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
@@ -7,6 +7,7 @@
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
     import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
     import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
@@ -16,6 +17,7 @@
     import { fixed, integer } from '#lib/features/players/format.ts';
     import { formatDuration } from '#lib/features/matches/format.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
+    import { stepperLabels } from '#lib/ui/form.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -67,12 +69,12 @@
         <SectionState state="empty" message="아직 기록된 게임이 없어요" />
     {:else}
         {@const kpis: [string, string, string | null, StatTone, string][] = [
-			['총 게임', String(data.kpis.games), '기록된 게임', 'info', 'm14.5 17.5-11-11V3h3.5l11 11m-5 5 6-6m-3 3 4 4m1-1-2 2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4m-2-1-3 3m-1-1 2 2'],
+			['총 게임', String(data.kpis.games), null, 'info', 'm14.5 17.5-11-11V3h3.5l11 11m-5 5 6-6m-3 3 4 4m1-1-2 2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4m-2-1-3 3m-1-1 2 2'],
 			['참가자', String(data.kpis.players), '한 게임 이상 뛴 사람', 'neutral', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.87m-3-12a4 4 0 0 1 0 7.75'],
 			['평균 게임 시간', formatDuration(data.kpis.averageDurationSec), null, 'info', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-16v6l4 2'],
-			['분당 킬', fixed(data.kpis.killsPerMinute, 2), '게임 1분당 나온 킬', 'success', 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22m7-7.34V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z'],
+			['분당 킬', fixed(data.kpis.killsPerMinute, 2), null, 'success', 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22m7-7.34V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z'],
 			['평균 KDA', fixed(data.kpis.kda, 2), '(킬+어시스트) / 데스', 'warning', 'M13 2 3 14h9l-1 8 10-12h-9z'],
-			['사용한 챔피언', integer(data.kpis.champions), '이 서버에서 나온 챔피언', 'error', 'M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z']
+			['사용한 챔피언', integer(data.kpis.champions), null, 'error', 'M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z']
 		]}
         <section aria-labelledby="kpis">
             <h2 id="kpis" class="sr-only">핵심 지표</h2>
@@ -99,7 +101,7 @@
         <!-- 포지션 필터는 업적·리더보드·챔피언에 함께 적용한다. -->
         <div class="flex items-center gap-2">
             <div role="group" aria-label="포지션 필터" class="min-w-0 flex-1 border-b border-border">
-                <Tab
+                <SelectionTabs
                     labels={FILTERS.map((filter) => ({ text: filter.text }))}
                     active={FILTERS.findIndex((filter) => filter.key === data.position)}
                     onclickTab={(index) => navigate({ position: FILTERS[index]!.key })}
@@ -107,7 +109,10 @@
             </div>
         </div>
 
-        <div class={['flex flex-col gap-8 transition-opacity', changing && 'opacity-50']}>
+        <div
+            aria-busy={changing}
+            class={['flex flex-col gap-8 transition-opacity', changing && 'opacity-50']}
+        >
             {#if data.showAchievements}
                 <section aria-labelledby="achievements" class="flex flex-col gap-3">
                     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -132,18 +137,14 @@
                                     size="auto"
                                     heightOut="0"
                                     heightIn="2"
-                                    injClass="px-3 text-sm"
+                                    injClass="min-h-11 px-3 text-sm"
                                     onclick={() => (rankingOpen = true)}>업적별 순위</Button
                                 >
                             {/if}
                         </div>
                     </div>
                     {#if data.achievements.length}
-                        <AchievementCarousel
-                            items={data.achievements}
-                            {guildId}
-                            bind:current={achievementIndex}
-                        />
+                        <AchievementCarousel items={data.achievements} bind:current={achievementIndex} />
                         <p class="text-center text-xs opacity-60">
                             {data.achievementMinGames}게임 이상 뛴 사람부터 집계해요
                         </p>
@@ -161,11 +162,16 @@
                     <h2 id="leaderboard" class="text-lg font-semibold">리더보드</h2>
                     <div class="flex items-center gap-3 text-sm">
                         <span id="min-games-label" class="opacity-70">최소 게임</span>
-                        <div role="group" aria-labelledby="min-games-label">
+                        <div
+                            role="group"
+                            aria-labelledby="min-games-label"
+                            {@attach stepperLabels('최소 게임')}
+                        >
                             <Stepper
                                 bind:value={minGames}
                                 min={1}
                                 max={50}
+                                injClassBtn="min-h-11 min-w-11"
                                 onchange={(value) => navigate({ min: Number(value) })}
                             />
                         </div>

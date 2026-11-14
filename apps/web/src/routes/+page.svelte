@@ -73,8 +73,7 @@
 <section aria-labelledby="intro" class="flex max-w-3xl flex-col gap-4">
     <h1 id="intro" class="text-3xl font-bold text-balance md:text-4xl">디스코드 내전, 모집부터 전적까지</h1>
     <p class="text-lg opacity-80">
-        {SERVICE_NAME}는 리그 오브 레전드 내전의 모집·팀 편성·대진을 한곳에서 운영하고, 리플레이 파일로 결과와
-        전적을 자동으로 기록해요.
+        {SERVICE_NAME}은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.
     </p>
 </section>
 <!-- STDF 가로 Steps는 설명(desc)을 그리지 않으므로 화면 폭과 관계없이 세로로 둔다. -->
@@ -106,7 +105,7 @@
                 <li>
                     <a
                         href={tool.href}
-                        data-sveltekit-preload-data="off"
+                        data-sveltekit-preload-data="false"
                         class="inline-flex flex-col items-start gap-1 py-1 focus-visible:outline-2 focus-visible:outline-offset-4"
                     >
                         <span class="underline underline-offset-4">{tool.label}</span>

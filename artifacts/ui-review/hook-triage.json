@@ -1,0 +1,36 @@
+{
+    "finding": {
+        "rule": "side-tab",
+        "file": "apps/web/src/lib/components/matches/GameHero.svelte",
+        "line": 34,
+        "attribution": "unknown"
+    },
+    "decision": "intentional domain-specific design; scoped exception",
+    "decidedBy": "Codex /root, based on prior independent final A/B assessment and current winner.side implementation",
+    "evidence": [
+        "GameHero border color derives from winner.side: red/error, blue/info; the winning team is also named in text.",
+        "artifacts/ui-review/final-assessment-b.md source-detector and browser-overlay triage."
+    ],
+    "fixed": [],
+    "suppressed": [
+        {
+            "rule": "side-tab",
+            "value": "*",
+            "files": ["apps/web/src/lib/components/matches/GameHero.svelte"],
+            "method": "impeccable hooks ignore-value",
+            "config": ".impeccable/config.json"
+        }
+    ],
+    "kept": ["Existing4px blue/red winner-side border and winner text; UI source unchanged."],
+    "leftStanding": [],
+    "validation": {
+        "command": "impeccable detect --json apps/web/src/lib/components/matches/GameHero.svelte",
+        "exitCode": 0,
+        "findings": []
+    },
+    "limits": [
+        "Attribution unknown is not treated as a new regression.",
+        "No ignore-rule or ignore-file and no changes to other rule/file scopes.",
+        "Prior final-detector.json and critique snapshot remain the historical pre-exception diagnostic records."
+    ]
+}

@@ -59,9 +59,7 @@
         <div class="flex min-w-0 flex-col">
             <h3 id={`team-${team.id}`} class="truncate text-sm font-semibold">{team.name}</h3>
             {#if details}
-                <span class="text-[0.6875rem] text-gray-500 tabular-nums dark:text-gray-400"
-                    >평균 {formatMmr(average)}</span
-                >
+                <span class="text-[0.6875rem] text-text-muted tabular-nums">평균 {formatMmr(average)}</span>
             {/if}
         </div>
     </header>
@@ -100,7 +98,7 @@
                     <PlayerFace name={item.displayName} imageUrl={item.iconUrl} size="md" />
                     <span class="flex min-w-0 flex-1 flex-col text-left">
                         <span class="truncate text-sm font-semibold">{item.displayName}</span>
-                        <span class="truncate text-[0.6875rem] text-gray-500 tabular-nums dark:text-gray-400">
+                        <span class="truncate text-[0.6875rem] text-text-muted tabular-nums dark:text-dark">
                             MMR {formatMmr(item.mmr[lane])}
                             {#if offLane}<span class="text-warning"> · 희망 외</span>{/if}
                         </span>
@@ -150,7 +148,7 @@
                         {@render occupant(player)}
                     </span>
                 {:else}
-                    <span class="flex items-center justify-center text-sm text-gray-400 italic"
+                    <span class="flex items-center justify-center text-sm text-text-muted italic"
                         >비어 있음</span
                     >
                 {/if}

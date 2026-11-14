@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { CellGroup, InfiniteScroll, Tab } from 'stdf';
+    import { CellGroup, InfiniteScroll } from 'stdf';
     import { resolve } from '$app/paths';
     import LinkCell from '#lib/components/common/LinkCell.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import type { GuildRanking, LolPosition, RankingEntry, RankingPage } from '#lib/features/guild/types.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
     import type { SectionResult } from '#lib/features/section.ts';
@@ -175,7 +176,11 @@
                 aria-label="포지션 선택"
                 class="border-b border-text-primary/5 px-1 dark:border-text-dark/5"
             >
-                <Tab labels={POSITIONS.map(({ text }) => ({ text }))} {active} onclickTab={selectPosition} />
+                <SelectionTabs
+                    labels={POSITIONS.map(({ text }) => ({ text }))}
+                    {active}
+                    onclickTab={selectPosition}
+                />
             </div>
             {#if board && board.entries.length}
                 <!-- 카드 안에서 스크롤하며 다음 순위를 불러온다. 페이지 전체 길이는 늘어나지 않는다. -->

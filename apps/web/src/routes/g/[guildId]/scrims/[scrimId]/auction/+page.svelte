@@ -18,7 +18,12 @@
         <SectionState state="empty" message="모집이 마감되면 선발된 참가자로 경매를 준비할 수 있어요" />
     </section>
 {:else if data.auction.status === 'setup'}
-    <AuctionSetupBoard teams={data.auction.teams} players={data.auction.players} editable={data.can.manage} />
+    <AuctionSetupBoard
+        contextKey={data.scrim.id}
+        teams={data.auction.teams}
+        players={data.auction.players}
+        editable={data.can.manage}
+    />
 {:else}
     <AuctionDraftBoard auction={data.auction} manager={data.can.manage} />
 {/if}

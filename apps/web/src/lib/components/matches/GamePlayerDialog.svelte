@@ -13,6 +13,11 @@
         durationSec
     }: { open: boolean; player: GamePlayer | null; durationSec: number | null } = $props();
 
+    let popupPosition = $state<'right' | 'bottom'>('bottom');
+    $effect(() => {
+        if (!open) popupPosition = desktop.current ? 'right' : 'bottom';
+    });
+
     const multi = $derived(
         player
             ? [
@@ -57,7 +62,7 @@
         onclose: () => (open = false)
     })}
 >
-    <Popup bind:visible={open} position={desktop.current ? 'right' : 'bottom'} size={0} transparent>
+    <Popup bind:visible={open} position={popupPosition} size={0} transparent>
         {#if player}
             <div
                 class="flex max-h-[85dvh] w-full flex-col bg-bg-surface lg:h-dvh lg:max-h-none lg:w-[26rem] dark:bg-bg-surface-dark"
@@ -69,7 +74,7 @@
                             class="size-12 rounded-(--radius-form)"
                         />{/if}
                     <div class="flex min-w-0 flex-1 flex-col">
-                        <h2 class="truncate text-base font-semibold">{player.displayName}</h2>
+                        <h2 class="text-base font-semibold break-words">{player.displayName}</h2>
                         <span class="truncate text-sm opacity-60"
                             >{player.champion.name}{player.level !== null
                                 ? ` · 레벨 ${player.level}`
@@ -81,7 +86,7 @@
                         size="auto"
                         heightOut="0"
                         heightIn="2"
-                        injClass="px-2"
+                        injClass="min-h-11 min-w-11 px-2"
                         onclick={() => (open = false)}
                     >
                         <span aria-hidden="true" class="text-lg leading-none">×</span><span class="sr-only"

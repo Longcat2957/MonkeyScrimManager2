@@ -15,10 +15,15 @@
     }: { open: boolean; items: AchievementRanking[]; guildId: string; current: number } = $props();
 
     const item = $derived(items[current]);
+    let popupPosition = $state<'right' | 'bottom'>('bottom');
+    // 열린 동안 위치를 유지해 폭 전환 시 같은 내용이 두 번 나타나지 않게 한다.
+    $effect(() => {
+        if (!open) popupPosition = desktop.current ? 'right' : 'bottom';
+    });
 </script>
 
 <div {@attach overlay({ open, label: '업적별 순위', onclose: () => (open = false) })}>
-    <Popup bind:visible={open} position={desktop.current ? 'right' : 'bottom'} size={0} transparent>
+    <Popup bind:visible={open} position={popupPosition} size={0} transparent>
         <div
             class="flex max-h-[85dvh] w-full flex-col bg-bg-surface lg:h-dvh lg:max-h-none lg:w-[30rem] dark:bg-bg-surface-dark"
         >
@@ -29,7 +34,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-2"
+                    injClass="min-h-11 min-w-11 px-2"
                     onclick={() => (open = false)}
                 >
                     <span aria-hidden="true" class="text-lg leading-none">×</span><span class="sr-only"
@@ -46,7 +51,7 @@
                                 aria-pressed={index === current}
                                 onclick={() => (current = index)}
                                 class={[
-                                    'rounded-full border px-3 py-1.5 text-sm',
+                                    'min-h-11 rounded-full border px-3 py-1.5 text-sm',
                                     index === current
                                         ? 'border-warning bg-warning/15 font-semibold'
                                         : 'border-border hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark'
@@ -83,7 +88,7 @@
                                     >
                                     <span class="flex flex-col items-end text-sm tabular-nums">
                                         <span class="font-bold">{entry.value}</span>
-                                        <span class="text-xs opacity-60">{entry.games}게임</span>
+                                        <span class="text-xs text-text-muted">{entry.games}게임</span>
                                     </span>
                                 </li>
                             {/each}

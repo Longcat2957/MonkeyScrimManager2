@@ -20,20 +20,13 @@
 
 <h1 class="text-2xl font-semibold">{data.guild.name}</h1>
 
-<!-- 위에서 아래로: 내 다음 내전 → 업적(전체 폭) → 내전 현황 | 서버 순위 -->
+<!-- 위에서 아래로: 내 다음 내전 → 내전 현황 | 서버 순위 → 업적 -->
 <div class="mt-6 flex flex-col gap-10">
     <NextScrimHero
         next={data.nextScrim}
         href={data.nextScrim &&
             resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: data.nextScrim.scrim.id })}
     />
-
-    {#if data.achievements.length}
-        <section aria-labelledby="achievements" class="flex flex-col gap-3">
-            <h2 id="achievements" class="text-lg font-semibold">업적</h2>
-            <AchievementCarousel items={data.achievements} {guildId} />
-        </section>
-    {/if}
 
     <div class="grid items-start gap-10 lg:grid-cols-2 lg:gap-8">
         <ActivityBoard
@@ -45,4 +38,11 @@
         />
         <RankingBoard {guildId} ranking={data.ranking} onretry={retry} />
     </div>
+
+    {#if data.achievements.length}
+        <section aria-labelledby="achievements" class="flex flex-col gap-3">
+            <h2 id="achievements" class="text-lg font-semibold">업적</h2>
+            <AchievementCarousel items={data.achievements} />
+        </section>
+    {/if}
 </div>

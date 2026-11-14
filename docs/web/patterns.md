@@ -1,6 +1,6 @@
 # 화면 패턴
 
-갱신일: 2026-11-05. 현재 코드의 공통 패턴과 확인이 필요한 한계를 기록한다. 선택 기준과 STDF 제약은 [design-system.md](design-system.md), 경로·쿼리는 [routing.md](routing.md)를 따른다. 아래 완료 체크리스트는 작업 기준이며 현재 모든 화면이 이를 충족한다는 뜻은 아니다.
+갱신일: 2026-11-14. 현재 코드의 공통 패턴과 확인이 필요한 한계를 기록한다. 선택 기준과 STDF 제약은 [design-system.md](design-system.md), 경로·쿼리는 [routing.md](routing.md)를 따른다. 아래 완료 체크리스트는 작업 기준이며 현재 모든 화면이 이를 충족한다는 뜻은 아니다.
 
 ## 0. 페이지 골격
 
@@ -16,14 +16,14 @@
 | --- | --- |
 | 페이지 조회 불가 | `load`의 `error()`와 루트 `+error.svelte`. 권한·개발 모드·대상 존재 여부에 따라 401·403·404 등 발생 |
 | 최초 대기 | `SectionState state="loading"`: `aria-busy`·숨긴 로딩 문구·STDF `Skeleton`. 백오피스는 서버 상태 Promise를 스트리밍하고 `{#await}`로 대기 표시 |
-| 조건 변경 중 | 내전 목록은 `$app/state`의 `navigating`으로 이전 결과 흐림·작은 `Loading`을 표시. 모든 목록의 공통 자동 동작은 아님 |
+| 조건 변경 중 | 내전·경기 목록과 서버 통계는 `$app/state`의 `navigating`으로 기존 결과를 유지하며 `aria-busy`·작은 `Loading`을 표시. 다른 목록까지 자동 적용되는 공통 기능은 아님 |
 | 데이터 없음 | `SectionState state="empty"` 또는 해당 목록의 간단한 문구. 빈 결과 안에 상단 생성 작업을 다시 두지 않음 |
 | 영역 조회 실패 | `SectionState state="error"`: `role="alert"`, 오류 문구, 재시도 중 비활성인 버튼. 서버 홈은 `Promise.allSettled`·`SectionResult`로 영역별 실패를 분리 |
 | 권한 없음 | `can`, `guild.isAdmin` 등으로 관리 조작 렌더링을 제한. 실제 action은 세션 실행자와 현재 Discord 권한을 검사하고 트랜잭션에서 다시 확인. 일반 읽기는 공개 |
 | 조건 미충족 | 편성 인원·잔여 포인트·단계 등 해당 기능의 조건에 따라 `disabled`와 이유 문구 사용 |
 | 제출 중 | `Button loading={pending ? {} : null}`. STDF `disabledLoading=true`로 해당 버튼 비활성. 입력 잠금·취소 허용 여부는 폼별 구현 |
 | 성공 | 결과가 화면에 보이면 데이터 갱신으로 알림. 설정 변경 등 일부 작업은 `toast.success` 사용 |
-| 폼 실패 | 필드 오류는 `Input state="error"`·`tip`, 비필드 오류는 폼 안 `role="alert"` 문구. 그룹 선택 오류는 그룹 바로 아래 표시 |
+| 폼 실패 | 필드 오류는 `Input state="error"`와 한 곳의 오류 문구를 `inputFeedback`으로 연결. 비필드 오류는 폼 안 `role="alert"`. 그룹 선택 오류는 바로 아래 표시하고 실제 선택 버튼에도 연결 |
 | 비폼 작업 실패 | `postAction`이 오류 문자열을 반환하고 호출 컴포넌트가 `toast.error` 또는 인라인 문구로 표시 |
 
 서버 홈의 재시도는 `invalidate('app:guild-home')`, 백오피스는 `invalidate('app:service-status')`, 경매 갱신은 `invalidate('app:auction')`를 사용한다. 서버 홈의 업적 조회 실패는 영역 생략, 다음 내전 조회 실패는 `NextScrimHero`의 빈 안내로 처리하므로 모든 영역이 같은 오류 상자를 갖지는 않는다.
@@ -53,7 +53,7 @@
 | 폼 없는 작업 | `lib/ui/actions.ts`의 `postAction(name, fields)`가 현재 페이지에 POST하고 `deserialize`로 결과 해석 |
 | ROFL 업로드 | 실제 서버는 다음 세트 파일 하나와 블루 팀·경기 revision·라인업·세트 번호를 `?/upload`에 전송. 개발 샘플만 여러 파일을 순차 전송. 상태·마지막 기록 순서를 보관 |
 
-`postAction`은 성공 시 `invalidateAll()` 후 `null`, `failure`의 `data.message`가 있으면 그 문자열, 그 외는 일반 실패 문구를 반환한다. 네트워크 예외는 현재 상태를 `invalidateAll()`로 다시 요청한 뒤 확인 문구를 반환한다. redirect·페이지 오류를 `applyAction`으로 처리하는 일반 helper는 아니다.
+`postAction`은 성공 시 `invalidateAll()` 후 `null`, `failure`의 `data.message`가 있으면 그 문자열, 그 외는 일반 실패 문구를 반환한다. 네트워크 예외에서는 입력 화면을 보존하고 저장 결과를 확인할 수 없다는 문구를 반환한다. 성공 응답 뒤 갱신이 실패한 경우도 별도로 설명하며 자동 재전송·강제 재조회는 하지 않는다. redirect·페이지 오류를 `applyAction`으로 처리하는 일반 helper는 아니다.
 
 `RegistrationDialog`와 `postAction`은 409 충돌 때 `invalidateAll()`로 현재 상태를 다시 읽는다. 자동 재전송은 하지 않는다. 모든 쓰기에 멱등 키가 구현된 것은 아니며 각 action의 상태 검사와 제약을 확인해야 한다.
 
@@ -64,27 +64,33 @@
 | 입력 표시 | STDF `Input`의 `title`, `titlePosition="out"`, 명시적 `placeholder`; 그룹은 `<fieldset><legend>` |
 | 검증 | `novalidate` 폼에서 클라이언트와 서버가 필요한 형식·범위를 검사. `required` 표시만으로 검증하지 않음 |
 | 값 전달 | STDF 입력에 HTML `name`이 없으므로 `enhance`에서 `FormData` 구성 |
-| 선택 컨트롤 | `Checkbox`·`Radio`·`Stepper`가 있는 폼에 `nonSubmitButtons` attachment. 타입 없는 내부 버튼을 `type="button"`으로 보정하고 이후 DOM 변경도 관찰 |
+| 선택 컨트롤 | `Checkbox`·`Radio`·`Stepper`가 있는 폼에 `nonSubmitButtons` attachment. 타입 없는 내부 버튼을 `type="button"`으로 보정하고 이후 DOM 변경도 관찰. 한글 조합을 확정하는 Enter의 암묵적 제출도 방지 |
+| 숫자 증감 | 이름 있는 래퍼의 `stepperLabels(label)`과 Stepper 공개 `injClassBtn="min-h-11 min-w-11"`. 각 필드 목적·줄이기/늘리기 이름과 44px 조작 영역 제공 |
+| 지우기 있는 입력 | `inputLabel(label, clearLabel?)`로 실제 입력 이름과 기존 clear 버튼의 한국어 이름·44px 조작 영역 보완. 기본 clear 핸들러 유지 |
 | 제출 | 제출용 `Button`에 `type="submit"`. `loading`으로 중복 클릭을 막음 |
-| 오류 포커스 | `ScrimSettingsDialog`가 `data-field` 래퍼의 실제 입력을 찾아 첫 제목·날짜·시각 오류로 이동. 다른 폼의 공통 자동 기능은 아님 |
+| 오류 포커스 | `ScrimSettingsDialog`가 첫 제목·날짜·시각 오류로 이동. `MemberRiotAccountsDialog`는 클라이언트 Riot ID 형식 오류 때 입력으로 이동. 모든 폼의 공통 자동 기능은 아님 |
 | 버튼 배치 | 모집 설정·참가 신청은 모바일 전체 폭 세로, 데스크톱 오른쪽 가로. 멤버 계정 관리·ROFL은 각 팝업의 가로 작업 줄 사용 |
 
 실제 폼별 차이:
 
-- `ScrimSettingsDialog`: 모집 생성·수정 공용. 열 때 `initial`에서 값·오류를 초기화한다. `editable`로 단계별 필드를 표시하고 변경된 값이 있을 때 취소·Escape에 폐기 확인을 요청한다. 달력은 `popup={null}`로 폼 안에 펼친다.
-- `RegistrationDialog`: 계정 선택·희망 포지션 입력. 포지션 미선택 오류는 그룹 아래에 표시하고 취소 시 폐기 확인은 없다. 제출 중에는 닫지 않는다.
-- `MemberRiotAccountsDialog`: 조회 → 연결 확인 두 단계의 form action. 해제·대표 변경은 `postAction`이다. 입력 오류를 표시하지만 첫 오류 포커스 이동은 별도로 구현하지 않았다.
+- `ScrimSettingsDialog`: 모집 생성·수정 공용. 열 때 `initial`에서 값·오류를 초기화한다. `editable`로 단계별 필드를 표시하고 변경된 값이 있을 때 취소·Escape에 폐기 확인을 요청한다. 달력은 `popup={null} height={32}`로 폼 안에 펼친다. height는 뷰포트 높이의 백분율이다.
+- `RegistrationDialog`: 계정 선택·희망 포지션 입력. 포지션 미선택 오류는 그룹 아래 한 곳에 표시하고 그룹·실제 선택 버튼에 연결한 뒤 첫 버튼으로 포커스를 옮긴다. 취소 시 폐기 확인은 없고 제출 중에는 닫지 않는다.
+- `MemberRiotAccountsDialog`: 조회 → 연결 확인 두 단계의 form action. 해제·대표 변경은 `postAction`이다. 조회 성공은 연결 버튼, 연결·갱신 성공은 입력으로 포커스를 옮긴다. `inputLabel`·`inputFeedback`과 단일 오류 알림을 사용한다. 조회·연결·대표 변경·해제 확인 동안 중복 요청과 다른 조작·닫기를 막고 `finally`에서 잠금을 해제한다. 실패 시 입력·확인 대상을 보존하며 연결 성공 뒤 갱신 실패는 현재 상태 확인을 안내한다.
 - `RoflUploadDialog`: 네이티브 숨긴 파일 입력과 STDF `ImageList`를 연결하고, 파일별 POST를 직접 수행한다. 일반 `<form use:enhance>` 형태는 아니다.
 
-STDF `Input`의 `title`은 설치 버전에서 네이티브 `<label>` 연결을 만들지 않으며 임의 `id`·`aria-*` 전달도 제공하지 않는다. 현재 보이는 라벨만으로 프로그램적 입력 이름이 모두 보장되는 것은 아니다. 또한 STDF는 입력값의 조합 이벤트를 처리하지만 프로젝트 폼에는 제출 시 `isComposing`을 검사하는 공통 코드가 없다.
+설치된 STDF `Input`은 네이티브 `<label>`로 입력을 감싼다. `title`/`titleChild`에 실제 이름을 제공하며 placeholder만 이름으로 쓰지 않는다. label 안에 생기는 clear 버튼의 문구가 입력 이름에 합쳐지므로 지우기 기능이 있는 입력의 래퍼에는 `inputLabel`을 적용한다. 임의 `id`·`aria-*` 전달이 없어 오류는 `inputFeedback`이 실제 입력의 `aria-invalid`·`aria-describedby`를 연결하고 문구는 한 곳에서만 렌더링한다. 각 helper는 해제 때 자신의 관찰자·이벤트를 정리하며 입력 이름·오류 연결·증감 이름의 원래 속성을 복원한다.
+
+모집 설정·신청은 제출 중 필드를 잠그고 중복 제출·닫기를 막는다. 실패 응답에서도 입력을 유지하고, 서버가 저장했으나 후속 화면 갱신에 실패한 경우에는 저장 실패로 오인해 재전송하지 않도록 저장 완료와 새로고침 필요를 구분한다. 이 상태의 추가 제출은 막고 창을 닫은 뒤 현재 결과를 확인하게 한다.
+
+모집 설정의 인라인 달력은 날짜별 연·월·일 이름과 선택 상태를 제공한다. 실제 날짜가 없는 빈 칸은 비활성·보조기기 탐색 제외하며, 날짜 선택 뒤 다음 입력인 시각으로 포커스를 옮긴다. 설치된 한국어 요일 배열의 오류는 루트 ConfigProvider locale로 교정하고, 월 제목도 불투명 보조 글자 토큰을 사용한다.
 
 ## 4. 오버레이
 
 | 종류 | 현재 구현 |
 | --- | --- |
-| 입력 팝업 | `Popup` + 내용 상자 또는 폼. 기본 데스크톱 `center`, 모바일 `bottom`. ROFL 팝업은 입력 중 중복 렌더링을 막기 위해 닫힌 상태에서만 위치를 갱신 |
+| 입력 팝업 | `Popup` + 내용 상자 또는 폼. 기본 데스크톱 `center`, 모바일 `bottom`. 모집 설정·신청·멤버 계정·ROFL은 닫힌 상태에서만 위치를 갱신해 열린 채 폭이 바뀌어도 입력 트리를 하나만 유지. 업적 순위·경기 선수 상세도 열린 동안 위치 유지 |
 | 헤더·행 메뉴 | `ActionMenu`: 마운트 후 데스크톱 `ActionPopover`, 모바일 `ActionSheet` |
-| 상세 보기 | `GamePlayerDialog`는 데스크톱 `right`, 모바일 `bottom`. 후보·업적 목록은 각 팝업 구성 사용 |
+| 상세 보기 | `GamePlayerDialog`는 데스크톱 `right`, 모바일 `bottom`. 후보·업적 목록은 각 팝업 구성 사용. `AchievementRankingDialog`도 열린 동안 right/bottom 위치 유지 |
 | 확인 | `confirm(content, title?)`가 루트 `ConfirmDialog`의 STDF `Dialog`를 열고 `Promise<boolean>` 반환. `Feedback`은 토스트 등 기존 피드백 담당 |
 
 `Popup`·`ActionMenu`·`ConfirmDialog`를 감싸는 `overlay({ open, label, onclose })` attachment의 실제 책임은 다음과 같다.
@@ -110,16 +116,20 @@ STDF `Input`의 `title`은 설치 버전에서 네이티브 `<label>` 연결을 
 | 내전 목록·서버 홈 현황 | `CellGroup` 안 `<ul>` + `ScrimListRow`·`MatchListRow` (`LinkCell`) |
 | 경기 기록 | `MatchTable`의 `<section>`·`<ul>`·행 전체 `<a>`. 이름과 달리 네이티브 table 아님 |
 | 참가자 관리 | 평소 보기 목록, 관리 모드에서 `List batchSelectable`·일괄 작업 |
-| 서버 멤버·Discord 설정 | 멤버 행은 관리자 `StatusTag`와 Riot 계정 관리 버튼. 관리자 여부는 표시 전용이며, 운영자 역할·채널 선택은 `DiscordSettingRow`·`ActionMenu` |
-| 수치 비교 | 게임 진영 표·사용자 기록·리더보드의 네이티브 `<table>`. 모바일에서 일부 열 생략 또는 컨테이너 가로 스크롤 |
-| 필터 | STDF `Tab`. 목록 필터는 URL, 참가자 필터·서버 홈 탭은 로컬 상태 |
+| 서버 멤버·Discord 설정 | 멤버 행은 관리자 `StatusTag`와 Riot 계정 관리 버튼. 관리자 여부는 표시 전용이며, 운영자 역할·채널 선택은 `DiscordSettingRow`·`ActionMenu`. 하나를 저장하는 동안 모든 값 버튼을 잠그고 해당 버튼만 loading 표시 |
+| 수치 비교 | 게임 진영 표·사용자 기록·리더보드의 네이티브 `<table>`. 열의 중요도와 핵심 과업에 맞춰 열 생략·내부 스크롤을 선택하며 리더보드의 7개 정렬 지표는 모바일에서도 모두 유지 |
+| 필터 | `SelectionTabs` → STDF `Tab`. 목록 필터는 URL, 참가자 필터·서버 홈 탭은 로컬 상태 |
 | 검색 | `Input` + 제출 폼. 경기 기록·서버 관리의 검색어를 `q`에 반영 |
-| 쪽 번호 | `PageNav`: `total`, `pageSize`, `current`, `onchange`, 선택적 `label`. 한 쪽이면 미렌더링. 페이지 크기는 호출자가 전달 |
+| 쪽 번호 | `PageNav`: `total`, `pageSize`, `current`, `onchange`, 선택적 `label`. 한 쪽이면 미렌더링. 페이지 크기는 호출자가 전달. 번호는 데스크톱 최대 7·모바일 5개, 버튼 최소 44px·균형 줄바꿈. STDF 네이티브 생략 메뉴를 유지하며 펼침/패널 연결과 Escape 포커스 복귀 제공 |
 | 추가 조회 | `RankingBoard`의 카드 내부 스크롤 + `InfiniteScroll`. 로딩·실패·끝 상태를 컴포넌트가 관리 |
 
-`LinkCell`은 행 전체가 링크이므로 안에 다른 조작을 넣지 않는다. `StatusTag`는 장식 Tag를 `inert aria-hidden`으로 감싸고 상태 문구를 숨긴 텍스트로 별도 제공한다.
+`LinkCell`은 `href`가 있으면 행 전체가 링크이므로 안에 다른 조작을 넣지 않는다. `href={null}`이면 링크 효과·키보드 포커스 없는 정적 행이며 임시 `#` 주소를 쓰지 않는다. `StatusTag`는 장식 Tag를 `inert aria-hidden`으로 감싸고 상태 문구를 숨긴 텍스트로 별도 제공한다.
 
-서버 홈은 다음 내전 카드가 가리키는 내전을 현황 목록에서 제외한다. 순위는 이미 목록에 표시된 내 순위를 고정 행에서 다시 제공하지 않는다. 같은 대상·동작을 한 화면에 중복하지 않는 원칙은 모든 페이지에서 계속 검토한다.
+서버 홈은 다음 내전 카드가 가리키는 내전을 현황 목록에서 제외한다. 순위는 이미 목록에 표시된 내 순위를 고정 행에서 다시 제공하지 않는다. 캐러셀의 1위 이름은 정적 텍스트로 두고 선수 이동은 순위·리더보드가 담당한다. 같은 대상·동작을 한 화면에 중복하지 않는 원칙은 모든 페이지에서 계속 검토한다.
+
+`LeaderboardTable`은 KDA → 승률 → 게임 → 킬 관여 → CS/분 → 피해/분 → 시야 순의 단일 표다. 최소 폭 44rem과 이름 있는 `role="region" tabindex="0"` 가로 스크롤, 불투명한 사용자 고정 열을 사용한다. 모바일 초기 화면에는 KDA·승률을 우선 보여 주며 나머지도 스크롤해 정렬할 수 있다. 머리의 네이티브 버튼은 44px, 현재 정렬 열 하나에만 `aria-sort`, 결과 안내는 별도 `role="status"`다. DOM 순서와 시각 순서는 같다.
+
+`AchievementCarousel`은 자연 높이의 한 장에 업적 `h3`·설명·1위·원래 수치를 표시한다. 선택 버튼은 카드 밖 이름 있는 가로 스크롤 영역에 두고 현재 선택·변경 결과를 알린다. 이전/다음은 상대 이동, 점은 특정 업적 직접 선택이며 모두 44px이다. 가로로 충분히 이동한 단일 터치만 넘기고 세로 스크롤·취소·다중 터치는 넘기지 않는다.
 
 ## 6. 반응형
 
@@ -127,18 +137,20 @@ STDF `Input`의 `title`은 설치 버전에서 네이티브 `<label>` 연결을 
 - 헤더·팝업 위치·얼굴 묶음 등 구조가 바뀌는 곳은 `lib/ui/viewport.svelte.ts`의 `desktop.current`를 쓴다. 루트 마운트 전에는 항상 `false`라 SSR과 hydration 구조가 일치한다.
 - 같은 조작의 모바일·데스크톱 변형은 동시에 사용자에게 노출하지 않는다. 같은 DOM을 CSS로 재배치할 수 있으면 그 방식을 쓴다.
 - 본문·푸터는 `app-frame`을 공유한다. 768px 미만에서 화면 폭에서 0.5rem, 그 이상에서는 3rem을 뺀 폭을 사용하며 최대 본문 폭은 84rem이다.
-- 표뿐 아니라 수동 편성 작업판에도 내부 가로 스크롤이 있다. 경매는 `xl`에서 고정 높이와 영역별 스크롤을, 대진은 좁은 화면에서 세로 배치를 사용한다.
-- 확인 폭은 360·768·1024·1440px. 실제 표시되는 조작·오버레이 상태를 함께 확인한다.
+- 리더보드는 이름 있는 내부 가로 스크롤을 사용한다. 수동 편성은 좁은 화면에 미배정 목록과 팀을 세로로 배치하며 고정 최소 폭을 요구하지 않는다. 경매는 `xl`에서 고정 높이와 영역별 스크롤을, 대진은 좁은 화면에서 세로 배치를 사용한다.
+- 기본 브라우저 검토는 1440×1000·390×844이고 레이아웃이 바뀌는 화면은 768·1024px 등 중간 폭을 추가한다. 더 좁은 360px 지원 여부와 실제 표시되는 조작·오버레이 상태도 기능에 맞게 확인한다.
 
 ## 7. 접근성
 
-현재 공통 보완은 본문 바로가기, `main` 포커스 대상, 전역 `:focus-visible`, `ContextNav`의 현재 링크, `PageNav`의 한국어 이전·다음 이름과 현재 쪽, `SwitchCell`의 제목·켜짐/꺼짐 이름, 장식 이미지의 빈 `alt`, 상태의 문구 표시다.
+현재 공통 보완은 본문 바로가기, `main` 포커스 대상, 전역 `:focus-visible`, `ContextNav`의 현재 링크, `PageNav`의 한국어 이전·다음 이름과 현재 쪽, `SwitchCell`의 제목·켜짐/꺼짐 이름, 장식 이미지의 빈 `alt`, 상태의 문구 표시다. `SelectionTabs`는 선택 버튼의 aria-pressed, `AccessibleAccordion`은 FAQ·경매 기록·선수 추가 지표의 직접 제목 버튼에 펼침 상태와 실제 패널 연결을 제공한다.
 
 `SectionState`는 오류를 `role="alert"`로 제공한다. ROFL 파일 결과와 모집 정원은 해당 컴포넌트의 `aria-live`를 사용한다. 루트의 공통 `role="status"` 영역은 없다. STDF `Tab` 그룹 라벨은 있으나 네이티브 tablist 키보드 패턴을 구현한 것은 아니다.
 
-공통 확인창의 포커스 순환·중첩 처리는 [4절](#4-오버레이)의 범위에서 검증했다. 남은 확인 항목은 입력의 프로그램적 이름·오류 연결, 모든 컨트롤의 실제 터치 크기, 조합 중 Enter 제출이다. `heightIn="2"`는 여백 옵션이므로 항상 40px 또는 44px 높이를 보장하지 않는다. 푸터 링크는 현재 `min-h-9`다.
+공통 확인창의 포커스 순환·중첩 처리는 [4절](#4-오버레이)의 범위에서 검증했다. 입력의 프로그램적 이름·오류 연결과 조합 중 Enter는 위 helper로 필요한 사용처를 보완한다. 적용하지 않은 사용처까지 통과로 간주하지 않고 모든 컨트롤의 실제 터치 크기도 측정한다. `heightIn="2"`는 여백 옵션이므로 44px을 보장하지 않는다. 푸터 링크·선택 탭·캐러셀·숫자 증감 등은 공개 크기 옵션과 최소 높이로 44px 조작 영역을 확보한다.
 
-움직임 줄이기는 `AuctionTeamCard`의 CSS와 `NextScrimHero`의 LIVE 점 등 일부 효과에서 처리하며, 앱 전체의 STDF 애니메이션·캐러셀에 대한 공통 설정은 없다. 이를 구현 완료로 전제하지 않는다.
+움직임 줄이기는 `AuctionTeamCard` 축하 효과, `NextScrimHero` LIVE 점, `AccessibleAccordion` 패널·화살표에서 처리한다. 업적 캐러셀은 자동 재생·이동 애니메이션을 사용하지 않고 선택 결과를 텍스트로 알린다. 앱 전체 STDF 애니메이션의 공통 설정이나 실기기·스크린리더 발화 검증까지 완료했다는 뜻은 아니다.
+
+보조 글자는 필요한 공통 사용처에서 `text-text-muted`를 사용하며 `StatTile` 레이블·노트와 전역 입력·textarea placeholder에도 적용한다. Placeholder는 `opacity: 1`을 사용하며 입력 이름을 대신하지 않는다. 라이트 상태색과 다크·항상 어두운 `.inverse-surface` 상태색을 구분한다. 투명도로만 낮추지 않고 실제 바탕·강조 행을 합성한 대비를 양쪽 테마에서 측정한다. Data4의 29개 표본/테마 최소값은 라이트 6.18:1·다크 5.37:1이며, 이 값은 전체 UI 색상에 대한 포괄적 보증이 아니다. 근거는 `artifacts/ui-review/data-validation.json`이다.
 
 ## 8. 완료 체크리스트
 
@@ -148,7 +160,7 @@ UI 변경 시 렌더링된 화면으로 확인한다. 이번 문서 정리 자�
 - [ ] 설명이 제목·부제·카드·안내·툴팁에 반복되지 않는다.
 - [ ] 모바일·데스크톱 변형이 동시에 보이거나 조작되지 않는다.
 - [ ] 기능에 필요한 정상·대기·빈 데이터·오류·비활성 상태를 확인했다.
-- [ ] 360·768·1024·1440px, 라이트·다크, 긴 한국어 이름을 확인했다.
+- [ ] 1440×1000·390×844와 필요한 중간 폭, 라이트·다크, 긴 한국어·영문과 큰 수치를 확인했다.
 - [ ] 키보드 이동·입력 이름·오류 안내·팝업 열기/닫기·포커스 복귀를 확인했다.
 - [ ] STDF 공개 API로 가능한 UI를 재구현하지 않았고, 필요한 네이티브 UI는 [디자인 시스템](design-system.md#6-네이티브-html을-쓰는-곳)에 맞는다.
 - [ ] 화면·메타데이터의 서비스 이름은 `SERVICE_NAME`, 워드마크는 `font-brand`를 사용한다.

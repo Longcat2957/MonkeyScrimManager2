@@ -17,9 +17,10 @@
         players: FormationPlayer[];
         assignments: Assignments;
         pairs: Record<string, PairRecord>;
+        compact?: boolean;
     };
 
-    let { teams, players, assignments, pairs }: Props = $props();
+    let { teams, players, assignments, pairs, compact = false }: Props = $props();
 
     const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
     const at = (teamId: string, lane: (typeof LANES)[number]) => {
@@ -29,19 +30,26 @@
 </script>
 
 <aside aria-labelledby="head-to-head" class="flex min-w-0 flex-col bg-bg-surface dark:bg-bg-surface-dark">
-    <div class="flex h-14 flex-col justify-center px-2 text-center">
+    <div class={['flex flex-col justify-center px-2 text-center', compact ? 'py-3' : 'h-14']}>
         <h3 id="head-to-head" class="text-xs font-semibold opacity-70">라인 상대 전적</h3>
         <p class="text-[0.6875rem] opacity-50">{teams[0].name} 기준</p>
     </div>
-    <ol class="grid grid-rows-[repeat(5,4.75rem)] gap-1.5 px-2 pb-2">
+    <ol
+        class={compact
+            ? 'grid grid-cols-5 gap-1.5 px-3 pb-3'
+            : 'grid grid-rows-[repeat(5,4.75rem)] gap-1.5 px-2 pb-2'}
+    >
         {#each LANES as lane (lane)}
             {@const a = at(teams[0].id, lane)}
             {@const b = at(teams[1].id, lane)}
             {@const record = a && b ? headToHead(pairs, a.participantId, b.participantId) : null}
             <li
-                class="flex flex-col items-center justify-center rounded-(--radius-small) border border-border text-center"
+                class={[
+                    'flex flex-col items-center justify-center rounded-(--radius-small) border border-border text-center',
+                    compact && 'min-h-20 gap-1 py-2'
+                ]}
             >
-                <span class="sr-only">{laneText(lane)}</span>
+                <span class={compact ? 'text-xs font-semibold' : 'sr-only'}>{laneText(lane)}</span>
                 {#if record}
                     <span
                         class={[

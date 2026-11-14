@@ -1,8 +1,9 @@
 <script lang="ts">
     import { untrack } from 'svelte';
-    import { CellGroup, Tab } from 'stdf';
+    import { CellGroup } from 'stdf';
     import { resolve } from '$app/paths';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import MatchListRow from '#lib/components/matches/MatchListRow.svelte';
     import ScrimListRow from '#lib/components/scrims/ScrimListRow.svelte';
     import type { MatchListItem } from '#lib/features/matches/types.ts';
@@ -38,7 +39,7 @@
             aria-label="보기 선택"
             class="border-b border-text-primary/5 px-1 dark:border-text-dark/5"
         >
-            <Tab {labels} {active} onclickTab={(index) => (active = index)} />
+            <SelectionTabs {labels} {active} onclickTab={(index) => (active = index)} />
         </div>
 
         {#if active === 0}

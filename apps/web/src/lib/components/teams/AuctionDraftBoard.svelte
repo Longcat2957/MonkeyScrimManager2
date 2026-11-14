@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { Accordion, Button, Loading, NoticeBar, toast } from 'stdf';
+    import { onMount, untrack } from 'svelte';
+    import { Button, Loading, NoticeBar, toast } from 'stdf';
     import { invalidate } from '$app/navigation';
+    import AccessibleAccordion from '#lib/components/common/AccessibleAccordion.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
@@ -41,10 +42,11 @@
     const live = $derived(auction.status === 'in_progress');
     const controls = $derived(manager && live);
     const open = $derived(auction.openLot);
+    const lotKey = $derived(auction.openLotId ?? open?.participantId ?? null);
     const profile = $derived(auction.openProfile);
     const stories = $derived(auctionStories(auction));
     const canRevert = $derived(auction.history.some((entry) => !entry.voided));
-    const remainingMs = $derived(Math.max(0, TIMER_MS - (now - timerStart)));
+    const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
     const mainLane = $derived(open ? (open.positions[0] ?? profile?.mainLane ?? 'mid') : 'mid');
     const recentWins = $derived(profile?.recentGames.filter((game) => game.win).length ?? 0);
     const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
@@ -77,6 +79,16 @@
         timerStart = Date.now();
     });
 
+    // 새 후보에게 이전 후보의 입찰가를 적용하지 않는다. 같은 후보의 재조회에는 입력을 유지한다.
+    $effect(() => {
+        void lotKey;
+        untrack(() => {
+            bids = {};
+            clearTimeout(celebrationTimer);
+            celebration = null;
+        });
+    });
+
     onMount(() => {
         const interval = setInterval(() => (now = Date.now()), 200);
         return () => {
@@ -86,14 +98,18 @@
     });
 
     async function run(name: string, fields: Record<string, string> = {}) {
+        if (busy || refreshing || !controls) return false;
         busy = true;
-        const message = await postAction(name, {
-            ...fields,
-            ...(auction.openLotId ? { lotId: auction.openLotId } : {})
-        });
-        busy = false;
-        if (message) toast.error(message);
-        return !message;
+        try {
+            const message = await postAction(name, {
+                ...fields,
+                ...(auction.openLotId ? { lotId: auction.openLotId } : {})
+            });
+            if (message) toast.error(message);
+            return !message;
+        } finally {
+            busy = false;
+        }
     }
 
     function celebrate(teamId: string, participantId: string, label: string) {
@@ -154,9 +170,15 @@
     }
 
     async function refresh() {
+        if (busy || refreshing) return;
         refreshing = true;
-        await invalidate('app:auction');
-        refreshing = false;
+        try {
+            await invalidate('app:auction');
+        } catch {
+            toast.error('경매를 새로 불러오지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.');
+        } finally {
+            refreshing = false;
+        }
     }
 </script>
 
@@ -178,7 +200,7 @@
                 size="auto"
                 heightOut="0"
                 heightIn="2"
-                injClass="px-2 text-sm"
+                injClass="min-h-11 px-2 text-sm"
                 disabled={refreshing}
                 onclick={refresh}>새로고침</Button
             >
@@ -191,7 +213,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-3 text-sm"
+                    injClass="min-h-11 px-3 text-sm"
                     disabled={busy}
                     onclick={reopenSetup}>팀장 다시 정하기</Button
                 >
@@ -253,7 +275,7 @@
                                     size="auto"
                                     heightOut="0"
                                     heightIn="2"
-                                    injClass="px-2 text-sm"
+                                    injClass="min-h-11 px-2 text-sm"
                                     disabled={busy}
                                     onclick={revert}>되돌리기</Button
                                 >
@@ -264,7 +286,7 @@
                                     size="auto"
                                     heightOut="0"
                                     heightIn="2"
-                                    injClass="px-2 text-sm"
+                                    injClass="min-h-11 px-2 text-sm"
                                     onclick={() => (details = !details)}>상세보기</Button
                                 >
                             {/if}
@@ -274,7 +296,7 @@
                                     size="auto"
                                     heightOut="0"
                                     heightIn="2"
-                                    injClass="px-2 text-sm"
+                                    injClass="min-h-11 px-2 text-sm"
                                     disabled={busy || Boolean(open) || auction.queue.length === 0}
                                     onclick={draw}>다음 후보</Button
                                 >
@@ -291,7 +313,7 @@
                                 draggable={controls}
                                 class={[
                                     'relative isolate flex shrink-0 flex-col overflow-hidden border px-4 py-5',
-                                    details ? 'gap-3' : 'min-h-[24rem] justify-between gap-5',
+                                    details ? 'gap-3' : 'justify-between gap-4 xl:min-h-[24rem] xl:gap-5',
                                     controls && 'cursor-grab active:cursor-grabbing',
                                     drag.id === open.participantId
                                         ? 'border-primary/60 bg-primary/10 opacity-70'
@@ -379,7 +401,7 @@
                                 size="auto"
                                 heightOut="0"
                                 heightIn="2"
-                                injClass="px-2 text-sm"
+                                injClass="min-h-11 px-2 text-sm"
                                 disabled={busy}
                                 onclick={() => run('pass')}>유찰</Button
                             >
@@ -404,7 +426,7 @@
                             size="full"
                             heightOut="0"
                             heightIn="2"
-                            injClass="text-sm"
+                            injClass="min-h-11 text-sm"
                             onclick={() => (listOpen = true)}>후보 목록</Button
                         >
                         {#if controls}
@@ -413,7 +435,7 @@
                                 size="full"
                                 heightOut="0"
                                 heightIn="2"
-                                injClass="text-sm"
+                                injClass="min-h-11 text-sm"
                                 disabled={busy || auction.queue.length < 2}
                                 onclick={() => run('shuffle')}>순서 섞기</Button
                             >
@@ -423,7 +445,7 @@
                                 size="full"
                                 heightOut="0"
                                 heightIn="2"
-                                injClass="text-sm"
+                                injClass="min-h-11 text-sm"
                                 disabled={busy || !canRevert}
                                 onclick={reset}>초기화</Button
                             >
@@ -473,7 +495,7 @@
     </div>
 
     {#if auction.history.length}
-        <Accordion items={[{ title: `경매 기록 (${auction.history.length})` }]} border="solid">
+        <AccessibleAccordion items={[{ title: `경매 기록 (${auction.history.length})` }]} border="solid">
             {#snippet children()}
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -507,7 +529,7 @@
                     </table>
                 </div>
             {/snippet}
-        </Accordion>
+        </AccessibleAccordion>
     {/if}
 </section>
 

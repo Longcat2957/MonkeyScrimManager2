@@ -23,12 +23,12 @@
             </span>
         </div>
 
-        <nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-xs">
+        <nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-sm">
             {#each footerLinks as link (link.path)}
                 <a
                     href={resolve(link.path)}
                     class={[
-                        'inline-flex min-h-9 items-center px-2 underline-offset-4 hover:underline',
+                        'inline-flex min-h-11 items-center px-2 underline-offset-4 hover:underline',
                         { 'font-semibold': link.path === '/privacy' }
                     ]}
                 >

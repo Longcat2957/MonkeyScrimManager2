@@ -1,0 +1,1491 @@
+{
+    "batch": "data4",
+    "viewports": {
+        "desktop": [1440, 1000],
+        "mobile": [390, 844],
+        "intermediate": [768, 1000]
+    },
+    "themes": ["primary", "dark"],
+    "base": {
+        "pages": [
+            {
+                "name": "guild",
+                "path": "/g/devGuild001",
+                "view": "desktop",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["10월 정기 내전", "내전 현황", "서버 순위", "업적"],
+                "past": true
+            },
+            {
+                "name": "scrims",
+                "path": "/g/devGuild001/scrims",
+                "view": "desktop",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["전체 내전"]
+            },
+            {
+                "name": "matches",
+                "path": "/g/devGuild001/matches",
+                "view": "desktop",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["진행 중", "종료"]
+            },
+            {
+                "name": "stats",
+                "path": "/g/devGuild001/stats",
+                "view": "desktop",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["핵심 지표", "업적", "리더보드", "챔피언"]
+            },
+            {
+                "name": "guild",
+                "path": "/g/devGuild001",
+                "view": "desktop",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["10월 정기 내전", "내전 현황", "서버 순위", "업적"],
+                "past": true
+            },
+            {
+                "name": "scrims",
+                "path": "/g/devGuild001/scrims",
+                "view": "desktop",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["전체 내전"]
+            },
+            {
+                "name": "matches",
+                "path": "/g/devGuild001/matches",
+                "view": "desktop",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["진행 중", "종료"]
+            },
+            {
+                "name": "stats",
+                "path": "/g/devGuild001/stats",
+                "view": "desktop",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["핵심 지표", "업적", "리더보드", "챔피언"]
+            },
+            {
+                "name": "guild",
+                "path": "/g/devGuild001",
+                "view": "mobile",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["10월 정기 내전", "내전 현황", "서버 순위", "업적"],
+                "past": true
+            },
+            {
+                "name": "scrims",
+                "path": "/g/devGuild001/scrims",
+                "view": "mobile",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["전체 내전"]
+            },
+            {
+                "name": "matches",
+                "path": "/g/devGuild001/matches",
+                "view": "mobile",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["진행 중", "종료"]
+            },
+            {
+                "name": "stats",
+                "path": "/g/devGuild001/stats",
+                "view": "mobile",
+                "status": 200,
+                "mode": "primary",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["핵심 지표", "업적", "리더보드", "챔피언"]
+            },
+            {
+                "name": "guild",
+                "path": "/g/devGuild001",
+                "view": "mobile",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["10월 정기 내전", "내전 현황", "서버 순위", "업적"],
+                "past": true
+            },
+            {
+                "name": "scrims",
+                "path": "/g/devGuild001/scrims",
+                "view": "mobile",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["전체 내전"]
+            },
+            {
+                "name": "matches",
+                "path": "/g/devGuild001/matches",
+                "view": "mobile",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["진행 중", "종료"]
+            },
+            {
+                "name": "stats",
+                "path": "/g/devGuild001/stats",
+                "view": "mobile",
+                "status": 200,
+                "mode": "dark",
+                "h1": 1,
+                "overflow": false,
+                "headings": ["핵심 지표", "업적", "리더보드", "챔피언"]
+            }
+        ],
+        "console": [],
+        "errors": [],
+        "writes": []
+    },
+    "interactions": {
+        "checks": [
+            {
+                "name": "all7-sort-mobile",
+                "pass": true,
+                "result": [
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "KDA▲",
+                        "values": [
+                            1.69, 1.81, 2, 2.01, 2.04, 2.05, 2.16, 2.2, 2.21, 2.23, 2.28, 2.4, 2.4, 2.41,
+                            2.42, 2.42, 2.42, 2.43, 2.46, 2.51
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "KDA▼",
+                        "values": [
+                            3.37, 3.33, 3.3, 3.27, 3.26, 3.24, 3.22, 3.14, 3.14, 3.02, 3, 2.99, 2.92, 2.92,
+                            2.87, 2.86, 2.82, 2.82, 2.81, 2.79
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "승률▼",
+                        "values": [
+                            67, 67, 67, 67, 67, 67, 64, 63, 63, 62, 61, 60, 58, 58, 58, 58, 58, 58, 58, 57
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "승률▲",
+                        "values": [
+                            27, 29, 31, 32, 33, 36, 36, 37, 38, 38, 38, 40, 40, 41, 43, 45, 45, 45, 45, 46
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "게임▼",
+                        "values": [
+                            66, 66, 65, 65, 63, 59, 54, 50, 50, 47, 47, 47, 46, 45, 42, 41, 41, 41, 40, 39
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "게임▲",
+                        "values": [
+                            6, 6, 7, 10, 11, 13, 13, 15, 19, 21, 21, 22, 22, 23, 23, 25, 25, 26, 26, 27
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "킬 관여▼",
+                        "values": [
+                            56, 56, 55, 55, 54, 54, 54, 54, 53, 53, 53, 52, 52, 52, 51, 51, 51, 51, 50, 49
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "킬 관여▲",
+                        "values": [
+                            35, 39, 39, 41, 41, 42, 42, 43, 43, 43, 44, 44, 44, 45, 45, 45, 45, 45, 46, 46
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "CS/분▼",
+                        "values": [
+                            8.5, 8.4, 8.4, 8.3, 8.2, 8, 7.9, 7.9, 7.8, 7.8, 7.7, 7.7, 7.6, 7.5, 7.5, 7.4, 7.4,
+                            7.3, 7.3, 7.3
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "CS/분▲",
+                        "values": [
+                            1.2, 1.3, 1.3, 1.3, 2.1, 2.2, 2.2, 2.4, 4.1, 4.2, 4.3, 4.4, 4.6, 4.6, 4.6, 4.8,
+                            5.1, 5.2, 5.2, 5.6
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "피해/분▼",
+                        "values": [
+                            1008, 982, 952, 943, 941, 934, 926, 924, 891, 886, 883, 873, 847, 845, 839, 832,
+                            830, 821, 814, 814
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "피해/분▲",
+                        "values": [
+                            366, 379, 380, 415, 416, 438, 454, 469, 559, 575, 581, 587, 593, 611, 617, 629,
+                            641, 643, 668, 691
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "descending",
+                        "label": "시야▼",
+                        "values": [
+                            77.2, 72.7, 71.8, 69.4, 67.6, 64.6, 62.2, 61.8, 51.3, 50.3, 48.5, 48, 46.8, 46.1,
+                            44.7, 44.6, 42.1, 41.1, 36.3, 35.1
+                        ]
+                    },
+                    {
+                        "active": 1,
+                        "direction": "ascending",
+                        "label": "시야▲",
+                        "values": [
+                            19.4, 19.4, 19.9, 20.7, 20.7, 20.8, 20.9, 21, 21.2, 21.3, 21.4, 21.4, 22, 22.1,
+                            22.4, 22.4, 22.6, 23, 23.3, 23.6
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "table-keyboard-sticky",
+                "pass": true,
+                "result": {
+                    "keyboard": 40,
+                    "scroll": 366,
+                    "client": 338,
+                    "width": 704,
+                    "sticky": 1,
+                    "position": "sticky",
+                    "overflow": false
+                }
+            },
+            {
+                "name": "carousel-allchoices-keyboard-targets",
+                "pass": true,
+                "result": {
+                    "choices": [
+                        "딜량 왕",
+                        "골드 왕",
+                        "CS 왕",
+                        "천리안",
+                        "샌드백",
+                        "가성비 왕",
+                        "학살자",
+                        "도우미",
+                        "불사신",
+                        "우물 밖은 위험해",
+                        "한타 중독",
+                        "KDA 장인",
+                        "만물박사",
+                        "승리 요정",
+                        "폼 미쳤다",
+                        "아직 한 발 남았다"
+                    ],
+                    "previous": "폼 미쳤다",
+                    "sizes": [
+                        {
+                            "name": "이전 업적",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "1. 딜량 왕",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "2. 골드 왕",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "3. CS 왕",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "4. 천리안",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "5. 샌드백",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "6. 가성비 왕",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "7. 학살자",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "8. 도우미",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "9. 불사신",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "10. 우물 밖은 위험해",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "11. 한타 중독",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "12. KDA 장인",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "13. 만물박사",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "14. 승리 요정",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "15. 폼 미쳤다",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "16. 아직 한 발 남았다",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "다음 업적",
+                            "w": 44,
+                            "h": 44
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "carousel-touch-axes-cancel-multitouch",
+                "pass": true,
+                "result": {
+                    "method": "Chromium TouchEvent injection",
+                    "first": "딜량 왕",
+                    "vertical": "딜량 왕",
+                    "cancel": "딜량 왕",
+                    "multi": "딜량 왕",
+                    "horizontal": "골드 왕"
+                }
+            },
+            {
+                "name": "carousel-longtext-reducedmotion",
+                "pass": true,
+                "result": {
+                    "cardHeight": 1004,
+                    "cardScroll": 1004,
+                    "pageOverflow": false,
+                    "headings": 1
+                }
+            },
+            {
+                "name": "achievement-dialog-resize-escape",
+                "pass": true,
+                "result": {
+                    "cases": [
+                        {
+                            "width": 1440,
+                            "dialogs": 1,
+                            "headers": 1,
+                            "close": 1,
+                            "choices": 1,
+                            "overflow": false
+                        },
+                        {
+                            "width": 390,
+                            "dialogs": 1,
+                            "headers": 1,
+                            "close": 1,
+                            "choices": 1,
+                            "overflow": false
+                        },
+                        {
+                            "width": 768,
+                            "dialogs": 1,
+                            "headers": 1,
+                            "close": 1,
+                            "choices": 1,
+                            "overflow": false
+                        },
+                        {
+                            "width": 390,
+                            "dialogs": 1,
+                            "headers": 1,
+                            "close": 1,
+                            "choices": 1,
+                            "overflow": false
+                        }
+                    ],
+                    "restored": true
+                }
+            },
+            {
+                "name": "stats-stepper",
+                "pass": true,
+                "result": {
+                    "url": "http://127.0.0.1:5173/g/devGuild001/stats?min=6",
+                    "sizes": [
+                        {
+                            "name": "최소 게임 줄이기",
+                            "w": 44,
+                            "h": 44
+                        },
+                        {
+                            "name": "최소 게임 늘리기",
+                            "w": 44,
+                            "h": 44
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "create-steppers-labels",
+                "pass": true,
+                "result": [
+                    {
+                        "name": "팀 수 줄이기",
+                        "w": 44,
+                        "h": 44
+                    },
+                    {
+                        "name": "팀 수 늘리기",
+                        "w": 44,
+                        "h": 44
+                    },
+                    {
+                        "name": "추가 신청 정원 줄이기",
+                        "w": 44,
+                        "h": 44
+                    },
+                    {
+                        "name": "추가 신청 정원 늘리기",
+                        "w": 44,
+                        "h": 44
+                    }
+                ]
+            },
+            {
+                "name": "empty",
+                "pass": true,
+                "result": {
+                    "h1": 1,
+                    "overflow": false,
+                    "text": "목요 칼바람 모임  지금 참가할 내전이 없어요 새 모집이 열리면 여기에 가장 먼저 보여요. 내전 현황    진행 중 0 최근 경기 아직 기록된 경기가 없어요 서버 순위  이번 시즌 순위가 아직 없어요"
+                }
+            },
+            {
+                "name": "empty/scrims",
+                "pass": true,
+                "result": {
+                    "h1": 1,
+                    "overflow": false,
+                    "text": "내전  아직 내전이 없어요"
+                }
+            },
+            {
+                "name": "empty/matches",
+                "pass": true,
+                "result": {
+                    "h1": 1,
+                    "overflow": false,
+                    "text": "경기 기록   아직 기록된 경기가 없어요"
+                }
+            },
+            {
+                "name": "empty/stats",
+                "pass": true,
+                "result": {
+                    "h1": 1,
+                    "overflow": false,
+                    "text": "통계 아직 기록된 게임이 없어요"
+                }
+            },
+            {
+                "name": "intermediate4",
+                "pass": true,
+                "result": [
+                    {
+                        "suffix": "",
+                        "overflow": false
+                    },
+                    {
+                        "suffix": "/scrims",
+                        "overflow": false
+                    },
+                    {
+                        "suffix": "/matches",
+                        "overflow": false
+                    },
+                    {
+                        "suffix": "/stats",
+                        "overflow": false
+                    }
+                ]
+            }
+        ],
+        "errors": [],
+        "console": [],
+        "writes": []
+    },
+    "reproduced_states": {
+        "checks": [
+            {
+                "name": "search-name-clear-noheightshift",
+                "pass": true,
+                "result": {
+                    "before": 72,
+                    "sizes": {
+                        "w": 44,
+                        "h": 44,
+                        "labelHeight": 72
+                    },
+                    "url": "http://127.0.0.1:5173/g/devGuild001/matches"
+                }
+            },
+            {
+                "name": "3navigation-busy-retains-results",
+                "pass": true,
+                "result": [
+                    {
+                        "suffix": "/matches",
+                        "busy": 1,
+                        "retained": true,
+                        "after": 0,
+                        "url": "http://127.0.0.1:5173/g/devGuild001/matches?q=%ED%8F%AC%EB%A1%9C"
+                    },
+                    {
+                        "suffix": "/scrims",
+                        "busy": 1,
+                        "retained": true,
+                        "after": 0,
+                        "url": "http://127.0.0.1:5173/g/devGuild001/scrims?status=recruit"
+                    },
+                    {
+                        "suffix": "/stats",
+                        "busy": 1,
+                        "retained": true,
+                        "after": 0,
+                        "url": "http://127.0.0.1:5173/g/devGuild001/stats?min=6"
+                    }
+                ]
+            },
+            {
+                "name": "guild-preview-error-retry",
+                "pass": true,
+                "result": {
+                    "before": "내전 현황    진행 중 6 최근 경기 경기 기록을 불러오지 못했어요   다시 시도 ",
+                    "success": 1,
+                    "method": "preview error; browser intercept removes fixture preview on retry only"
+                }
+            },
+            {
+                "name": "ranking-fetch-error-retry",
+                "pass": true,
+                "result": {
+                    "before": 10,
+                    "after": 20
+                }
+            },
+            {
+                "name": "clock-future-expiry",
+                "pass": true,
+                "result": {
+                    "future": "   내 다음 내전 선발됨 10월 정기 내전 10/31(토) 20:00 · 2팀 · 하드 피어리스 시작까지 0 일00 시간00 분03 초 신청 현황 11/12명    내전 보기 ",
+                    "after": "   내 다음 내전 선발됨 10월 정기 내전 10/31(토) 20:00 · 2팀 · 하드 피어리스 예정 시각이 지났어요 신청 현황 11/12명    내전 보기 "
+                }
+            }
+        ],
+        "errors": [],
+        "console": [
+            "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        ],
+        "writes": []
+    },
+    "contrast": [
+        {
+            "name": "stats",
+            "mode": "primary",
+            "entries": [
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "기록된 게임",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [235.35686274509803, 242.25098039215686, 247.15686274509804, 1],
+                    "ratio": 6.72,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.72,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "한 게임 이상 뛴 사람",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "게임 1분당 나온 킬",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [235.35686274509803, 243.2705882352941, 243.12941176470588, 1],
+                    "ratio": 6.75,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.75,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "(킬+어시스트) / 데스",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [244.38039215686274, 241.2313725490196, 239.1529411764706, 1],
+                    "ratio": 6.76,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.76,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "이 서버에서 나온 챔피언",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [245.34901960784313, 237.2549019607843, 242.1607843137255, 1],
+                    "ratio": 6.62,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.62,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "순위",
+                    "class": "w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "사용자",
+                    "class": "sticky left-0 z-20 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2 text-left font-medium text-text-muted dark:bg-bg-surface-dark",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "승률↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "게임↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "킬 관여↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "CS/분↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "피해/분↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "시야↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "6.0 / 3.8 / 6.7",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [245.0156862745098, 229.0705882352941, 217, 1],
+                    "ratio": 6.18,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.18,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "18승 9패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [245.0156862745098, 229.0705882352941, 217, 1],
+                    "ratio": 6.18,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.18,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "2.6 / 3.8 / 10.2",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [243.01960784313727, 243.01960784313727, 243.98823529411766, 1],
+                    "ratio": 6.84,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.84,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "10승 9패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [243.01960784313727, 243.01960784313727, 243.98823529411766, 1],
+                    "ratio": 6.84,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 6.84,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "6.1 / 3.7 / 6.3",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [251.0235294117647, 245.9764705882353, 242, 1],
+                    "ratio": 7.07,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.07,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "20승 10패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [251.0235294117647, 245.9764705882353, 242, 1],
+                    "ratio": 7.07,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.07,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "5.6 / 3.8 / 6.9",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "18승 9패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "2.4 / 3.9 / 10.3",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "13승 8패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "5.3 / 3.4 / 5.7",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "4승 6패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "5.9 / 4.0 / 6.9",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "10승 5패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "3.1 / 4.2 / 10.2",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "14승 11패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.446 0.043 257.281)",
+                    "effectiveOpacity": 1,
+                    "foreground": [69, 85, 108, 1],
+                    "background": [255, 255, 255, 1],
+                    "ratio": 7.58,
+                    "candidateColor": [69, 85, 108, 1],
+                    "candidateRatio": 7.58,
+                    "hasImage": false
+                }
+            ]
+        },
+        {
+            "name": "stats",
+            "mode": "dark",
+            "entries": [
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "기록된 게임",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [9.749019607843138, 24.352941176470587, 46.53333333333333, 1],
+                    "ratio": 6.99,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 6.99,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "한 게임 이상 뛴 사람",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "게임 1분당 나온 킬",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [6.792156862745098, 26.392156862745097, 36.54117647058824, 1],
+                    "ratio": 6.99,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 6.99,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "(킬+어시스트) / 데스",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [27.79607843137255, 20.376470588235293, 25.529411764705884, 1],
+                    "ratio": 7.11,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.11,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"kpis\"] p.text-text-muted",
+                    "text": "이 서버에서 나온 챔피언",
+                    "class": "text-xs text-text-muted tabular-nums",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [26.776470588235295, 16.4, 34.603921568627456, 1],
+                    "ratio": 7.23,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.23,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "순위",
+                    "class": "w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "사용자",
+                    "class": "sticky left-0 z-20 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2 text-left font-medium text-text-muted dark:bg-bg-surface-dark",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "승률↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "게임↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "킬 관여↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "CS/분↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "피해/분↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "시야↕",
+                    "class": "inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark text-text-muted",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "6.0 / 3.8 / 6.7",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [50.76470588235294, 42.521568627450975, 42.55294117647059, 1],
+                    "ratio": 5.48,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 5.48,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "18승 9패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [50.76470588235294, 42.521568627450975, 42.55294117647059, 1],
+                    "ratio": 5.48,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 5.48,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "2.6 / 3.8 / 10.2",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [38.450980392156865, 45.635294117647064, 63.59607843137255, 1],
+                    "ratio": 5.37,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 5.37,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "10승 9패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [38.450980392156865, 45.635294117647064, 63.59607843137255, 1],
+                    "ratio": 5.37,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 5.37,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "6.1 / 3.7 / 6.3",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [27.235294117647058, 29.83137254901961, 42.79607843137255, 1],
+                    "ratio": 6.55,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 6.55,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "20승 10패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [27.235294117647058, 29.83137254901961, 42.79607843137255, 1],
+                    "ratio": 6.55,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 6.55,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "5.6 / 3.8 / 6.9",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "18승 9패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "2.4 / 3.9 / 10.3",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "13승 8패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "5.3 / 3.4 / 5.7",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "4승 6패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "5.9 / 4.0 / 6.9",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "10승 5패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "3.1 / 4.2 / 10.2",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                },
+                {
+                    "selector": "[aria-labelledby=\"leaderboard\"] .text-text-muted",
+                    "text": "14승 11패",
+                    "class": "hidden text-xs text-text-muted sm:block",
+                    "computedColor": "oklch(0.714 0.024 250.894)",
+                    "effectiveOpacity": 1,
+                    "foreground": [152, 164, 178, 1],
+                    "background": [15, 23, 43, 1],
+                    "ratio": 7.04,
+                    "candidateColor": [152, 164, 178, 1],
+                    "candidateRatio": 7.04,
+                    "hasImage": false
+                }
+            ]
+        }
+    ],
+    "notes": [
+        "The first search exact-name test exposed STDF clear text joining the input label. Fixed through scoped inputLabel attachment and same-condition retest passes.",
+        "The injected 503 console message is expected; no application pageerrors or business mutation requests.",
+        "Touch gestures were checked with Chromium TouchEvent injection, not physical Safari.",
+        "Long strings were injected into rendered text only; data/math/API were unchanged.",
+        "Preview=error remains a persistent failure fixture; recovery test removes preview only in browser intercepted data retry.",
+        "Screenshots captured 400ms after theme changes; visual review read all 16 base images and four interaction images."
+    ],
+    "schedule_change": {
+        "before": "   내 다음 내전 선발됨 10월 정기 내전 10/31(토) 20:00 · 2팀 · 하드 피어리스 시작까지 0 일00 시간00 분58 초 신청 현황 11/12명    내전 보기 ",
+        "rescheduled": "   내 다음 내전 선발됨 10월 정기 내전 10/31(토) 20:05 · 2팀 · 하드 피어리스 시작까지 0 일00 시간05 분58 초 신청 현황 11/12명    내전 보기 ",
+        "after": "   내 다음 내전 선발됨 10월 정기 내전 10/31(토) 20:05 · 2팀 · 하드 피어리스 예정 시각이 지났어요 신청 현황 11/12명    내전 보기 ",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "method": "browser clock and intercepted schedule-only data change; no writes"
+    },
+    "resolved_defects": [
+        {
+            "before": {
+                "name": "matches-search-clear",
+                "pass": false,
+                "error": "TimeoutError: locator.press: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('textbox', { name: '내전·팀 이름 검색', exact: true })\u001b[22m\n"
+            },
+            "after": {
+                "name": "search-name-clear-noheightshift",
+                "pass": true,
+                "result": {
+                    "before": 72,
+                    "sizes": {
+                        "w": 44,
+                        "h": 44,
+                        "labelHeight": 72
+                    },
+                    "url": "http://127.0.0.1:5173/g/devGuild001/matches"
+                }
+            }
+        }
+    ]
+}

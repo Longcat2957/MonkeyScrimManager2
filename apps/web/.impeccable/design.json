@@ -1,0 +1,528 @@
+{
+    "schemaVersion": 2,
+    "generatedAt": "2026-11-14T08:20:29.139903+00:00",
+    "title": "Design System: Monkeybot",
+    "extensions": {
+        "colorMeta": {
+            "primary": {
+                "role": "primary",
+                "displayName": "primary",
+                "canonical": "oklch(0.446 0.043 257.281)",
+                "tonalRamp": [
+                    "oklch(0.25 0.047 249.281)",
+                    "oklch(0.299 0.047 251.281)",
+                    "oklch(0.348 0.047 253.281)",
+                    "oklch(0.397 0.047 255.281)",
+                    "oklch(0.533 0.037 259.281)",
+                    "oklch(0.708 0.025 263.281)",
+                    "oklch(0.883 0.013 267.281)",
+                    "oklch(0.97 0.006 269.281)"
+                ]
+            },
+            "dark": {
+                "role": "primary",
+                "displayName": "dark",
+                "canonical": "oklch(0.869 0.022 252.894)",
+                "tonalRamp": [
+                    "oklch(0.25 0.024 244.894)",
+                    "oklch(0.405 0.024 246.894)",
+                    "oklch(0.559 0.024 248.894)",
+                    "oklch(0.714 0.024 250.894)",
+                    "oklch(0.886 0.019 254.894)",
+                    "oklch(0.919 0.013 258.894)",
+                    "oklch(0.953 0.006 262.894)",
+                    "oklch(0.97 0.003 264.894)"
+                ]
+            },
+            "bg-base": {
+                "role": "neutral",
+                "displayName": "bg-base",
+                "canonical": "oklch(0.984 0.003 247.858)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0015 247.858)",
+                    "oklch(0.250 0.0025 247.858)",
+                    "oklch(0.350 0.0030 247.858)",
+                    "oklch(0.450 0.0030 247.858)",
+                    "oklch(0.600 0.0030 247.858)",
+                    "oklch(0.750 0.0030 247.858)",
+                    "oklch(0.850 0.0030 247.858)",
+                    "oklch(0.950 0.0010 247.858)"
+                ]
+            },
+            "bg-surface": {
+                "role": "neutral",
+                "displayName": "bg-surface",
+                "canonical": "oklch(1 0 0)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0000 0)",
+                    "oklch(0.250 0.0000 0)",
+                    "oklch(0.350 0.0000 0)",
+                    "oklch(0.450 0.0000 0)",
+                    "oklch(0.600 0.0000 0)",
+                    "oklch(0.750 0.0000 0)",
+                    "oklch(0.850 0.0000 0)",
+                    "oklch(0.950 0.0000 0)"
+                ]
+            },
+            "bg-overlay": {
+                "role": "neutral",
+                "displayName": "bg-overlay",
+                "canonical": "oklch(0.968 0.007 247.896)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0035 247.896)",
+                    "oklch(0.250 0.0058 247.896)",
+                    "oklch(0.350 0.0070 247.896)",
+                    "oklch(0.450 0.0070 247.896)",
+                    "oklch(0.600 0.0070 247.896)",
+                    "oklch(0.750 0.0070 247.896)",
+                    "oklch(0.850 0.0070 247.896)",
+                    "oklch(0.950 0.0023 247.896)"
+                ]
+            },
+            "bg-highlight": {
+                "role": "neutral",
+                "displayName": "bg-highlight",
+                "canonical": "oklch(0.929 0.013 255.508)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0065 255.508)",
+                    "oklch(0.250 0.0108 255.508)",
+                    "oklch(0.350 0.0130 255.508)",
+                    "oklch(0.450 0.0130 255.508)",
+                    "oklch(0.600 0.0130 255.508)",
+                    "oklch(0.750 0.0130 255.508)",
+                    "oklch(0.850 0.0130 255.508)",
+                    "oklch(0.950 0.0043 255.508)"
+                ]
+            },
+            "bg-base-dark": {
+                "role": "neutral",
+                "displayName": "bg-base-dark",
+                "canonical": "oklch(0.129 0.042 264.695)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0210 264.695)",
+                    "oklch(0.250 0.0350 264.695)",
+                    "oklch(0.350 0.0420 264.695)",
+                    "oklch(0.450 0.0420 264.695)",
+                    "oklch(0.600 0.0420 264.695)",
+                    "oklch(0.750 0.0420 264.695)",
+                    "oklch(0.850 0.0420 264.695)",
+                    "oklch(0.950 0.0140 264.695)"
+                ]
+            },
+            "bg-surface-dark": {
+                "role": "neutral",
+                "displayName": "bg-surface-dark",
+                "canonical": "oklch(0.208 0.042 265.755)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0210 265.755)",
+                    "oklch(0.250 0.0350 265.755)",
+                    "oklch(0.350 0.0420 265.755)",
+                    "oklch(0.450 0.0420 265.755)",
+                    "oklch(0.600 0.0420 265.755)",
+                    "oklch(0.750 0.0420 265.755)",
+                    "oklch(0.850 0.0420 265.755)",
+                    "oklch(0.950 0.0140 265.755)"
+                ]
+            },
+            "bg-overlay-dark": {
+                "role": "neutral",
+                "displayName": "bg-overlay-dark",
+                "canonical": "oklch(0.279 0.041 260.031)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0205 260.031)",
+                    "oklch(0.250 0.0342 260.031)",
+                    "oklch(0.350 0.0410 260.031)",
+                    "oklch(0.450 0.0410 260.031)",
+                    "oklch(0.600 0.0410 260.031)",
+                    "oklch(0.750 0.0410 260.031)",
+                    "oklch(0.850 0.0410 260.031)",
+                    "oklch(0.950 0.0137 260.031)"
+                ]
+            },
+            "bg-highlight-dark": {
+                "role": "neutral",
+                "displayName": "bg-highlight-dark",
+                "canonical": "oklch(0.372 0.044 257.287)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0220 257.287)",
+                    "oklch(0.250 0.0367 257.287)",
+                    "oklch(0.350 0.0440 257.287)",
+                    "oklch(0.450 0.0440 257.287)",
+                    "oklch(0.600 0.0440 257.287)",
+                    "oklch(0.750 0.0440 257.287)",
+                    "oklch(0.850 0.0440 257.287)",
+                    "oklch(0.950 0.0147 257.287)"
+                ]
+            },
+            "text-primary": {
+                "role": "neutral",
+                "displayName": "text-primary",
+                "canonical": "oklch(0.208 0.042 265.755)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0210 265.755)",
+                    "oklch(0.250 0.0350 265.755)",
+                    "oklch(0.350 0.0420 265.755)",
+                    "oklch(0.450 0.0420 265.755)",
+                    "oklch(0.600 0.0420 265.755)",
+                    "oklch(0.750 0.0420 265.755)",
+                    "oklch(0.850 0.0420 265.755)",
+                    "oklch(0.950 0.0140 265.755)"
+                ]
+            },
+            "text-dark": {
+                "role": "neutral",
+                "displayName": "text-dark",
+                "canonical": "oklch(0.968 0.007 247.896)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0035 247.896)",
+                    "oklch(0.250 0.0058 247.896)",
+                    "oklch(0.350 0.0070 247.896)",
+                    "oklch(0.450 0.0070 247.896)",
+                    "oklch(0.600 0.0070 247.896)",
+                    "oklch(0.750 0.0070 247.896)",
+                    "oklch(0.850 0.0070 247.896)",
+                    "oklch(0.950 0.0023 247.896)"
+                ]
+            },
+            "text-on-primary": {
+                "role": "neutral",
+                "displayName": "text-on-primary",
+                "canonical": "oklch(0.984 0.003 247.858)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0015 247.858)",
+                    "oklch(0.250 0.0025 247.858)",
+                    "oklch(0.350 0.0030 247.858)",
+                    "oklch(0.450 0.0030 247.858)",
+                    "oklch(0.600 0.0030 247.858)",
+                    "oklch(0.750 0.0030 247.858)",
+                    "oklch(0.850 0.0030 247.858)",
+                    "oklch(0.950 0.0010 247.858)"
+                ]
+            },
+            "text-on-dark": {
+                "role": "neutral",
+                "displayName": "text-on-dark",
+                "canonical": "oklch(0.129 0.042 264.695)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0210 264.695)",
+                    "oklch(0.250 0.0350 264.695)",
+                    "oklch(0.350 0.0420 264.695)",
+                    "oklch(0.450 0.0420 264.695)",
+                    "oklch(0.600 0.0420 264.695)",
+                    "oklch(0.750 0.0420 264.695)",
+                    "oklch(0.850 0.0420 264.695)",
+                    "oklch(0.950 0.0140 264.695)"
+                ]
+            },
+            "success": {
+                "role": "secondary",
+                "displayName": "success",
+                "canonical": "oklch(0.432 0.095 166.913)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0475 166.913)",
+                    "oklch(0.250 0.0792 166.913)",
+                    "oklch(0.350 0.0950 166.913)",
+                    "oklch(0.450 0.0950 166.913)",
+                    "oklch(0.600 0.0950 166.913)",
+                    "oklch(0.750 0.0950 166.913)",
+                    "oklch(0.850 0.0950 166.913)",
+                    "oklch(0.950 0.0317 166.913)"
+                ]
+            },
+            "warning": {
+                "role": "secondary",
+                "displayName": "warning",
+                "canonical": "oklch(0.473 0.137 46.201)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0685 46.201)",
+                    "oklch(0.250 0.1142 46.201)",
+                    "oklch(0.350 0.1370 46.201)",
+                    "oklch(0.450 0.1370 46.201)",
+                    "oklch(0.600 0.1370 46.201)",
+                    "oklch(0.750 0.1370 46.201)",
+                    "oklch(0.850 0.1370 46.201)",
+                    "oklch(0.950 0.0457 46.201)"
+                ]
+            },
+            "error": {
+                "role": "secondary",
+                "displayName": "error",
+                "canonical": "oklch(0.514 0.222 16.935)",
+                "tonalRamp": [
+                    "oklch(0.150 0.1110 16.935)",
+                    "oklch(0.250 0.1850 16.935)",
+                    "oklch(0.350 0.2220 16.935)",
+                    "oklch(0.450 0.2220 16.935)",
+                    "oklch(0.600 0.2220 16.935)",
+                    "oklch(0.750 0.2220 16.935)",
+                    "oklch(0.850 0.2220 16.935)",
+                    "oklch(0.950 0.0740 16.935)"
+                ]
+            },
+            "info": {
+                "role": "secondary",
+                "displayName": "info",
+                "canonical": "oklch(0.5 0.134 242.749)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0670 242.749)",
+                    "oklch(0.250 0.1117 242.749)",
+                    "oklch(0.350 0.1340 242.749)",
+                    "oklch(0.450 0.1340 242.749)",
+                    "oklch(0.600 0.1340 242.749)",
+                    "oklch(0.750 0.1340 242.749)",
+                    "oklch(0.850 0.1340 242.749)",
+                    "oklch(0.950 0.0447 242.749)"
+                ]
+            },
+            "medal-gold": {
+                "role": "secondary",
+                "displayName": "medal-gold",
+                "canonical": "oklch(0.84 0.15 85)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0750 85)",
+                    "oklch(0.250 0.1250 85)",
+                    "oklch(0.350 0.1500 85)",
+                    "oklch(0.450 0.1500 85)",
+                    "oklch(0.600 0.1500 85)",
+                    "oklch(0.750 0.1500 85)",
+                    "oklch(0.850 0.1500 85)",
+                    "oklch(0.950 0.0500 85)"
+                ]
+            },
+            "medal-silver": {
+                "role": "secondary",
+                "displayName": "medal-silver",
+                "canonical": "oklch(0.83 0.02 255)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0100 255)",
+                    "oklch(0.250 0.0167 255)",
+                    "oklch(0.350 0.0200 255)",
+                    "oklch(0.450 0.0200 255)",
+                    "oklch(0.600 0.0200 255)",
+                    "oklch(0.750 0.0200 255)",
+                    "oklch(0.850 0.0200 255)",
+                    "oklch(0.950 0.0067 255)"
+                ]
+            },
+            "medal-bronze": {
+                "role": "secondary",
+                "displayName": "medal-bronze",
+                "canonical": "oklch(0.72 0.1 55)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0500 55)",
+                    "oklch(0.250 0.0833 55)",
+                    "oklch(0.350 0.1000 55)",
+                    "oklch(0.450 0.1000 55)",
+                    "oklch(0.600 0.1000 55)",
+                    "oklch(0.750 0.1000 55)",
+                    "oklch(0.850 0.1000 55)",
+                    "oklch(0.950 0.0333 55)"
+                ]
+            },
+            "success-inverse": {
+                "role": "secondary",
+                "displayName": "success-inverse",
+                "canonical": "oklch(0.765 0.153 163.2)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0765 163.2)",
+                    "oklch(0.250 0.1275 163.2)",
+                    "oklch(0.350 0.1530 163.2)",
+                    "oklch(0.450 0.1530 163.2)",
+                    "oklch(0.600 0.1530 163.2)",
+                    "oklch(0.750 0.1530 163.2)",
+                    "oklch(0.850 0.1530 163.2)",
+                    "oklch(0.950 0.0510 163.2)"
+                ]
+            },
+            "warning-inverse": {
+                "role": "secondary",
+                "displayName": "warning-inverse",
+                "canonical": "oklch(0.769 0.165 61.3)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0825 61.3)",
+                    "oklch(0.250 0.1375 61.3)",
+                    "oklch(0.350 0.1650 61.3)",
+                    "oklch(0.450 0.1650 61.3)",
+                    "oklch(0.600 0.1650 61.3)",
+                    "oklch(0.750 0.1650 61.3)",
+                    "oklch(0.850 0.1650 61.3)",
+                    "oklch(0.950 0.0550 61.3)"
+                ]
+            },
+            "error-inverse": {
+                "role": "secondary",
+                "displayName": "error-inverse",
+                "canonical": "oklch(0.71 0.166 15.3)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0830 15.3)",
+                    "oklch(0.250 0.1383 15.3)",
+                    "oklch(0.350 0.1660 15.3)",
+                    "oklch(0.450 0.1660 15.3)",
+                    "oklch(0.600 0.1660 15.3)",
+                    "oklch(0.750 0.1660 15.3)",
+                    "oklch(0.850 0.1660 15.3)",
+                    "oklch(0.950 0.0553 15.3)"
+                ]
+            },
+            "info-inverse": {
+                "role": "secondary",
+                "displayName": "info-inverse",
+                "canonical": "oklch(0.746 0.13 237.3)",
+                "tonalRamp": [
+                    "oklch(0.150 0.0650 237.3)",
+                    "oklch(0.250 0.1083 237.3)",
+                    "oklch(0.350 0.1300 237.3)",
+                    "oklch(0.450 0.1300 237.3)",
+                    "oklch(0.600 0.1300 237.3)",
+                    "oklch(0.750 0.1300 237.3)",
+                    "oklch(0.850 0.1300 237.3)",
+                    "oklch(0.950 0.0433 237.3)"
+                ]
+            }
+        },
+        "typographyMeta": {
+            "wordmark": {
+                "displayName": "wordmark",
+                "purpose": "브랜드 워드마크 전용"
+            },
+            "headline": {
+                "displayName": "headline",
+                "purpose": "본문과 작업의 정보 위계"
+            },
+            "title": {
+                "displayName": "title",
+                "purpose": "본문과 작업의 정보 위계"
+            },
+            "body": {
+                "displayName": "body",
+                "purpose": "본문과 작업의 정보 위계"
+            },
+            "label": {
+                "displayName": "label",
+                "purpose": "본문과 작업의 정보 위계"
+            },
+            "metadata": {
+                "displayName": "metadata",
+                "purpose": "본문과 작업의 정보 위계"
+            }
+        },
+        "shadows": [],
+        "motion": [
+            {
+                "name": "reduced-motion",
+                "value": "prefers-reduced-motion: reduce",
+                "purpose": "경매 완료의 정적 피드백을 남기고 색종이·불필요한 공간 이동을 줄인다."
+            }
+        ],
+        "breakpoints": [
+            {
+                "name": "sm",
+                "value": "640px"
+            },
+            {
+                "name": "md",
+                "value": "768px"
+            },
+            {
+                "name": "lg",
+                "value": "1024px"
+            },
+            {
+                "name": "xl",
+                "value": "1280px"
+            }
+        ]
+    },
+    "components": [
+        {
+            "name": "Primary Button",
+            "kind": "button",
+            "description": "STDF 기본·보조·위험 조작의 현재 표현.",
+            "html": "<button class=\"ds-primary-button\">변경 저장</button>",
+            "css": ".ds-primary-button{font-family:var(--font-sans);border-radius:var(--radius-form);font-size:1rem;line-height:1.5rem;padding:.75rem 1rem;min-height:44px;cursor:pointer;transition:background-color .15s;color:var(--color-text-on-primary);background:var(--color-primary);border:0;} .ds-primary-button:hover{filter:brightness(.92)} .ds-primary-button:focus-visible{outline:2px solid currentColor;outline-offset:2px;} .ds-primary-button:active{filter:brightness(.85)} .ds-primary-button:disabled{opacity:.5;cursor:not-allowed}",
+            "refersTo": "button-primary"
+        },
+        {
+            "name": "Secondary Button",
+            "kind": "button",
+            "description": "STDF 기본·보조·위험 조작의 현재 표현.",
+            "html": "<button class=\"ds-secondary-button\">변경 저장</button>",
+            "css": ".ds-secondary-button{font-family:var(--font-sans);border-radius:var(--radius-form);font-size:1rem;line-height:1.5rem;padding:.75rem 1rem;min-height:44px;cursor:pointer;transition:background-color .15s;color:var(--color-text-primary);background:transparent;border:1px solid var(--color-border);} .ds-secondary-button:hover{filter:brightness(.92)} .ds-secondary-button:focus-visible{outline:2px solid currentColor;outline-offset:2px;} .ds-secondary-button:active{filter:brightness(.85)} .ds-secondary-button:disabled{opacity:.5;cursor:not-allowed}",
+            "refersTo": "button-secondary"
+        },
+        {
+            "name": "Danger Button",
+            "kind": "button",
+            "description": "STDF 기본·보조·위험 조작의 현재 표현.",
+            "html": "<button class=\"ds-danger-button\">변경 저장</button>",
+            "css": ".ds-danger-button{font-family:var(--font-sans);border-radius:var(--radius-form);font-size:1rem;line-height:1.5rem;padding:.75rem 1rem;min-height:44px;cursor:pointer;transition:background-color .15s;color:var(--color-error);background:transparent;border:0;} .ds-danger-button:hover{filter:brightness(.92)} .ds-danger-button:focus-visible{outline:2px solid currentColor;outline-offset:2px;} .ds-danger-button:active{filter:brightness(.85)} .ds-danger-button:disabled{opacity:.5;cursor:not-allowed}"
+        },
+        {
+            "name": "Input",
+            "kind": "input",
+            "description": "보이는 입력 이름과 예시, 테마 포커스.",
+            "html": "<label class=\"ds-field\">내전·팀 이름<input placeholder=\"금요일 내전\" /></label>",
+            "css": ".ds-field{display:grid;gap:.25rem;font:600 .875rem/1.25rem var(--font-sans);color:var(--color-text-primary)} .ds-field input{border:1px solid var(--color-border);border-radius:var(--radius-form);padding:.75rem;font:600 1rem/1.5rem var(--font-sans);color:var(--color-text-primary);background:var(--color-bg-surface);min-width:0} .ds-field input::placeholder{color:var(--color-text-muted);opacity:1} .ds-field input:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}"
+        },
+        {
+            "name": "Navigation",
+            "kind": "nav",
+            "description": "이름 있는 링크와 현재 경로.",
+            "html": "<nav class=\"ds-nav\" aria-label=\"서버 메뉴\"><a href=\"#home\" aria-current=\"page\">홈</a><a href=\"#scrims\">내전</a><a href=\"#records\">경기 기록</a></nav>",
+            "css": ".ds-nav{display:flex;gap:.25rem;font:600 .875rem/1.25rem var(--font-sans)} .ds-nav a{display:flex;align-items:center;min-height:44px;padding:0 .75rem;color:var(--color-text-primary);text-decoration:none;border-radius:var(--radius-form)} .ds-nav a[aria-current]{background:var(--color-bg-highlight)} .ds-nav a:hover{background:var(--color-bg-overlay)} .ds-nav a:focus-visible{outline:2px solid currentColor;outline-offset:2px;}"
+        },
+        {
+            "name": "Status Tag",
+            "kind": "chip",
+            "refersTo": "status-tag",
+            "description": "동작 없는 작은 상태 표시.",
+            "html": "<span class=\"ds-tag\">진행 중</span>",
+            "css": ".ds-tag{display:inline-flex;border-radius:var(--radius-small);padding:.125rem .375rem;font:400 .75rem/1rem var(--font-sans);color:var(--color-warning);background:color-mix(in oklch,var(--color-warning) 10%,transparent)}"
+        },
+        {
+            "name": "List Row",
+            "kind": "card",
+            "refersTo": "list-row",
+            "description": "STDF Cell 계열의 이동 행.",
+            "html": "<a class=\"ds-row\" href=\"#match\"><strong>포로팀 vs 칼날부리팀</strong><span>금요일 내전 · BO3</span></a>",
+            "css": ".ds-row{display:grid;gap:.125rem;padding:1rem .75rem;background:var(--color-bg-surface);color:var(--color-text-primary);text-decoration:none;font:400 1rem/1.5rem var(--font-sans)} .ds-row span{font-size:.75rem;line-height:1rem;color:var(--color-text-muted)} .ds-row:hover{background:var(--color-bg-overlay)} .ds-row:focus-visible{outline:2px solid currentColor;outline-offset:-2px}"
+        },
+        {
+            "name": "Metric",
+            "kind": "card",
+            "description": "중립 표면에서 값과 보조 수치의 위계.",
+            "html": "<div class=\"ds-metric\"><span>KDA</span><strong>2.63</strong><small>상위 50%</small></div>",
+            "css": ".ds-metric{display:flex;flex-direction:column;gap:.25rem;border:1px solid var(--color-border);border-radius:var(--radius-box);padding:1rem;background:var(--color-bg-surface);color:var(--color-text-primary);font-family:var(--font-sans);font-variant-numeric:tabular-nums} .ds-metric>span{color:var(--color-text-muted);font-size:.75rem;line-height:1rem;font-weight:600} .ds-metric strong{font-size:1.5rem;line-height:2rem;font-weight:900} .ds-metric small{font-size:.75rem;line-height:1rem;color:var(--color-text-muted)}"
+        }
+    ],
+    "narrative": {
+        "northStar": "내전 운영 작업판",
+        "overview": "이 문서는 구현과 브라우저 검증으로 확인한 현재 시각 체계를 기록한다. 기존 Slate/STDF의 차분한 표면에 실제 챔피언·포지션 이미지를 결합하고, 경기와 운영 작업의 숫자·다음 행동을 먼저 읽게 한다. 소개와 문서는 읽기에, 운영 화면은 과업 완료에 맞춘다.\n\n표면과 경계는 정보를 묶고 색은 상태와 진영을 구분한다. 워드마크만 Jersey 10을 쓰며 본문과 조작은 Noto Sans KR을 유지한다. 브랜드·권한·데이터 의미는 [PRODUCT.md](PRODUCT.md)와 [제품 목적](../../docs/purpose.md)이 정한다. 구현 선택과 상태 처리의 세부 기준은 [디자인 시스템](../../docs/web/design-system.md)·[UI 패턴](../../docs/web/patterns.md)을 따른다.",
+        "keyCharacteristics": [
+            "Slate 표면과 STDF 네이티브 조작",
+            "경기·세트·진영을 구분하는 숫자와 문구",
+            "모바일·키보드에서도 같은 핵심 과업",
+            "한 동작과 한 설명을 필요한 한 곳에 배치",
+            "인라인 달력은 날짜 열과 요일이 일치하며 전체 날짜 이름·선택 상태를 제공한다. 빈 칸은 조작하지 않고 선택 뒤 시각 입력으로 포커스를 이어 준다."
+        ],
+        "rules": [
+            {
+                "name": "보조 글자 크기의 제한",
+                "body": "기존 10/11/13px는 날짜 월·겹친 얼굴 수·MMR·차트/표/시너지 보조 표시에서 유지한다. LoadoutIcon8px는 이미지가 없을 때의 두 글자 대체 표시다. 본문이나 주요 조작의 기본 크기로 확대 적용하지 않는다.",
+                "section": "typography"
+            }
+        ],
+        "dos": [
+            "Do STDF의 공식 API와 기존 서비스 컴포넌트를 먼저 사용한다.",
+            "Do 상태에 문구를 함께 제공하고 두 테마에서 대비를 실제 표면과 측정한다.",
+            "Do 좁은 화면에서 작업 순서와 DOM·키보드 순서를 맞춘다.",
+            "Do 오류가 난 입력과 현재 작업을 보존하고 다음 행동을 같은 영역에 알린다."
+        ],
+        "donts": [
+            "Don't 워드마크 외의 본문과 조작에 브랜드 글꼴을 사용한다.",
+            "Don't 같은 행동·목적지·설명을 페이지의 여러 곳에 반복한다.",
+            "Don't 누락된 경기 시각·수치·포지션을 다른 데이터로 추정해 채운다.",
+            "Don't 의미 없는 강조색·배지·장식이나 동작하지 않는 조작을 추가한다."
+        ]
+    }
+}

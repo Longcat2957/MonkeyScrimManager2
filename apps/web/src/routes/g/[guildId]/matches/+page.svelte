@@ -8,7 +8,7 @@
     import SectionState from '#lib/components/common/SectionState.svelte';
     import MatchTable from '#lib/components/matches/MatchTable.svelte';
     import type { MatchListItem } from '#lib/features/matches/types.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -16,6 +16,7 @@
     const guildId = $derived(page.params.guildId!);
     // 같은 목록의 검색·쪽만 바뀌는 동안에는 이전 결과를 흐리게 둔다.
     const changing = $derived(navigating.to?.route.id === page.route.id);
+
     const hrefFor = (match: MatchListItem) =>
         resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id });
 
@@ -52,6 +53,7 @@
                 role="search"
                 aria-label="경기 검색"
                 {@attach nonSubmitButtons}
+                {@attach inputLabel('내전·팀 이름 검색', '검색 지우기')}
                 class="-mx-2 -my-1 md:w-80"
                 onsubmit={(event) => {
                     event.preventDefault();
@@ -59,8 +61,9 @@
                 }}
             >
                 <Input
+                    title="내전·팀 이름 검색"
                     type="search"
-                    placeholder="내전·팀 이름 검색"
+                    placeholder="예: 포로팀"
                     bind:value={query}
                     clear
                     onclear={() => navigate({ q: '' })}
@@ -73,7 +76,10 @@
     {#if data.empty}
         <SectionState state="empty" message="아직 기록된 경기가 없어요" />
     {:else}
-        <div class={['flex flex-col gap-6 transition-opacity', changing && 'opacity-50']}>
+        <div
+            aria-busy={changing}
+            class={['flex flex-col gap-6 transition-opacity', changing && 'opacity-50']}
+        >
             <!-- 진행 중인 경기가 없으면 빈 표를 두지 않는다. -->
             {#if data.live.length}
                 <MatchTable

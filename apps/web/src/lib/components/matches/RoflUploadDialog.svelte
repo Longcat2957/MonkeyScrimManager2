@@ -84,12 +84,16 @@
     }
 
     async function upload() {
+        if (uploading || refreshRequired || !waiting.length || (uploadContext && !blueTeamSlot)) return;
         uploading = true;
-        // 세트 순서가 섞이지 않도록 파일마다 차례로 보낸다.
-        for (const item of waiting) {
-            if (!(await send(item))) break;
+        try {
+            // 세트 순서가 섞이지 않도록 파일마다 차례로 보낸다.
+            for (const item of waiting) {
+                if (!(await send(item))) break;
+            }
+        } finally {
+            uploading = false;
         }
-        uploading = false;
     }
 
     function remove(item: ImageListItemProps) {
@@ -192,6 +196,7 @@
                                     size="auto"
                                     heightOut="0"
                                     heightIn="2"
+                                    injClass="min-h-11"
                                     disabled={uploading}
                                     onclick={() => remove(item)}
                                     ><span class="sr-only">{item.file?.name} </span>선택 해제</Button
@@ -224,7 +229,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-4 text-sm"
+                    injClass="min-h-11 px-4 text-sm"
                     disabled={uploading}
                     onclick={close}>닫기</Button
                 >
@@ -232,7 +237,7 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-5 text-sm"
+                    injClass="min-h-11 px-5 text-sm"
                     disabled={!waiting.length || refreshRequired || Boolean(uploadContext && !blueTeamSlot)}
                     loading={uploading ? {} : null}
                     onclick={upload}>업로드</Button

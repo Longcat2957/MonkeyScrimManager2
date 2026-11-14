@@ -2,6 +2,7 @@
     import { Button, Input } from 'stdf';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import { POSITIONS } from '#lib/features/labels.ts';
+    import { inputFeedback } from '#lib/ui/form.ts';
     import {
         bestMmr,
         formatMmr,
@@ -26,12 +27,21 @@
     };
 
     let { team, bidding, busy, drag, bid = $bindable(''), celebration, onaward }: Props = $props();
+    const id = $props.id();
+    const errorId = `${id}-bid-error`;
 
-    // 입찰가 조정 단위. 좌클릭은 올리고 우클릭은 내린다.
-    const STEPS = [10, 50];
+    // 같은 증감 조작을 터치와 키보드에서도 바로 사용할 수 있다.
+    const STEPS = [-50, -10, 10, 50];
     const full = $derived(team.members.length >= TEAM_SIZE);
     const price = $derived(/^\d+$/.test(bid.trim()) ? Number(bid) : null);
     const overBudget = $derived(price !== null && price > team.remainingPoints);
+    const bidError = $derived(
+        overBudget
+            ? '남은 포인트를 넘어요'
+            : bid.trim() && price === null
+              ? '0 이상의 정수를 입력해 주세요'
+              : ''
+    );
     const captain = $derived(team.members.find((member) => member.via === 'captain')?.player ?? null);
     const laneText = (key: string | undefined) =>
         POSITIONS.find((position) => position.key === key)?.text ?? '포지션 미정';
@@ -50,6 +60,7 @@
     });
 
     function adjust(delta: number) {
+        if (busy || !bidding || full) return;
         bid = String(Math.max(0, Math.min(team.remainingPoints, (price ?? 0) + delta)));
     }
 </script>
@@ -130,51 +141,55 @@
 
     {#if bidding && !full}
         <!-- 입찰 줄은 경매 중 가장 자주 누르는 곳이라 다른 조작보다 크게 둔다. -->
-        <div class="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1">
-            <!-- STDF Input 바깥 칸의 고정 여백(px-2 py-1)을 상쇄해 팀 패널 왼쪽 선에 맞춘다. 입력 글자 크기는 옵션이 없어 감싸는 요소에서 키운다. -->
-            <div class="-mx-2 -my-1 min-w-0 [&_input]:text-lg [&_input]:font-semibold">
-                <Input
-                    placeholder="입찰가"
-                    inputmode="numeric"
-                    bind:value={bid}
-                    state={overBudget ? 'error' : 'theme'}
-                    tip={overBudget ? '남은 포인트를 넘어요' : null}
-                    py="1"
-                />
-            </div>
-            <!-- STDF Button이 contextmenu를 받지 않아 감싸는 요소에서 받는다. -->
-            {#each STEPS as step (step)}
-                <span
-                    role="presentation"
-                    title="좌클릭 +{step} / 우클릭 −{step}"
-                    oncontextmenu={(event) => {
-                        event.preventDefault();
-                        if (!busy) adjust(-step);
-                    }}
+        <div class="flex flex-col gap-2">
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+                <!-- STDF Input 바깥 칸의 고정 여백(px-2 py-1)을 상쇄해 팀 패널 왼쪽 선에 맞춘다. 입력 글자 크기는 옵션이 없어 감싸는 요소에서 키운다. -->
+                <div
+                    class="-mx-2 -my-1 min-w-0 [&_input]:text-lg [&_input]:font-semibold"
+                    {@attach inputFeedback(bidError, errorId)}
                 >
+                    <Input
+                        title={`${team.name} 입찰가`}
+                        titlePosition="out"
+                        placeholder="입찰가"
+                        inputmode="numeric"
+                        bind:value={bid}
+                        disabled={busy}
+                        state={bidError ? 'error' : 'theme'}
+                        py="1"
+                    />
+                    {#if bidError}<p id={errorId} role="alert" class="px-2 text-sm text-error">
+                            {bidError}
+                        </p>{/if}
+                </div>
+                <Button
+                    size="auto"
+                    heightOut="0"
+                    heightIn="3"
+                    injClass="min-h-12 px-4 text-base"
+                    disabled={busy || price === null || overBudget}
+                    onclick={() => price !== null && onaward(price)}
+                >
+                    낙찰<span class="sr-only"> {team.name}</span>
+                </Button>
+            </div>
+            <div role="group" aria-label={`${team.name} 입찰가 조정`} class="grid grid-cols-4 gap-1">
+                {#each STEPS as step (step)}
                     <Button
                         fill="lineLight"
                         size="auto"
                         heightOut="0"
                         heightIn="3"
-                        injClass="min-h-14 px-2.5 text-lg font-semibold"
+                        injClass="min-h-11 w-full px-2 text-base font-semibold"
                         disabled={busy}
                         onclick={() => adjust(step)}
                     >
-                        ±{step}<span class="sr-only"> {team.name} 입찰가 {step} 올리기, 우클릭은 내리기</span>
+                        {step > 0 ? '+' : '−'}{Math.abs(step)}<span class="sr-only">
+                            {team.name} 입찰가 {Math.abs(step)}포인트 {step > 0 ? '올리기' : '내리기'}</span
+                        >
                     </Button>
-                </span>
-            {/each}
-            <Button
-                size="auto"
-                heightOut="0"
-                heightIn="3"
-                injClass="min-h-14 px-3.5 text-lg"
-                disabled={busy || price === null || overBudget}
-                onclick={() => price !== null && onaward(price)}
-            >
-                낙찰<span class="sr-only"> {team.name}</span>
-            </Button>
+                {/each}
+            </div>
         </div>
     {/if}
 

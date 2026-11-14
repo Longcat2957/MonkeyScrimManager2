@@ -1,0 +1,12 @@
+{
+    "result": {
+        "content": [
+            {
+                "type": "text",
+                "text": "### Result\n{\"results\":[{\"theme\":\"light\",\"view\":\"desktop\",\"recheckHeight\":44,\"invalidFieldFocused\":true},{\"theme\":\"light\",\"view\":\"mobile\",\"recheckHeight\":44,\"invalidFieldFocused\":true},{\"theme\":\"dark\",\"view\":\"desktop\",\"recheckHeight\":44,\"invalidFieldFocused\":true},{\"theme\":\"dark\",\"view\":\"mobile\",\"recheckHeight\":44,\"invalidFieldFocused\":true}],\"errors\":[]}\n### Ran Playwright code\n```js\nawait (async(page)=>{const results=[],errors=[];for(const[theme,mode]of[['light','primary'],['dark','dark']]){const p=await page.context().newPage();p.setDefaultTimeout(7000);p.on('pageerror',e=>errors.push(e.message));await p.addInitScript(m=>localStorage.setItem('theme-mode',m),mode);for(const[view,width,height]of[['desktop',1440,1000],['mobile',390,844]]){await p.setViewportSize({width,height});await p.goto('http://127.0.0.1:5173/backoffice?mock=1');await p.locator('main time').waitFor();await p.waitForTimeout(350);const box=await p.getByRole('button',{name:'다시 확인',exact:true}).boundingBox();if(box.height<44)throw new Error('recheck below44');await p.screenshot({path:'/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/after/final-a-backoffice-'+theme+'-'+view+'.png',fullPage:true});await p.goto('http://127.0.0.1:5173/g/devGuild001/admin');await p.waitForTimeout(350);await p.getByRole('button',{name:/Riot 계정 관리/}).first().click();await p.waitForTimeout(350);const d=p.getByRole('dialog',{name:'Riot 계정 관리'});await d.getByRole('button',{name:'조회',exact:true}).click();await p.waitForTimeout(150);const focus=await d.locator('input').evaluate(n=>n===document.activeElement);if(!focus)throw new Error('invalid field not focused');await p.screenshot({path:'/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/after/final-a-admin-dialog-'+theme+'-'+view+'.png',fullPage:true});results.push({theme,view,recheckHeight:box.height,invalidFieldFocused:true});}await p.close();}return{results,errors};})(page);\n```\n### Page\n- Page URL: about:blank"
+            }
+        ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+}

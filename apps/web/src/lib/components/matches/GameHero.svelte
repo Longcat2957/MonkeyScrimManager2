@@ -31,7 +31,7 @@
 <section
     aria-label={`${game.order}세트 결과`}
     class={[
-        'relative isolate overflow-hidden rounded-(--radius-box) border-l-4 bg-bg-base-dark text-text-dark ring-1 ring-white/10',
+        'inverse-surface relative isolate overflow-hidden rounded-(--radius-box) border-l-4 bg-bg-base-dark text-text-dark ring-1 ring-white/10',
         winner?.side === 'red'
             ? 'border-l-error'
             : winner?.side === 'blue'
@@ -55,14 +55,18 @@
                 {#if winner}
                     <span
                         class={[
-                            'rounded-full border px-3 py-1 text-xs font-semibold',
+                            'rounded-full border bg-bg-base-dark/90 px-3 py-1 text-xs font-semibold',
                             winner.side === 'red' ? 'border-error/60 text-error' : 'border-info/60 text-info'
                         ]}
                     >
                         {winner.side === 'red' ? '레드' : '블루'} · {winner.teamName} 승리
                     </span>
                 {/if}
-                {#if game.mmrStatus === 'pending'}<StatusTag text="MMR 반영 대기" state="warning" />{/if}
+                {#if game.mmrStatus === 'pending'}
+                    <span class="rounded-(--radius-small) bg-bg-base-dark/90">
+                        <StatusTag text="MMR 반영 대기" state="warning" />
+                    </span>
+                {/if}
             </div>
             <p class="flex items-baseline gap-4 text-6xl font-black tabular-nums md:text-7xl">
                 <span class="text-info">{kills(blue)}</span>

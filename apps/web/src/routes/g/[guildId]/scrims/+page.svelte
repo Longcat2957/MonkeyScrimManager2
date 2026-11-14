@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { Button, CellGroup, Loading, Tab } from 'stdf';
+    import { Button, CellGroup, Loading } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import ScrimListRow from '#lib/components/scrims/ScrimListRow.svelte';
     import ScrimSettingsDialog from '#lib/components/scrims/ScrimSettingsDialog.svelte';
     import { editableFields, TEAM_COUNT } from '#lib/features/scrims/settings.ts';
@@ -81,12 +82,12 @@
     {#if data.counts.all === 0}
         <SectionState state="empty" message="아직 내전이 없어요" />
     {:else}
-        <section aria-labelledby="scrim-list" class="flex flex-col gap-3">
+        <section aria-labelledby="scrim-list" aria-busy={changing} class="flex flex-col gap-3">
             <div class="flex items-center gap-2">
                 <h2 id="scrim-list" class="sr-only">{FILTERS[active]?.text} 내전</h2>
                 <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 내용은 숨긴 영역 제목으로 알린다. -->
                 <div role="group" aria-label="상태 필터" class="min-w-0 flex-1 border-b border-border">
-                    <Tab
+                    <SelectionTabs
                         {labels}
                         {active}
                         onclickTab={(index) => navigate({ status: FILTERS[index]!.key })}

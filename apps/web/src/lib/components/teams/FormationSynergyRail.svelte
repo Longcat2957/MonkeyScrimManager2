@@ -19,8 +19,9 @@
         players: FormationPlayer[];
         assignments: Assignments;
         pairs: Record<string, PairRecord>;
+        compact?: boolean;
     };
-    let { team, players, assignments, pairs }: Props = $props();
+    let { team, players, assignments, pairs, compact = false }: Props = $props();
 
     const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
     const at = (lane: (typeof LANES)[number]) => {
@@ -31,15 +32,21 @@
 </script>
 
 <aside aria-label={`${team.name} 시너지`} class="flex min-w-0 flex-col bg-bg-surface dark:bg-bg-surface-dark">
-    <p class="flex h-14 items-center px-2 text-xs font-semibold opacity-70">{team.name} 시너지</p>
-    <ol class="grid grid-rows-[repeat(5,4.75rem)] gap-1.5 px-2 pb-2">
+    <p class={['flex items-center text-xs font-semibold opacity-70', compact ? 'px-3 py-3' : 'h-14 px-2']}>
+        {team.name} 시너지
+    </p>
+    <ol
+        class={compact
+            ? 'grid grid-cols-3 gap-2 px-3 pb-3'
+            : 'grid grid-rows-[repeat(5,4.75rem)] gap-1.5 px-2 pb-2'}
+    >
         {#each SYNERGY_PAIRS as [laneA, laneB] (`${laneA}-${laneB}`)}
             {@const a = at(laneA)}
             {@const b = at(laneB)}
             {@const record = a && b ? pairs[pairKey(a.participantId, b.participantId)]?.together : null}
             <!-- 두 자리 사이에 걸치도록 위 자리 줄 아래쪽에 붙인다. -->
             <li
-                style:grid-row={rowOf(laneA)}
+                style:grid-row={compact ? undefined : rowOf(laneA)}
                 class={[
                     'flex flex-col justify-center gap-0.5 self-end rounded-(--radius-small) border px-2 py-1.5 text-center',
                     !record || !record.plays

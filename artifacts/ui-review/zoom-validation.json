@@ -1,0 +1,135 @@
+{
+    "results": [
+        {
+            "name": "manual",
+            "width": 720,
+            "height": 500,
+            "overflow": false
+        },
+        {
+            "name": "player",
+            "width": 720,
+            "height": 500,
+            "overflow": false
+        },
+        {
+            "name": "stats",
+            "width": 720,
+            "height": 500,
+            "overflow": false
+        },
+        {
+            "name": "settings",
+            "focused": [
+                {
+                    "tag": "INPUT",
+                    "text": "날짜",
+                    "visible": true
+                },
+                {
+                    "tag": "INPUT",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "1",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "2",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "3",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "4",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "5",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "6",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "7",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "8",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "9",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "10",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "11",
+                    "visible": true
+                },
+                {
+                    "tag": "BUTTON",
+                    "text": "12",
+                    "visible": true
+                }
+            ],
+            "overflow": false
+        }
+    ],
+    "errors": [],
+    "notes": [
+        "720×500 CSS viewport is the effective layout size for 200% zoom on a1440×1000 display. This is layout emulation, not a claim of physical browser-UI zoom or screen-reader testing.",
+        "No save or formation mutations."
+    ],
+    "phase": "Initial effective-zoom audit; discovered Calendar blank focus and weekday defect. Settings screenshot replaced by final720x500 capture after UI-20.",
+    "calendarSupersededBy": "calendar-validation.json"
+}

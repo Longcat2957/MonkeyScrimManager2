@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button, Input, Popup, toast } from 'stdf';
     import { enhance, type SubmitFunction } from '$app/forms';
+    import { tick } from 'svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { parseRiotId, RIOT_ID_FORMAT_ERROR } from '#lib/features/me/riot-id.ts';
     import type { RiotAccount, RiotLookup } from '#lib/features/me/types.ts';
@@ -8,11 +9,18 @@
     import { confirm } from '#lib/ui/confirm.ts';
     import { overlay } from '#lib/ui/overlay.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
+    import { inputFeedback, inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
 
     type Member = { userId: string; displayName: string; riotAccounts: RiotAccount[] };
 
     // 운영자가 멤버의 Riot 계정을 연결·해제하고 대표 계정을 정한다. 연결은 조회 → 확인 두 단계다.
     let { open = $bindable(false), member }: { open: boolean; member: Member | null } = $props();
+    const id = $props.id();
+    let panel: HTMLDivElement | undefined = $state();
+    let popupPosition = $state<'center' | 'bottom'>('bottom');
+    $effect(() => {
+        if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
+    });
 
     let riotId = $state('');
     let error = $state('');
@@ -20,6 +28,8 @@
     // 조회로 찾은 계정. 값이 있으면 연결 확인 단계를 보여 준다.
     let found = $state<RiotLookup | null>(null);
     let busyId = $state<string | null>(null);
+    let busyAction = $state<'primary' | 'unlink' | null>(null);
+    const busy = $derived(pending || Boolean(busyId));
 
     function reset() {
         riotId = '';
@@ -28,51 +38,66 @@
     }
 
     function close() {
-        if (pending || busyId) return;
+        if (busy) return;
         open = false;
         reset();
     }
 
     async function run(name: 'primary' | 'unlink', account: RiotAccount) {
-        if (!member) return;
-        if (
-            name === 'unlink' &&
-            !(await confirm(
-                `${account.gameName}#${account.tagLine} 연결을 해제할까요? 지난 경기 기록은 그대로 남아요.`,
-                '연결 해제'
-            ))
-        )
-            return;
+        if (busy || !member) return;
+        const userId = member.userId;
         busyId = account.id;
-        const message = await postAction(name, { userId: member.userId, id: account.id });
-        busyId = null;
-        if (message) toast.error(message);
+        busyAction = name;
+        try {
+            if (
+                name === 'unlink' &&
+                !(await confirm(
+                    `${account.gameName}#${account.tagLine} 연결을 해제할까요? 지난 경기 기록은 그대로 남아요.`,
+                    '연결 해제'
+                ))
+            )
+                return;
+            const message = await postAction(name, { userId, id: account.id });
+            if (message) toast.error(message);
+        } finally {
+            busyId = null;
+            busyAction = null;
+        }
     }
 
     const submitLookup: SubmitFunction = ({ formData, cancel }) => {
-        if (pending || !member) {
+        if (busy || !member) {
             cancel();
             return;
         }
         if (!parseRiotId(riotId)) {
             error = RIOT_ID_FORMAT_ERROR;
             cancel();
+            void tick().then(() => panel?.querySelector<HTMLInputElement>('input')?.focus());
             return;
         }
         formData.set('riotId', riotId);
         error = '';
         pending = true;
         return async ({ result }) => {
-            pending = false;
-            if (result.type === 'success') found = result.data?.lookup as RiotLookup;
-            else if (result.type === 'failure')
-                error = String(result.data?.riotIdError ?? '조회하지 못했어요');
-            else error = '조회하지 못했어요';
+            try {
+                if (result.type === 'success') {
+                    found = result.data?.lookup as RiotLookup;
+                } else if (result.type === 'failure') {
+                    error = String(result.data?.riotIdError ?? '조회하지 못했어요. 다시 시도해 주세요');
+                } else error = '조회하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요';
+            } finally {
+                pending = false;
+            }
+            if (found && !error) {
+                await tick();
+                panel?.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus();
+            }
         };
     };
 
     const submitLink: SubmitFunction = ({ formData, cancel }) => {
-        if (pending || !found || !member) {
+        if (busy || !found || !member) {
             cancel();
             return;
         }
@@ -82,31 +107,50 @@
         error = '';
         pending = true;
         return async ({ result, update }) => {
-            pending = false;
-            if (result.type === 'success') {
-                await update();
-                reset();
-            } else if (result.type === 'failure') {
-                error = String(result.data?.riotIdError ?? result.data?.message ?? '연결하지 못했어요');
-            } else {
-                error = '연결하지 못했어요';
+            try {
+                if (result.type === 'success') {
+                    await update();
+                    reset();
+                } else if (result.type === 'failure') {
+                    error = String(
+                        result.data?.riotIdError ??
+                            result.data?.message ??
+                            '연결하지 못했어요. 다시 시도해 주세요'
+                    );
+                } else error = '연결하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요';
+            } catch {
+                error = '연결했지만 화면을 갱신하지 못했어요. 새로고침해 현재 상태를 확인해 주세요';
+            } finally {
+                pending = false;
+            }
+            if (!found && !error) {
+                await tick();
+                panel?.querySelector<HTMLInputElement>('input')?.focus();
             }
         };
     };
 </script>
 
 <div {@attach overlay({ open, label: 'Riot 계정 관리', onclose: close })}>
-    <Popup
-        bind:visible={open}
-        position={desktop.current ? 'center' : 'bottom'}
-        size={0}
-        maskClosable={false}
-        transparent
-    >
+    <Popup bind:visible={open} position={popupPosition} size={0} maskClosable={false} transparent>
         <div
-            class="mx-auto flex w-full max-w-md flex-col gap-5 rounded-t-(--radius-box) bg-bg-surface p-6 lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
+            bind:this={panel}
+            aria-busy={busy}
+            class="mx-auto flex max-h-[90dvh] w-full max-w-md flex-col gap-5 overflow-y-auto overscroll-contain rounded-t-(--radius-box) bg-bg-surface p-6 lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
         >
-            <h2 class="text-lg font-semibold">{member?.displayName}의 Riot 계정</h2>
+            <div class="flex items-start justify-between gap-3">
+                <h2 class="pt-2 text-lg font-semibold wrap-anywhere">{member?.displayName}의 Riot 계정</h2>
+                <Button
+                    type="button"
+                    fill="text"
+                    size="auto"
+                    heightOut="0"
+                    heightIn="2"
+                    injClass="min-h-11 shrink-0 px-3 text-sm"
+                    disabled={busy}
+                    onclick={close}>닫기</Button
+                >
+            </div>
 
             {#if member?.riotAccounts.length}
                 <ul
@@ -115,8 +159,8 @@
                     {#each member.riotAccounts as account (account.id)}
                         <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
                             <span class="flex min-w-0 flex-1 flex-col">
-                                <span class="flex items-center gap-2">
-                                    <span class="truncate font-medium"
+                                <span class="flex flex-wrap items-center gap-2">
+                                    <span class="min-w-0 font-medium wrap-anywhere"
                                         >{account.gameName}<span class="font-normal opacity-60">
                                             #{account.tagLine}</span
                                         ></span
@@ -134,9 +178,15 @@
                                         size="auto"
                                         heightOut="0"
                                         heightIn="2"
-                                        injClass="px-2 text-sm"
-                                        disabled={Boolean(busyId)}
-                                        onclick={() => run('primary', account)}>대표로</Button
+                                        injClass="min-h-11 px-2 text-sm"
+                                        disabled={busy}
+                                        loading={busyId === account.id && busyAction === 'primary'
+                                            ? {}
+                                            : null}
+                                        onclick={() => run('primary', account)}
+                                        >대표로<span class="sr-only">
+                                            {account.gameName}#{account.tagLine}</span
+                                        ></Button
                                     >
                                 {/if}
                                 <Button
@@ -145,8 +195,9 @@
                                     size="auto"
                                     heightOut="0"
                                     heightIn="2"
-                                    injClass="px-2 text-sm"
-                                    disabled={Boolean(busyId) || account.inActiveScrim}
+                                    injClass="min-h-11 px-2 text-sm"
+                                    disabled={busy || account.inActiveScrim}
+                                    loading={busyId === account.id && busyAction === 'unlink' ? {} : null}
                                     onclick={() => run('unlink', account)}
                                 >
                                     해제<span class="sr-only"> {account.gameName}#{account.tagLine}</span>
@@ -166,32 +217,32 @@
                     class="flex flex-col gap-3"
                     novalidate
                     use:enhance={submitLookup}
+                    {@attach nonSubmitButtons}
                 >
-                    <Input
-                        title="연결할 Riot ID"
-                        titlePosition="out"
-                        placeholder="이름#태그"
-                        bind:value={riotId}
-                        disabled={pending}
-                        state={error ? 'error' : 'theme'}
-                        tip={error || null}
-                        autocomplete={false}
-                        required
-                    />
+                    <div
+                        {@attach inputLabel('연결할 Riot ID')}
+                        {@attach inputFeedback(error, `${id}-riot-error`)}
+                    >
+                        <Input
+                            title="연결할 Riot ID"
+                            titlePosition="out"
+                            placeholder="이름#태그"
+                            bind:value={riotId}
+                            disabled={busy}
+                            state={error ? 'error' : 'theme'}
+                            autocomplete={false}
+                            required
+                        />
+                    </div>
+                    {#if error}<p id={`${id}-riot-error`} role="alert" class="text-sm text-error">
+                            {error}
+                        </p>{/if}
                     <div class="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            fill="lineLight"
-                            size="auto"
-                            heightOut="0"
-                            injClass="px-4"
-                            onclick={close}>닫기</Button
-                        >
                         <Button
                             type="submit"
                             size="auto"
                             heightOut="0"
-                            injClass="px-4"
+                            injClass="min-h-11 px-4"
                             loading={pending ? {} : null}>조회</Button
                         >
                     </div>
@@ -203,6 +254,7 @@
                     class="flex flex-col gap-3"
                     novalidate
                     use:enhance={submitLink}
+                    {@attach nonSubmitButtons}
                 >
                     <div
                         class="flex flex-col gap-1 rounded-(--radius-form) bg-bg-overlay px-4 py-3 dark:bg-bg-overlay-dark"
@@ -225,15 +277,15 @@
                             fill="lineLight"
                             size="auto"
                             heightOut="0"
-                            injClass="px-4"
-                            disabled={pending}
+                            injClass="min-h-11 px-4"
+                            disabled={busy}
                             onclick={() => ((found = null), (error = ''))}>다시 입력</Button
                         >
                         <Button
                             type="submit"
                             size="auto"
                             heightOut="0"
-                            injClass="px-4"
+                            injClass="min-h-11 px-4"
                             loading={pending ? {} : null}>연결</Button
                         >
                     </div>

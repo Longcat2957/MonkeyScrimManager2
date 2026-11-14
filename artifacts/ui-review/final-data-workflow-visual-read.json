@@ -1,0 +1,690 @@
+{
+    "reviewer": "route_inventory",
+    "scope": "최종 공통·상세 변경 후 root가 촬영한 기본 화면의 실제 이미지 재검토",
+    "status": "complete",
+    "pages": 9,
+    "images_actually_read": 36,
+    "passed_images": 36,
+    "source_ui_regressions_found": 0,
+    "source_edits_during_final_review": false,
+    "business_mutations_during_final_review": 0,
+    "screenshots_captured_by": "root",
+    "images": [
+        {
+            "page": "guild",
+            "url": "/g/devGuild001",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/guild-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1608
+            },
+            "sha256": "a6bebf5ab42e4cf114549040d430f7db305751147ac35b49c4da7df996c93a17",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "활동·현재 순위가 업적보다 먼저 배치되며, 지난 일정 안내·업적 카드·페이지 여백이 두 폭·테마에서 명확하다."
+        },
+        {
+            "page": "guild",
+            "url": "/g/devGuild001",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/guild-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 2089
+            },
+            "sha256": "1ebbc04b571cb2a12abd22dfb4bff0d26303f0d286229c40ddfb897540b89af1",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "활동·현재 순위가 업적보다 먼저 배치되며, 지난 일정 안내·업적 카드·페이지 여백이 두 폭·테마에서 명확하다."
+        },
+        {
+            "page": "guild",
+            "url": "/g/devGuild001",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/guild-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1608
+            },
+            "sha256": "7bef1c7d8219e6177b71298bd141f495515a31a63bbb9310ab7fbc113777bebd",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "활동·현재 순위가 업적보다 먼저 배치되며, 지난 일정 안내·업적 카드·페이지 여백이 두 폭·테마에서 명확하다."
+        },
+        {
+            "page": "guild",
+            "url": "/g/devGuild001",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/guild-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 2089
+            },
+            "sha256": "bbbd8c06db62ff78769616333176199ad16ae6ab3918c3cf621cc662ee81f881",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "활동·현재 순위가 업적보다 먼저 배치되며, 지난 일정 안내·업적 카드·페이지 여백이 두 폭·테마에서 명확하다."
+        },
+        {
+            "page": "scrims",
+            "url": "/g/devGuild001/scrims",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/scrims-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1976
+            },
+            "sha256": "3e3a87019010bf7f9767bf5fc846195f3fe85cbf309a0ecfd21a6ae648ec6f22",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 상태·일시·주요 이동과 쪽 이동이 구분된다. 좁은 화면의 긴 제목 줄임은 해당 내전으로 이동해 확인할 수 있다."
+        },
+        {
+            "page": "scrims",
+            "url": "/g/devGuild001/scrims",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/scrims-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1980
+            },
+            "sha256": "cd2affb13c6bfbb3fc84b4f99b8397567d731abe899ea1434dcd182d7b584b5f",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 상태·일시·주요 이동과 쪽 이동이 구분된다. 좁은 화면의 긴 제목 줄임은 해당 내전으로 이동해 확인할 수 있다."
+        },
+        {
+            "page": "scrims",
+            "url": "/g/devGuild001/scrims",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/scrims-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1976
+            },
+            "sha256": "6fe8b31dd3cef231091cba5de32cf024965781174bbe0598b77db938e2573627",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 상태·일시·주요 이동과 쪽 이동이 구분된다. 좁은 화면의 긴 제목 줄임은 해당 내전으로 이동해 확인할 수 있다."
+        },
+        {
+            "page": "scrims",
+            "url": "/g/devGuild001/scrims",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/scrims-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1980
+            },
+            "sha256": "a179cfc7c6bd50bbea71a067e85d7d487780e93043dad7f47e5382ff4cda891f",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 상태·일시·주요 이동과 쪽 이동이 구분된다. 좁은 화면의 긴 제목 줄임은 해당 내전으로 이동해 확인할 수 있다."
+        },
+        {
+            "page": "scrim",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/scrim-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1806
+            },
+            "sha256": "b8c9f7aa453d70366cdfac60eb9b9480c4f35a6ae6f1a196e46217e3fd6cedf2",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 정보·참가자·관리 동작이 구분되며 모바일에서 조작이 줄바꿈된다. 미진행 단계의 흐린 표현을 활성 조작 대비 검사와 혼동하지 않았다."
+        },
+        {
+            "page": "scrim",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/scrim-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1981
+            },
+            "sha256": "ed2f40815dd14bcca627f17dbeed2e9e8a44a53652c6020a364ff40a80a9d776",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 정보·참가자·관리 동작이 구분되며 모바일에서 조작이 줄바꿈된다. 미진행 단계의 흐린 표현을 활성 조작 대비 검사와 혼동하지 않았다."
+        },
+        {
+            "page": "scrim",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/scrim-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1806
+            },
+            "sha256": "258a79f3a7978783b3ee267798fb2a718831c078c7c2e93f34d0b08812d44081",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 정보·참가자·관리 동작이 구분되며 모바일에서 조작이 줄바꿈된다. 미진행 단계의 흐린 표현을 활성 조작 대비 검사와 혼동하지 않았다."
+        },
+        {
+            "page": "scrim",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/scrim-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1981
+            },
+            "sha256": "c9cc35364fc3e15deb7222e1248145298e498a3704f990d6617d397828126a20",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "모집 정보·참가자·관리 동작이 구분되며 모바일에서 조작이 줄바꿈된다. 미진행 단계의 흐린 표현을 활성 조작 대비 검사와 혼동하지 않았다."
+        },
+        {
+            "page": "manual",
+            "url": "/g/devGuild001/scrims/devScrim007/manual",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/manual-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1296
+            },
+            "sha256": "c6ed0506eb744d3f2962c00b2dcc398aa866ad7ba182897e185c6cb3c2e4a0f4",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "UI21 최종 대비 수정 후 fresh scrollY0·focusBODY·원본6/10으로 다시 촬영한 PNG를 실제 읽었다. 후보·팀 MMR과 빈 자리 문구가 명확하며 헤더·작업판·푸터가 정상이다.",
+            "rechecked_by": "technical_review"
+        },
+        {
+            "page": "manual",
+            "url": "/g/devGuild001/scrims/devScrim007/manual",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/manual-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1941
+            },
+            "sha256": "515806343de0e4282041321784ca84dd4f7e8c206eb90d0d2c988dfc0c56297a",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "UI21 최종 대비 수정 후 fresh scrollY0·focusBODY·원본6/10으로 다시 촬영한 PNG를 실제 읽었다. 후보·팀 MMR과 빈 자리 문구가 명확하며 헤더·작업판·푸터가 정상이다.",
+            "rechecked_by": "technical_review"
+        },
+        {
+            "page": "manual",
+            "url": "/g/devGuild001/scrims/devScrim007/manual",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/manual-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1296
+            },
+            "sha256": "8f3dc569b874de60d804cf321940dcecacd450c3c0d9164b57f725c6bcad4e7f",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "UI21 최종 대비 수정 후 fresh scrollY0·focusBODY·원본6/10으로 다시 촬영한 PNG를 실제 읽었다. 후보·팀 MMR과 빈 자리 문구가 명확하며 헤더·작업판·푸터가 정상이다.",
+            "rechecked_by": "technical_review"
+        },
+        {
+            "page": "manual",
+            "url": "/g/devGuild001/scrims/devScrim007/manual",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/manual-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1941
+            },
+            "sha256": "7c9780ef9a2d4a23a055816a244d92a1cff6feb5f0ad5e9ac6e301d724eda41a",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "UI21 최종 대비 수정 후 fresh scrollY0·focusBODY·원본6/10으로 다시 촬영한 PNG를 실제 읽었다. 후보·팀 MMR과 빈 자리 문구가 명확하며 헤더·작업판·푸터가 정상이다.",
+            "rechecked_by": "technical_review"
+        },
+        {
+            "page": "auction",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/auction-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1077
+            },
+            "sha256": "8361606cd1ce0e3e9de00e04aea62b8b9e22efc5b417c5fc9bdeb88fa4363ea8",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "초기 경매 설정·팀장 후보·팀별 포인트·시작 동작이 구분된다. 후보 목록의 내부 스크롤을 페이지 가로 넘침으로 분류하지 않았다."
+        },
+        {
+            "page": "auction",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/auction-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1366
+            },
+            "sha256": "967c074bb73fd3219875500df80193ba25bd557218f1154ed45e2bd972d0e938",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "초기 경매 설정·팀장 후보·팀별 포인트·시작 동작이 구분된다. 후보 목록의 내부 스크롤을 페이지 가로 넘침으로 분류하지 않았다."
+        },
+        {
+            "page": "auction",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/auction-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1077
+            },
+            "sha256": "c9962c34b3baa6a4aab21a09fb720488a66eae2242cbaee0c92534d24278b780",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "초기 경매 설정·팀장 후보·팀별 포인트·시작 동작이 구분된다. 후보 목록의 내부 스크롤을 페이지 가로 넘침으로 분류하지 않았다."
+        },
+        {
+            "page": "auction",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/auction-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1366
+            },
+            "sha256": "7cb266d889c2ee5584c2a01599d08865964b4100a61fe5d25b5ccdab109ff814",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "초기 경매 설정·팀장 후보·팀별 포인트·시작 동작이 구분된다. 후보 목록의 내부 스크롤을 페이지 가로 넘침으로 분류하지 않았다."
+        },
+        {
+            "page": "bracket",
+            "url": "/g/devGuild001/scrims/devScrim008/bracket",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/bracket-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1000
+            },
+            "sha256": "c1a7f390b84a3745408cbae971bd01d6544e473772e6639e59725426565c6e4d",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "팀 선택과 준결승·결승 단계가 읽기 순서대로 배치되고 모바일에서 세로로 이어진다. 초기 배치0/4가 유지된다."
+        },
+        {
+            "page": "bracket",
+            "url": "/g/devGuild001/scrims/devScrim008/bracket",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/bracket-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1408
+            },
+            "sha256": "c4918e98588f11f6df6111cc34443cf9595ee76e2f9d23045ad0cf8a10e9aa9d",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "팀 선택과 준결승·결승 단계가 읽기 순서대로 배치되고 모바일에서 세로로 이어진다. 초기 배치0/4가 유지된다."
+        },
+        {
+            "page": "bracket",
+            "url": "/g/devGuild001/scrims/devScrim008/bracket",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/bracket-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1000
+            },
+            "sha256": "7509f6a920a656a70bdf3176e0694812de276ddb518b746028664c05651c1fd0",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "팀 선택과 준결승·결승 단계가 읽기 순서대로 배치되고 모바일에서 세로로 이어진다. 초기 배치0/4가 유지된다."
+        },
+        {
+            "page": "bracket",
+            "url": "/g/devGuild001/scrims/devScrim008/bracket",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/bracket-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1408
+            },
+            "sha256": "df39c9c9ba8e2e26578493d84a44595a4d21a56e622b85ad139a11909a9e7726",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "팀 선택과 준결승·결승 단계가 읽기 순서대로 배치되고 모바일에서 세로로 이어진다. 초기 배치0/4가 유지된다."
+        },
+        {
+            "page": "result",
+            "url": "/g/devGuild001/scrims/devScrim005/result",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/result-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1000
+            },
+            "sha256": "bd1994e06da39219c4d2846c8fb4ab5667fe48964019b425c0befde03ac1b8cb",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "대진 결과 제목·우승 팀·각 경기 점수가 구분되고 모바일에서 세로 순서가 유지된다. 준결승 두 경기의 동일 BO 문구는 서로 다른 경기 대상이다."
+        },
+        {
+            "page": "result",
+            "url": "/g/devGuild001/scrims/devScrim005/result",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/result-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1015
+            },
+            "sha256": "3c18af4fcc9bf68f25423e4ce24133559c367878d6675cfa8bad8edea8a627a2",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "대진 결과 제목·우승 팀·각 경기 점수가 구분되고 모바일에서 세로 순서가 유지된다. 준결승 두 경기의 동일 BO 문구는 서로 다른 경기 대상이다."
+        },
+        {
+            "page": "result",
+            "url": "/g/devGuild001/scrims/devScrim005/result",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/result-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1000
+            },
+            "sha256": "6eeafad68daf23c773fd7dd6bc4e1c6c20c110684553c85eef80dc7e41d3fd65",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "대진 결과 제목·우승 팀·각 경기 점수가 구분되고 모바일에서 세로 순서가 유지된다. 준결승 두 경기의 동일 BO 문구는 서로 다른 경기 대상이다."
+        },
+        {
+            "page": "result",
+            "url": "/g/devGuild001/scrims/devScrim005/result",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/result-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 1015
+            },
+            "sha256": "10e7b41677930453afad73591184abbcb3c8c5e76fea28a840f817f9a231b09e",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "대진 결과 제목·우승 팀·각 경기 점수가 구분되고 모바일에서 세로 순서가 유지된다. 준결승 두 경기의 동일 BO 문구는 서로 다른 경기 대상이다."
+        },
+        {
+            "page": "matches",
+            "url": "/g/devGuild001/matches",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/matches-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1964
+            },
+            "sha256": "038afed414ab8dfb16989063d458c42cd136889a8297d08a0e921f81d56f36bd",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "검색의 보이는 레이블·진행/완료 경기·점수·날짜·쪽 이동이 두 폭·테마에서 구분된다."
+        },
+        {
+            "page": "matches",
+            "url": "/g/devGuild001/matches",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/matches-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 2450
+            },
+            "sha256": "88b7799d713df1a4715becadc54523b9b5601b626dc7b9c0b6ead7ba628c4435",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "검색의 보이는 레이블·진행/완료 경기·점수·날짜·쪽 이동이 두 폭·테마에서 구분된다."
+        },
+        {
+            "page": "matches",
+            "url": "/g/devGuild001/matches",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/matches-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 1964
+            },
+            "sha256": "eafc9b5db2ca11dccc073af28fb787666840530978709288706fc9e7644a59e8",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "검색의 보이는 레이블·진행/완료 경기·점수·날짜·쪽 이동이 두 폭·테마에서 구분된다."
+        },
+        {
+            "page": "matches",
+            "url": "/g/devGuild001/matches",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/matches-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 2450
+            },
+            "sha256": "5b2a8758cdf02ddf1e6710ca26ab6b113a6593f07aa728dea4d2da0132e8b91d",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "검색의 보이는 레이블·진행/완료 경기·점수·날짜·쪽 이동이 두 폭·테마에서 구분된다."
+        },
+        {
+            "page": "stats",
+            "url": "/g/devGuild001/stats",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/stats-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 3204
+            },
+            "sha256": "9376c3bae76bb300bc0961d766eb85cde61b6358d599bec9d105ab1d311b1226",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "요약·업적·리더보드·챔피언 통계 순서가 유지된다. 모바일 첫 표에 KDA·승률이 보이고 나머지 지표는 안내가 있는 로컬 가로 스크롤 영역이다. 업적 이미지·텍스트·44px 이전/다음 동작과 쪽 이동이 잘리지 않는다."
+        },
+        {
+            "page": "stats",
+            "url": "/g/devGuild001/stats",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/stats-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 3468
+            },
+            "sha256": "97ac8db694d121522fc8408e10bd6c381d4ba5c15ab58807be2ec2bb7da3491f",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "요약·업적·리더보드·챔피언 통계 순서가 유지된다. 모바일 첫 표에 KDA·승률이 보이고 나머지 지표는 안내가 있는 로컬 가로 스크롤 영역이다. 업적 이미지·텍스트·44px 이전/다음 동작과 쪽 이동이 잘리지 않는다."
+        },
+        {
+            "page": "stats",
+            "url": "/g/devGuild001/stats",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "image": "artifacts/ui-review/after/stats-dark-desktop.png",
+            "png_size": {
+                "width": 1440,
+                "height": 3204
+            },
+            "sha256": "b562a1e19fa66d05e6903fc01de691190a9e3a06198ca1cb5a2765e2c45bae78",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "요약·업적·리더보드·챔피언 통계 순서가 유지된다. 모바일 첫 표에 KDA·승률이 보이고 나머지 지표는 안내가 있는 로컬 가로 스크롤 영역이다. 업적 이미지·텍스트·44px 이전/다음 동작과 쪽 이동이 잘리지 않는다."
+        },
+        {
+            "page": "stats",
+            "url": "/g/devGuild001/stats",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "image": "artifacts/ui-review/after/stats-dark-mobile.png",
+            "png_size": {
+                "width": 390,
+                "height": 3468
+            },
+            "sha256": "ccf34df3a0abe81781f779b9f32a9abb787ccb05e9827f8c1936314ffe7b2d78",
+            "actual_image_read": true,
+            "visual_result": "pass",
+            "observation": "요약·업적·리더보드·챔피언 통계 순서가 유지된다. 모바일 첫 표에 KDA·승률이 보이고 나머지 지표는 안내가 있는 로컬 가로 스크롤 영역이다. 업적 이미지·텍스트·44px 이전/다음 동작과 쪽 이동이 잘리지 않는다."
+        }
+    ],
+    "findings": [
+        {
+            "id": "final-manual-fixture",
+            "status": "resolved",
+            "evidence": "최초 최종 캡처는7/10·미배정3명으로 수정 전6/10과 달랐다. root가 실제 개발 목 상태를 복원하고 manual4장을 재촬영했으며, 새 이미지4장을 다시 읽어6/10·미배정4명과 기존 팀 위치를 확인했다.",
+            "action": "UI 소스 변경 없이 목 상태를 복원했다. 최종 네 이미지의 새 SHA256을 기록했다.",
+            "related_evidence": "artifacts/ui-review/final-fixture-validation.json"
+        }
+    ],
+    "related_evidence": [
+        "artifacts/ui-review/data-validation.json",
+        "artifacts/ui-review/workflow-readonly-validation.json",
+        "artifacts/ui-review/pagination-validation.json",
+        "artifacts/ui-review/final-fixture-validation.json"
+    ],
+    "limits": [
+        "이 기록은 최종 기본 화면 이미지 재검토다. 역할·오류·입력·키보드 동작 검증은 관련 별도 증거에 기록했다.",
+        "표와 업적 선택기의 의도된 로컬 가로 스크롤을 페이지 가로 넘침으로 취급하지 않았다.",
+        "이 이미지 검토만으로 모든 텍스트의 수치 대비나 실제 보조기기 낭독을 재측정했다고 주장하지 않는다."
+    ],
+    "baseline_state_match": true,
+    "revision_notes": [
+        "UI21 최종 색상 수정 후 canonical manual 4장을 technical_review가 새로 실제 읽고 4개 PNG 해시를 갱신했다. 상호작용 검증 뒤 남은 스크롤/포커스 캡처는 기본 상태로 재촬영해 대체했다."
+    ]
+}

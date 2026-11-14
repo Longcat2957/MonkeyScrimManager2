@@ -45,6 +45,8 @@
     let editing = $state(false);
     let advancing = $state(false);
     let notifying = $state(false);
+    let working = $state(false);
+    const busy = $derived(working || advancing || notifying);
     let trigger = $state<HTMLElement | null>(null);
 
     // 단계마다 쓸 수 있는 항목만 둔다. 되돌릴 수 없는 단계면 이유를 설명 줄에 쓰고 비활성으로 둔다.
@@ -78,22 +80,32 @@
     };
 
     async function advance() {
-        if (!nextAction) return;
+        if (!nextAction || busy) return;
         const key = nextAction.key;
         if (!(await confirm(CONFIRM[key], nextAction.label))) return;
         advancing = true;
-        const message = await postAction('advance', { key });
-        advancing = false;
-        if (message) toast.error(message);
+        try {
+            const message = await postAction('advance', { key });
+            if (message) toast.error(message);
+        } finally {
+            advancing = false;
+        }
     }
 
     async function run(name: string, message: string, title: string) {
+        if (busy) return;
         if (!(await confirm(message, title))) return;
-        const failure = await postAction(name, {});
-        if (failure) toast.error(failure);
+        working = true;
+        try {
+            const failure = await postAction(name, {});
+            if (failure) toast.error(failure);
+        } finally {
+            working = false;
+        }
     }
 
     async function onselect(index: number) {
+        if (busy) return;
         menuOpen = false;
         const key = menu[index]?.key;
         if (key === 'settings') editing = true;
@@ -106,9 +118,12 @@
             )
                 return;
             notifying = true;
-            const failure = await postAction('notifyParticipants', {});
-            notifying = false;
-            if (failure) toast.error(failure);
+            try {
+                const failure = await postAction('notifyParticipants', {});
+                if (failure) toast.error(failure);
+            } finally {
+                notifying = false;
+            }
         } else if (key === 'revert' && revert) await run('revert', revert.message, revert.label);
         else if (key === 'endEarly')
             await run(
@@ -138,10 +153,21 @@
                         size="auto"
                         heightOut="0"
                         heightIn="2"
-                        injClass="px-3"
+                        injClass="min-h-11 min-w-11 px-3"
+                        disabled={busy}
                         onclick={() => (menuOpen = true)}
                     >
-                        <span aria-hidden="true" class="leading-none">⋯</span>
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <circle cx="5" cy="12" r="1.5" />
+                            <circle cx="12" cy="12" r="1.5" />
+                            <circle cx="19" cy="12" r="1.5" />
+                        </svg>
                         <span class="sr-only">운영 메뉴</span>
                     </Button>
                 </span>
@@ -153,8 +179,8 @@
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="gap-2 px-5 text-sm font-semibold shadow-sm"
-                    disabled={Boolean(nextAction.blockedReason)}
+                    injClass="min-h-11 gap-2 px-5 text-sm font-semibold"
+                    disabled={busy || Boolean(nextAction.blockedReason)}
                     loading={advancing ? {} : null}
                     onclick={advance}
                 >
