@@ -66,9 +66,17 @@ export const load: PageServerLoad = async ({ parent, params, depends, locals }) 
     if (scrim.status === 'recruit') return { scrim, auction: null, can: { manage: false } };
     if (!isDemo(params.guildId)) {
         try {
+            const version = await latestDataDragonVersion();
             return {
                 scrim,
-                auction: await getAuction(getDb(), locals.actor, params.guildId, params.scrimId),
+                auction: await getAuction(
+                    getDb(),
+                    locals.actor,
+                    params.guildId,
+                    params.scrimId,
+                    undefined,
+                    await championResolver(version)
+                ),
                 can: { manage: scrim.canManage && scrim.status === 'preparing' }
             };
         } catch (cause) {

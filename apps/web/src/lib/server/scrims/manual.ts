@@ -1,11 +1,5 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
-import {
-    LANES,
-    slotKey,
-    type Assignments,
-    type FormationPlayer,
-    type PairRecord
-} from '../../features/scrims/formation.ts';
+import { LANES, slotKey, type Assignments, type FormationPlayer } from '../../features/scrims/formation.ts';
 import type { LolPosition } from '../../features/guild/types.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -20,6 +14,7 @@ import {
 import { DomainError } from '../errors.ts';
 import { INITIAL_MMR } from '../mmr/rules.ts';
 import { createBracketDraft } from './bracket.ts';
+import { formationPairRecords } from './formation-records.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
 import { findScrim, readGuild } from './queries.ts';
 import type { RevisionInput, ScrimAccessDependencies } from './service.ts';
@@ -130,7 +125,7 @@ export async function getManualFormation(
                 players,
                 assignments,
                 confirmed: ['ready', 'in_progress', 'completed', 'ended_early'].includes(row.status),
-                pairs: {} as Record<string, PairRecord>
+                pairs: await formationPairRecords(tx, guildId, row.mmrSeasonId, players)
             };
         },
         access

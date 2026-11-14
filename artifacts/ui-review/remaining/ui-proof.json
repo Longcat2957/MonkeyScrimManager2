@@ -1,0 +1,1306 @@
+{
+    "scope": "Remaining Steps contrast and development statistics switch target",
+    "date": "2026-11-14T11:20:55.868726+00:00",
+    "status": "reviewed",
+    "sourceEditByReviewer": false,
+    "newScreenshotsByReviewer": 0,
+    "counts": {
+        "before": 24,
+        "after": 24,
+        "stepsCrops": 40,
+        "statsViewports": 8,
+        "actuallyRead": 48,
+        "contrastSamples": 12
+    },
+    "sources": [
+        {
+            "path": "apps/web/src/lib/components/scrims/ScrimSummary.svelte",
+            "sha256": "d8d03c2c29d9a11ff2b1e864b91a4473c3b2035ece30079e7ade68eff519f7ce"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+            "sha256": "aefecf32d8c5014d0695fb689acbe6d4dcd757d35dd40caf72468a7d74047813"
+        }
+    ],
+    "images": [
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/before/steps-recruit-primary-desktop.png",
+            "sha256": "82b09e085cabf53e4ecaff4c8055cffe52297e292ae9fda373f34e1aa05396fb",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/before/steps-preparing-primary-desktop.png",
+            "sha256": "769a736373d2058a3e8c26da4ba2629bd2f22d763e7cb4dd0b8292b33cf61ce2",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/before/steps-ready-primary-desktop.png",
+            "sha256": "1de5e26c6a0fc12dcbc1a82045ce70ff5ad8bfcc7e5688ed0a2bd64c8c534faa",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/before/steps-playing-primary-desktop.png",
+            "sha256": "847d864f685d1fd1abe18761d847fe69fde0c11f8d3e4f666c0e30cea037e8db",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/before/steps-completed-primary-desktop.png",
+            "sha256": "4f427dbacd375dd426a9d1466c130d6d80ff6f47579ffee9b19867fd8b6760cb",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "stats",
+            "stage": null,
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/before/stats-primary-desktop.png",
+            "sha256": "65a97f8359b3a6ef293124c9014c5ef81be558fe88145532d16765a270c93315",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/before/steps-recruit-primary-mobile.png",
+            "sha256": "757c4d957555584250b452a5f12cdc28b0f6a5f6250f1da417a12c38e1468bba",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/before/steps-preparing-primary-mobile.png",
+            "sha256": "e8a2367b330716acc8c6a7d5584b58e123af56ab8b82ccdb8b83f144ac7da407",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/before/steps-ready-primary-mobile.png",
+            "sha256": "4a8b5224b332c952b3ed7e1f16f46123726a1095f0f234b4568b51249ef50c69",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/before/steps-playing-primary-mobile.png",
+            "sha256": "80c3f037b19da8156281558ff0098d2a43485dab174d638ed0b97e2c62bf51be",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/before/steps-completed-primary-mobile.png",
+            "sha256": "bb81b119a769656092228dea0607bb8ed8e02436ca614fc8da3bebe03a1f9e1b",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "stats",
+            "stage": null,
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/before/stats-primary-mobile.png",
+            "sha256": "6094665e65b9bd3c3d7846e393ec82f54aeeffb2b7d7c4a652945b722ee3a0e0",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/before/steps-recruit-dark-desktop.png",
+            "sha256": "ac55ab6d946cae20d0077baf1bd273800427bee3b4e0df67d105da814c480f25",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/before/steps-preparing-dark-desktop.png",
+            "sha256": "122f0a13ec1fc9c7aaab02d6cc9450aa2bf6426929954617981d4a018504eadc",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/before/steps-ready-dark-desktop.png",
+            "sha256": "83819ba753f4ed462785fca52709d06e0ac7d6010b5bb97d01a45a51bc685488",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/before/steps-playing-dark-desktop.png",
+            "sha256": "050b47951790487583b7890a53ac8a123ebfd0a2f0f2a5e5bc91b90d764beef0",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/before/steps-completed-dark-desktop.png",
+            "sha256": "b3fb794e41f8f18f35e756fcef4c16fc4ea9c9d8f2f439e007e512f2bdb1d7c3",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "stats",
+            "stage": null,
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/before/stats-dark-desktop.png",
+            "sha256": "0f253148421b98876712a7beba3ac729e3526865a07c106891035626c72b2a47",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/before/steps-recruit-dark-mobile.png",
+            "sha256": "e0f119686c9dbd32a359d4c5fe4aa5599013803455abf4d3e55eff1e2c2944a8",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/before/steps-preparing-dark-mobile.png",
+            "sha256": "1bd6d3d136cb0d7c6f3ccdb6c6594ed623e3fcbfcd5170af7e291305335a25e2",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/before/steps-ready-dark-mobile.png",
+            "sha256": "afbf0272ea8de31b79644fb8d2964f3b5d09939c191f11f983430ba626e8a96b",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/before/steps-playing-dark-mobile.png",
+            "sha256": "f0fde149de8a671b1ce9246b9fa57d9a27918d6fbf7837d521d4cd6275fd45f5",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/before/steps-completed-dark-mobile.png",
+            "sha256": "86589060871afba80e96e41d096c2c9ef7e6c944e8183741b3b1372cd104ce56",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "before",
+            "kind": "stats",
+            "stage": null,
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/before/stats-dark-mobile.png",
+            "sha256": "c5f03ee510591606198d8d0f3b2f6185f81306646a6169ffb35def696af6e19d",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/after/steps-recruit-primary-desktop.png",
+            "sha256": "58db066d701f2d2c16bc5283007c48cd8a9689b795e4838fb9fe534452254efd",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/after/steps-preparing-primary-desktop.png",
+            "sha256": "7dd0b6478d6369c68df6ac8d42d710a45e073d4889fd48b74616b3b3ce2343f3",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/after/steps-ready-primary-desktop.png",
+            "sha256": "6d23266e6a0176062104493b15a478c6d21f987fb69e06bcea133a349d5e24ae",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/after/steps-playing-primary-desktop.png",
+            "sha256": "72ff3951219729725e383e3568d7864938c18bde4e5c93227fba275ca597d0d3",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/after/steps-completed-primary-desktop.png",
+            "sha256": "4f427dbacd375dd426a9d1466c130d6d80ff6f47579ffee9b19867fd8b6760cb",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "stats",
+            "stage": null,
+            "theme": "primary",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/after/stats-primary-desktop.png",
+            "sha256": "65a97f8359b3a6ef293124c9014c5ef81be558fe88145532d16765a270c93315",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/after/steps-recruit-primary-mobile.png",
+            "sha256": "dc1e260ad456734e9868fbeb2f3e6959e2d8085d06e7249b220e2a10bf462c72",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/after/steps-preparing-primary-mobile.png",
+            "sha256": "6a96399d88f6fb550ecfe09357d0a224d1eaec578403af868b727612f78eeb04",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/after/steps-ready-primary-mobile.png",
+            "sha256": "1a728a8a246ed37e70f85ae636bdd6dcc8861849538b54b285f0f28cf255ff79",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/after/steps-playing-primary-mobile.png",
+            "sha256": "86e7fdbbef8ef1aa90a56b6daa6ccde4dbeb094376254ff9aaa5f71cd7fd37bb",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/after/steps-completed-primary-mobile.png",
+            "sha256": "bb81b119a769656092228dea0607bb8ed8e02436ca614fc8da3bebe03a1f9e1b",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "stats",
+            "stage": null,
+            "theme": "primary",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/after/stats-primary-mobile.png",
+            "sha256": "6094665e65b9bd3c3d7846e393ec82f54aeeffb2b7d7c4a652945b722ee3a0e0",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/after/steps-recruit-dark-desktop.png",
+            "sha256": "4d075d2bf8ff17ee788f1d6a6b1c1673f9ce093818c176cbf808c6cc80525823",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/after/steps-preparing-dark-desktop.png",
+            "sha256": "45e1a8e2df4ccf6646d6be5a83d2ee8099c99f0e2159740bdbcca612d2d80032",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/after/steps-ready-dark-desktop.png",
+            "sha256": "737177fa2c5ce03f39c66a9b7bf17e67420c79e90f598ec439074a218c4d4c5c",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/after/steps-playing-dark-desktop.png",
+            "sha256": "ff89bb6aea0f829f45b7ed4ca0a20abb89c63513e8ab88aebb4bfb901403fd1d",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/after/steps-completed-dark-desktop.png",
+            "sha256": "b3fb794e41f8f18f35e756fcef4c16fc4ea9c9d8f2f439e007e512f2bdb1d7c3",
+            "width": 1262,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "stats",
+            "stage": null,
+            "theme": "dark",
+            "view": "desktop",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/after/stats-dark-desktop.png",
+            "sha256": "0b0884e704a600fb157fab14d2c0bd126f567651c00e92e77bb1a696a166fc32",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "recruit",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "path": "artifacts/ui-review/remaining/after/steps-recruit-dark-mobile.png",
+            "sha256": "15286ebbe21d3509099aa22bb077a9513c129a783fc2a7cdaec2b9829bac2ee4",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "preparing",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "path": "artifacts/ui-review/remaining/after/steps-preparing-dark-mobile.png",
+            "sha256": "da0a5bb36ea39721bfd827efa5d5031e60e8eb3f6ee6c208c2d4e8ae53ea8822",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "ready",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "path": "artifacts/ui-review/remaining/after/steps-ready-dark-mobile.png",
+            "sha256": "c6057a6eb3a7a6398e41d445afadfcbbbdf7f22d508d46a041ed0f535d38df6b",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "playing",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "path": "artifacts/ui-review/remaining/after/steps-playing-dark-mobile.png",
+            "sha256": "b36907fad0823da7a6e2ad43e158f0ce094831ef6928588c18e153ba7980cb32",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "steps",
+            "stage": "completed",
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "path": "artifacts/ui-review/remaining/after/steps-completed-dark-mobile.png",
+            "sha256": "86589060871afba80e96e41d096c2c9ef7e6c944e8183741b3b1372cd104ce56",
+            "width": 340,
+            "height": 78,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        },
+        {
+            "phase": "after",
+            "kind": "stats",
+            "stage": null,
+            "theme": "dark",
+            "view": "mobile",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "path": "artifacts/ui-review/remaining/after/stats-dark-mobile.png",
+            "sha256": "c5f03ee510591606198d8d0f3b2f6185f81306646a6169ffb35def696af6e19d",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true,
+            "reviewer": "/root/formation_records"
+        }
+    ],
+    "qualitativeReview": {
+        "steps": "예정 글자·번호가 양 테마에서 읽히며, 현재 채움원·예정 윤곽원·완료 체크와 연결선으로 상태를 구분한다. 완료 상태의 기존 표현은 유지된다.",
+        "stats": "주변44px 버튼이 이미 작업 줄 높이를 정해 label24→44px가 기존 정렬·줄바꿈·카드 위치를 바꾸지 않는다. 실제 label 크기는 root manifest 측정이며 픽셀만으로 판정하지 않는다.",
+        "remainingIssues": []
+    },
+    "switchBounds": {
+        "before": {
+            "width": 139.875,
+            "height": 24
+        },
+        "after": {
+            "width": 139.875,
+            "height": 44
+        },
+        "measurementSource": [
+            "artifacts/ui-review/remaining/before/ui.json",
+            "artifacts/ui-review/remaining/after/ui.json"
+        ],
+        "state": "최근10게임만 꺼짐; 필터 상호작용과 켜짐의 별도 검증은 root 결과를 따른다."
+    },
+    "contrast": {
+        "method": "새 isolated Playwright MCP 탭에서 manual390×844 primary/dark. CSS computed color를 1×1 canvas2D sRGB로 변환하고 html부터 요소까지 background-color alpha 합성 후 foreground alpha를 합성, sRGB gamma 선형화와 상대 휘도로 비율 계산.",
+        "assumptions": [
+            "기본 canvas는 sRGB이며 getContextAttributes로 실제 srgb를 확인했다.",
+            "브라우저 기본 흰 바탕에서 시작해 조상의 background-color를 차례로 합성한다. 실제 두 조건은 html의 불투명 테마 바탕이 덮는다.",
+            "조상 opacity≠1, 배경 이미지, mix-blend-mode가 있으면 표본을 예외로 표시하도록 했으며 이12표본에는 해당 예외가 없었다.",
+            "안티앨리어싱 픽셀의 색이 아니라 CSS 전경색/바탕색의 계산 대비이며, 넓은 gamut 색은 canvas sRGB로 변환한다."
+        ],
+        "summary": [
+            {
+                "theme": "primary",
+                "samples": 6,
+                "minimum": 7.24857664979112
+            },
+            {
+                "theme": "dark",
+                "samples": 6,
+                "minimum": 7.955432755309987
+            }
+        ],
+        "result": {
+            "conditions": [
+                {
+                    "mode": "primary",
+                    "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+                    "viewport": {
+                        "width": 390,
+                        "height": 844
+                    },
+                    "theme": "primary",
+                    "pageOverflow": false,
+                    "canvasColorSpace": "srgb",
+                    "labels": [
+                        {
+                            "kind": "plannedLabel",
+                            "text": "대진",
+                            "foregroundCss": "oklch(0.446 0.043 257.281)",
+                            "foreground": [69, 85, 108, 1],
+                            "background": [248, 250, 252, 1],
+                            "composed": [69, 85, 108, 1],
+                            "contrast": 7.24857664979112,
+                            "opacity": "1",
+                            "fontSize": "14px",
+                            "fontWeight": "500",
+                            "rect": {
+                                "x": 182.109375,
+                                "y": 339,
+                                "width": 25.765625,
+                                "height": 20
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.984 0.003 247.858)",
+                                    "rgba": [248, 250, 252, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedLabel",
+                            "text": "진행",
+                            "foregroundCss": "oklch(0.446 0.043 257.281)",
+                            "foreground": [69, 85, 108, 1],
+                            "background": [248, 250, 252, 1],
+                            "composed": [69, 85, 108, 1],
+                            "contrast": 7.24857664979112,
+                            "opacity": "1",
+                            "fontSize": "14px",
+                            "fontWeight": "500",
+                            "rect": {
+                                "x": 250.109375,
+                                "y": 339,
+                                "width": 25.765625,
+                                "height": 20
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.984 0.003 247.858)",
+                                    "rgba": [248, 250, 252, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedLabel",
+                            "text": "종료",
+                            "foregroundCss": "oklch(0.446 0.043 257.281)",
+                            "foreground": [69, 85, 108, 1],
+                            "background": [248, 250, 252, 1],
+                            "composed": [69, 85, 108, 1],
+                            "contrast": 7.24857664979112,
+                            "opacity": "1",
+                            "fontSize": "14px",
+                            "fontWeight": "500",
+                            "rect": {
+                                "x": 318.109375,
+                                "y": 339,
+                                "width": 25.765625,
+                                "height": 20
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.984 0.003 247.858)",
+                                    "rgba": [248, 250, 252, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        }
+                    ],
+                    "numbers": [
+                        {
+                            "kind": "plannedNumber",
+                            "text": "3",
+                            "foregroundCss": "oklch(0.446 0.043 257.281)",
+                            "foreground": [69, 85, 108, 1],
+                            "background": [248, 250, 252, 1],
+                            "composed": [69, 85, 108, 1],
+                            "contrast": 7.24857664979112,
+                            "opacity": "1",
+                            "fontSize": "16px",
+                            "fontWeight": "400",
+                            "rect": {
+                                "x": 180,
+                                "y": 299,
+                                "width": 30,
+                                "height": 30
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.984 0.003 247.858)",
+                                    "rgba": [248, 250, 252, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedNumber",
+                            "text": "4",
+                            "foregroundCss": "oklch(0.446 0.043 257.281)",
+                            "foreground": [69, 85, 108, 1],
+                            "background": [248, 250, 252, 1],
+                            "composed": [69, 85, 108, 1],
+                            "contrast": 7.24857664979112,
+                            "opacity": "1",
+                            "fontSize": "16px",
+                            "fontWeight": "400",
+                            "rect": {
+                                "x": 248,
+                                "y": 299,
+                                "width": 30,
+                                "height": 30
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.984 0.003 247.858)",
+                                    "rgba": [248, 250, 252, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedNumber",
+                            "text": "5",
+                            "foregroundCss": "oklch(0.446 0.043 257.281)",
+                            "foreground": [69, 85, 108, 1],
+                            "background": [248, 250, 252, 1],
+                            "composed": [69, 85, 108, 1],
+                            "contrast": 7.24857664979112,
+                            "opacity": "1",
+                            "fontSize": "16px",
+                            "fontWeight": "400",
+                            "rect": {
+                                "x": 316,
+                                "y": 299,
+                                "width": 30,
+                                "height": 30
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.984 0.003 247.858)",
+                                    "rgba": [248, 250, 252, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        }
+                    ],
+                    "main": {
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "visibility": "visible"
+                    }
+                },
+                {
+                    "mode": "dark",
+                    "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007/manual",
+                    "viewport": {
+                        "width": 390,
+                        "height": 844
+                    },
+                    "theme": "dark",
+                    "pageOverflow": false,
+                    "canvasColorSpace": "srgb",
+                    "labels": [
+                        {
+                            "kind": "plannedLabel",
+                            "text": "대진",
+                            "foregroundCss": "oklch(0.714 0.024 250.894)",
+                            "foreground": [152, 164, 178, 1],
+                            "background": [2, 6, 24, 1],
+                            "composed": [152, 164, 178, 1],
+                            "contrast": 7.955432755309987,
+                            "opacity": "1",
+                            "fontSize": "14px",
+                            "fontWeight": "500",
+                            "rect": {
+                                "x": 182.109375,
+                                "y": 339,
+                                "width": 25.765625,
+                                "height": 20
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.129 0.042 264.695)",
+                                    "rgba": [2, 6, 24, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedLabel",
+                            "text": "진행",
+                            "foregroundCss": "oklch(0.714 0.024 250.894)",
+                            "foreground": [152, 164, 178, 1],
+                            "background": [2, 6, 24, 1],
+                            "composed": [152, 164, 178, 1],
+                            "contrast": 7.955432755309987,
+                            "opacity": "1",
+                            "fontSize": "14px",
+                            "fontWeight": "500",
+                            "rect": {
+                                "x": 250.109375,
+                                "y": 339,
+                                "width": 25.765625,
+                                "height": 20
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.129 0.042 264.695)",
+                                    "rgba": [2, 6, 24, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedLabel",
+                            "text": "종료",
+                            "foregroundCss": "oklch(0.714 0.024 250.894)",
+                            "foreground": [152, 164, 178, 1],
+                            "background": [2, 6, 24, 1],
+                            "composed": [152, 164, 178, 1],
+                            "contrast": 7.955432755309987,
+                            "opacity": "1",
+                            "fontSize": "14px",
+                            "fontWeight": "500",
+                            "rect": {
+                                "x": 318.109375,
+                                "y": 339,
+                                "width": 25.765625,
+                                "height": 20
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.129 0.042 264.695)",
+                                    "rgba": [2, 6, 24, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        }
+                    ],
+                    "numbers": [
+                        {
+                            "kind": "plannedNumber",
+                            "text": "3",
+                            "foregroundCss": "oklch(0.714 0.024 250.894)",
+                            "foreground": [152, 164, 178, 1],
+                            "background": [2, 6, 24, 1],
+                            "composed": [152, 164, 178, 1],
+                            "contrast": 7.955432755309987,
+                            "opacity": "1",
+                            "fontSize": "16px",
+                            "fontWeight": "400",
+                            "rect": {
+                                "x": 180,
+                                "y": 299,
+                                "width": 30,
+                                "height": 30
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.129 0.042 264.695)",
+                                    "rgba": [2, 6, 24, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedNumber",
+                            "text": "4",
+                            "foregroundCss": "oklch(0.714 0.024 250.894)",
+                            "foreground": [152, 164, 178, 1],
+                            "background": [2, 6, 24, 1],
+                            "composed": [152, 164, 178, 1],
+                            "contrast": 7.955432755309987,
+                            "opacity": "1",
+                            "fontSize": "16px",
+                            "fontWeight": "400",
+                            "rect": {
+                                "x": 248,
+                                "y": 299,
+                                "width": 30,
+                                "height": 30
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.129 0.042 264.695)",
+                                    "rgba": [2, 6, 24, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        },
+                        {
+                            "kind": "plannedNumber",
+                            "text": "5",
+                            "foregroundCss": "oklch(0.714 0.024 250.894)",
+                            "foreground": [152, 164, 178, 1],
+                            "background": [2, 6, 24, 1],
+                            "composed": [152, 164, 178, 1],
+                            "contrast": 7.955432755309987,
+                            "opacity": "1",
+                            "fontSize": "16px",
+                            "fontWeight": "400",
+                            "rect": {
+                                "x": 316,
+                                "y": 299,
+                                "width": 30,
+                                "height": 30
+                            },
+                            "layers": [
+                                {
+                                    "tag": "HTML",
+                                    "css": "oklch(0.129 0.042 264.695)",
+                                    "rgba": [2, 6, 24, 1]
+                                }
+                            ],
+                            "exceptions": []
+                        }
+                    ],
+                    "main": {
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "visibility": "visible"
+                    }
+                }
+            ],
+            "errors": [],
+            "posts": []
+        },
+        "limits": [
+            "현재 after의 manual390 대표12표본이다. 다른 모든 텍스트·이미지 표면·브라우저의 전수 대비 인증이 아니다.",
+            "before/after의 runtime detector와 이 계산법을 개선율로 비교하지 않는다."
+        ]
+    },
+    "captureCorrection": {
+        "paths": [
+            "artifacts/ui-review/remaining/after/stats-dark-desktop.png",
+            "artifacts/ui-review/remaining/after/stats-dark-mobile.png"
+        ],
+        "note": "첫 dark 통계2프레임은 본문이 충분히 그려지지 않아 최종 판정에서 보류했다. root가 동일URL·뷰포트·테마의 freshcontext에서 fonts.ready+500ms+2RAF 뒤 같은파일을 갱신했고 검토자가최종이미지를다시열었다. 원인을특정제품결함으로단정하지않고캡처과도기범위로기록한다."
+    },
+    "limits": [
+        "Steps는40개 crop이므로 전체 페이지·팝업 열린 상태·새로운 화면폭 검증을 뜻하지 않는다.",
+        "통계8장은 고정 viewport 캡처이며 화면 아래 카드의 일부가 viewport 바깥에 있는 것은 정상 문서 스크롤과 구분한다.",
+        "실기기·Safari·스크린리더 발화와 제품 동작의 전체 인증은 별도다."
+    ]
+}

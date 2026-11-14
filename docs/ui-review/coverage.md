@@ -1,10 +1,23 @@
 # 전체 화면 검토 범위
 
-후속 완료: 전체20페이지 검토 중 부족했던6페이지를 실제 수정·재검증했고 DQ-01~13의 완료 조건을 충족했다. 최신 범위는 바로 아래 표와 [최종 기록](followup.md)을 기준으로 읽는다. 최초20페이지 검토와 [당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 정책2페이지는 승인 본문 대기다.
+최신 범위는 [남은 과업 완료 기록](remaining.md)과 아래 추가 표를 따른다. 최초20페이지 검토·후속6페이지 DQ-01~13과 [당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 약관·개인정보2페이지는 본문 미확정으로 사용자 요청에 따라 보류했다.
 
 2026-11-14. 기준 주소: `http://127.0.0.1:5173`. 운영 18개 + 개발 전용 2개 = 전체 20개 화면. HTTP API·OAuth 핸들러는 별도 페이지로 세지 않는다.
 
-## 후속 6페이지의 최신 확인 범위
+## 남은 과업의 추가 확인 범위
+
+이번 직접 UI 수정·재검증은 요약·통계·수동 편성·경매4페이지다. 아래5개 내전 단계는 요약의 상태 변형이며 별도 페이지로 더하지 않는다. 격리 DB URL의 UUID와 실제 역할·상태는 [통합 시각 증거](../../artifacts/ui-review/remaining/feature-visual.json)에 실행 당시 값으로 기록했다. 이 fixture는 실행 후 정리되므로 같은 경로가 계속 접근 가능하다는 뜻은 아니다.
+
+| 실제 URL·상태 | 역할·뷰포트 | 진단·수정·재검증 | 전후 증거 |
+| --- | --- | --- | --- |
+| `/g/devGuild001/scrims/devScrim001`, `devScrim007`, `devScrim008`, `devScrim004`, `devScrim005` | 공개·개발 관리자, 모집/편성/준비/진행/종료, 1440×1000·390×844, 양 테마 | DQ-14 완료. 단계 제목·번호 대비와 상태 구분 | [전](../../artifacts/ui-review/remaining/before/steps-recruit-primary-mobile.png) → [후](../../artifacts/ui-review/remaining/after/steps-recruit-primary-mobile.png), [전체48장](../../artifacts/ui-review/remaining/ui-proof.json) |
+| `/g/devGuild001/stats` | 공개, 최근10 켜기/끄기, 1440×1000·390×844, 양 테마 | DQ-15 완료. label 24→44px, Space·여백 클릭 | [전](../../artifacts/ui-review/remaining/before/stats-primary-mobile.png) → [후](../../artifacts/ui-review/remaining/after/stats-primary-mobile.png) |
+| `/g/devGuild001/scrims/devScrim007/manual` 및 격리 DB의 같은 경로 구조 | 개발/실제 세션 관리자, 기존6/10 보존·확정10/10 실제 시너지/5포지션 상대 전적 | FN-01 완료. 1440×1000·390×844, 양 테마 | [실제 기록 후](../../artifacts/ui-review/remaining/after/feature-manual-records-dark-mobile.png), [통합 회귀](../../artifacts/ui-review/remaining/feature-browser.json) |
+| 격리 DB `/g/970000000000000001/scrims/{UUID}/auction` | 관리자·출전자, 같은 시즌 후보1게임·결과 취소 후0게임·포지션/시각 미확인 | FN-02 완료. 1게임 양 폭·양 테마, 0게임390×844 양 테마 | [기록](../../artifacts/ui-review/remaining/after/feature-auction-records-primary-mobile.png)·[빈 상태](../../artifacts/ui-review/remaining/after/feature-auction-zero-after-revert-dark-mobile.png), [실행 URL·이미지10장](../../artifacts/ui-review/remaining/feature-visual.json) |
+
+추가 엔진은 Firefox·WebKit의 수동 편성/통계16조건, Orca는 안내·메뉴의 생성 발화25개, 정상 ROFL 경로는 격리 실제 세션의1440×1000·390×844에서 확인했다. 로컬 성능15회와 정상 결과 경기·선수 화면도 확인했다([조건·이미지19장](../../artifacts/ui-review/remaining/validation.md)). 이번48+10+19=77장의 직접 이미지 검토는 기존 전체20URL80조건과 분리한다. 브라우저 fixture의 차단된 외부 이미지·웹폰트는 브랜드/자산 판정에 사용하지 않는다. Safari·실제 음성 청취·물리 기기·라이브 OAuth·League 원본 파일은 미검증이다.
+
+## 앞선 후속 6페이지의 확인 범위
 
 최초 전체20페이지 검토 뒤 부분 충족으로 남은6페이지를 실제 수정했다. 시작·참가 흐름(홈·안내·모집 요약)과 편성·실력 판단(수동·선수·통계)의 세 페이지씩을 검증했다. 아래 링크는 이 후속 수정의 이미지이며 최초20페이지 표·재평가 이미지는 이력으로 보존한다. 양 테마는 primary/dark다.
 

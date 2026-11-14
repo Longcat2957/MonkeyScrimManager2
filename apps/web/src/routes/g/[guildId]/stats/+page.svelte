@@ -118,7 +118,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 id="achievements" class="text-lg font-semibold">업적</h2>
                         <div class="flex items-center gap-4 text-sm">
-                            <label class="flex cursor-pointer items-center gap-2">
+                            <label class="flex min-h-11 cursor-pointer items-center gap-2">
                                 <span
                                     >최근 10게임만<span class="sr-only"
                                         >, {data.recent ? '켜짐' : '꺼짐'}</span

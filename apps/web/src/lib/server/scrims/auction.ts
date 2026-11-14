@@ -14,6 +14,7 @@ import {
     scrimTeams
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { auctionTargetProfile, type AuctionChampionResolver } from './auction-profile.ts';
 import { createBracketDraft } from './bracket.ts';
 import { formationPlayers, selectedParticipants } from './manual.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
@@ -131,7 +132,8 @@ export async function getAuction(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    access?: ScrimAccessDependencies
+    access?: ScrimAccessDependencies,
+    champion: AuctionChampionResolver = (id) => ({ id, name: id, iconUrl: null })
 ): Promise<AuctionView | null> {
     requireUuid(scrimId, '내전');
     return readGuild(
@@ -151,6 +153,7 @@ export async function getAuction(
                 .from(scrimParticipants)
                 .where(eq(scrimParticipants.scrimId, row.id));
             const pick = (id: string) => players.find((player) => player.participantId === id);
+            const openLot = state.open ? (pick(state.open.scrimParticipantId) ?? null) : null;
             return {
                 status: state.auction?.status ?? 'setup',
                 players,
@@ -173,10 +176,11 @@ export async function getAuction(
                             }))
                     ]
                 })),
-                openLot: state.open ? (pick(state.open.scrimParticipantId) ?? null) : null,
+                openLot,
                 openLotId: state.open?.id ?? null,
-                // 실제 전적 조회가 연결되기 전에는 임의의 수치를 만들지 않는다.
-                openProfile: null,
+                openProfile: openLot
+                    ? await auctionTargetProfile(tx, guildId, row.mmrSeasonId, openLot.userId, champion)
+                    : null,
                 queue: state.queue.flatMap((entry) =>
                     pick(entry.scrimParticipantId) ? [pick(entry.scrimParticipantId)!] : []
                 ),

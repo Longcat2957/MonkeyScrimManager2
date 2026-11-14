@@ -139,6 +139,8 @@ export const SYNERGY_PAIRS: [LolPosition, LolPosition][] = [
 export type PairRecord = {
     together: { plays: number; wins: number };
     against: { plays: number; firstWins: number };
+    // 실제 실출전 포지션별 맞대결이다. 기존 목 자료에만 이 값이 없을 수 있다.
+    againstByLane?: Partial<Record<LolPosition, { plays: number; firstWins: number }>>;
 };
 
 export function pairKey(a: string, b: string) {
@@ -146,12 +148,13 @@ export function pairKey(a: string, b: string) {
 }
 
 // a 기준 상대 전적(승·패)으로 바꾼다.
-export function headToHead(pairs: Record<string, PairRecord>, a: string, b: string) {
-    const record = pairs[pairKey(a, b)];
-    if (!record || record.against.plays === 0) return null;
-    const firstWins = record.against.firstWins;
-    const wins = a < b ? firstWins : record.against.plays - firstWins;
-    return { wins, losses: record.against.plays - wins };
+export function headToHead(pairs: Record<string, PairRecord>, a: string, b: string, lane?: LolPosition) {
+    const pair = pairs[pairKey(a, b)];
+    const record = lane && pair?.againstByLane ? pair.againstByLane[lane] : pair?.against;
+    if (!record || record.plays === 0) return null;
+    const firstWins = record.firstWins;
+    const wins = a < b ? firstWins : record.plays - firstWins;
+    return { wins, losses: record.plays - wins };
 }
 
 export type ChampionRef = { id: string; name: string; iconUrl: string | null };
@@ -159,11 +162,19 @@ export type ChampionRef = { id: string; name: string; iconUrl: string | null };
 // 경매 현재 후보의 상세 보기다.
 export type TargetProfile = {
     summary: { games: number; wins: number; losses: number };
-    mainLane: LolPosition;
+    mainLane: LolPosition | null;
     championRecords: { champion: ChampionRef; games: number; wins: number }[];
     laneGames: Record<LolPosition, number>;
     preferredChampions: ChampionRef[];
-    recentGames: { id: string; champion: ChampionRef; lane: LolPosition; win: boolean; playedAt: string }[];
+    recentGames: {
+        id: string;
+        champion: ChampionRef;
+        lane: LolPosition | null;
+        win: boolean;
+        playedAt: string | null;
+    }[];
+    // 실제 시각이 없는 결과가 섞이면 최근 순서를 추정하지 않는다. 기존 목 자료는 생략할 수 있다.
+    recentChronologyKnown?: boolean;
     riot: { tier: string | null; games: number; wins: number; champions: ChampionRef[] } | null;
 };
 

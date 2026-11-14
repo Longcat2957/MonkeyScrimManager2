@@ -1,0 +1,66 @@
+{
+    "baselineCommit": "249eeabd6786b9b9a56e5ec5208e0c207d087d36",
+    "scope": "auction candidate profile persisted record integration",
+    "sourceFrozen": true,
+    "createdAt": "2026-11-14T11:10:25.258410+00:00",
+    "source": [
+        {
+            "path": "apps/web/src/lib/server/scrims/auction.ts",
+            "sha256": "7328fce2bee1fc7f22bcf36b7944a9979d2ca304c5633ff01b2bfc0d24ee86e6"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/auction-profile.ts",
+            "sha256": "2a670a1ebccb49b0e63d3fd7bce8daedea60b72e9eef0f802b6146a1fc8c6591"
+        },
+        {
+            "path": "apps/web/tests/api/hard/db/auction-profile.test.ts",
+            "sha256": "4a45de97a4ff6d7de952735c45226977f1f02e3690343ae84d6c9e4ad0ead77c"
+        }
+    ],
+    "reference": {
+        "repository": "Longcat2957/MonkeyScrimManager",
+        "commit": "d60df685e48c180b236342eae81b389ae87e38bf",
+        "files": [
+            "apps/api-python/src/monkeybot_api/repositories/auctions/tournaments.py",
+            "apps/api-python/src/monkeybot_api/repositories/auctions/tournament_queries.py"
+        ]
+    },
+    "commands": [
+        {
+            "command": "node --env-file-if-exists=.env.test --experimental-strip-types --import ./tests/api/support/network-guard.mjs --test --test-concurrency=1 tests/api/hard/db/auction-profile.test.ts tests/api/hard/db/auction.test.ts",
+            "cwd": "apps/web",
+            "exitCode": 0,
+            "tests": 18,
+            "passed": 18,
+            "failed": 0,
+            "scope": "new8 + existing10, isolated schemas cleaned"
+        },
+        {
+            "command": "pnpm --filter @msm2/web check:tests",
+            "exitCode": 0
+        },
+        {
+            "command": "pnpm exec prettier --write <owned files>",
+            "exitCode": 0
+        },
+        {
+            "command": "git diff --check -- <owned files>",
+            "exitCode": 0
+        }
+    ],
+    "scenarios": [
+        "public zero-game candidate and read no revision mutation",
+        "actual side win/loss and nullable position/champion/timestamp",
+        "top3 champion and max8 game counts preserve whole summary",
+        "most-played position ties preserve first seen in sorted actual records",
+        "scrim-fixed season despite active season change and exclusion of other server/season",
+        "cancelled/pending excludes and ended-early keeps valid games",
+        "Riot account ownership changes never reattribute history",
+        "unknown candidate user/season returnsnull rather than fabricated zero"
+    ],
+    "productionWrites": 0,
+    "externalApiAdded": false,
+    "schemaChanges": false,
+    "riotOrPreferredStatsSynthesized": false,
+    "uiAndBuildValidationOwner": "root"
+}

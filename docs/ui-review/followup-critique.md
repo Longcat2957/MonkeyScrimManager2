@@ -2,6 +2,8 @@ Method: dual-agent (A: `/root/final_design` · B: `/root/final_technical`). A는
 
 # 후속 6페이지의 최종 디자인 비평
 
+> 아래는 커밋 `249eeab` 당시의 독립 평가다. 남겨 두었던 예정 단계 대비는 이후 수정했고, 엔진·보조기기·ROFL·성능의 추가 확인 범위는 [최신 기록](remaining.md)에서 구분한다. 당시 점수와 원시 증거는 변경하지 않는다.
+
 대상은 `apps/web/src` 중 홈·이용 안내·모집 요약·수동 편성·선수·통계의 변경이다. 전체20페이지의 이전 점수와 표본 범위가 달라 개선율이나 점수 추세로 비교하지 않는다. 설치된 Impeccable의 critique/audit 기준으로 source와 실제 Playwright MCP 화면·키보드·상태를 평가했다.
 
 ## 디자인 특수성과 결론

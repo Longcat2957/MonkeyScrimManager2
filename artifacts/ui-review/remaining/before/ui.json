@@ -1,0 +1,981 @@
+{
+    "out": [
+        {
+            "stage": "recruit",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "status": 200,
+            "theme": "primary",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-recruit-primary-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "1"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "preparing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "status": 200,
+            "theme": "primary",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-preparing-primary-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "ready",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "status": 200,
+            "theme": "primary",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-ready-primary-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "playing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "status": 200,
+            "theme": "primary",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-playing-primary-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "completed",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "status": 200,
+            "theme": "primary",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-completed-primary-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "kind": "switch",
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "theme": "primary",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/stats-primary-desktop.png",
+            "state": {
+                "height": 24,
+                "width": 139.875,
+                "text": "최근 10게임만\n, 꺼짐"
+            }
+        },
+        {
+            "stage": "recruit",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "status": 200,
+            "theme": "primary",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-recruit-primary-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "1"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "preparing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "status": 200,
+            "theme": "primary",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-preparing-primary-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "ready",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "status": 200,
+            "theme": "primary",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-ready-primary-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "playing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "status": 200,
+            "theme": "primary",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-playing-primary-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.446 0.043 257.281)",
+                        "opacity": "1",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "completed",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "status": 200,
+            "theme": "primary",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-completed-primary-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.208 0.042 265.755)",
+                        "opacity": "1",
+                        "number": "✓"
+                    }
+                ],
+                "mode": "primary",
+                "overflow": false
+            }
+        },
+        {
+            "kind": "switch",
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "theme": "primary",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/stats-primary-mobile.png",
+            "state": {
+                "height": 24,
+                "width": 139.875,
+                "text": "최근 10게임만\n, 꺼짐"
+            }
+        },
+        {
+            "stage": "recruit",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "status": 200,
+            "theme": "dark",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-recruit-dark-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "1"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "preparing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "status": 200,
+            "theme": "dark",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-preparing-dark-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "ready",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "status": 200,
+            "theme": "dark",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-ready-dark-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "playing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "status": 200,
+            "theme": "dark",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-playing-dark-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "completed",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "status": 200,
+            "theme": "dark",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-completed-dark-desktop.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "kind": "switch",
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "theme": "dark",
+            "view": "desktop",
+            "width": 1440,
+            "height": 1000,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/stats-dark-desktop.png",
+            "state": {
+                "height": 24,
+                "width": 139.875,
+                "text": "최근 10게임만\n, 꺼짐"
+            }
+        },
+        {
+            "stage": "recruit",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim001",
+            "status": 200,
+            "theme": "dark",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-recruit-dark-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "1"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "preparing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim007",
+            "status": 200,
+            "theme": "dark",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-preparing-dark-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "2"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "ready",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim008",
+            "status": 200,
+            "theme": "dark",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-ready-dark-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "3"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "playing",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "status": 200,
+            "theme": "dark",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-playing-dark-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.869 0.022 252.894)",
+                        "opacity": "1",
+                        "number": "4"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "0.3",
+                        "number": "5"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "stage": "completed",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim005",
+            "status": 200,
+            "theme": "dark",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/steps-completed-dark-mobile.png",
+            "state": {
+                "titles": [
+                    {
+                        "text": "모집",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "편성",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "대진",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "진행",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    },
+                    {
+                        "text": "종료",
+                        "color": "oklch(0.968 0.007 247.896)",
+                        "opacity": "1",
+                        "number": "✓"
+                    }
+                ],
+                "mode": "dark",
+                "overflow": false
+            }
+        },
+        {
+            "kind": "switch",
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "theme": "dark",
+            "view": "mobile",
+            "width": 390,
+            "height": 844,
+            "image": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/remaining/before/stats-dark-mobile.png",
+            "state": {
+                "height": 24,
+                "width": 139.875,
+                "text": "최근 10게임만\n, 꺼짐"
+            }
+        }
+    ],
+    "errors": []
+}

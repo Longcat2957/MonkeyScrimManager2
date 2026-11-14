@@ -121,9 +121,25 @@
                     </li>
                 {/each}
             </ol>
-            <div aria-hidden="true" class="-mt-4">
+            <div aria-hidden="true" class="scrim-steps -mt-4">
                 <Steps {steps} {current} radius="full" />
             </div>
         {/if}
     </header>
 {/if}
+
+<style>
+    /* STDF의 예정 단계는 색상 공개 옵션이 없어 이 진행 표시 안에서만 보조 글자 토큰으로 보완한다. */
+    .scrim-steps :global(.opacity-30) {
+        color: var(--color-text-muted);
+        opacity: 1;
+    }
+
+    .scrim-steps :global(.text-black\/30) {
+        color: var(--color-text-muted);
+    }
+
+    .scrim-steps :global(.border-black\/30) {
+        border-color: var(--color-text-muted);
+    }
+</style>

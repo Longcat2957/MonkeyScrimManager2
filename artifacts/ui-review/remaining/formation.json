@@ -1,0 +1,71 @@
+{
+    "feature": "manual-formation-records",
+    "status": "implemented-and-database-verified",
+    "baseline": "249eeabd6786b9b9a56e5ec5208e0c207d087d36",
+    "date": "2026-11-14T11:07:50.228582+00:00",
+    "ownedSourceFrozen": true,
+    "sources": [
+        {
+            "path": "apps/web/src/lib/server/scrims/manual.ts",
+            "sha256": "67c8cb007e508f9a84bd38fae97c0206669410061a3f65a14cb18022225633ce"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/formation-records.ts",
+            "sha256": "0cc43637db052ebd96dc101719442eb228f00c3e8ca2f96d4ed5f28dff2a0063"
+        },
+        {
+            "path": "apps/web/tests/api/hard/db/formation-records.test.ts",
+            "sha256": "897fc19f1ad64e588a893cf6ecbc01ec398f3be448cbdcd5e44fe3504ea1699b"
+        }
+    ],
+    "upstreamReference": {
+        "repository": "Longcat2957/MonkeyScrimManager",
+        "commit": "d60df685e48c180b236342eae81b389ae87e38bf",
+        "access": "GitHub plugin fetch",
+        "files": [
+            "apps/api-python/src/monkeybot_api/repositories/recruitments/entry_queries.py",
+            "apps/api-python/src/monkeybot_api/repositories/guilds/statistics.py",
+            "apps/web/src/lib/components/workflow/EntryHeadToHeadRail.svelte",
+            "apps/web/src/lib/components/workflow/EntrySynergyRail.svelte"
+        ]
+    },
+    "rules": {
+        "season": "current scrim fixed mmrSeasonId",
+        "identity": "historical game participant → scrimParticipant.userId; current account ownership ignored",
+        "scope": "same guild, completed canonical ROFL Game, non-cancelled Scrim/Match",
+        "together": "same actual side, unordered user pair counted once per Game",
+        "against": "different actual sides and identical non-null actual position; lane-specific map",
+        "method": "both manual/auction use unified Match; formationMethod is not legacy parent discriminator",
+        "unknown": "null season/user/position never replaced by account/preferences/date guesses",
+        "winner": "games_winner_requires_completion CHECK guarantees completed⇒winnerSide not null; no unknown result coerced to a loss"
+    },
+    "validation": {
+        "isolatedDatabase": {
+            "command": "node /tmp/msm2-run-formation-db.mjs",
+            "method": "same sanitized environment and network guard as tests/run.mjs; only new test file",
+            "testFile": "apps/web/tests/api/hard/db/formation-records.test.ts",
+            "passed": 6,
+            "failed": 0,
+            "skipped": 0,
+            "exitCode": 0,
+            "fixtureCleanup": "each test after hook completed; process exited0"
+        },
+        "testTypes": {
+            "command": "pnpm exec tsc --noEmit -p apps/web/tests/tsconfig.json",
+            "exitCode": 0
+        },
+        "format": {
+            "command": "pnpm exec prettier --check apps/web/src/lib/server/scrims/manual.ts apps/web/src/lib/server/scrims/formation-records.ts apps/web/tests/api/hard/db/formation-records.test.ts",
+            "status": "passed"
+        }
+    },
+    "newExternalEndpoints": 0,
+    "newSchemaOrMigrations": 0,
+    "productionWrites": 0,
+    "limits": [
+        "Frontend rendering/shared compatibility and full regression checks are owned by root.",
+        "No actual performance improvement percentage is claimed.",
+        "MSM1 entry synergy was mock-only; actual same-team grouping follows pinned statistics DUOS and MSM2 current record contracts."
+    ],
+    "discordRiotLiveCalls": 0
+}

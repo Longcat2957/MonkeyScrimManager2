@@ -1,0 +1,236 @@
+{
+    "reader": "Orca51.0",
+    "browser": "Firefox157.0 headed under isolated Xvfb",
+    "platform": "Linux AT-SPI2",
+    "speechBackend": "isolated Speech Dispatcher dummy output; generated utterances recorded; no acoustic/human listening assessment",
+    "source": "installed Orca SpeechPresenter.SetLogFileForTesting test RPC with per-launch token; no token retained",
+    "interactions": {
+        "results": [
+            {
+                "step": "docs-anchor",
+                "focused": "rofl"
+            },
+            {
+                "step": "faq",
+                "expanded": "true"
+            },
+            {
+                "step": "menu",
+                "panelControlVisible": true,
+                "focusInDialog": true,
+                "mainInert": true
+            },
+            {
+                "step": "switch",
+                "mode": "dark"
+            },
+            {
+                "step": "return",
+                "focusText": "메뉴"
+            }
+        ],
+        "errors": []
+    },
+    "utterances": [
+        {
+            "kind": "speech",
+            "text": "Nightly",
+            "language": "",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "speech",
+            "text": "이용 안내 | Monkeybot — Nightly frame",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "interrupt"
+        },
+        {
+            "kind": "speech",
+            "text": "이용 안내 | Monkeybot — Nightly",
+            "language": "",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "speech",
+            "text": "Search with Google or enter address editable combo box",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "opens popup",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "interrupt"
+        },
+        {
+            "kind": "speech",
+            "text": "이용 안내 | Monkeybot",
+            "language": "ko",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "speech",
+            "text": "document web",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "Browse mode",
+            "language": "",
+            "dialect": "",
+            "voice_type": ""
+        },
+        {
+            "kind": "speech",
+            "text": "Finished loading 이용 안내 | Monkeybot.",
+            "language": "",
+            "dialect": "",
+            "voice_type": ""
+        },
+        {
+            "kind": "speech",
+            "text": "Page has 5 landmarks, 13 headings, 1 visited link, 11 unvisited links.",
+            "language": "",
+            "dialect": "",
+            "voice_type": ""
+        },
+        {
+            "kind": "speech",
+            "text": "본문으로 건너뛰기",
+            "language": "ko",
+            "dialect": "",
+            "voice_type": "hyperlink"
+        },
+        {
+            "kind": "interrupt"
+        },
+        {
+            "kind": "speech",
+            "text": "expanded",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "interrupt"
+        },
+        {
+            "kind": "speech",
+            "text": "leaving article.",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "leaving main content.",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "banner",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "메뉴",
+            "language": "ko",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "speech",
+            "text": "button",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "Browse mode",
+            "language": "",
+            "dialect": "",
+            "voice_type": ""
+        },
+        {
+            "kind": "interrupt"
+        },
+        {
+            "kind": "speech",
+            "text": "다크 모드, 꺼짐",
+            "language": "",
+            "dialect": "",
+            "voice_type": ""
+        },
+        {
+            "kind": "speech",
+            "text": "다크 모드 , 꺼짐",
+            "language": "ko",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "speech",
+            "text": "button",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "다크 모드 , 켜짐",
+            "language": "ko",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "interrupt"
+        },
+        {
+            "kind": "speech",
+            "text": "banner",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        },
+        {
+            "kind": "speech",
+            "text": "메뉴",
+            "language": "ko",
+            "dialect": "",
+            "voice_type": "default"
+        },
+        {
+            "kind": "speech",
+            "text": "button",
+            "language": "",
+            "dialect": "",
+            "voice_type": "system"
+        }
+    ],
+    "speechCount": 25,
+    "isolation": "separate D-Bus session, temporary XDG directories, self-owned Xvfb/AT-SPI registry/Orca/Speech Dispatcher; stopped on completion",
+    "limits": [
+        "Not NVDA/VoiceOver or physical device testing.",
+        "No audio intelligibility assessment or screen-reader user usability study.",
+        "Only public docs anchor/FAQ and mobile menu/theme/Escape path verified."
+    ]
+}

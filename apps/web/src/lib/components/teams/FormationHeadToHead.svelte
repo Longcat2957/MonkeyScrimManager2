@@ -42,7 +42,7 @@
         {#each LANES as lane (lane)}
             {@const a = at(teams[0].id, lane)}
             {@const b = at(teams[1].id, lane)}
-            {@const record = a && b ? headToHead(pairs, a.participantId, b.participantId) : null}
+            {@const record = a && b ? headToHead(pairs, a.participantId, b.participantId, lane) : null}
             <li
                 class={[
                     'flex flex-col items-center justify-center rounded-(--radius-small) border border-border text-center',

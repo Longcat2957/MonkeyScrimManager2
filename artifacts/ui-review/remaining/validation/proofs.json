@@ -1,0 +1,239 @@
+{
+    "date": "2026-11-14T11:12:51.511157+00:00",
+    "images": [
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-firefox-primary-1440.png",
+            "sha256": "54a5b3d05e307c00c50e47a2c27bd97c7af9a0f1dac6d0eb9d0b85ecde43b142",
+            "width": 1440,
+            "height": 1296,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-firefox-primary-1440.png",
+            "sha256": "f6f3339b36076419f0365c04782e85b3235667d4467b25d16180b3c8423ca068",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-firefox-dark-1440.png",
+            "sha256": "52c10a1b2587fc6cbc869d9ba9e6f7f9eacb16118c4e927034a34b9c160af46a",
+            "width": 1440,
+            "height": 1296,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-firefox-dark-1440.png",
+            "sha256": "ef184c11fcb70919e53b2d00402c9c2a3bde297f4152858bcde8693515636fac",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-firefox-primary-390.png",
+            "sha256": "e614b36e740775567c92ecae75942a8c7e6bf619db10055a4c95ed9d868e9d9d",
+            "width": 390,
+            "height": 1941,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-firefox-primary-390.png",
+            "sha256": "a793cbf82ff79e6d8f96f04fd698c7a37b9c25e6ba57732b66755f85a46afad1",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-firefox-dark-390.png",
+            "sha256": "b5cbde321e07f152908634c673a839f8f9409cce491a7eb1546f748c1d94ca81",
+            "width": 390,
+            "height": 1941,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-firefox-dark-390.png",
+            "sha256": "5da3c2cd84c973770d69d5b08606a4f5d123ecafdb63355c20609802a7e0a314",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-webkit-primary-1440.png",
+            "sha256": "74a09f0650065eea8a8151a71bf38c6571449d45dcf54442148dcfa4ba41c225",
+            "width": 1440,
+            "height": 1296,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-webkit-primary-1440.png",
+            "sha256": "de141bc3626c03493be39677f9647795c7beb8ea0297a6b8da7d55f4685eff4f",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-webkit-dark-1440.png",
+            "sha256": "fd34c5b88f031de9e4cf8421eb63a77a4f842de2d6295b783361baa4f64df636",
+            "width": 1440,
+            "height": 1296,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-webkit-dark-1440.png",
+            "sha256": "1d793912ff2e861baeed47b81b5be1aa0bdc91154409c6bc604a6aad50d7102b",
+            "width": 1440,
+            "height": 1000,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-webkit-primary-390.png",
+            "sha256": "fd778c971f04324fd7f7fd7f8fd08a4c8ae654187e44e1030a8a75b1f14657e7",
+            "width": 390,
+            "height": 1941,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-webkit-primary-390.png",
+            "sha256": "acaa26f97418e76f733097c0ce073ca6e2db0df946fcc00427090ed3cc634c37",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/manual-webkit-dark-390.png",
+            "sha256": "e31d40f57c1b5f39b7ea40d33ae5b7f77169feb0ebe525732b8a2068d0e7cca1",
+            "width": 390,
+            "height": 1941,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/stats-webkit-dark-390.png",
+            "sha256": "d51d1db4bfc94bf3c93fe5b68d846d81db7c069c275e99ed17703f67623a58bb",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/orca-menu.png",
+            "sha256": "05ff8f0ee7d345056fb04956ad0c89fad4fef285da0cb008c84f1d52dac5d7ba",
+            "width": 390,
+            "height": 844,
+            "actuallyRead": true
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/valid-rofl-match-mobile.png",
+            "sha256": "38c3fc024aee843a70e81f70d5dcc90d3285f9e3cc5ea8e72a6c931698920d10",
+            "width": 390,
+            "height": 1507,
+            "actuallyRead": true,
+            "scope": "normal ROFL final production fixture, external fonts/images intentionally blocked"
+        },
+        {
+            "path": "artifacts/ui-review/remaining/validation/valid-rofl-player-mobile.png",
+            "sha256": "988890c932f463634d7ba1978a8a9d0054c361b5673b7dd6d26ea8355e6a91c9",
+            "width": 390,
+            "height": 1693,
+            "actuallyRead": true,
+            "scope": "normal ROFL final production fixture, external fonts/images intentionally blocked"
+        }
+    ],
+    "sourceHashes": [
+        {
+            "path": "apps/web/src/lib/components/scrims/ScrimSummary.svelte",
+            "sha256": "d8d03c2c29d9a11ff2b1e864b91a4473c3b2035ece30079e7ade68eff519f7ce"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+            "sha256": "aefecf32d8c5014d0695fb689acbe6d4dcd757d35dd40caf72468a7d74047813"
+        },
+        {
+            "path": "apps/web/tests/browser/rofl-results.test.ts",
+            "sha256": "44508697707e430fd806bb0449b229e54e5f079e7cefaec29071dc63571e5c88"
+        }
+    ],
+    "webkitRuntime": {
+        "systemPackageChanges": false,
+        "temporaryExtraPackageBytes": 870276,
+        "packages": [
+            {
+                "name": "libhidapi-hidraw0_0.15.0-2_arm64.deb",
+                "sha256": "f1348a41b08bef9850c07026225b5608dcfced146fe1d374e43c6111e1139d10",
+                "bytes": 13598
+            },
+            {
+                "name": "libgav1-2_0.20.0-2ubuntu1_arm64.deb",
+                "sha256": "909bc5bd9783d549c1929b89c758b4d4016fbec8aede9dc97a0ea70880440ab4",
+                "bytes": 546818
+            },
+            {
+                "name": "libmanette-0.2-0_0.2.13-1_arm64.deb",
+                "sha256": "989c947226a83abacd37df5fd3a82f711e3c9f2977d78d014dc762a505f8de2d",
+                "bytes": 45772
+            },
+            {
+                "name": "libavif16_1.4.2-1ubuntu1_arm64.deb",
+                "sha256": "1272ce14838d53cf742015b2fd7675e1a02866ba4f011ef6572d0f07adafe041",
+                "bytes": 124530
+            },
+            {
+                "name": "libevent-2.1-7t64_2.1.13-stable-1build1_arm64.deb",
+                "sha256": "237ac561b5213bfb3627d8141cab75dec5300caefcb00af5773173aaab9a921e",
+                "bytes": 139558
+            }
+        ],
+        "note": "Bundle wrapper resets LD_LIBRARY_PATH. Temporary launcher preserves official bundle environment and adds extracted libraries; actual installed WebKit binary/inspector unchanged."
+    },
+    "browserLaunch": {
+        "chromium": "156.0.8078.4",
+        "firefox": "157.0",
+        "webkit": "27.2"
+    },
+    "preliminaryRoflTest": {
+        "source": "apps/web/tests/browser/rofl-results.test.ts",
+        "tests": 2,
+        "passed": 2,
+        "failed": 0,
+        "build": "이전 production build에서 예비 실행. 최종 판정은 finalBrowserSuite를 사용한다.",
+        "viewports": [
+            {
+                "width": 1440,
+                "height": 1000
+            },
+            {
+                "width": 390,
+                "height": 1000
+            }
+        ]
+    },
+    "testTypeCheck": "pnpm --filter @msm2/web check:tests passed",
+    "performance": "completed: 15 production-fixture navigations; final-source lab observations only",
+    "finalBrowserSuite": {
+        "command": "pnpm test:browser",
+        "build": "최종 소스로 새 production build 후 실행",
+        "tests": 10,
+        "passed": 10,
+        "failed": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "durationMs": 21040.153804,
+        "composition": {
+            "existing": 7,
+            "normalRofl": 2,
+            "formationAndAuctionIntegration": 1
+        },
+        "normalRoflViewports": [
+            {
+                "width": 1440,
+                "height": 1000
+            },
+            {
+                "width": 390,
+                "height": 844
+            }
+        ],
+        "log": "/tmp/msm2-remaining-browser-final.log",
+        "logSha256": "ddee5db1d778f441f6d33f62c9af44a27f74bcdaba8fafb74f9b7e8609d322c1",
+        "logActuallyRead": true
+    }
+}

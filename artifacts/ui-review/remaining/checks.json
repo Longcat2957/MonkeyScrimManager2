@@ -1,0 +1,174 @@
+{
+    "date": "2026-11-14",
+    "baselineCommit": "249eeabd6786b9b9a56e5ec5208e0c207d087d36",
+    "commands": [
+        {
+            "command": "pnpm check",
+            "exitCode": 0,
+            "format": "passed",
+            "branding": "passed",
+            "botTypes": "passed",
+            "svelte": {
+                "errors": 0,
+                "warnings": 0
+            }
+        },
+        {
+            "command": "pnpm check:tests",
+            "exitCode": 0
+        },
+        {
+            "command": "pnpm build",
+            "exitCode": 0,
+            "scope": ["web", "bot"]
+        },
+        {
+            "command": "pnpm test",
+            "exitCode": 0,
+            "web": 415,
+            "bot": 65,
+            "failed": 0,
+            "skipped": 0
+        },
+        {
+            "command": "pnpm test:hard:db",
+            "exitCode": 0,
+            "passed": 224,
+            "failed": 0,
+            "skipped": 0
+        },
+        {
+            "command": "pnpm test:browser",
+            "exitCode": 0,
+            "passed": 10,
+            "failed": 0,
+            "skipped": 0,
+            "freshWebBuild": true,
+            "newRoflViewports": [
+                {
+                    "width": 1440,
+                    "height": 1000
+                },
+                {
+                    "width": 390,
+                    "height": 844
+                }
+            ]
+        }
+    ],
+    "logFingerprints": [
+        {
+            "scope": "check",
+            "sha256": "bd8019b6a4f94b1fe4c10fee237228a35742c5ca1aa7ac9e73ad17a2ebe5ff10",
+            "rawLogLocation": "local temporary file; raw logs are not committed"
+        },
+        {
+            "scope": "testTypes",
+            "sha256": "3aebe1365319d511b5cfab520b525c4c77e439c79052b5b2cb6321d1209e668d",
+            "rawLogLocation": "local temporary file; raw logs are not committed"
+        },
+        {
+            "scope": "build",
+            "sha256": "ea59cf5e53d569f36005f24c2d9360e7b2b2a339d2de3043f3dc6c03b7f20aed",
+            "rawLogLocation": "local temporary file; raw logs are not committed"
+        },
+        {
+            "scope": "unit",
+            "sha256": "0f44d4d3d88e9ee48cabf48014863af9443590a0bda0306974a245b5d10674bc",
+            "rawLogLocation": "local temporary file; raw logs are not committed"
+        },
+        {
+            "scope": "hardDb",
+            "sha256": "eb0aac34d73d96d28af5128a889a13c92114eb73467351977228be76d4e1c906",
+            "rawLogLocation": "local temporary file; raw logs are not committed"
+        },
+        {
+            "scope": "browser",
+            "sha256": "ddee5db1d778f441f6d33f62c9af44a27f74bcdaba8fafb74f9b7e8609d322c1",
+            "rawLogLocation": "local temporary file; raw logs are not committed"
+        }
+    ],
+    "sources": [
+        {
+            "path": "apps/web/src/lib/components/scrims/ScrimSummary.svelte",
+            "sha256": "d8d03c2c29d9a11ff2b1e864b91a4473c3b2035ece30079e7ade68eff519f7ce"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+            "sha256": "4cf858826d47275109783e1aae32804ae9671a592818022367eb55497ae70c3a"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionTargetProfile.svelte",
+            "sha256": "af728e6d08f95d7d65486d6a6df3c11551038b1435e704d24f09d429cefb43c7"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/FormationHeadToHead.svelte",
+            "sha256": "738a4fc4b6ade850c130380199e72b7bff4b5c27d88e153b3ca3ae64c81a59af"
+        },
+        {
+            "path": "apps/web/src/lib/features/scrims/formation.ts",
+            "sha256": "9b58b4dacd9ac469c939b2bb3857e8c927e6fba72318b7e5841ba0c0e1770f40"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/auction-profile.ts",
+            "sha256": "2a670a1ebccb49b0e63d3fd7bce8daedea60b72e9eef0f802b6146a1fc8c6591"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/auction.ts",
+            "sha256": "7328fce2bee1fc7f22bcf36b7944a9979d2ca304c5633ff01b2bfc0d24ee86e6"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/formation-records.ts",
+            "sha256": "0cc43637db052ebd96dc101719442eb228f00c3e8ca2f96d4ed5f28dff2a0063"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/manual.ts",
+            "sha256": "67c8cb007e508f9a84bd38fae97c0206669410061a3f65a14cb18022225633ce"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.server.ts",
+            "sha256": "91433fb8ac53897f07ad750d6c5567e1c08883c1eff3466960d7a462663948c5"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/stats/+page.svelte",
+            "sha256": "aefecf32d8c5014d0695fb689acbe6d4dcd757d35dd40caf72468a7d74047813"
+        }
+    ],
+    "tests": [
+        {
+            "path": "apps/web/tests/api/hard/db/auction-profile.test.ts",
+            "sha256": "4a45de97a4ff6d7de952735c45226977f1f02e3690343ae84d6c9e4ad0ead77c"
+        },
+        {
+            "path": "apps/web/tests/api/hard/db/formation-records.test.ts",
+            "sha256": "897fc19f1ad64e588a893cf6ecbc01ec398f3be448cbdcd5e44fe3504ea1699b"
+        },
+        {
+            "path": "apps/web/tests/browser/formation-records.test.ts",
+            "sha256": "0de56405c7bf7377f4636ca598bf3a1da526ef250e7a70fb21884e426a256085"
+        },
+        {
+            "path": "apps/web/tests/browser/rofl-results.test.ts",
+            "sha256": "44508697707e430fd806bb0449b229e54e5f079e7cefaec29071dc63571e5c88"
+        }
+    ],
+    "readOnlyPeerReview": {
+        "sourceFiles": 11,
+        "testFiles": 4,
+        "actionableRegressionsFound": 0
+    },
+    "svelteOfficialPluginTools": "not exposed in this session; installed official compiler and svelte-check used",
+    "hardHttpFullSuiteRerun": false,
+    "productionWrites": 0,
+    "evidenceValidation": {
+        "fileFingerprintComparisons": 187,
+        "localDocumentLinksChecked": 399,
+        "mismatches": 0,
+        "uniqueImagesActuallyRead": 77,
+        "newIgnores": 0
+    },
+    "finalPostDocumentationFormatCheck": {
+        "command": "pnpm check:format",
+        "exitCode": 0
+    }
+}

@@ -47,7 +47,7 @@
     const stories = $derived(auctionStories(auction));
     const canRevert = $derived(auction.history.some((entry) => !entry.voided));
     const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
-    const mainLane = $derived(open ? (open.positions[0] ?? profile?.mainLane ?? 'mid') : 'mid');
+    const mainLane = $derived(open?.positions[0] ?? profile?.mainLane ?? null);
     const recentWins = $derived(profile?.recentGames.filter((game) => game.win).length ?? 0);
     const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
     const STATUS = {
@@ -322,7 +322,7 @@
                                 ondragstart={(event) => drag.start(event, open.participantId)}
                                 ondragend={() => drag.end()}
                             >
-                                {#if !details}
+                                {#if !details && mainLane}
                                     <span
                                         class="pointer-events-none absolute top-5 right-5 opacity-15"
                                         aria-hidden="true"
@@ -333,7 +333,15 @@
                                     <span
                                         class="inline-flex items-center gap-1 border border-primary/25 bg-primary/10 px-2 py-1 text-sm font-semibold dark:border-dark/30 dark:bg-dark/15"
                                     >
-                                        <PositionIcon position={mainLane} size="sm" />{laneText(mainLane)}
+                                        {#if mainLane}
+                                            <PositionIcon position={mainLane} size="sm" />{open.positions
+                                                .length
+                                                ? '희망'
+                                                : '주력'}
+                                            {laneText(mainLane)}
+                                        {:else}
+                                            포지션 미확인
+                                        {/if}
                                     </span>
                                     {#if profile?.riot?.tier}
                                         <span
@@ -359,13 +367,13 @@
                                             {open.displayName}
                                         </p>
                                         <p class="mt-1 text-base font-semibold opacity-70 tabular-nums">
-                                            MMR {formatMmr(open.mmr[mainLane])}
+                                            MMR {formatMmr(mainLane ? open.mmr[mainLane] : null)}
                                         </p>
                                     </div>
                                 </div>
-                                {#if profile && !details}
+                                {#if profile && !details && profile.summary.games}
                                     <div class="grid grid-cols-3 gap-px bg-border">
-                                        {#each [['승률', winRate(profile.summary.games, profile.summary.wins)], ['승패', `${profile.summary.wins}-${profile.summary.losses}`], ['최근', `${recentWins}승 ${profile.recentGames.length - recentWins}패`]] as [label, value] (label)}
+                                        {#each [['승률', winRate(profile.summary.games, profile.summary.wins)], ['승패', `${profile.summary.wins}-${profile.summary.losses}`], [profile.recentChronologyKnown === false ? '표시 기록' : '최근', `${recentWins}승 ${profile.recentGames.length - recentWins}패`]] as [label, value] (label)}
                                             <div
                                                 class="bg-bg-surface px-3 py-2 text-center dark:bg-bg-surface-dark"
                                             >

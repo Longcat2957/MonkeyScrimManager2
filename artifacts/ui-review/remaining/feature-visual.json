@@ -1,0 +1,253 @@
+{
+    "scope": "visual evidence of actual persisted ROFL records in manual formation and auction",
+    "baselineCommit": "249eeabd6786b9b9a56e5ec5208e0c207d087d36",
+    "createdAt": "2026-11-14T11:18:45.818Z",
+    "browser": "Playwright Chromium",
+    "role": "manager visual reads and actual result-revert UI; participant-authenticated normal upload action",
+    "build": "root final successful production build reused without rebuilding for capture",
+    "source": [
+        {
+            "path": "apps/web/tests/browser/formation-records.test.ts",
+            "sha256": "0de56405c7bf7377f4636ca598bf3a1da526ef250e7a70fb21884e426a256085"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionTargetProfile.svelte",
+            "sha256": "af728e6d08f95d7d65486d6a6df3c11551038b1435e704d24f09d429cefb43c7"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+            "sha256": "4cf858826d47275109783e1aae32804ae9671a592818022367eb55497ae70c3a"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/FormationHeadToHead.svelte",
+            "sha256": "738a4fc4b6ade850c130380199e72b7bff4b5c27d88e153b3ca3ae64c81a59af"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/auction.ts",
+            "sha256": "7328fce2bee1fc7f22bcf36b7944a9979d2ca304c5633ff01b2bfc0d24ee86e6"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/auction-profile.ts",
+            "sha256": "2a670a1ebccb49b0e63d3fd7bce8daedea60b72e9eef0f802b6146a1fc8c6591"
+        }
+    ],
+    "execution": {
+        "temporaryRunner": "node /tmp/msm2-run-feature-visual.mjs",
+        "exitCode": 0,
+        "tests": 1,
+        "passed": 1,
+        "failed": 0,
+        "durationMs": 5278.514286,
+        "temporaryInstrumentationRemoved": true,
+        "browserAppAndDatabaseCleaned": true,
+        "maintainedSourcesChanged": false
+    },
+    "flow": [
+        "existing participant upload action stores parser-valid synthetic ROFL2 and one completed Game with null startedAt",
+        "same manual details render six same-team pairs and five same-position head-to-head records",
+        "new auction in same guild and fixed season uses existing setup, start and draw actions",
+        "actual drawn candidate ReplayPlayer0 shows one win, Ahri, most-played top and unknown absolute time",
+        "manager clicks last-set revert in real match UI, confirms existing revertResult action, then reloads auction",
+        "candidate profile becomes zero-record with one message, five actual restored 1500 lane MMRs and no fabricated preferred or Riot records"
+    ],
+    "captures": [
+        {
+            "file": "after/feature-manual-records-primary-desktop.png",
+            "url": "/g/970000000000000001/scrims/103fb0ba-a156-4a01-9dc2-04e7d425fd30/manual",
+            "surface": "manual-records",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "horizontalOverflow": false,
+            "sha256": "921a528ca051a3727b36c8592533f3b382dd0768f0ec6cef37a8627fd7da4910",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1092
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-manual-records-dark-desktop.png",
+            "url": "/g/970000000000000001/scrims/103fb0ba-a156-4a01-9dc2-04e7d425fd30/manual",
+            "surface": "manual-records",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "horizontalOverflow": false,
+            "sha256": "0def930f9056c0e740c7117ea41d8cc1efeb5627f70fe32526db4f7dae81fd4e",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1092
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-manual-records-primary-mobile.png",
+            "url": "/g/970000000000000001/scrims/103fb0ba-a156-4a01-9dc2-04e7d425fd30/manual",
+            "surface": "manual-records",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "horizontalOverflow": false,
+            "sha256": "de0f186eddba58d897e24a3cd01046ffa10e939dfe30adfbf2ba203ffd5eadd2",
+            "imageDimensions": {
+                "width": 390,
+                "height": 2033
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-manual-records-dark-mobile.png",
+            "url": "/g/970000000000000001/scrims/103fb0ba-a156-4a01-9dc2-04e7d425fd30/manual",
+            "surface": "manual-records",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "horizontalOverflow": false,
+            "sha256": "0a86523a30ebe40a951f9b8fbb7bb36b94b404b562bff7c9334b7907c48fcab7",
+            "imageDimensions": {
+                "width": 390,
+                "height": 2033
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-auction-records-primary-desktop.png",
+            "url": "/g/970000000000000001/scrims/47472a2d-3ec5-4843-a64a-0ed51e0e2be5/auction",
+            "surface": "auction-records",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "horizontalOverflow": false,
+            "sha256": "566e9f3c4119990be6875169a4f30134072d5d31823f64f26065049facfa5849",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1234
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-auction-records-dark-desktop.png",
+            "url": "/g/970000000000000001/scrims/47472a2d-3ec5-4843-a64a-0ed51e0e2be5/auction",
+            "surface": "auction-records",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "horizontalOverflow": false,
+            "sha256": "724680dc6b5d3f62647a5cc3e15ad6244eca151aa9f24dff6549ef749bdbdb84",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1234
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-auction-records-primary-mobile.png",
+            "url": "/g/970000000000000001/scrims/47472a2d-3ec5-4843-a64a-0ed51e0e2be5/auction",
+            "surface": "auction-records",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "horizontalOverflow": false,
+            "sha256": "950966425af62ce6ce62b63bd42964a5bac92a1b64e46662e7f02f6ddc8981d6",
+            "imageDimensions": {
+                "width": 390,
+                "height": 2081
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-auction-records-dark-mobile.png",
+            "url": "/g/970000000000000001/scrims/47472a2d-3ec5-4843-a64a-0ed51e0e2be5/auction",
+            "surface": "auction-records",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "horizontalOverflow": false,
+            "sha256": "bf7956dde94487123dbe91e50511d5f02e545f50aead29964ac9e21f932a6b9f",
+            "imageDimensions": {
+                "width": 390,
+                "height": 2081
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-auction-zero-after-revert-primary-mobile.png",
+            "url": "/g/970000000000000001/scrims/47472a2d-3ec5-4843-a64a-0ed51e0e2be5/auction",
+            "surface": "auction-zero-after-revert",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "horizontalOverflow": false,
+            "sha256": "e1139792677964f570e9e9b41e6387b43648b12628b252031bd594848ff38471",
+            "imageDimensions": {
+                "width": 390,
+                "height": 1875
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/feature-auction-zero-after-revert-dark-mobile.png",
+            "url": "/g/970000000000000001/scrims/47472a2d-3ec5-4843-a64a-0ed51e0e2be5/auction",
+            "surface": "auction-zero-after-revert",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "horizontalOverflow": false,
+            "sha256": "e001bb82275a18f3919eb18b127fa6591f25d080f3ea303d42a17da71650b682",
+            "imageDimensions": {
+                "width": 390,
+                "height": 1875
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        }
+    ],
+    "errors": [],
+    "visualFindings": {
+        "newLayoutDefectsObserved": 0,
+        "manual": "desktop compares teams and side rails; mobile presents team then its synergy and finishes with five-lane head-to-head",
+        "auctionRecord": "one-game/champion/main-position hierarchy remains readable in both themes; mobile MMR grid wraps 4+1 without overflow; unknown time remains explicit",
+        "auctionZero": "one empty-record explanation, no invented position, summary MMR dash when position is unknown, all five lane MMR values restored to 1500"
+    },
+    "limits": [
+        "external Google font and Data Dragon image requests are blocked by the existing browser fixture, so these captures show fallback fonts and failed decorative champion images; production asset availability is untested",
+        "full-page PNGs, with profile scrolled to show unknown-time game record; not an initial-viewport-only claim",
+        "390px is an emulated viewport, not a physical device or synthesized touch test",
+        "no Safari, screen-reader, live external service or performance measurement claim",
+        "single-context visual evidence pass supplements root review; no independent full critique or audit rerun is claimed"
+    ],
+    "productionWrites": 0,
+    "newProductEndpoints": 0,
+    "ignoreRulesAdded": 0,
+    "credentialsRecorded": false
+}
