@@ -21,6 +21,10 @@ import {
 import { clearMockFormationMethod } from '#lib/mocks/workflow.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
+import {
+    getChampionPreferenceCatalog,
+    preferredChampionResolver
+} from '#lib/server/ddragon/champion-preferences.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
@@ -67,6 +71,10 @@ export const load: PageServerLoad = async ({ parent, params, depends, locals }) 
     if (!isDemo(params.guildId)) {
         try {
             const version = await latestDataDragonVersion();
+            const [champion, catalog] = await Promise.all([
+                championResolver(version),
+                getChampionPreferenceCatalog(version).catch(() => [])
+            ]);
             return {
                 scrim,
                 auction: await getAuction(
@@ -75,7 +83,8 @@ export const load: PageServerLoad = async ({ parent, params, depends, locals }) 
                     params.guildId,
                     params.scrimId,
                     undefined,
-                    await championResolver(version)
+                    champion,
+                    preferredChampionResolver(catalog)
                 ),
                 can: { manage: scrim.canManage && scrim.status === 'preparing' }
             };

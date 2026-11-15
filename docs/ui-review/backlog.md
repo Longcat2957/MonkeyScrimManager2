@@ -159,3 +159,30 @@ Impeccable harden·adapt·clarify·polish로 실패/중지/복구·모바일 조
 [before4](../../artifacts/ui-review/backlog/06-stats-live/before/captures.json)·[after12](../../artifacts/ui-review/backlog/06-stats-live/after/captures.json)·[MCP4](../../artifacts/ui-review/backlog/06-stats-live/mcp/captures.json)의20장은 실제 판독·SHA·역할·URL·상태를 기록한다. before/MCP는 전체·min1·실제3게임의 같은 화면 상태 비교이고 fixture의포트/UUID는 서로 다르다. after의 실제1→2게임/min2/top 기능 검증과 별도 명시 UI주입을 같은자료 golden으로 주장하지 않는다. root도 실제 desktop/mobile 캡처를 읽고 단일조작·공유헤더/푸터·정렬focus·좁은 표를 확인했다.
 
 이 단계는 웹 build·`pnpm check`·`pnpm check:tests` 통과이며 봇 소스는 변경하지 않았다. 외부 이미지/폰트는 차단됐고 물리기기·Safari·스크린리더 음성·정량성능·운영 규모는 미검증이다. API가 내려주는 업적은 계속false/[]이며 UI주입은 정책 확정이 아니다. 사용자 DB/Discord/배포는 변경하지 않고 fixture·세션·schema·private args는 정리했으며5173을 유지한다.
+
+
+## 7. 포지션별 선호 챔피언
+
+| ID | 근거·우선순위 | 변경·완료 조건 | 상태 |
+| --- | --- | --- | --- |
+| BK-07 | 선호 테이블/경매 표현 계약은 있지만 본인 편집과 실제 연결이 없음 | 실제 카탈로그·본인만·5포지션·max10·순서·해당lane 원자교체·현재후보 연결 | 구현·관련94·HTTP8·browser8·MCP8 완료 |
+| BK-07a | 저장 실패/탈퇴/자료 장애·모바일/키보드 경계. P1 | 다른lane 초안 보존·단일 저장·실패 입력·재조회·unknown 보존/삭제·탈퇴후 재생성 차단 | 관련94·HTTP8·browser8 완료 |
+| BK-07c | native 중복POST를 서버가400으로거절한뒤 failure 초기배열의중복key가 hydration에서500화면으로전환.1440primary실제재현. P1 | 서버중복거절유지·UI오류초기선택만고유키복원·DB불변·오류안내/제거동작유지 | 수정후durable native browser1 통과 |
+| BK-07b | STDF type=search는 실제 type=text/inputmode=search라 신규 focus fallback이 마지막 제거 뒤 입력을 찾지 못함. 실제390 dark 재현. P1 | 서비스 검색 영역의 실제 입력을 선택해 마지막 제거/검색 결과 소멸 후 포커스 복원 | 수정 뒤4조건의 마지막 제거→검색 포커스 통과, 기존privacy4도 통과 |
+
+Impeccable layout·clarify·adapt·harden·polish로 한 포지션의 검색→선택/순서→저장 흐름과 처음/실패/다량/좁은 화면을 구성한다. 기존 SelectionTabs·STDF Input/Button·PageNav를 우선 사용하고 선호와 실제 사용 챔피언을 구분한다. 카탈로그/정리 규칙은 실제 구현·검증 뒤 DESIGN과 관련 문서에 병합한다.
+
+
+7단계 코드: `features/me/champions.ts`, `server/accounts/champions.ts`, 실제 카탈로그 parser/getter·resolver,0013/schema/meta, `/me` loader/action·`ChampionPreferences`·중앙 목·탈퇴 목 정리, 기존 `auction-profile`/`getAuction`와 SSR/live 및 현재후보 표현이다. 새 외부 endpoint는 없고 포지션 선택은 실제 출전·주력 포지션을 덮지 않는다.
+
+관련 단일실행94/94는 개인선호10·auction-profile10(신규2 포함)·auction19·account-privacy23의 DB62와 기존 Data Dragon contract32다. HTTP 신규6/기존privacy2의8개, 기존privacy browser4도 통과했다.0013 기존11개를 손실 없이 backfill하고 같은lane 동시저장·서로다른lane·탈퇴 두 우선순서·INSERT실패 rollback·unknown 보존을 확인했다.44테이블/104FK는 유지하고 실제 Drizzle generate 재검사에서 “No schema changes”였다.
+
+첫 브라우저의 searchbox 가정과 catalog 오류의 옛 문구·경매 상세 버튼의 잘못된 group scope는 자동화 가정으로 정정했다. 신규 focus fallback 문제(BK-07b)는 실제 재현한 제품 회귀로 별도 수정했다. source detector는 새 primary0·기존 경매의11px 보조 크기 advisory5를 유지했고 새 무시 규칙을 추가하지 않았다. 최종 브라우저는 신규4+기존privacy4의8개, MCP8조건을 통과했다.
+
+
+[before6](../../artifacts/ui-review/backlog/07-champion-preferences/before/captures.json)·[after12](../../artifacts/ui-review/backlog/07-champion-preferences/after/captures.json)·[MCP8](../../artifacts/ui-review/backlog/07-champion-preferences/mcp/captures.json)의26장을 실제 판독·SHA·역할/상태/실행URL로 기록했다. root도 desktop/mobile10개 초안·503 보존·320px 줄바꿈·공개경매를 직접 읽었다.14개 실제형 catalog는 검색2쪽과 검색/포지션 변경 첫쪽을 확인하는 격리 override며 운영 fixture의 외부 이미지/폰트는 차단했다.768px3열·320px버튼다음줄44px·720 CSS폭·reduced-motion 피드백을 확인했고 실제200%브라우저줌/음성청취/CWV로 확대하지 않는다.
+
+`pnpm test` 웹453/봇80, 앱Svelte 오류0/경고0·테스트 타입·웹 build를 통과했다. `pnpm check` 전체 검사도 통과했고 마지막 초기오류 정규화 뒤 앱검사/웹 build·테스트 타입·native 회귀를 재검증했다. 사용자 DB에는0013을 적용하지 않았고 실제 Discord·배포를 변경하지 않았다. 알려진 카탈로그 밖 ID는 본인 목록에서 유지/제거 가능하며 공개경매에는 실제 매핑된 항목만 표시한다. 별도실행의 원문이름/버튼scope·카탈로그옛문구 가정은 제품회귀와 구분했다.
+
+
+최종 harden에서 발견한BK-07c는 서버의400 계약을 바꾸지 않고 실패 초기값의 UI 복제에만 Set을 적용해 고쳤다. [native-before1](../../artifacts/ui-review/backlog/07-champion-preferences/native-before/captures.json)·[native-after1](../../artifacts/ui-review/backlog/07-champion-preferences/native-after/captures.json)은 같은1440×1000 primary·중복103,103으로 실제400→500전환과 수정뒤400안내/고유1행·제거1개를 비교한다. native durable1을 포함해관련browser는9/9이며 PNG는총28장이다. 원래DB266·ordinal·createdAt을 보존하고 실제제거조작·JS0을 확인했다. 공개 전후26장은 정상/오류저장·경매 상태 증거로 유지하며 native재현/수정2장과 구분한다. 모든 fixture·소유schema·개인tmp를 정리했고5173은 유지했다.

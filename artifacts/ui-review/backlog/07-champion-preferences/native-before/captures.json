@@ -1,0 +1,25 @@
+[
+    {
+        "file": "1440-primary-native-duplicate.png",
+        "sha256": "a735b978a1623a6baae895440ce21f25e636b6fe60a1f4c6d286ef98afa392a4",
+        "path": "/me?/champions",
+        "url": "http://127.0.0.1:40135/me?/champions",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "viewerRole": "owner",
+        "ownerUserId": "970000000000000012",
+        "nativeStatus": 400,
+        "state": "native400-duplicate-championIds-103-103-hydration-failed",
+        "ssrDuplicateSelectedRows": 2,
+        "appError": "each_key_duplicate; hydration 후 오류500 화면",
+        "source": "격리 DB 실제 본인 세션·실제 form native submit(103,103)·기존 top266/ordinal/createdAt 불변",
+        "externalAssetsBlocked": true,
+        "imageRead": true,
+        "reviewer": "/root/pending_rules_research",
+        "visualReview": "실제 이미지 판독: 헤더·푸터는 유지되고 본문 전체가 오류500·다시 시도 화면으로 전환됨",
+        "limitations": "대표 1440 primary 1조건; 외부 이미지·폰트 차단; 실제 사용자 데이터 없음"
+    }
+]

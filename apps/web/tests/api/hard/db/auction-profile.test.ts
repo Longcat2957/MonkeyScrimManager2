@@ -3,6 +3,11 @@ import test, { type TestContext } from 'node:test';
 import { and, eq } from 'drizzle-orm';
 import { LANES } from '../../../../src/lib/features/scrims/formation.ts';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
+import { replaceMyChampionPreferences } from '../../../../src/lib/server/accounts/champions.ts';
+import {
+    parseChampionPreferenceCatalog,
+    preferredChampionResolver
+} from '../../../../src/lib/server/ddragon/champion-preferences.ts';
 import {
     drawAuctionLot,
     getAuction,
@@ -303,4 +308,113 @@ test('후보의 사용자나 시즌 귀속이 미확인이면 임의의 0기록�
         .where(eq(schema.scrimParticipants.id, target.participantId));
     await f.db.update(schema.scrims).set({ mmrSeasonId: null }).where(eq(schema.scrims.id, f.currentScrimId));
     assert.equal((await f.view()).openProfile, null);
+});
+
+const preferenceCatalog = parseChampionPreferenceCatalog(
+    {
+        data: {
+            Ahri: { id: 'Ahri', key: '103', name: '아리' },
+            Lux: { id: 'Lux', key: '99', name: '럭스' },
+            Garen: { id: 'Garen', key: '86', name: '가렌' }
+        }
+    },
+    '26.21.1'
+);
+const preferenceDependencies = { catalog: async () => preferenceCatalog };
+const preferenceResolver = preferredChampionResolver(preferenceCatalog);
+
+test('현재 경매 후보는 희망 포지션의 저장 순서와 실제 카탈로그만 표시하며 전적·경매 상태를 바꾸지 않는다', async (t) => {
+    const f = await fixture(t);
+    const target = await f.draw();
+    await f.db
+        .insert(schema.scrimParticipantPreferences)
+        .values({ scrimParticipantId: target.participantId, position: 'mid', priority: 1 });
+    const before = {
+        revision: await f.revision(),
+        games: await f.db.select().from(schema.games),
+        ratings: await f.ratings()
+    };
+    await replaceMyChampionPreferences(
+        f.db,
+        { userId: target.userId, isServiceAdmin: false },
+        { position: 'mid', championIds: [99, 103] },
+        preferenceDependencies
+    );
+    await f.db
+        .insert(schema.userChampionPreferences)
+        .values({ userId: target.userId, position: 'mid', championId: 999999, ordinal: 3 });
+    const profile = (await getAuction(
+        f.db,
+        null,
+        f.guildId,
+        f.currentScrimId,
+        undefined,
+        champion,
+        preferenceResolver
+    ))!.openProfile!;
+    assert.equal(profile.mainLane, null);
+    assert.deepEqual(profile.summary, { games: 0, wins: 0, losses: 0 });
+    assert.equal(profile.preferredChampionPosition, 'mid');
+    assert.deepEqual(
+        profile.preferredChampions.map((entry) => entry.id),
+        ['Lux', 'Ahri']
+    );
+    assert.equal(profile.preferredChampions[0]!.name, '럭스');
+    assert.ok(profile.preferredChampions[0]!.iconUrl?.endsWith('/Lux.png'));
+    assert.deepEqual(
+        {
+            revision: await f.revision(),
+            games: await f.db.select().from(schema.games),
+            ratings: await f.ratings()
+        },
+        before
+    );
+});
+
+test('희망 위치가 없으면 실제 주력 포지션의 선호를 읽고 비공개·탈퇴 프로필은 숨긴다', async (t) => {
+    const f = await fixture(t);
+    const game = await f.createGame(f.db, 1);
+    await f.apply(game.id);
+    const target = await f.draw();
+    const lane = LANES[target.index % 5]!;
+    await replaceMyChampionPreferences(
+        f.db,
+        { userId: target.userId, isServiceAdmin: false },
+        { position: lane, championIds: [86, 103] },
+        preferenceDependencies
+    );
+    const read = async () =>
+        (await getAuction(f.db, null, f.guildId, f.currentScrimId, undefined, champion, preferenceResolver))!
+            .openProfile!;
+    const visible = await read();
+    assert.equal(visible.preferredChampionPosition, lane);
+    assert.equal(visible.mainLane, lane);
+    assert.deepEqual(
+        visible.preferredChampions.map((entry) => entry.id),
+        ['Garen', 'Ahri']
+    );
+    const before = {
+        games: await f.db.select().from(schema.games),
+        ratings: await f.ratings(),
+        revision: await f.revision()
+    };
+    for (const change of [
+        { publicProfile: false },
+        { publicProfile: false, publicRiotIds: false, isServiceAdmin: false, withdrawnAt: new Date() }
+    ]) {
+        await f.db.update(schema.users).set(change).where(eq(schema.users.id, target.userId));
+        const profile = await read();
+        assert.deepEqual(profile.preferredChampions, []);
+        assert.equal(profile.preferredChampionPosition, null);
+        assert.deepEqual(profile.summary, visible.summary);
+        assert.deepEqual(profile.championRecords, visible.championRecords);
+    }
+    assert.deepEqual(
+        {
+            games: await f.db.select().from(schema.games),
+            ratings: await f.ratings(),
+            revision: await f.revision()
+        },
+        before
+    );
 });

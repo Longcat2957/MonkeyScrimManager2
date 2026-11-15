@@ -1,6 +1,6 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-15 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **44개 업무 테이블·104개 외래키**. Drizzle `getTableConfig`의 원본 스키마 집계이며 조회용 `relations`를 별도 제약으로 세지 않는다.
+기준: 2026-11-16 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **44개 업무 테이블·104개 외래키**. Drizzle `getTableConfig`의 원본 스키마 집계이며 조회용 `relations`를 별도 제약으로 세지 않는다.
 전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
 게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
 경기 라인업·결과 이력·게시 대상 확장은 [0003_match_results.sql](../apps/web/drizzle/0003_match_results.sql)에 포함한다.
@@ -10,6 +10,7 @@
 서비스 운영자 지정·회수 감사는 [0010_service_admin_events.sql](../apps/web/drizzle/0010_service_admin_events.sql)에 포함한다.
 본인 공개 설정·탈퇴 상태·고유 공개 UUID와 탈퇴 시 비공개 제약은 [0011_account_privacy.sql](../apps/web/drizzle/0011_account_privacy.sql)에 포함한다. 내부 사용자 ID·과거 경기·MMR·canonical PUUID는 유지한다.
 알려진 기존 글만 갱신하고 유실/채널 변경 때 과거 새글 생성을 차단하는 작업 표식은 [0012_privacy_publication_refresh.sql](../apps/web/drizzle/0012_privacy_publication_refresh.sql)에 포함한다.
+포지션별 선호 챔피언의 선택 순서는 [0013_champion_preference_order.sql](../apps/web/drizzle/0013_champion_preference_order.sql)에 포함한다. 기존 테이블의 열·제약만 보완하므로 테이블·외래키 수는 유지한다. `0013`은 격리 테스트 DB에서 검증했으며 운영 DB에는 적용하지 않았다.
 인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
 
 배포 복원 검증은 별도 `msm2_deploy_probe` schema의 부모/자식 FK를 만들 수 있으며 그 검증용 관계는 업무 ERD에 포함하지 않는다. `0007` 당시41개/93개와 probe 포함94개의 역사 실행은 [통합 검증 기록](../artifacts/ui-review/operations/checks.json)에 보존한다. 현재 원본 스키마·업그레이드 범위는 [후속 구현](remaining-implementation.md)을 따른다.
@@ -147,6 +148,8 @@ erDiagram
         text user_id PK, FK
         enum position PK
         integer champion_id PK
+        integer ordinal "양수·포지션 내 순서"
+        timestamptz created_at
     }
     guild_discord_settings {
         text guild_id PK, FK
@@ -190,6 +193,10 @@ erDiagram
 
 `users`는 OAuth 로그인과 검증된 Discord 멤버 응답에서 생성한다. `sessions`에는 난수 토큰의 해시와 만료만 보관한다.
 일반 서버 화면은 공개 열람하고, 본인 신청·관리 조작은 별도 권한 검사를 거친다.
+
+`user_champion_preferences.champion_id`는 Data Dragon의 숫자 `key`다. 같은 챔피언을 다른 포지션에 저장할 수 있으며 같은 포지션의 중복은 기존 PK가 막는다. `ordinal`은 기본 1·양수이며 `(user_id, position, ordinal)`도 고유하다. `0013`은 기존 항목을 사용자·포지션별 `created_at → champion_id` 순서로 채우고 10개를 초과한 기존 행도 삭제하지 않는다. 새 저장의 포지션당 최대 10개 제한과 실제 카탈로그 검증은 서비스가 담당한다.
+
+본인 저장은 활성 사용자 행의 `NO KEY UPDATE` 잠금 뒤 해당 포지션만 원자 교체한다. 탈퇴도 같은 사용자 행을 잠그고 선호를 삭제하므로 늦은 저장이 탈퇴 뒤 설정을 재생성하지 않는다. 카탈로그에 없는 기존 항목은 같은 포지션에서 보존·재정렬·삭제할 수 있고 새로 추가하거나 다른 포지션에 복사할 수 없다. 경매 후보에는 프로필 공개 상태이고 탈퇴하지 않은 사용자의 실제 카탈로그 항목만 저장 순서대로 제공한다. 관련 검사 94개의 범위는 [백엔드 계획](backend-plan.md#본인-선호-챔피언)에 기록한다.
 
 Riot 식별자는 PUUID 고유 행으로 재사용하고 사용자 연결은 `guild_riot_accounts`에서 **서버별**로 관리한다.
 같은 계정은 서버마다 다른 사용자에게 연결될 수 있으며 `(guild_id, user_id)`의 대표 연결은 최대 하나다.

@@ -15,7 +15,11 @@ import {
     scrimTeams
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
-import { auctionTargetProfile, type AuctionChampionResolver } from './auction-profile.ts';
+import {
+    auctionTargetProfile,
+    type AuctionChampionResolver,
+    type AuctionPreferredChampionResolver
+} from './auction-profile.ts';
 import {
     canRevertAuctionAction,
     invalidateAuctionActions,
@@ -155,7 +159,8 @@ export async function getAuction(
     guildId: string,
     scrimId: string,
     access?: ScrimAccessDependencies,
-    champion: AuctionChampionResolver = (id) => ({ id, name: id, iconUrl: null })
+    champion: AuctionChampionResolver = (id) => ({ id, name: id, iconUrl: null }),
+    preferredChampion?: AuctionPreferredChampionResolver
 ): Promise<AuctionView | null> {
     requireUuid(scrimId, '내전');
     return readGuild(
@@ -220,7 +225,10 @@ export async function getAuction(
                           row.mmrSeasonId,
                           rawPlayers.find((player) => player.participantId === openLot.participantId)
                               ?.userId ?? null,
-                          champion
+                          champion,
+                          rawPlayers.find((player) => player.participantId === openLot.participantId)
+                              ?.positions[0] ?? null,
+                          preferredChampion
                       )
                     : null,
                 queue: state.queue.flatMap((entry) =>

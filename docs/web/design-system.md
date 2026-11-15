@@ -82,6 +82,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 작은 범위 정수 | `Stepper` | 팀 수·추가 신청 정원·통계 최소 게임. 이름 있는 그룹의 `stepperLabels`, `injClassBtn="min-h-11 min-w-11"` 사용. 모집 범위는 `features/scrims/settings.ts` 기준 |
 | 단일·다중 선택 | `Radio`·`Checkbox` | 계정·팀·희망 포지션 등. 그룹은 `<fieldset><legend>` |
 | 켜짐/꺼짐 | `SwitchCell` | 헤더 화면 모드·모집 하드 피어리스·본인 공개 설정의 바인딩. 실제 버튼에 switch 역할·선택/비활성 상태·제목과 부제 설명을 연결하며 변경 책임은 호출 컴포넌트 |
+| 선호 챔피언 | `ChampionPreferences` + 기존 Input/Button/SelectionTabs/PageNav | 실제 카탈로그 검색·포지션별 순서·한 저장. 선택과 결과는 중복하지 않고 키보드 포커스를 이어 줌 |
 | Discord 역할·채널 | `DiscordSettingRow`·`ActionMenu` | 현재 값 버튼으로 선택 목록을 열고 고르면 저장 |
 | 날짜 | `Calendar popup={null}` | `ScrimSettingsDialog` 안에 펼침. 선택 결과는 `YYYY-MM-DD`, `height={32}`는 뷰포트 높이의 32%이며 px 값이 아님 |
 | 시각 | `Input` | `HH:mm` 문자열과 직접 형식 검증 |

@@ -1,0 +1,32 @@
+[
+    {
+        "file": "1440-primary-native-duplicate.png",
+        "sha256": "a30a68c086def1e82b7ca026007386d22b392fb22da102f763c13902f34a9231",
+        "url": "http://127.0.0.1:42477/me?/champions",
+        "path": "/me?/champions",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "viewerRole": "owner",
+        "ownerUserId": "970000000000000012",
+        "nativeStatus": 400,
+        "state": "native400-duplicate-championIds-103-103-recovered",
+        "source": "격리 DB 실제 본인 세션·실제 form native submit(103,103)·기존 top266 보존",
+        "externalAssetsBlocked": true,
+        "imageRead": true,
+        "limitations": "대표 1440 primary 1조건; 외부 이미지·폰트 차단; 실제 사용자 데이터 없음",
+        "reviewer": "/root/pending_rules_research",
+        "visualReview": "실제 이미지 판독: 내 정보 전체와 오류 안내가 유지되며 아리 선택1행·제거1개가 보임; 헤더·본문·푸터 순서와 여백 정상, 가로 잘림 없음",
+        "validation": {
+            "ssrSelectedRows": 1,
+            "removeControls": 1,
+            "removeInteraction": "실제 클릭 뒤 선택0행",
+            "appErrors": [],
+            "storedChampionIds": [266],
+            "ordinalAndCreatedAtUnchanged": true,
+            "overflow": false
+        }
+    }
+]

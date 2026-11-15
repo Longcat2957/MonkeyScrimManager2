@@ -1,5 +1,6 @@
-import { and, desc, eq, isNotNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import { LANES, type ChampionRef, type TargetProfile } from '../../features/scrims/formation.ts';
+import type { LolPosition } from '../../features/guild/types.ts';
 import type { Transaction } from '../db/types.ts';
 import {
     gameParticipants,
@@ -7,10 +8,13 @@ import {
     matches,
     roflParticipantDataV1,
     scrimParticipants,
-    scrims
+    scrims,
+    userChampionPreferences,
+    users
 } from '../db/schema.ts';
 
 export type AuctionChampionResolver = (id: string) => ChampionRef;
+export type AuctionPreferredChampionResolver = (championId: number) => ChampionRef | null;
 
 /** 현재 계정 소유자가 아니라 해당 시즌의 실제 출전자에게 귀속된 경매 참고 전적을 읽는다. */
 export async function auctionTargetProfile(
@@ -18,7 +22,9 @@ export async function auctionTargetProfile(
     guildId: string,
     seasonId: string | null,
     userId: string | null,
-    champion: AuctionChampionResolver
+    champion: AuctionChampionResolver,
+    preferredPosition: LolPosition | null = null,
+    preferredChampion?: AuctionPreferredChampionResolver
 ): Promise<(TargetProfile & { recentChronologyKnown: boolean }) | null> {
     if (!seasonId || !userId) return null;
     const records = await tx
@@ -90,6 +96,29 @@ export async function auctionTargetProfile(
     const playedLanes = [...new Set(records.flatMap((record) => (record.position ? [record.position] : [])))];
     // 기존 개인 전적처럼 출전 수 동률이면 정렬된 기록에 먼저 나온 포지션을 유지한다.
     const mainLane = playedLanes.sort((left, right) => laneGames[right] - laneGames[left])[0] ?? null;
+    // 희망 포지션은 선호 목록 선택에만 사용하고 실제 출전·주력 포지션을 바꾸지 않는다.
+    const preferredLane = preferredPosition ?? mainLane;
+    const preferred =
+        preferredLane && preferredChampion
+            ? await tx
+                  .select({ championId: userChampionPreferences.championId })
+                  .from(userChampionPreferences)
+                  .innerJoin(users, eq(users.id, userChampionPreferences.userId))
+                  .where(
+                      and(
+                          eq(userChampionPreferences.userId, userId),
+                          eq(userChampionPreferences.position, preferredLane),
+                          eq(users.publicProfile, true),
+                          isNull(users.withdrawnAt)
+                      )
+                  )
+                  .orderBy(asc(userChampionPreferences.ordinal), asc(userChampionPreferences.championId))
+                  .limit(10)
+            : [];
+    const preferredChampions = preferred.flatMap(({ championId }) => {
+        const resolved = preferredChampion?.(championId);
+        return resolved ? [resolved] : [];
+    });
     return {
         summary: { games: records.length, wins, losses: records.length - wins },
         mainLane,
@@ -113,8 +142,9 @@ export async function auctionTargetProfile(
             playedAt: record.playedAt?.toISOString() ?? null
         })),
         recentChronologyKnown: records.every((record) => record.playedAt !== null),
-        // 실제 제공하지 않는 선호 챔피언·외부 Riot 캐시를 내전 기록으로 대체하지 않는다.
-        preferredChampions: [],
+        preferredChampions,
+        preferredChampionPosition: preferredChampions.length ? preferredLane : null,
+        // 외부 Riot 캐시는 내전 기록으로 대체하지 않는다.
         riot: null
     };
 }

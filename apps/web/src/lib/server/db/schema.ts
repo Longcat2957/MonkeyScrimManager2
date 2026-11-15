@@ -109,11 +109,15 @@ export const userChampionPreferences = pgTable(
         position: lolPosition('position').notNull(),
         // Data Dragon 챔피언의 key를 정수로 저장한다. 실제 존재 여부는 저장 시 카탈로그로 검증한다.
         championId: integer('champion_id').notNull(),
+        // 포지션 안의 선택 순서를 보존하며 기존 단일 항목 입력은 첫 번째로 둔다.
+        ordinal: integer('ordinal').default(1).notNull(),
         createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
     },
     (table) => [
         // 같은 챔피언을 여러 포지션에 등록할 수 있지만 동일 포지션 내 중복은 허용하지 않는다.
         primaryKey({ columns: [table.userId, table.position, table.championId] }),
+        unique('user_champion_preferences_order_unique').on(table.userId, table.position, table.ordinal),
+        check('user_champion_preferences_ordinal_positive', sql`${table.ordinal} > 0`),
         check('user_champion_preferences_champion_id_positive', sql`${table.championId} > 0`)
     ]
 );

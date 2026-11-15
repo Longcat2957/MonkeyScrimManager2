@@ -2,6 +2,7 @@ import type { MyPrivacy, PrivacyPreferences } from '#lib/features/me/privacy.ts'
 import { DomainError } from '#lib/server/errors.ts';
 import { clearMockRiotAccounts, listMockRiotAccounts } from './me.ts';
 import { mockUser } from './session.ts';
+import { clearMockChampionPreferences } from './champions.ts';
 
 let preferences: PrivacyPreferences = { publicProfile: true, publicRiotIds: true };
 
@@ -25,5 +26,6 @@ export function withdrawMockAccount(confirmed: boolean) {
     const reason = getMockPrivacy().withdrawalBlock;
     if (reason) throw new DomainError('CONFLICT', reason);
     clearMockRiotAccounts(mockUser.userId);
+    clearMockChampionPreferences();
     preferences = { publicProfile: false, publicRiotIds: false };
 }

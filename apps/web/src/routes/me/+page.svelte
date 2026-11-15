@@ -2,6 +2,7 @@
     import { SERVICE_NAME } from '#lib/branding.ts';
     import RiotAccountList from '#lib/components/me/RiotAccountList.svelte';
     import PrivacySettings from '#lib/components/me/PrivacySettings.svelte';
+    import ChampionPreferences from '#lib/components/me/ChampionPreferences.svelte';
     import type { PageProps } from './$types';
 
     let { data, form }: PageProps = $props();
@@ -40,11 +41,19 @@
     </header>
 
     <RiotAccountList groups={data.groups} />
-    <PrivacySettings
-        privacy={data.privacy}
-        preview={data.preview}
-        initialValues={form && 'values' in form ? form.values : undefined}
-        initialError={form && 'action' in form && form.action === 'privacy' ? form.message : ''}
-        initialWithdrawError={form && 'action' in form && form.action === 'withdraw' ? form.message : ''}
-    />
+    {#key data.me.userId}
+        <ChampionPreferences
+            value={data.championPreferences}
+            preview={data.preview}
+            initialValues={form && 'action' in form && form.action === 'champions' ? form.values : undefined}
+            initialError={form && 'action' in form && form.action === 'champions' ? form.message : ''}
+        />
+        <PrivacySettings
+            privacy={data.privacy}
+            preview={data.preview}
+            initialValues={form && 'action' in form && form.action === 'privacy' ? form.values : undefined}
+            initialError={form && 'action' in form && form.action === 'privacy' ? form.message : ''}
+            initialWithdrawError={form && 'action' in form && form.action === 'withdraw' ? form.message : ''}
+        />
+    {/key}
 </div>

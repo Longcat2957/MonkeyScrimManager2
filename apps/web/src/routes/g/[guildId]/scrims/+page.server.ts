@@ -24,7 +24,7 @@ import type { Actions, PageServerLoad } from './$types';
 const PAGE_SIZE = 20;
 const FILTERS: ScrimStatusFilter[] = ['all', 'recruit', 'active', 'done'];
 
-// TODO: 인증·권한이 연결되면 서버 관리자 대신 내전 생성 권한을 확인한다.
+// 명시적인 개발 샘플 변경만 이 분기를 사용하며 실제 생성 권한은 서비스에서 검사한다.
 function requireDev() {
     if (!dev) error(404, '내전을 찾을 수 없습니다.');
 }

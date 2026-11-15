@@ -168,6 +168,7 @@ export type TargetProfile = {
     championRecords: { champion: ChampionRef; games: number; wins: number }[];
     laneGames: Record<LolPosition, number>;
     preferredChampions: ChampionRef[];
+    preferredChampionPosition?: LolPosition | null;
     recentGames: {
         id: string;
         champion: ChampionRef;

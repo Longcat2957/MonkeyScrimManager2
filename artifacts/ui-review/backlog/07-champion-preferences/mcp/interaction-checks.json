@@ -1,0 +1,39 @@
+{
+    "actualSaves": 1,
+    "checks": [
+        {
+            "width": 768,
+            "theme": "dark",
+            "columns": 3,
+            "selectedDraft": 10,
+            "touchTargetsAtLeast44": true,
+            "reducedMotionFeedback": true,
+            "overflow": false,
+            "errors": [],
+            "scope": "실제 CSS viewport 레이아웃"
+        },
+        {
+            "width": 320,
+            "theme": "primary",
+            "columns": 2,
+            "selectedDraft": 10,
+            "touchTargetsAtLeast44": true,
+            "reducedMotionFeedback": true,
+            "overflow": false,
+            "errors": [],
+            "scope": "실제 CSS viewport 레이아웃"
+        },
+        {
+            "width": 720,
+            "theme": "primary",
+            "columns": 3,
+            "selectedDraft": 10,
+            "touchTargetsAtLeast44": true,
+            "reducedMotionFeedback": true,
+            "overflow": false,
+            "errors": [],
+            "scope": "1440px 200% 확대의 해당 CSS폭만 확인; 실제 브라우저 확대/화면낭독기 음성/성능수치 검증 아님"
+        }
+    ],
+    "scope": "실제 Playwright MCP의 키보드 조작·저장·감소모션 피드백·추가 CSS폭만 검증. 실제 브라우저200%확대·화면낭독기음성·성능수치 검증으로 주장하지 않음"
+}

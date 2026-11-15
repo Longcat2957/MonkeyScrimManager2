@@ -5,6 +5,10 @@ import { findMockScrim } from '#lib/mocks/scrims.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
+import {
+    getChampionPreferenceCatalog,
+    preferredChampionResolver
+} from '#lib/server/ddragon/champion-preferences.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { getAuction } from '#lib/server/scrims/auction.ts';
@@ -25,7 +29,10 @@ export const GET: RequestHandler = async ({ params, locals, setHeaders }) => {
         let auction = null;
         if (scrim.formationMethod === 'auction' && scrim.status !== 'recruit') {
             const version = await latestDataDragonVersion();
-            const champion = await championResolver(version);
+            const [champion, catalog] = await Promise.all([
+                championResolver(version),
+                preview ? Promise.resolve([]) : getChampionPreferenceCatalog(version).catch(() => [])
+            ]);
             auction = preview
                 ? await getMockAuction(
                       params.guildId,
@@ -39,7 +46,8 @@ export const GET: RequestHandler = async ({ params, locals, setHeaders }) => {
                       params.guildId,
                       params.scrimId,
                       undefined,
-                      champion
+                      champion,
+                      preferredChampionResolver(catalog)
                   );
         }
         return json({ scrim, auction } satisfies AuctionLiveSnapshot);

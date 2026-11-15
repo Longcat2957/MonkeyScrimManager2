@@ -113,14 +113,17 @@
 
     {#if profile.preferredChampions.length}
         <section class="flex flex-col gap-2">
-            {@render heading('선호 챔피언')}
-            <ul class="grid grid-cols-3 gap-1">
+            {@render heading(
+                '선호 챔피언',
+                profile.preferredChampionPosition ? laneText(profile.preferredChampionPosition) : undefined
+            )}
+            <ul class="grid grid-cols-2 gap-1 sm:grid-cols-3">
                 {#each profile.preferredChampions as champion (champion.id)}
                     <li
                         class="flex min-w-0 items-center gap-2 rounded-(--radius-small) bg-bg-surface p-2 dark:bg-bg-surface-dark"
                     >
                         {@render champ(champion)}
-                        <span class="truncate text-xs font-semibold">{champion.name}</span>
+                        <span class="min-w-0 text-sm font-semibold wrap-anywhere">{champion.name}</span>
                     </li>
                 {/each}
             </ul>
