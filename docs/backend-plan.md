@@ -173,10 +173,11 @@ ROFL은 검증된 파일·경기 식별 근거로 재요청을 구분한다. 응
 | `/scrims` | `status=all/recruit/active/done`, `page`, 20개씩 조회 |
 | `/scrims/[scrimId]` 및 `/manual`, `/auction`, `/bracket`, `/result` | 신청·팀·경매·대진·가능한 조작. 종료 결과는 조회 전용 |
 | `/scrims/[scrimId]/auction/live` | 공개 경매 관전자의 자동/수동 갱신이 소비하는 현재 경매와 상위 내전 문맥. 기존 공개 읽기 권한·`private, no-store` |
-| `/matches` | `q`, 종료 목록 `page`·20개, 진행 목록 상한 100개 |
+| `/matches` | `q`, `season`, KST `from`/`to`, 종료 목록 `page`·20개, 진행 목록 상한100개. 기본 전체 시즌이며 표시하는 실제 경기일과 기간·정렬·쪽을 일치시킨다. 미확인 시각은 추정하지 않음 |
 | `/matches/[matchId]` | 시리즈·실출전·Game·피어리스·MMR 상태, `game=<gameId>` 선택 |
 | `/players/[userId]` | 해당 길드의 사용자 전적, `position`, `page`·10개 |
-| `/stats` | `position`, `min`. `recent`는 개발 샘플의 업적·배지에만 적용하며 실제 서버에는 이 조작이 없음 |
+| `/stats` | 기본 활성/선택 `season`, `position`, `min`. `recent`는 개발 샘플 업적·배지에만 적용하며 실제 서버는 조작을 숨긴다. SSR/live 공통 snapshot·30초 자동/수동 갱신, 오류 때 마지막 자료와 정렬·쪽 보존 |
+| `/stats/live` | 통계 화면이 소비하는 GET snapshot. 기존 공개 읽기·같은 서버 시즌·개인정보 투영과 `private, no-store`. 취소·늦은 응답·15초 timeout·숨김/offline/중지·60/120초 backoff는 화면 제어기가 담당 |
 | `/backoffice` | 현재 DB에서 확인한 서비스 운영자 전용 실제 DB·봇 상태, 운영자 목록과 변경 감사 이력 20개씩 조회. 길드 관리자 권한과 분리 |
 | `/`, `/docs`, `/terms`, `/privacy`, `/dev/*` | 소개·문서·정책·개발 도구. 이를 위한 범용 콘텐츠 CRUD는 추가하지 않음 |
 

@@ -84,6 +84,8 @@
 - `/g/[guildId]/ranking`: `RankingBoard`의 무한 스크롤이 소비하는 선택 시즌 서버 순위 다음 쪽. 기존 `RankingPage` 응답 형식은 유지한다.
 - `/g/[guildId]/scrims/[scrimId]/auction/live`: 경매 열람자의 자동/수동 갱신이 소비하는 현재 경매·내전 snapshot. 기존 공개 읽기 권한, `private, no-store`. 별도 사용자 페이지나 서버 입찰 endpoint가 아니다.
 
+공통 푸터는 모든 화면에서 문서·이용약관·개인정보 처리방침과 확정 이메일로 시작하는 단일 `문의` mailto를 제공한다. 별도 문의 페이지/접수 API는 없고 실제 메일 앱·발송은 브라우저 검사에 포함하지 않는다.
+
 Riot API 핸들러의 `region`·`platform` 등은 서버 클라이언트 설정과 검증을 따른다. 기존 프로필·티어 HTTP 조회는 공개이며, 서버 관리의 계정 조회·연결은 관리자 guard를 거친 서버 내부 호출이다.
 
 ## 2. 레이아웃 계층

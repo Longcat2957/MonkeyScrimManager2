@@ -1,12 +1,13 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import { SERVICE_NAME, SERVICE_URL } from '#lib/branding.ts';
+    import { CONTACT_EMAIL, SERVICE_NAME, SERVICE_URL } from '#lib/branding.ts';
 
     const serviceDomain = new URL(SERVICE_URL).hostname;
     const footerLinks = [
-        { label: '문서', path: '/docs' },
-        { label: '이용약관', path: '/terms' },
-        { label: '개인정보 처리방침', path: '/privacy' }
+        { label: '문서', href: resolve('/docs') },
+        { label: '이용약관', href: resolve('/terms') },
+        { label: '개인정보 처리방침', href: resolve('/privacy') },
+        { label: '문의', href: `mailto:${CONTACT_EMAIL}` }
     ] as const;
 </script>
 
@@ -24,12 +25,12 @@
         </div>
 
         <nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-sm">
-            {#each footerLinks as link (link.path)}
+            {#each footerLinks as link (link.href)}
                 <a
-                    href={resolve(link.path)}
+                    href={link.href}
                     class={[
-                        'inline-flex min-h-11 items-center px-2 underline-offset-4 hover:underline',
-                        { 'font-semibold': link.path === '/privacy' }
+                        'inline-flex min-h-11 min-w-11 items-center justify-center px-2 underline-offset-4 hover:underline',
+                        { 'font-semibold': link.href === resolve('/privacy') }
                     ]}
                 >
                     {link.label}

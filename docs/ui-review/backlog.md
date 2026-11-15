@@ -149,7 +149,7 @@ Impeccable layout·clarify는 검색/날짜/시즌을 한 조회 과업으로 �
 | BK-06a | 조회 실패 시 마지막 정상 화면·정렬/쪽/열린 순위 보존 필요. P1 | 15초 timeout·60/120초 backoff·재시도·빈 자료/항목 감소 때 안전한 쪽/선택 보정 | HTTP6·browser6 통과 |
 | BK-06b | SSR와 live 병합 수명에서 무관 URL/상위 자료 갱신이 최신 통계를 되돌릴 여지. 구현 중 코드 검토. P1 | 의미 있는 필터의 정규 요청 문맥과 실제 child 자료 갱신만 교체, hash/무관 query에서도 최신 결과 유지 | hash/무관query 실제 client 이동 뒤 최신2게임 유지 검증 |
 
-Impeccable harden·adapt·clarify·polish로 실패/중지/복구·모바일 조작·갱신 시각/피드백과 상태 보존을 다룬다. 서버 조회는 extract로 SSR/live에 공유하고, 범용 API를 추가하지 않는다. 자동 요청만 low priority를 쓰며 지연 개선율이나 CWV를 측정한 것으로 보고하지 않는다. 관련 코드는 `features/stats/types.ts`, `server/stats/snapshot.ts`, `ui/stats-live.ts`, 통계 loader/화면·`stats/live`·`StatsRefreshControls.svelte`·`LeaderboardTable.svelte`, records의 additive identityKey와 새 DB/HTTP/browser/unit tests다.
+Impeccable harden·adapt·clarify·polish로 실패/중지/복구·모바일 조작·갱신 시각/피드백과 상태 보존을 다룬다. 서버 조회는 SSR/live 공통 함수로 공유하고, 범용 API를 추가하지 않는다. 자동 요청만 low priority를 쓰며 지연 개선율이나 CWV를 측정한 것으로 보고하지 않는다. 관련 코드는 `features/stats/types.ts`, `server/stats/snapshot.ts`, `ui/stats-live.ts`, 통계 loader/화면·`stats/live`·`StatsRefreshControls.svelte`·`LeaderboardTable.svelte`, records의 additive identityKey와 새 DB/HTTP/browser/unit tests다.
 
 - DB 신규5·기존 기록11/시즌4의20개, controller unit7, HTTP 신규4/기존시즌2의6개, browser 신규4/기존시즌2의6개가 통과했다. 실제500은 격리 테이블을 일시 변경해 재현·복구하고 같은 요청 정상 JSON도 확인했다. nullable 자료 fixture의 FK 제거 순서는 테스트 준비 가정으로 보정했으며 제품 결함으로 집계하지 않는다.
 - 실제 ROFL1→2게임 polling, 같은조건 정렬/필터 보존, hash/무관query 실제client 탐색,503/60초 backoff·15초 timeout·singleflight·pending 중지·중지중 수동·자동복귀·hidden/offline·이동뒤 늦은 응답 차단을 확인했다. 별도 명시 UI주입은30행/20챔피언/업적2개로 page/sort/열린B→항목감소/전체empty→복귀를 검증한다. 운영 업적 활성화나 실제 API 결과로 설명하지 않는다.
@@ -165,8 +165,8 @@ Impeccable harden·adapt·clarify·polish로 실패/중지/복구·모바일 조
 
 | ID | 근거·우선순위 | 변경·완료 조건 | 상태 |
 | --- | --- | --- | --- |
-| BK-07 | 선호 테이블/경매 표현 계약은 있지만 본인 편집과 실제 연결이 없음 | 실제 카탈로그·본인만·5포지션·max10·순서·해당lane 원자교체·현재후보 연결 | 구현·관련94·HTTP8·browser8·MCP8 완료 |
-| BK-07a | 저장 실패/탈퇴/자료 장애·모바일/키보드 경계. P1 | 다른lane 초안 보존·단일 저장·실패 입력·재조회·unknown 보존/삭제·탈퇴후 재생성 차단 | 관련94·HTTP8·browser8 완료 |
+| BK-07 | 선호 테이블/경매 표현 계약은 있지만 본인 편집과 실제 연결이 없음 | 실제 카탈로그·본인만·5포지션·max10·순서·해당lane 원자교체·현재후보 연결 | 구현·관련94·HTTP8·browser9·MCP8 완료 |
+| BK-07a | 저장 실패/탈퇴/자료 장애·모바일/키보드 경계. P1 | 다른lane 초안 보존·단일 저장·실패 입력·재조회·unknown 보존/삭제·탈퇴후 재생성 차단 | 관련94·HTTP8·browser9 완료 |
 | BK-07c | native 중복POST를 서버가400으로거절한뒤 failure 초기배열의중복key가 hydration에서500화면으로전환.1440primary실제재현. P1 | 서버중복거절유지·UI오류초기선택만고유키복원·DB불변·오류안내/제거동작유지 | 수정후durable native browser1 통과 |
 | BK-07b | STDF type=search는 실제 type=text/inputmode=search라 신규 focus fallback이 마지막 제거 뒤 입력을 찾지 못함. 실제390 dark 재현. P1 | 서비스 검색 영역의 실제 입력을 선택해 마지막 제거/검색 결과 소멸 후 포커스 복원 | 수정 뒤4조건의 마지막 제거→검색 포커스 통과, 기존privacy4도 통과 |
 
@@ -177,7 +177,7 @@ Impeccable layout·clarify·adapt·harden·polish로 한 포지션의 검색→�
 
 관련 단일실행94/94는 개인선호10·auction-profile10(신규2 포함)·auction19·account-privacy23의 DB62와 기존 Data Dragon contract32다. HTTP 신규6/기존privacy2의8개, 기존privacy browser4도 통과했다.0013 기존11개를 손실 없이 backfill하고 같은lane 동시저장·서로다른lane·탈퇴 두 우선순서·INSERT실패 rollback·unknown 보존을 확인했다.44테이블/104FK는 유지하고 실제 Drizzle generate 재검사에서 “No schema changes”였다.
 
-첫 브라우저의 searchbox 가정과 catalog 오류의 옛 문구·경매 상세 버튼의 잘못된 group scope는 자동화 가정으로 정정했다. 신규 focus fallback 문제(BK-07b)는 실제 재현한 제품 회귀로 별도 수정했다. source detector는 새 primary0·기존 경매의11px 보조 크기 advisory5를 유지했고 새 무시 규칙을 추가하지 않았다. 최종 브라우저는 신규4+기존privacy4의8개, MCP8조건을 통과했다.
+첫 브라우저의 searchbox 가정과 catalog 오류의 옛 문구·경매 상세 버튼의 잘못된 group scope는 자동화 가정으로 정정했다. 신규 focus fallback 문제(BK-07b)는 실제 재현한 제품 회귀로 별도 수정했다. source detector는 새 primary0·기존 경매의11px 보조 크기 advisory5를 유지했고 새 무시 규칙을 추가하지 않았다. 기본 브라우저는 신규4+기존privacy4의8개, MCP8조건을 통과했고 뒤의 native1을 포함한 최종 browser는9개다.
 
 
 [before6](../../artifacts/ui-review/backlog/07-champion-preferences/before/captures.json)·[after12](../../artifacts/ui-review/backlog/07-champion-preferences/after/captures.json)·[MCP8](../../artifacts/ui-review/backlog/07-champion-preferences/mcp/captures.json)의26장을 실제 판독·SHA·역할/상태/실행URL로 기록했다. root도 desktop/mobile10개 초안·503 보존·320px 줄바꿈·공개경매를 직접 읽었다.14개 실제형 catalog는 검색2쪽과 검색/포지션 변경 첫쪽을 확인하는 격리 override며 운영 fixture의 외부 이미지/폰트는 차단했다.768px3열·320px버튼다음줄44px·720 CSS폭·reduced-motion 피드백을 확인했고 실제200%브라우저줌/음성청취/CWV로 확대하지 않는다.
@@ -186,3 +186,26 @@ Impeccable layout·clarify·adapt·harden·polish로 한 포지션의 검색→�
 
 
 최종 harden에서 발견한BK-07c는 서버의400 계약을 바꾸지 않고 실패 초기값의 UI 복제에만 Set을 적용해 고쳤다. [native-before1](../../artifacts/ui-review/backlog/07-champion-preferences/native-before/captures.json)·[native-after1](../../artifacts/ui-review/backlog/07-champion-preferences/native-after/captures.json)은 같은1440×1000 primary·중복103,103으로 실제400→500전환과 수정뒤400안내/고유1행·제거1개를 비교한다. native durable1을 포함해관련browser는9/9이며 PNG는총28장이다. 원래DB266·ordinal·createdAt을 보존하고 실제제거조작·JS0을 확인했다. 공개 전후26장은 정상/오류저장·경매 상태 증거로 유지하며 native재현/수정2장과 구분한다. 모든 fixture·소유schema·개인tmp를 정리했고5173은 유지했다.
+
+
+## 8. 문의 경로
+
+| ID | 근거·우선순위 | 변경·완료 조건 | 상태 |
+| --- | --- | --- | --- |
+| BK-08a | 첫MCP실측의 문의 anchor가41.765625×44px로 목표너비미달. 신규링크에대한실제확인. P2 | 공통푸터 anchor의 min-width도44px로보완하고양폭/테마/좁은폭재측정 | 최종MCP10/푸터browser4에서44×44px 확인 |
+| BK-08 | 사용자 확정 문의 이메일은 있지만 시작할 UI 경로가 없음 | 공통푸터의 단일 문의 mailto, 올바른 주소·키보드·44px·좁은 폭·기존정책링크·전역/본인/길드 shell | browser4/20기본방문·MCP10 완료 |
+
+Impeccable clarify·adapt·polish는 기존 푸터의 간결한4링크·터치/포커스·줄바꿈을 확인하는 데 적용한다. 같은 문의 조작은 본문에 중복하지 않는다. 별도 문의 폼/접수API·안내 카드를 만들지 않는다. 법적 약관·개인정보 본문은 사용자 보류를 유지한다.
+
+
+**8단계 실제 변경:** `branding.ts`의 확정 CONTACT_EMAIL, 기존 AppFooter의 한 문의 링크와 모든 짧은 링크의 최소44×44px, 기존 내부3링크 경로 유지다. 새 서비스/endpoint·본문 문의 버튼은 없다. `document`로 실제 Navigation 규칙·sidecar·README·페이지/라우팅/후속 상태를 병합했고, 최종 읽기 감사에서 찾은 경기 필터·통계 갱신 문서의 옛 표도 갱신했다.
+
+**검증:** 푸터 browser4/4는1440×1000/390×844 primary/dark의 홈·문서·404·본인·관리20기본방문과 대표 admin→docs 실제SPA→뒤로가기2전환을 확인했다. URI·페이지당mailto1개·기존3경로·Tab/ShiftTab·focus-visible·44px·줄바꿈/겹침/가로넘침·JS0/팝업0을 통과했다. 메일 앱은 활성화하지 않았다.
+
+[before8](../../artifacts/ui-review/backlog/08-contact/before/captures.json)·[최종after10](../../artifacts/ui-review/backlog/08-contact/after/captures.json)의18장을 실제 읽고 SHA·역할/실행URL·상태를 기록했다. 본인/관리와문서 기본8은 같은 화면종류·역할·폭·테마로 비교하고 fixture포트/UUID 차이를 명시한다. 최종 [검증 범위](../../artifacts/ui-review/backlog/08-contact/after/validation.json)는 첫8a에서발견한너비와8b의최소너비보완을 구분한다. root도390/320 문서전체·문의focus와푸터를 직접 읽었다.
+
+기존 통계4·선호4/native1·privacy4·시즌2의 통합15/15는 문의가 추가된8a 기능 소스에서 통과했다. 이후8b의 제품변경은 푸터 최소너비/가운데정렬뿐이며 새footer4와MCP10을 같은조건에서 재검증했다. 무관한 회귀15를 반복 실행해 합산하지 않는다. 최종 unit/lite는 웹453/봇80, 앱Svelte0오류/0경고·테스트타입·웹/봇build·format/branding을 통과했다. footer detector는0건이며 새ignore는 추가하지 않았다.
+
+최종6~8단계는 직접UI3종(stats/me/auction), footer대표5종(home/docs/404/me/admin)과 시즌회귀의guild/player를 합쳐9유형을 확인했다.3+5만의합집합은7이며 전체20종·과거1~5단계·중복URL을 더하지 않는다. 전체1~8의 직접UI6종과footer표본의 합집합9는 다른집계정의이므로 최신재검증9와 혼용하지 않는다. 기존20종 검토기록은 유지한다. [완료 검사/66장 해시·판독](../../artifacts/ui-review/backlog/completion.json)을 따른다.
+
+남은 것은 사용자 보류 기준·법적 본문과 운영 적용/외부 환경 검증이다. 새로 확인한 수정 가능한 결함은 모두 해결했다. 사용자 DB·실제 Discord·배포·실제 메일은 변경하지 않고 격리 앱/schema·소유cache/private args를 정리했으며5173을 유지했다. 외부 이미지/폰트 차단·Chromium 검증을 실제 서비스의 폰트·CDN·Safari·물리 기기·음성 청취·정량성능 인증으로 보고하지 않는다.

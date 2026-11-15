@@ -1,0 +1,314 @@
+[
+    {
+        "file": "1440-primary-docs.png",
+        "sha256": "46f1eff5b1bf4bbc53da8635f8372535b12b0bcfb8526a6b7737b3d78649cee0",
+        "url": "http://127.0.0.1:36013/docs",
+        "path": "/docs",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "docs",
+        "viewerRole": "anonymous",
+        "guildId": null,
+        "ownerUserId": null,
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.228Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "1440-dark-docs.png",
+        "sha256": "aefa5d27f188bb27a9ca6da8397fb69868b7b394ddd9a7158d4fec4408f56ef6",
+        "url": "http://127.0.0.1:36013/docs",
+        "path": "/docs",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "docs",
+        "viewerRole": "anonymous",
+        "guildId": null,
+        "ownerUserId": null,
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.228Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "390-primary-docs.png",
+        "sha256": "430d4b2b158227a96c85a531c74326f1d93a0cb05d8c5f0f54fff9902cf97a85",
+        "url": "http://127.0.0.1:36013/docs",
+        "path": "/docs",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "docs",
+        "viewerRole": "anonymous",
+        "guildId": null,
+        "ownerUserId": null,
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.228Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "390-dark-docs.png",
+        "sha256": "e30eca746ddb55ff6d20be19e848bbbea626a5cafbf2380449b3344f2893f8ae",
+        "url": "http://127.0.0.1:36013/docs",
+        "path": "/docs",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "docs",
+        "viewerRole": "anonymous",
+        "guildId": null,
+        "ownerUserId": null,
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.229Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "1440-primary-own-profile.png",
+        "sha256": "b8c7a93df56372123f99ffdfe338667d8a768402e998c581bc1b9695163fd7ad",
+        "url": "http://127.0.0.1:36013/me",
+        "path": "/me",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "own-profile",
+        "viewerRole": "owner",
+        "guildId": null,
+        "ownerUserId": "970000000000000012",
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.229Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "390-dark-own-profile.png",
+        "sha256": "89e5be1f422fdf4409fcbd67a6f876eb11b2b042cc15f37fd47ec536d96023e4",
+        "url": "http://127.0.0.1:36013/me",
+        "path": "/me",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "own-profile",
+        "viewerRole": "owner",
+        "guildId": null,
+        "ownerUserId": "970000000000000012",
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.229Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "1440-primary-guild-admin.png",
+        "sha256": "0d49b2367ae26a8f3c17a4f75d7e5a66bb66f7fa0ca78cf6ec21a30b71943a47",
+        "url": "http://127.0.0.1:36013/g/970000000000000001/admin",
+        "path": "/g/970000000000000001/admin",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "guild-admin",
+        "viewerRole": "manager",
+        "guildId": "970000000000000001",
+        "ownerUserId": null,
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.229Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    },
+    {
+        "file": "390-dark-guild-admin.png",
+        "sha256": "aa5eaa0e848ce9004d9c36bd31f1c8d4a8f3ce805dc4770f4a26ce1223e678be",
+        "url": "http://127.0.0.1:36013/g/970000000000000001/admin",
+        "path": "/g/970000000000000001/admin",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "guild-admin",
+        "viewerRole": "manager",
+        "guildId": "970000000000000001",
+        "ownerUserId": null,
+        "mailLinks": 0,
+        "footerLinks": [
+            {
+                "text": "문서",
+                "href": "/docs"
+            },
+            {
+                "text": "이용약관",
+                "href": "/terms"
+            },
+            {
+                "text": "개인정보 처리방침",
+                "href": "/privacy"
+            }
+        ],
+        "overflow": false,
+        "errors": [],
+        "externalAssetsBlocked": true,
+        "source": "7c 고정빌드의 실제 SSR·격리 DB·본인/관리자 세션·12개 실제형 챔피언 카탈로그, 실제ROFL입력없음. 문의 링크 추가 전.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T15:36:56.229Z",
+        "imageReview": "기존7c 실제PNG 판독: 전역문서/본인/길드관리자 헤더·본문·푸터와 양폭·양테마 정상. footer에는 문서·이용약관·개인정보처리방침만 있고 문의 mailto 없음.",
+        "fixtureClosed": true
+    }
+]
