@@ -1,0 +1,13 @@
+{
+    "retainedEqual": true,
+    "retainedBeforeSha256": "08aa27cfae690888793f1263be480f6f9bc2638ef9d78b5709dd0d989e6c326c",
+    "retainedAfterSha256": "08aa27cfae690888793f1263be480f6f9bc2638ef9d78b5709dd0d989e6c326c",
+    "gameIds": [
+        "73d06c0e-fd8e-473f-8300-6802486d1104",
+        "25362fe2-3cf1-4aa8-8c31-6baae1703386",
+        "08afe54d-5441-4f22-b94f-88e09c90ac00"
+    ],
+    "games": 3,
+    "mmrLedgerCount": 30,
+    "source": "MCP 통계 자동·수동 GET 전후 격리 DB의 기존 내전·경기·게임·출전·MMR 전체행 불변 해시 확인"
+}

@@ -32,6 +32,7 @@ import { selectRecordSeason } from './seasons.ts';
 type ChampionResolver = (id: string) => ChampionRef;
 export type GuildPlayerRecords = {
     userId: string;
+    identityKey?: string;
     displayName: string;
     iconUrl: string | null;
     championId: string | null;
@@ -177,6 +178,7 @@ async function recordsInTransaction(
             if (!identity) continue;
             const player = players.get(userId) ?? {
                 userId: identity.userId,
+                identityKey: identity.identityKey,
                 displayName: publicDisplayName(identity),
                 iconUrl: identity.avatarUrl,
                 championId: null,

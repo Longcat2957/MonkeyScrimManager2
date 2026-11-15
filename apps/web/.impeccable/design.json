@@ -1,6 +1,6 @@
 {
     "schemaVersion": 2,
-    "generatedAt": "2026-11-15T11:46:42.000546+00:00",
+    "generatedAt": "2026-11-15T14:56:37.779093+00:00",
     "title": "Design System: Monkeybot",
     "extensions": {
         "colorMeta": {
@@ -603,6 +603,11 @@
             {
                 "name": "GuildSeasonManagement",
                 "body": "현재 시즌·전환·지난 시즌을 한 열의 별개 영역으로 구분한다. 전환의 보존/기본 MMR 안내는 폼에서 한 번만 제공하고 확인창에는 실제 현재와 새 이름을 표시한다. 긴 이름은 줄바꿈하고 확인 중 트리거를 비활성으로 바꾸지 않아 취소 후 포커스를 복원한다.409는 입력을 유지하면서 현재를 새로 읽어 다시 확인하게 한다.",
+                "section": "components"
+            },
+            {
+                "name": "StatsRefreshControls",
+                "body": "통계의 지속 갱신은 aria-pressed가 있는 자동 토글과 일회 새로고침으로 구분한다. 조작은 최소44px이고 진행 중에도 자동 중지는 가능하다. 마지막 확인 시각은 한국 시간의 조용한 보조 정보이며 반복 성공은 발화하지 않는다. 실패·offline·수동 성공은 같은 상태 영역에 제공하고 정상 자료·정렬·쪽·열린 선택을 보존한다. 없는 챔피언 자료와 전체 빈 상태를 구분한다.",
                 "section": "components"
             }
         ],

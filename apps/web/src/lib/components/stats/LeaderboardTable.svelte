@@ -1,26 +1,35 @@
+<script module lang="ts">
+    export type LeaderboardSortKey =
+        'games' | 'kda' | 'winRate' | 'csPerMin' | 'damagePerMin' | 'visionPerGame' | 'killParticipation';
+</script>
+
 <script lang="ts">
+    import { untrack } from 'svelte';
     import { resolve } from '$app/paths';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
-    import type { AchievementBadge } from '#lib/features/players/achievements.ts';
     import { fixed, percent, integer } from '#lib/features/players/format.ts';
-    import type { PlayerSummary } from '#lib/features/players/types.ts';
+    import type { StatsLeaderboardRow } from '#lib/features/stats/types.ts';
 
-    type Row = PlayerSummary & {
-        userId: string;
-        displayName: string;
-        iconUrl: string | null;
-        badges: AchievementBadge[];
-    };
-    type SortKey =
-        'games' | 'kda' | 'winRate' | 'csPerMin' | 'damagePerMin' | 'visionPerGame' | 'killParticipation';
+    type Row = StatsLeaderboardRow;
+    type SortKey = LeaderboardSortKey;
 
     // 사용자별 지표 표. 열 머리를 누르면 그 지표로 정렬하고, 다시 누르면 방향을 바꾼다.
     let {
         rows,
         guildId,
-        seasonId = null
-    }: { rows: Row[]; guildId: string; seasonId?: string | null } = $props();
+        seasonId = null,
+        contextKey,
+        sortKey = $bindable<SortKey>('kda'),
+        descending = $bindable(true)
+    }: {
+        rows: Row[];
+        guildId: string;
+        seasonId?: string | null;
+        contextKey: string;
+        sortKey?: SortKey;
+        descending?: boolean;
+    } = $props();
 
     const COLUMNS: { key: SortKey; label: string }[] = [
         { key: 'kda', label: 'KDA' },
@@ -34,15 +43,18 @@
 
     const PAGE_SIZE = 20;
     const PODIUM = ['bg-warning/15', 'bg-text-primary/5 dark:bg-text-dark/10', 'bg-warning/5'];
-    let sortKey = $state<SortKey>('kda');
-    let descending = $state(true);
     let current = $state(1);
     let sortMessage = $state('');
+    let previousContext = '';
     const id = $props.id();
-    // 조건이 바뀌어 행이 달라지면 첫 쪽으로 돌아간다.
+    // 같은 조건의 최신 행은 쪽·정렬을 유지하고 줄어든 마지막 쪽만 보정한다.
     $effect(() => {
-        void rows;
-        current = 1;
+        const key = contextKey;
+        const last = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+        untrack(() => {
+            current = key === previousContext ? Math.min(current, last) : 1;
+            previousContext = key;
+        });
     });
 
     const value = (row: Row, key: SortKey) => (key === 'winRate' ? row.wins / row.games : row[key]);
@@ -126,7 +138,7 @@
             </tr>
         </thead>
         <tbody>
-            {#each sorted.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as row, offset (row.userId)}
+            {#each sorted.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as row, offset (row.identityKey ?? row.userId)}
                 {@const index = (current - 1) * PAGE_SIZE + offset}
                 <!-- 1~3위는 행 바탕으로 구분하고, 순위 숫자로도 같은 정보를 준다. -->
                 <tr

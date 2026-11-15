@@ -1,0 +1,150 @@
+[
+    {
+        "file": "1440-primary-recorded-stats.png",
+        "sha256": "384b087bc90803dbb7129d5eb2bbfcefb964307f8055b23393179bf1b3e418eb",
+        "url": "http://127.0.0.1:39909/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "path": "/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "before-stats-automatic-refresh",
+        "overflow": false,
+        "errors": [],
+        "selectedSeasonId": "d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da",
+        "currentSeasonId": "ceb93821-433c-464f-a7b6-19083c6d6d0b",
+        "gameIds": [
+            "03b1fac5-8f5e-43a5-b3f2-bebe4aee8d6b",
+            "22cdf9ff-a7c1-4f5f-a209-47a527c9fc97",
+            "eb0bc635-83c9-420d-a025-06521cf8b749"
+        ],
+        "showAchievements": false,
+        "source": "실제 SSR·익명 공개 통계·실제 ROFL3게임이 있는 종료시즌을 명시 선택하고 min=1로 조회. 업적은 실제 서비스 보류 정책대로 숨기며 외부 장식 에셋 요청은 차단",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:57:48.923Z",
+        "externalAssetsBlocked": true,
+        "imageReview": "PNG 실제 판독: 실제3게임 핵심지표·6개 포지션 필터·최소게임·리더보드 가로스크롤·챔피언표·공유헤더/푸터를 확인했다. 업적은 숨겨져 있으며 390/1440 양테마에 페이지 가로 넘침·중복 조작 없음. 외부이미지 차단으로 챔피언 아이콘은 미로드 상태다.",
+        "viewerRole": "anonymous",
+        "comparisonGroup": "recorded-stats-all-min1-three-games",
+        "filters": {
+            "position": "all",
+            "minGames": 1,
+            "season": "completed"
+        },
+        "recordedGames": 3,
+        "comparisonNote": "MCP와 같은 화면종류·익명역할·전체포지션·최소1게임·3게임 자료로 비교한다. 별도 격리 fixture의 시즌/게임 UUID와 서버 port는 서로 다르다."
+    },
+    {
+        "file": "1440-dark-recorded-stats.png",
+        "sha256": "79c797aed6a3300a2fd71c9a8903a024f306819ac8a89377f9b3e05cbc982704",
+        "url": "http://127.0.0.1:39909/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "path": "/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "before-stats-automatic-refresh",
+        "overflow": false,
+        "errors": [],
+        "selectedSeasonId": "d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da",
+        "currentSeasonId": "ceb93821-433c-464f-a7b6-19083c6d6d0b",
+        "gameIds": [
+            "03b1fac5-8f5e-43a5-b3f2-bebe4aee8d6b",
+            "22cdf9ff-a7c1-4f5f-a209-47a527c9fc97",
+            "eb0bc635-83c9-420d-a025-06521cf8b749"
+        ],
+        "showAchievements": false,
+        "source": "실제 SSR·익명 공개 통계·실제 ROFL3게임이 있는 종료시즌을 명시 선택하고 min=1로 조회. 업적은 실제 서비스 보류 정책대로 숨기며 외부 장식 에셋 요청은 차단",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:57:48.923Z",
+        "externalAssetsBlocked": true,
+        "imageReview": "PNG 실제 판독: 실제3게임 핵심지표·6개 포지션 필터·최소게임·리더보드 가로스크롤·챔피언표·공유헤더/푸터를 확인했다. 업적은 숨겨져 있으며 390/1440 양테마에 페이지 가로 넘침·중복 조작 없음. 외부이미지 차단으로 챔피언 아이콘은 미로드 상태다.",
+        "viewerRole": "anonymous",
+        "comparisonGroup": "recorded-stats-all-min1-three-games",
+        "filters": {
+            "position": "all",
+            "minGames": 1,
+            "season": "completed"
+        },
+        "recordedGames": 3,
+        "comparisonNote": "MCP와 같은 화면종류·익명역할·전체포지션·최소1게임·3게임 자료로 비교한다. 별도 격리 fixture의 시즌/게임 UUID와 서버 port는 서로 다르다."
+    },
+    {
+        "file": "390-primary-recorded-stats.png",
+        "sha256": "15202916ad0af0dca4019aa6a1e1fe6eb2abc7fb2e797fc5fc5e71f557cf475d",
+        "url": "http://127.0.0.1:39909/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "path": "/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "before-stats-automatic-refresh",
+        "overflow": false,
+        "errors": [],
+        "selectedSeasonId": "d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da",
+        "currentSeasonId": "ceb93821-433c-464f-a7b6-19083c6d6d0b",
+        "gameIds": [
+            "03b1fac5-8f5e-43a5-b3f2-bebe4aee8d6b",
+            "22cdf9ff-a7c1-4f5f-a209-47a527c9fc97",
+            "eb0bc635-83c9-420d-a025-06521cf8b749"
+        ],
+        "showAchievements": false,
+        "source": "실제 SSR·익명 공개 통계·실제 ROFL3게임이 있는 종료시즌을 명시 선택하고 min=1로 조회. 업적은 실제 서비스 보류 정책대로 숨기며 외부 장식 에셋 요청은 차단",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:57:48.923Z",
+        "externalAssetsBlocked": true,
+        "imageReview": "PNG 실제 판독: 실제3게임 핵심지표·6개 포지션 필터·최소게임·리더보드 가로스크롤·챔피언표·공유헤더/푸터를 확인했다. 업적은 숨겨져 있으며 390/1440 양테마에 페이지 가로 넘침·중복 조작 없음. 외부이미지 차단으로 챔피언 아이콘은 미로드 상태다.",
+        "viewerRole": "anonymous",
+        "comparisonGroup": "recorded-stats-all-min1-three-games",
+        "filters": {
+            "position": "all",
+            "minGames": 1,
+            "season": "completed"
+        },
+        "recordedGames": 3,
+        "comparisonNote": "MCP와 같은 화면종류·익명역할·전체포지션·최소1게임·3게임 자료로 비교한다. 별도 격리 fixture의 시즌/게임 UUID와 서버 port는 서로 다르다."
+    },
+    {
+        "file": "390-dark-recorded-stats.png",
+        "sha256": "c67081a741ef0e50f99d3816bc1d7f3f6aa9ef7a778f9442496330524b516ad6",
+        "url": "http://127.0.0.1:39909/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "path": "/g/970000000000000001/stats?season=d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da&min=1",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "before-stats-automatic-refresh",
+        "overflow": false,
+        "errors": [],
+        "selectedSeasonId": "d4008b7f-8cd8-4d7a-9daf-7e0b2f6709da",
+        "currentSeasonId": "ceb93821-433c-464f-a7b6-19083c6d6d0b",
+        "gameIds": [
+            "03b1fac5-8f5e-43a5-b3f2-bebe4aee8d6b",
+            "22cdf9ff-a7c1-4f5f-a209-47a527c9fc97",
+            "eb0bc635-83c9-420d-a025-06521cf8b749"
+        ],
+        "showAchievements": false,
+        "source": "실제 SSR·익명 공개 통계·실제 ROFL3게임이 있는 종료시즌을 명시 선택하고 min=1로 조회. 업적은 실제 서비스 보류 정책대로 숨기며 외부 장식 에셋 요청은 차단",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:57:48.923Z",
+        "externalAssetsBlocked": true,
+        "imageReview": "PNG 실제 판독: 실제3게임 핵심지표·6개 포지션 필터·최소게임·리더보드 가로스크롤·챔피언표·공유헤더/푸터를 확인했다. 업적은 숨겨져 있으며 390/1440 양테마에 페이지 가로 넘침·중복 조작 없음. 외부이미지 차단으로 챔피언 아이콘은 미로드 상태다.",
+        "viewerRole": "anonymous",
+        "comparisonGroup": "recorded-stats-all-min1-three-games",
+        "filters": {
+            "position": "all",
+            "minGames": 1,
+            "season": "completed"
+        },
+        "recordedGames": 3,
+        "comparisonNote": "MCP와 같은 화면종류·익명역할·전체포지션·최소1게임·3게임 자료로 비교한다. 별도 격리 fixture의 시즌/게임 UUID와 서버 port는 서로 다르다."
+    }
+]

@@ -1,0 +1,14 @@
+[
+    {
+        "antipattern": "design-system-font-size",
+        "name": "Font size outside DESIGN.md",
+        "description": "A literal font-size is off the type ramp documented in DESIGN.md typography. Use a documented size step or update the design system if the new step is intentional.",
+        "severity": "advisory",
+        "category": "quality",
+        "file": "/home/qed/workspace/MonkeyScrimManager2/apps/web/src/lib/components/stats/LeaderboardTable.svelte",
+        "line": 132,
+        "snippet": "text-[…] class: 0.625rem is off the DESIGN.md type ramp",
+        "advisory": true,
+        "ignoreValue": "0.625rem"
+    }
+]

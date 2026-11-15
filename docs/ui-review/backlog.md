@@ -139,3 +139,23 @@ Impeccable layout·clarify는 검색/날짜/시즌을 한 조회 과업으로 �
 초기 HTTP 검증의 Kit3 node.error/status·Accept·기존 Discord upstream 상태 변환 가정을 정정했고 생산 결함으로 집계하지 않는다. 기존 계정 해제 회귀에서 한 조건의 빠른 확인 응답 대기 timeout이 있었으며 안전한 ‘취소’ 초기 포커스 완료를 검사한 뒤 확인하도록 자동화를 보강해4조건 통과했다. 이 때문에 제품 코드를 바꾸지는 않았다.
 
 실제 Discord/사용자 DB/배포는 변경하지 않았고 모든 fixture·세션·schema·private args/config를 정리했다. 외부 이미지/폰트 차단·Chromium 키보드/viewport이며 Safari·물리 기기·음성 청취·CWV·운영 규모는 미검증이다.
+
+
+## 6. 통계 자동 갱신
+
+| ID | 근거·우선순위 | 변경·완료 조건 | 상태 |
+| --- | --- | --- | --- |
+| BK-06 | 합의된 자동 갱신 미구현, 실제 before4/코드 확인 | 같은 필터의 실제 기록 재조회·단일 요청·30초 재예약·수동/중지·숨김/오프라인 중지·늦은 응답 차단 | DB20/unit7·HTTP6·browser6 통과 |
+| BK-06a | 조회 실패 시 마지막 정상 화면·정렬/쪽/열린 순위 보존 필요. P1 | 15초 timeout·60/120초 backoff·재시도·빈 자료/항목 감소 때 안전한 쪽/선택 보정 | HTTP6·browser6 통과 |
+| BK-06b | SSR와 live 병합 수명에서 무관 URL/상위 자료 갱신이 최신 통계를 되돌릴 여지. 구현 중 코드 검토. P1 | 의미 있는 필터의 정규 요청 문맥과 실제 child 자료 갱신만 교체, hash/무관 query에서도 최신 결과 유지 | hash/무관query 실제 client 이동 뒤 최신2게임 유지 검증 |
+
+Impeccable harden·adapt·clarify·polish로 실패/중지/복구·모바일 조작·갱신 시각/피드백과 상태 보존을 다룬다. 서버 조회는 extract로 SSR/live에 공유하고, 범용 API를 추가하지 않는다. 자동 요청만 low priority를 쓰며 지연 개선율이나 CWV를 측정한 것으로 보고하지 않는다. 관련 코드는 `features/stats/types.ts`, `server/stats/snapshot.ts`, `ui/stats-live.ts`, 통계 loader/화면·`stats/live`·`StatsRefreshControls.svelte`·`LeaderboardTable.svelte`, records의 additive identityKey와 새 DB/HTTP/browser/unit tests다.
+
+- DB 신규5·기존 기록11/시즌4의20개, controller unit7, HTTP 신규4/기존시즌2의6개, browser 신규4/기존시즌2의6개가 통과했다. 실제500은 격리 테이블을 일시 변경해 재현·복구하고 같은 요청 정상 JSON도 확인했다. nullable 자료 fixture의 FK 제거 순서는 테스트 준비 가정으로 보정했으며 제품 결함으로 집계하지 않는다.
+- 실제 ROFL1→2게임 polling, 같은조건 정렬/필터 보존, hash/무관query 실제client 탐색,503/60초 backoff·15초 timeout·singleflight·pending 중지·중지중 수동·자동복귀·hidden/offline·이동뒤 늦은 응답 차단을 확인했다. 별도 명시 UI주입은30행/20챔피언/업적2개로 page/sort/열린B→항목감소/전체empty→복귀를 검증한다. 운영 업적 활성화나 실제 API 결과로 설명하지 않는다.
+- 기본 검사 `pnpm test`는 웹453/봇80, Svelte 오류0/경고0·테스트 타입·웹 build를 통과했다. 최종 전체 검사와MCP4도 통과했다. detector는 새 primary0, 기존 리더보드10px 배지의 문서화된 보조 크기 advisory1을 유지했다. 무시 규칙은 새로 추가하지 않았다.
+
+
+[before4](../../artifacts/ui-review/backlog/06-stats-live/before/captures.json)·[after12](../../artifacts/ui-review/backlog/06-stats-live/after/captures.json)·[MCP4](../../artifacts/ui-review/backlog/06-stats-live/mcp/captures.json)의20장은 실제 판독·SHA·역할·URL·상태를 기록한다. before/MCP는 전체·min1·실제3게임의 같은 화면 상태 비교이고 fixture의포트/UUID는 서로 다르다. after의 실제1→2게임/min2/top 기능 검증과 별도 명시 UI주입을 같은자료 golden으로 주장하지 않는다. root도 실제 desktop/mobile 캡처를 읽고 단일조작·공유헤더/푸터·정렬focus·좁은 표를 확인했다.
+
+이 단계는 웹 build·`pnpm check`·`pnpm check:tests` 통과이며 봇 소스는 변경하지 않았다. 외부 이미지/폰트는 차단됐고 물리기기·Safari·스크린리더 음성·정량성능·운영 규모는 미검증이다. API가 내려주는 업적은 계속false/[]이며 UI주입은 정책 확정이 아니다. 사용자 DB/Discord/배포는 변경하지 않고 fixture·세션·schema·private args는 정리했으며5173을 유지한다.

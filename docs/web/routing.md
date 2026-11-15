@@ -80,6 +80,7 @@
 - `/api/ddragon/versions`, `/api/ddragon/[version]/[locale]/[resource]`: Data Dragon 버전·리소스 응답.
 - `/api/riot/account/v1/accounts/by-riot-id/[gameName]/[tagLine]`, `/api/riot/account/v1/accounts/by-puuid/[puuid]`, `/api/riot/account/v1/region/by-game/lol/by-puuid/[puuid]`.
 - `/api/lol/summoner/v4/summoners/by-puuid/[puuid]`, `/api/lol/league/v4/entries/by-puuid/[puuid]`.
+- `/g/[guildId]/stats/live`: 통계 화면 자동/수동 갱신이 소비하는 snapshot. SSR과 같은 공개 권한·선택 시즌·필터·개인정보 투영, `private, no-store`. 별도 사용자 페이지가 아니다.
 - `/g/[guildId]/ranking`: `RankingBoard`의 무한 스크롤이 소비하는 선택 시즌 서버 순위 다음 쪽. 기존 `RankingPage` 응답 형식은 유지한다.
 - `/g/[guildId]/scrims/[scrimId]/auction/live`: 경매 열람자의 자동/수동 갱신이 소비하는 현재 경매·내전 snapshot. 기존 공개 읽기 권한, `private, no-store`. 별도 사용자 페이지나 서버 입찰 endpoint가 아니다.
 
