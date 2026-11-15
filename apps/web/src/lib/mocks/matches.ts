@@ -6,6 +6,9 @@ import type {
     MatchListItem,
     MatchStatusFilter
 } from '#lib/features/matches/types.ts';
+import { parseMatchDateFilters } from '#lib/features/matches/filters.ts';
+import { DomainError } from '#lib/server/errors.ts';
+import { mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import sample from './fixtures/rofl-sample.json' with { type: 'json' };
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
 import type { MockFailure } from './scrims.ts';
@@ -222,12 +225,19 @@ function winnerOf(game: StoredGame): 'a' | 'b' | null {
 
 function toListItem(match: StoredMatch): MatchListItem {
     const [scoreA, scoreB] = score(match);
-    const { id, scrimTitle, teamA, teamB, bestOf, status, playedAt } = match;
+    const { id, scrimTitle, teamA, teamB, bestOf, status } = match;
+    // 점수만 있는 조회 샘플의 날짜는 명시된 fixture이며 업로드·예약 시각에서 추정하지 않는다.
+    const playedAt = match.cancelledByScrim
+        ? null
+        : match.games.length
+          ? (match.games.flatMap((game) => (game.playedAt ? [game.playedAt] : [])).sort()[0] ?? null)
+          : match.playedAt;
     return { id, scrimTitle, teamA, teamB, scoreA, scoreB, bestOf, status, playedAt };
 }
 
 const DONE: MatchListItem['status'][] = ['completed', 'ended_early', 'cancelled'];
-const byPlayed = (a: StoredMatch, b: StoredMatch) => (b.playedAt ?? '').localeCompare(a.playedAt ?? '');
+const byPlayed = (a: MatchListItem, b: MatchListItem) =>
+    (b.playedAt ?? '').localeCompare(a.playedAt ?? '') || a.id.localeCompare(b.id);
 
 export async function listMockRecentMatches(
     guildId: string,
@@ -242,15 +252,32 @@ export async function listMockRecentMatches(
 
 export async function listMockMatches(
     guildId: string,
-    options: { status: MatchStatusFilter; q: string; page: number; pageSize: number }
+    options: {
+        status: MatchStatusFilter;
+        q?: string;
+        page: number;
+        pageSize: number;
+        seasonId?: string | null;
+        from?: string;
+        to?: string;
+    }
 ) {
-    const q = options.q.trim().toLowerCase();
-    const inGuild = matches.filter((match) => match.guildId === guildId);
-    const searched = q
-        ? inGuild.filter((match) =>
-              [match.scrimTitle, match.teamA, match.teamB].some((text) => text.toLowerCase().includes(q))
-          )
-        : inGuild;
+    const seasons = mockRecordSeasons(options.seasonId);
+    const dates = parseMatchDateFilters(options);
+    if (dates.error) throw new DomainError('INVALID_INPUT', dates.error);
+    const q = (options.q ?? '').trim().toLowerCase();
+    const inGuild = matches.filter((match) => match.guildId === guildId).map(toListItem);
+    const searched = inGuild.filter((match) => {
+        if (q && ![match.scrimTitle, match.teamA, match.teamB].some((text) => text.toLowerCase().includes(q)))
+            return false;
+        if (!dates.fromInclusive && !dates.toExclusive) return true;
+        if (!match.playedAt) return false;
+        const playedAt = new Date(match.playedAt);
+        return (
+            (!dates.fromInclusive || playedAt >= dates.fromInclusive) &&
+            (!dates.toExclusive || playedAt < dates.toExclusive)
+        );
+    });
     const of = (filter: MatchStatusFilter) =>
         searched.filter(
             (match) =>
@@ -260,7 +287,10 @@ export async function listMockMatches(
     const filtered = of(options.status).sort(byPlayed);
     const start = (options.page - 1) * options.pageSize;
     return {
-        matches: filtered.slice(start, start + options.pageSize).map((match) => toListItem(match)),
+        ...seasons,
+        from: dates.from,
+        to: dates.to,
+        matches: filtered.slice(start, start + options.pageSize),
         total: filtered.length,
         counts: {
             all: of('all').length,

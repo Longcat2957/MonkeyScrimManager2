@@ -6,17 +6,30 @@
     import type { RecordSeasonSelection } from '#lib/features/seasons.ts';
     import ActionMenu from './ActionMenu.svelte';
 
-    let { seasons, selectedSeasonId }: RecordSeasonSelection = $props();
+    type Props = RecordSeasonSelection & {
+        allowAll?: boolean;
+        disabled?: boolean;
+        onselect?: (seasonId: string | null) => void;
+    };
+    let { seasons, selectedSeasonId, allowAll = false, disabled = false, onselect }: Props = $props();
 
     let open = $state(false);
     let trigger = $state<HTMLElement | null>(null);
     const changing = $derived(navigating.to?.route.id === page.route.id);
     const selected = $derived(seasons.find((season) => season.id === selectedSeasonId));
-    const actions = $derived(
-        seasons.map((season) => ({
+    const choices = $derived([
+        ...(allowAll ? [{ id: null, content: '전체 시즌', desc: '모든 시즌의 경기' }] : []),
+        ...seasons.map((season) => ({
+            id: season.id,
             content: season.name,
-            desc: `${season.endedAt ? '종료된 시즌' : '진행 중인 시즌'}${season.id === selectedSeasonId ? ' · 조회 중' : ''}`,
-            disabled: season.id === selectedSeasonId
+            desc: season.endedAt ? '종료된 시즌' : '진행 중인 시즌'
+        }))
+    ]);
+    const actions = $derived(
+        choices.map((choice) => ({
+            ...choice,
+            desc: `${choice.desc}${choice.id === selectedSeasonId ? (onselect ? ' · 선택됨' : ' · 조회 중') : ''}`,
+            disabled: choice.id === selectedSeasonId
         }))
     );
 
@@ -30,10 +43,15 @@
 
     function select(index: number) {
         open = false;
-        const season = seasons[index];
-        if (!season || changing || season.id === selectedSeasonId) return;
+        const season = choices[index];
+        if (!season || changing || disabled || season.id === selectedSeasonId) return;
+        if (onselect) {
+            onselect(season.id);
+            return;
+        }
         const url = new URL(page.url.href);
-        url.searchParams.set('season', season.id);
+        if (season.id) url.searchParams.set('season', season.id);
+        else url.searchParams.delete('season');
         // 다른 조회 조건은 유지하고 이전 시즌의 쪽 위치만 초기화한다.
         url.searchParams.delete('page');
         url.searchParams.delete('offset');
@@ -41,19 +59,22 @@
     }
 </script>
 
-{#if seasons.length > 1 || (seasons.length === 1 && !selected)}
+{#if (allowAll && seasons.length) || seasons.length > 1 || (seasons.length === 1 && !selected)}
     <div class="min-w-0 max-w-full">
         <span bind:this={trigger} class="inline-flex max-w-full" {@attach disclosure}>
             <Button
+                type="button"
                 fill="lineLight"
                 size="auto"
                 heightOut="0"
                 heightIn="2"
                 injClass="min-h-12 max-w-full gap-2 px-3 text-base text-left whitespace-normal"
-                disabled={changing}
+                disabled={disabled || changing}
                 onclick={() => (open = true)}
             >
-                <span class="min-w-0 [overflow-wrap:anywhere]">시즌: {selected?.name ?? '선택'}</span>
+                <span class="min-w-0 [overflow-wrap:anywhere]"
+                    >시즌: {selected?.name ?? (allowAll ? '전체 시즌' : '선택')}</span
+                >
                 <svg
                     aria-hidden="true"
                     class="shrink-0"

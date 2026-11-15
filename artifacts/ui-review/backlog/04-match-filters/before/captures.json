@@ -1,0 +1,110 @@
+[
+    {
+        "file": "1440-primary-match-list.png",
+        "sha256": "f5492f1d1c6a0854a349200731764007cb209ae0ff58ed73b682c5ad34deaf4b",
+        "url": "http://127.0.0.1:40309/g/970000000000000001/matches",
+        "path": "/g/970000000000000001/matches",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "before-date-and-season-filters",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "4712f9ee-ee78-43bd-a0b6-750318212bac",
+            "c5c581f6-c9eb-496e-9776-87a2cb0eaf49",
+            "b6de9a1a-ee37-4d7f-9012-d4a35d3e0f58"
+        ],
+        "matchIds": ["b1bb9ccd-270f-4fe3-8ecd-d58be0c231f7", "468b45fe-14fb-4228-abcb-88e28b1ad29f"],
+        "seasonIds": ["7dcf7195-2bc6-47db-8f0a-bb807633617c", "245481b5-ecc5-4046-8bd7-85608f9b8547"],
+        "source": "실제 SSR·익명 공개 목록·정상 ROFL3세트와 실제 시즌 전환. games.startedAt은 격리 DB에 명시한 테스트 날짜2개와 null1개이며 ROFL이 절대시각을 제공했다고 주장하지 않는다.",
+        "seededGameStartedAt": ["2026-01-14T15:00:00.000Z", "2026-01-15T15:00:00.000Z", null],
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T12:40:44.519Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·검색·날짜 미확인 진행 경기·명시 DB 테스트시각의 종료 경기·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 검색·잘린 본문 없음."
+    },
+    {
+        "file": "1440-dark-match-list.png",
+        "sha256": "7416dd90aee5797dedef30ee0ad4392e36d88d54cae1a3f94f681cf6980147b9",
+        "url": "http://127.0.0.1:40309/g/970000000000000001/matches",
+        "path": "/g/970000000000000001/matches",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "before-date-and-season-filters",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "4712f9ee-ee78-43bd-a0b6-750318212bac",
+            "c5c581f6-c9eb-496e-9776-87a2cb0eaf49",
+            "b6de9a1a-ee37-4d7f-9012-d4a35d3e0f58"
+        ],
+        "matchIds": ["b1bb9ccd-270f-4fe3-8ecd-d58be0c231f7", "468b45fe-14fb-4228-abcb-88e28b1ad29f"],
+        "seasonIds": ["7dcf7195-2bc6-47db-8f0a-bb807633617c", "245481b5-ecc5-4046-8bd7-85608f9b8547"],
+        "source": "실제 SSR·익명 공개 목록·정상 ROFL3세트와 실제 시즌 전환. games.startedAt은 격리 DB에 명시한 테스트 날짜2개와 null1개이며 ROFL이 절대시각을 제공했다고 주장하지 않는다.",
+        "seededGameStartedAt": ["2026-01-14T15:00:00.000Z", "2026-01-15T15:00:00.000Z", null],
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T12:40:44.520Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·검색·날짜 미확인 진행 경기·명시 DB 테스트시각의 종료 경기·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 검색·잘린 본문 없음."
+    },
+    {
+        "file": "390-primary-match-list.png",
+        "sha256": "a45130556a05c96c638842c3451ba17bccb2e30c3317e0025217baef3ab27aa2",
+        "url": "http://127.0.0.1:40309/g/970000000000000001/matches",
+        "path": "/g/970000000000000001/matches",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "before-date-and-season-filters",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "4712f9ee-ee78-43bd-a0b6-750318212bac",
+            "c5c581f6-c9eb-496e-9776-87a2cb0eaf49",
+            "b6de9a1a-ee37-4d7f-9012-d4a35d3e0f58"
+        ],
+        "matchIds": ["b1bb9ccd-270f-4fe3-8ecd-d58be0c231f7", "468b45fe-14fb-4228-abcb-88e28b1ad29f"],
+        "seasonIds": ["7dcf7195-2bc6-47db-8f0a-bb807633617c", "245481b5-ecc5-4046-8bd7-85608f9b8547"],
+        "source": "실제 SSR·익명 공개 목록·정상 ROFL3세트와 실제 시즌 전환. games.startedAt은 격리 DB에 명시한 테스트 날짜2개와 null1개이며 ROFL이 절대시각을 제공했다고 주장하지 않는다.",
+        "seededGameStartedAt": ["2026-01-14T15:00:00.000Z", "2026-01-15T15:00:00.000Z", null],
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T12:40:44.520Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·검색·날짜 미확인 진행 경기·명시 DB 테스트시각의 종료 경기·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 검색·잘린 본문 없음."
+    },
+    {
+        "file": "390-dark-match-list.png",
+        "sha256": "5bcbb3a16ea97624c46262e89f95f08cb76277bc6dc6838f0808c7d00a625207",
+        "url": "http://127.0.0.1:40309/g/970000000000000001/matches",
+        "path": "/g/970000000000000001/matches",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "before-date-and-season-filters",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "4712f9ee-ee78-43bd-a0b6-750318212bac",
+            "c5c581f6-c9eb-496e-9776-87a2cb0eaf49",
+            "b6de9a1a-ee37-4d7f-9012-d4a35d3e0f58"
+        ],
+        "matchIds": ["b1bb9ccd-270f-4fe3-8ecd-d58be0c231f7", "468b45fe-14fb-4228-abcb-88e28b1ad29f"],
+        "seasonIds": ["7dcf7195-2bc6-47db-8f0a-bb807633617c", "245481b5-ecc5-4046-8bd7-85608f9b8547"],
+        "source": "실제 SSR·익명 공개 목록·정상 ROFL3세트와 실제 시즌 전환. games.startedAt은 격리 DB에 명시한 테스트 날짜2개와 null1개이며 ROFL이 절대시각을 제공했다고 주장하지 않는다.",
+        "seededGameStartedAt": ["2026-01-14T15:00:00.000Z", "2026-01-15T15:00:00.000Z", null],
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T12:40:44.520Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·검색·날짜 미확인 진행 경기·명시 DB 테스트시각의 종료 경기·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 검색·잘린 본문 없음."
+    }
+]

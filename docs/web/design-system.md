@@ -143,7 +143,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | `AppHeader`·`ContextNav`·`MenuButton`·`AppFooter` | `lib/components/layout/` | 루트 헤더·범위 링크·메뉴 트리거·푸터. 항목 생성은 `navigation.ts`, 사용자·서버 메뉴는 `AppHeader` |
 | `ConfirmDialog` | `lib/components/common/` | 루트 단일 확인창 호스트. STDF `Dialog`와 `overlay`를 연결하고 경로 이동·호스트 해제 시 미결 요청 취소. 실제 패널 최대36rem/85dvh, 본문 왼쪽 정렬·28px 행간. 설치 버전에 최대 폭 옵션이 없어 호스트의 패널에만 CSS 적용 |
 | `ActionMenu` | `lib/components/common/` | `open` 바인딩, `label`, `actions`, `trigger`, `onselect`. 데스크톱 popover·모바일 sheet와 overlay 보완. 선택적 `wrapContent`는 긴 이름·설명의 고정 높이·말줄임을 해제하며 현재 시즌 선택에서만 사용 |
-| `SeasonSelector` | 같은 폴더 | `seasons`, `selectedSeasonId`. 전적·통계·순위의 공통 URL 선택. 0개 숨김/선택한1개 정적 이름/여러 개48px 버튼+ActionMenu. 빈 기록에서도 유지, 실제 버튼 aria-haspopup/expanded 보완, 다른 쿼리 유지·page/offset 제거 |
+| `SeasonSelector` | 같은 폴더 | `seasons`, `selectedSeasonId`. 전적·통계·순위의 공통 URL 선택. 0개 숨김/선택한1개 정적 이름/여러 개48px 버튼+ActionMenu. 빈 기록에서도 유지, 실제 버튼 aria-haspopup/expanded 보완, 다른 쿼리 유지·page/offset 제거. 경기 목록만 allowAll·onselect로 전체 시즌/초안을 제공하고 조회에서 적용하며 기본3사용처는 즉시 이동 유지 |
 | `LinkCell` | 같은 폴더 | `href: string \| null`, `title`/`titleChild`, `subTitle`, `detail`/`detailChild`, `info`/`infoChild`, `leftChild`, `line`. 오른쪽 정보는 제목·부제 줄에 맞춤. `href`가 있으면 `<a>`, `null`이면 링크 효과·포커스 없는 정적 `<div>` |
 | `StatusTag` | 같은 폴더 | `text`, `state`. 장식 Tag와 숨긴 상태 문구 |
 | `DateBadge` | 같은 폴더 | `iso`, `emptyText`. 월·일 또는 날짜 없음 표시 |
@@ -241,3 +241,5 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | `Toast`·Loading 등 모든 상태 알림에 live region이 있지는 않음 | SectionState alert, ROFL 결과·정원 등 기능별 안내. 루트 공통 status는 없음 |
 
 `sr-only`는 절대 위치이므로 스크롤 영역의 가까운 positioned 조상이 중요하다. `LinkCell`과 여러 작업판·표의 `relative`는 숨긴 텍스트가 문서 높이를 늘리지 않도록 하는 앱 CSS 보완이다. 이는 STDF API 자체의 제약과 구분한다.
+
+경기 목록의 `MatchFilters`는 STDF Input에 date 타입이 없어 두 날짜 필드만 native input type=date를 사용한다. 나머지는 기존 STDF Input/Button·SeasonSelector이며 브라우저 달력/키보드·전역 color-scheme를 유지한다. 새 공통 달력·CSS 토큰을 만들지 않는다.

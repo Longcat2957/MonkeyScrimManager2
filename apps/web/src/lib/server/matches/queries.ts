@@ -1,5 +1,6 @@
-import { and, asc, count, desc, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, count, eq, gte, ilike, inArray, isNull, lt, min, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { parseMatchDateFilters } from '../../features/matches/filters.ts';
 import type {
     GameDetail,
     GamePlayer,
@@ -24,6 +25,7 @@ import {
     scrims
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { selectRecordSeason } from '../records/seasons.ts';
 import { readGuild } from '../scrims/queries.ts';
 import { requireUuid } from '../scrims/validation.ts';
 
@@ -52,7 +54,15 @@ export async function listMatches(
     db: Database,
     actor: Actor | null,
     guildId: string,
-    options: { status: MatchStatusFilter; q?: string; page: number; pageSize: number }
+    options: {
+        status: MatchStatusFilter;
+        q?: string;
+        page: number;
+        pageSize: number;
+        seasonId?: string | null;
+        from?: string;
+        to?: string;
+    }
 ) {
     if (
         !['all', 'in_progress', 'done'].includes(options.status) ||
@@ -64,7 +74,25 @@ export async function listMatches(
         options.pageSize > 100
     )
         throw new DomainError('INVALID_INPUT', '목록 범위를 다시 확인해 주세요');
+    const dates = parseMatchDateFilters(options);
+    if (dates.error) throw new DomainError('INVALID_INPUT', dates.error);
     return readGuild(db, actor, guildId, async (tx) => {
+        const selection = await selectRecordSeason(tx, guildId, options.seasonId);
+        const selectedSeasonId = options.seasonId == null ? null : selection.selectedSeasonId;
+        // 표시할 시리즈 시각을 먼저 집계해야 기간 필터와 쪽 이동도 같은 기준을 사용한다.
+        const recordedTimes = tx
+            .select({ matchId: games.matchId, playedAt: min(games.startedAt).as('played_at') })
+            .from(games)
+            .innerJoin(scrims, eq(scrims.id, games.scrimId))
+            .where(
+                and(
+                    eq(scrims.guildId, guildId),
+                    selectedSeasonId ? eq(scrims.mmrSeasonId, selectedSeasonId) : undefined,
+                    eq(games.status, 'completed')
+                )
+            )
+            .groupBy(games.matchId)
+            .as('match_recorded_times');
         const text = (options.q ?? '')
             .trim()
             .slice(0, 50)
@@ -73,6 +101,9 @@ export async function listMatches(
             .replaceAll('_', '\\_');
         const condition = and(
             eq(scrims.guildId, guildId),
+            selectedSeasonId ? eq(scrims.mmrSeasonId, selectedSeasonId) : undefined,
+            dates.fromInclusive ? gte(recordedTimes.playedAt, dates.fromInclusive) : undefined,
+            dates.toExclusive ? lt(recordedTimes.playedAt, dates.toExclusive) : undefined,
             options.status === 'done'
                 ? inArray(matches.status, [...doneStatuses])
                 : options.status === 'in_progress'
@@ -86,9 +117,15 @@ export async function listMatches(
                   )
                 : undefined
         );
-        const rows = await baseQuery(tx)
+        const rows = await tx
+            .select({ ...baseColumns, playedAt: recordedTimes.playedAt })
+            .from(matches)
+            .innerJoin(scrims, eq(scrims.id, matches.scrimId))
+            .innerJoin(teamA, eq(teamA.id, matches.teamAId))
+            .innerJoin(teamB, eq(teamB.id, matches.teamBId))
+            .leftJoin(recordedTimes, eq(recordedTimes.matchId, matches.id))
             .where(condition)
-            .orderBy(desc(matches.createdAt), asc(matches.id))
+            .orderBy(sql`${recordedTimes.playedAt} desc nulls last`, asc(matches.id))
             .limit(options.pageSize)
             .offset((options.page - 1) * options.pageSize);
         const [total] = await tx
@@ -97,6 +134,7 @@ export async function listMatches(
             .innerJoin(scrims, eq(scrims.id, matches.scrimId))
             .innerJoin(teamA, eq(teamA.id, matches.teamAId))
             .innerJoin(teamB, eq(teamB.id, matches.teamBId))
+            .leftJoin(recordedTimes, eq(recordedTimes.matchId, matches.id))
             .where(condition);
         const [all] = await tx
             .select({ value: count() })
@@ -119,9 +157,6 @@ export async function listMatches(
             : [];
         const items: MatchListItem[] = rows.map((row) => {
             const list = recorded.filter((game) => game.matchId === row.match.id);
-            const played = list
-                .flatMap((game) => (game.startedAt ? [game.startedAt.toISOString()] : []))
-                .sort();
             return {
                 id: row.match.id,
                 scrimTitle: row.scrimTitle,
@@ -131,10 +166,18 @@ export async function listMatches(
                 scoreB: list.filter((game) => winnerSlot(game) === 'b').length,
                 bestOf: row.match.bestOf,
                 status: row.match.status,
-                playedAt: played[0] ?? null
+                playedAt: row.playedAt?.toISOString() ?? null
             };
         });
-        return { matches: items, total: total.value, empty: all.value === 0 };
+        return {
+            matches: items,
+            total: total.value,
+            empty: all.value === 0,
+            seasons: selection.seasons,
+            selectedSeasonId,
+            from: dates.from,
+            to: dates.to
+        };
     });
 }
 

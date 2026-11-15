@@ -81,3 +81,32 @@ Impeccable harden·clarify는 공개 항목의 독립성·탈퇴 차단 이유·
 **한계:** Svelte 공식 MCP는 제공되지 않아 설치 공식 compiler/svelte-check·STDF 실제 소스/타입·실제 Chromium으로 검증했다. 외부 CDN/폰트 요청은 차단했으므로 깨진 챔피언 이미지·대체 글꼴을 제품 회귀로 집계하지 않는다. 공개 주요 화면은 primary 양 폭, 본인·상세·경매는 양 테마이며 물리 기기·Safari·음성 청취·정량 CWV는 미검증이다. 이미 받은 외부 복사본·채널 이동·유실 글의 즉시 회수는 보장하지 않는다.0011/0012는 격리 DB에서만 적용했고 실제 Discord 전송·사용자 DB·배포는 변경하지 않았다.
 
 프로필 비공개·탈퇴의 별도 공개 UUID는 과거 전적 연결을 유지하기 위한 구현 기본값이다. 사용자에게 확정받은 범위와 구분해 [작업표](../remaining-implementation.md#3-탈퇴공개-설정)에 기록한다. 기존 외부 복사본·채널 이동·유실된 글의 즉시 삭제는 보장하지 않으며 실제 Discord 발송/사용자 DB 변경은 수행하지 않는다.
+
+
+## 4. 경기 목록의 기간·시즌 필터
+
+| ID | 근거·우선순위 | 변경·완료 조건 | 상태 |
+| --- | --- | --- | --- |
+| BK-04 | 경기 목록에 검색만 있고 합의된 기간·시즌 필터가 없음. before4·코드 직접 확인 | 전체 시즌 기본 보존·같은 서버 시즌·KST 양 끝·검색/쪽 조합·명시 날짜 없는 행을 추정하지 않음 | DB·HTTP·브라우저 완료 |
+| BK-04a | DB는 생성 시각, 화면·목·문서는 실제 경기일을 사용해 순서가 어긋날 수 있음. 코드 직접 확인. P1 | 기존 표시일=min(completed startedAt)을 집계해 정렬·기간·페이지에 같은 값 사용, null 마지막·동률 안정성 | 신규/기존 DB15 통과 |
+| BK-04b | 새 복합 필터의 잘못된 기간·0결과·쪽 범위 밖·중복 조회 상태. P1 | 선택은 초안, 조회에서 원자 적용·오류 후 수정·이전 결과 유지·단일 GET·조건 보존/page 초기화·0/범위밖 구분 | HTTP3·최종 browser6·MCP4 완료 |
+| BK-04c | 첫 구현의 props effect가 page 이동 때 미제출 검색 초안을 덮음. 실제 현재 빌드에서 재현, 이번 구현 중 회귀. P1 | 적용된 원시 조건의 signature가 바뀔 때만 동기화. 같은 query의 page 이동 뒤 미제출 초안 보존 | 실제 실패 재현→수정→웹 재빌드→동일4조건 재통과 |
+
+Impeccable layout·clarify는 검색/날짜/시즌을 한 조회 과업으로 묶고 실제 경기일/미확인 날짜를 구분하는 데, adapt·harden은 native 날짜 입력·KST 공유 검증·실패/범위 밖/중복 상태에 적용한다. 기존 SeasonSelector를 실제 같은 책임에 한해 확장하며, 기존 홈·개인 전적·통계의 즉시 조회 기본 동작을 보존한다. 설치 STDF Input에 date 타입이 없어 날짜만 native input을 쓰고 브라우저 달력·키보드·기존 테마 color-scheme를 유지한다.
+
+**코드:** `features/matches/filters.ts`, `server/matches/queries.ts`, 경기 목록 loader/화면·`MatchFilters.svelte`, 기존 `SeasonSelector.svelte`, 목 목록과 기존 목 회귀, 공유 HTTP fixture·새 DB/HTTP/browser tests다. 새 외부 endpoint·migration·시즌 목 UUID는 추가하지 않았다.
+
+| 검증 | 결과 |
+| --- | --- |
+| DB 신규6·기존 match-read5·record-seasons4 | 15/15. KST 시작 포함/종료 배타·윤년/오류/역전·표시 min 시각·null·시즌/검색/쪽·동률 안정성·전체 empty 유지 |
+| 관련 목/시즌 lite | 10/10. 시즌[] 보존, 기간·같은 시각 ID순·날짜 미확인 마지막 |
+| HTTP | 3/3. 실제3ROFL+명시 날짜 seed, 결과/MMR 불변, 기본 전체/명시 시즌/다른 서버·빈 값400/404·기간 오류200+수정 가능한 자료 |
+| 브라우저 | 새4+기존 SeasonSelector3사용처 회귀2=6/6. 양 폭/테마·초안 원자 GET·q/date/season 보존/page 초기화·0결과·오류수정·중복·늦은 응답·미제출 초안+쪽 이동 |
+| 실제 MCP | 4/4. 키보드·메뉴·page2·실제 날짜/null, POST0·JS오류0·가로 넘침0.1440 primary는 과거 시즌 page99→총1쪽 ‘첫 페이지로’ 복구도 추가 확인 |
+| 프로젝트 | 웹446/봇80·check·check:tests·웹/봇 build 통과. 초안 수정 뒤 웹 재빌드·앱 check 오류0/경고0·browser6/MCP4 재검증 |
+
+[before4](../../artifacts/ui-review/backlog/04-match-filters/before/captures.json)·[최종 after12](../../artifacts/ui-review/backlog/04-match-filters/after/captures.json)·[MCP4](../../artifacts/ui-review/backlog/04-match-filters/mcp/captures.json)의20장 모두 실제 판독·SHA·역할/실행 URL/담당을 기록했다. 실제 ROFL 결과와 별도로 명시한 격리 DB 날짜/동률·쪽 테스트 자료를 구분하며, ROFL에 없던 시각을 추출했다고 주장하지 않는다. 긴 시즌 이름은 말줄임 대신 줄바꿈을 유지하고,4조건의 DOM/키보드 순서를 배치와 일치시켰다. 경기 목록1종을 직접 수정하고 공통 선택기의 홈·선수·통계3종도 재검증했다.
+
+최저/최고 유효 연도의 실제 PostgreSQL 바인딩도 별도 격리 진단으로 정상 확인했으며 기존15개 검사 수에 더하지 않는다. 성능 개선율·CWV를 측정했다고 보고하지 않는다. 원본 화면의 생성 시각 정렬을 표시 시각으로 일치시킨 의미 변경은 위 BK-04a 근거와 테스트로 검증했다.
+
+사용자 DB·실제 Discord·배포를 변경하지 않았다. 모든 fixture/세션/임시 자료는 정리했고5173 개발 서버는 유지했다. 외부 이미지/폰트 차단·Chromium viewport/키보드 검증이며 물리 기기·Safari·스크린리더 음성·운영 데이터 규모는 미검증이다.

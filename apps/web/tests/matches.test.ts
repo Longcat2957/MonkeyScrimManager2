@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { DomainError } from '../src/lib/server/errors.ts';
 import sample from '../src/lib/mocks/fixtures/rofl-sample.json' with { type: 'json' };
 import {
     getMockMatch,
@@ -30,6 +31,36 @@ test('검색·상태 필터·쪽 나눔으로 경기를 고른다', async () => 
     );
     const live = await listMockMatches(guildId, { status: 'in_progress', q: '', page: 1, pageSize: 20 });
     assert.ok(live.matches.every((match) => match.status === 'in_progress'));
+});
+
+test('개발 경기의 날짜는 한국 날짜로 걸러 표시하고 시즌 귀속이나 미확인 날짜를 만들지 않는다', async () => {
+    const options = { status: 'all' as const, q: '', page: 1, pageSize: 100 };
+    const all = await listMockMatches(guildId, options);
+    assert.deepEqual(all.seasons, []);
+    assert.equal(all.selectedSeasonId, null);
+    assert.equal(all.matches.at(-1)!.id, 'devMatch005');
+    assert.equal(all.matches.at(-1)!.playedAt, null);
+    const day = await listMockMatches(guildId, { ...options, from: '2026-10-24', to: '2026-10-24' });
+    assert.deepEqual(
+        day.matches.map((match) => match.id),
+        ['devMatch003', 'devMatch002']
+    );
+    const none = await listMockMatches(guildId, {
+        ...options,
+        q: '칼바람',
+        from: '2026-10-31',
+        to: '2026-10-31'
+    });
+    assert.deepEqual(none.matches, []);
+    assert.equal(none.empty, false);
+    await assert.rejects(
+        listMockMatches(guildId, { ...options, from: '2026-02-30' }),
+        (error) => error instanceof DomainError && error.code === 'INVALID_INPUT'
+    );
+    await assert.rejects(
+        listMockMatches(guildId, { ...options, seasonId: '58300b67-eecb-4803-bce5-a3da16bc55b9' }),
+        (error) => error instanceof DomainError && error.code === 'NOT_FOUND'
+    );
 });
 
 test('게임 결과에서 진영·MVP·ACE·피어리스 위반을 만든다', async () => {

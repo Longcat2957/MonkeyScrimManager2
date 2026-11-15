@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Input, Loading } from 'stdf';
+    import { Button, Loading } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
@@ -7,8 +7,8 @@
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import MatchTable from '#lib/components/matches/MatchTable.svelte';
+    import MatchFilters from '#lib/components/matches/MatchFilters.svelte';
     import type { MatchListItem } from '#lib/features/matches/types.ts';
-    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -20,21 +20,26 @@
     const hrefFor = (match: MatchListItem) =>
         resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id });
 
-    let query = $state('');
-    $effect(() => {
-        query = data.q;
-    });
-
-    function navigate(params: { page?: number; q?: string }) {
+    async function navigate(params: {
+        page?: number;
+        q?: string;
+        from?: string;
+        to?: string;
+        seasonId?: string | null;
+    }) {
+        if (changing) return;
         const url = new URL(page.url.href);
         const set = (key: string, value: string | null) =>
             value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
         if (params.q !== undefined) {
             url.searchParams.delete('page');
             set('q', params.q.trim() || null);
+            set('from', params.from || null);
+            set('to', params.to || null);
+            set('season', params.seasonId || null);
         }
         if (params.page !== undefined) set('page', params.page === 1 ? null : String(params.page));
-        goto(url, { reset: false });
+        await goto(url, { reset: false });
     }
 </script>
 
@@ -48,32 +53,24 @@
             경기 기록
             {#if changing}<Loading type="1_0" height="6" width="6" />{/if}
         </h1>
-        {#if !data.empty}
-            <form
-                role="search"
-                aria-label="경기 검색"
-                {@attach nonSubmitButtons}
-                {@attach inputLabel('내전·팀 이름 검색', '검색 지우기')}
-                class="-mx-2 -my-1 md:w-80"
-                onsubmit={(event) => {
-                    event.preventDefault();
-                    navigate({ q: query });
-                }}
-            >
-                <Input
-                    title="내전·팀 이름 검색"
-                    type="search"
-                    placeholder="예: 포로팀"
-                    bind:value={query}
-                    clear
-                    onclear={() => navigate({ q: '' })}
-                    maxlength={50}
-                />
-            </form>
-        {/if}
     </div>
 
-    {#if data.empty}
+    {#if !data.empty || data.filterError}
+        <MatchFilters
+            q={data.q}
+            from={data.from}
+            to={data.to}
+            seasons={data.seasons}
+            selectedSeasonId={data.selectedSeasonId}
+            filterError={data.filterError}
+            disabled={changing}
+            onapply={navigate}
+        />
+    {/if}
+
+    {#if data.filterError}
+        <!-- 잘못된 기간은 필터 폼에서 수정하며 조회하지 않은 결과를 빈 기록으로 표시하지 않는다. -->
+    {:else if data.empty}
         <SectionState state="empty" message="아직 기록된 경기가 없어요" />
     {:else}
         <div
@@ -96,7 +93,11 @@
                 title="종료"
                 count={data.doneTotal}
                 matches={data.done}
-                emptyMessage={data.q ? `'${data.q}'에 맞는 경기가 없어요` : '아직 끝난 경기가 없어요'}
+                emptyMessage={data.doneTotal > 0
+                    ? '이 페이지에는 경기가 없어요. 다른 페이지를 선택해 주세요.'
+                    : data.q || data.from || data.to || data.selectedSeasonId
+                      ? '조건에 맞는 경기가 없어요'
+                      : '아직 끝난 경기가 없어요'}
                 {hrefFor}
             >
                 {#snippet footer()}
@@ -108,6 +109,18 @@
                                 current={data.page}
                                 onchange={(current) => navigate({ page: current })}
                             />
+                        </div>
+                    {:else if data.doneTotal > 0 && data.page > 1}
+                        <div class="flex justify-center border-t border-border py-2">
+                            <Button
+                                type="button"
+                                fill="text"
+                                size="auto"
+                                heightOut="0"
+                                heightIn="2"
+                                injClass="min-h-12 px-3"
+                                onclick={() => navigate({ page: 1 })}>첫 페이지로</Button
+                            >
                         </div>
                     {/if}
                 {/snippet}
