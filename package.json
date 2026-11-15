@@ -17,6 +17,7 @@
         "test:db": "pnpm --filter @msm2/web test:db",
         "db:generate": "pnpm --filter @msm2/web db:generate",
         "db:migrate": "pnpm --filter @msm2/web db:migrate",
+        "admin:bootstrap": "pnpm --filter @msm2/web admin:bootstrap",
         "rofl:inspect": "node --experimental-strip-types scripts/inspect_rofl.mts",
         "rofl:project": "node --experimental-strip-types scripts/project_rofl.mts",
         "rofl:research": "node --experimental-strip-types scripts/research_rofl.mts",

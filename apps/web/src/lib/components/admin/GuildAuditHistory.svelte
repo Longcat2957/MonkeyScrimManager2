@@ -41,7 +41,9 @@
             <li class="flex min-w-0 flex-col gap-3 px-4 py-5">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                     <h3 class="min-w-0 font-semibold wrap-anywhere">
-                        {entry.target ? `${entry.target.displayName} · ` : ''}{titles[entry.kind]}
+                        {entry.target
+                            ? `${entry.target.displayName}${entry.target.userId ? ` (${entry.target.userId})` : ''} · `
+                            : ''}{titles[entry.kind]}
                     </h3>
                     <time datetime={entry.occurredAt} class="shrink-0 text-sm text-text-muted tabular-nums"
                         >{date.format(new Date(entry.occurredAt))}</time
@@ -77,7 +79,9 @@
                         </p>
                     {/if}
                 {/if}
-                <p class="text-sm text-text-muted wrap-anywhere">담당: {entry.actor.displayName}</p>
+                <p class="text-sm text-text-muted wrap-anywhere">
+                    담당: {entry.actor.displayName}{entry.actor.userId ? ` (${entry.actor.userId})` : ''}
+                </p>
             </li>
         {/each}
     </ol>

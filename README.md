@@ -14,7 +14,7 @@ MSM1의 운영 로직을 최대한 준용하고 최종 결과 입력만 ROFL로 
 - 봇: discord.js 14, TypeScript 6, tsx
 - 디자인 프레임워크: [STDF 3](https://stdf.dev/), Tailwind CSS 4
 - 운영 서버: VPS에서 `@sveltejs/adapter-node`로 실행
-- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 43개 테이블·102개 외래키와 마이그레이션을 관리한다.
+- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 44개 테이블·104개 외래키와 마이그레이션을 관리한다.
 
 프로젝트 루트에서 실행한다.
 
@@ -197,7 +197,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 43개 테이블·102개 외래키, 조회·삽입 타입 정의 |
+| `apps/web/src/lib/server/db/schema.ts` | 44개 테이블·104개 외래키, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 

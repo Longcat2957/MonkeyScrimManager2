@@ -210,6 +210,7 @@ for (const width of [1440, 390])
                 const recent = await auditEntries(page, 5);
                 // Discord 연동 조회가 사용자 이름을 upstream의 현재 이름으로 갱신한다.
                 const currentName = 'HTTP 사용자';
+                const targetName = `${currentName} (${HTTP_IDS.member})`;
                 assert.deepEqual(
                     await recent.entries
                         .getByRole('heading', { level: 3 })
@@ -217,10 +218,10 @@ for (const width of [1440, 390])
                         .then((items) => items.map((item) => item.trim())),
                     [
                         'Discord 연동 변경',
-                        currentName + ' · Riot 계정 연결 해제',
-                        currentName + ' · 대표 계정 변경',
-                        currentName + ' · Riot 계정 연결',
-                        currentName + ' · Riot 계정 연결'
+                        targetName + ' · Riot 계정 연결 해제',
+                        targetName + ' · 대표 계정 변경',
+                        targetName + ' · Riot 계정 연결',
+                        targetName + ' · Riot 계정 연결'
                     ]
                 );
                 assert.match(
@@ -238,7 +239,9 @@ for (const width of [1440, 390])
                 assert.match(await recent.entries.nth(3).innerText(), /SecondPlayer#KR1/);
                 assert.match(await recent.entries.nth(4).innerText(), /HttpPlayer#KR1/);
                 assert.equal(
-                    await recent.entries.getByText('담당: ' + currentName, { exact: true }).count(),
+                    await recent.entries
+                        .getByText(`담당: ${currentName} (${HTTP_IDS.manager})`, { exact: true })
+                        .count(),
                     5
                 );
                 await capture(page, 'saved-changes');
@@ -262,7 +265,9 @@ for (const width of [1440, 390])
                 );
                 await page.reload();
                 const first = await auditEntries(page, 20);
-                await first.entries.getByText('담당: ' + longName, { exact: true }).waitFor();
+                await first.entries
+                    .getByText(`담당: ${longName} (${HTTP_IDS.outsider})`, { exact: true })
+                    .waitFor();
                 const firstTimes = first.times;
                 const navigation = page.getByRole('navigation', { name: '변경 이력 쪽 이동', exact: true });
                 assert.equal(await navigation.count(), 1);

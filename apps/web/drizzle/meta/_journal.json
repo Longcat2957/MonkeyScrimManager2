@@ -71,6 +71,13 @@
       "when": 1794741333632,
       "tag": "0009_guild_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794742213955,
+      "tag": "0010_service_admin_events",
+      "breakpoints": true
     }
   ]
 }

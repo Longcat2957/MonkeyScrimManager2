@@ -1,0 +1,74 @@
+[
+    {
+        "file": "1440-primary-service-status.png",
+        "sha256": "55990b1f571ebb02f522c639700aecc557505cba6d31d9e821b79592a8917741",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "service-status-before",
+        "path": "/backoffice",
+        "source": "8859be4 운영 빌드·실제 SSR·격리 DB·서비스 운영자 세션, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "imageReview": "기존 서비스 상태만 표시된 실제 화면을 읽음. 네 조건 모두 헤더·본문·하단이 잘리지 않고, 다시 확인 조작은 한 곳이며 가로 넘침·JavaScript 오류 없음.",
+        "reviewedAt": "2026-11-15T11:44:28.568Z"
+    },
+    {
+        "file": "1440-dark-service-status.png",
+        "sha256": "51b3e516e108feaecfe4a5c5c74830e14bc9184ef0d02796c1a378d8d6b0b350",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "service-status-before",
+        "path": "/backoffice",
+        "source": "8859be4 운영 빌드·실제 SSR·격리 DB·서비스 운영자 세션, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "imageReview": "기존 서비스 상태만 표시된 실제 화면을 읽음. 네 조건 모두 헤더·본문·하단이 잘리지 않고, 다시 확인 조작은 한 곳이며 가로 넘침·JavaScript 오류 없음.",
+        "reviewedAt": "2026-11-15T11:44:28.569Z"
+    },
+    {
+        "file": "390-primary-service-status.png",
+        "sha256": "98a58d8fe087de818022c7f3194045b3b8f559e74e176073b58fcdea0a8ac036",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "service-status-before",
+        "path": "/backoffice",
+        "source": "8859be4 운영 빌드·실제 SSR·격리 DB·서비스 운영자 세션, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "imageReview": "기존 서비스 상태만 표시된 실제 화면을 읽음. 네 조건 모두 헤더·본문·하단이 잘리지 않고, 다시 확인 조작은 한 곳이며 가로 넘침·JavaScript 오류 없음.",
+        "reviewedAt": "2026-11-15T11:44:28.569Z"
+    },
+    {
+        "file": "390-dark-service-status.png",
+        "sha256": "8901a251cd1a8c06b82fcc9836993615fa7400b8edf3d4524dc75634fa9f7558",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "service-status-before",
+        "path": "/backoffice",
+        "source": "8859be4 운영 빌드·실제 SSR·격리 DB·서비스 운영자 세션, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "imageReview": "기존 서비스 상태만 표시된 실제 화면을 읽음. 네 조건 모두 헤더·본문·하단이 잘리지 않고, 다시 확인 조작은 한 곳이며 가로 넘침·JavaScript 오류 없음.",
+        "reviewedAt": "2026-11-15T11:44:28.569Z"
+    }
+]

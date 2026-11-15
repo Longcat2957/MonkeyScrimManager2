@@ -1,13 +1,15 @@
 <script lang="ts">
     import { Button } from 'stdf';
-    import { invalidate } from '$app/navigation';
+    import { goto, invalidate } from '$app/navigation';
+    import { page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import ServiceAdminManagement from '#lib/components/backoffice/ServiceAdminManagement.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { SERVICE_STATE_LABEL } from '#lib/features/backoffice/status.ts';
     import type { PageProps } from './$types';
 
-    let { data }: PageProps = $props();
+    let { data, form }: PageProps = $props();
 
     let checking = $state(false);
     let checkError = $state('');
@@ -42,13 +44,19 @@
             checking = false;
         }
     }
+
+    function changeAdminPage(next: number) {
+        const url = new URL(page.url.href);
+        url.searchParams.set('page', String(next));
+        return goto(url, { reset: false });
+    }
 </script>
 
 <svelte:head>
     <title>백오피스 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="mx-auto flex w-full max-w-3xl flex-col gap-6">
+<div class="mx-auto flex w-full max-w-3xl flex-col gap-10">
     <h1 class="text-2xl font-semibold">백오피스</h1>
 
     <section aria-labelledby="service-status" aria-busy={checking} class="flex flex-col gap-3">
@@ -105,4 +113,13 @@
                 </p>{/if}
         {/await}
     </section>
+
+    <ServiceAdminManagement
+        overview={data.overview}
+        currentUserId={data.currentUserId}
+        currentPage={data.page}
+        pageSize={data.pageSize}
+        actionError={form?.message}
+        onpagechange={changeAdminPage}
+    />
 </div>

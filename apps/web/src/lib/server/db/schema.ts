@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import type { GuildAuditKind } from '../../features/guild/audit.ts';
 import type { GuildDiscordSettingKey } from '../../features/guild/types.ts';
+import type { ServiceAdminEventKind, ServiceAdminEventSource } from '../../features/service-admin.ts';
 import {
     bigint,
     boolean,
@@ -37,6 +38,30 @@ export const users = pgTable('users', {
         .notNull()
         .$onUpdate(() => new Date())
 });
+
+// 서비스 운영자 변경만 기록하며 길드 운영 권한에는 영향을 주지 않는다. 이름은 복제하지 않는다.
+export const serviceAdminEvents = pgTable(
+    'service_admin_events',
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        actorUserId: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+        targetUserId: text('target_user_id').references(() => users.id, { onDelete: 'set null' }),
+        kind: text('kind').$type<ServiceAdminEventKind>().notNull(),
+        source: text('source').$type<ServiceAdminEventSource>().notNull(),
+        createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+    },
+    (table) => [
+        index('service_admin_events_recent_idx').on(table.createdAt, table.id),
+        index('service_admin_events_actor_idx').on(table.actorUserId),
+        index('service_admin_events_target_idx').on(table.targetUserId),
+        check('service_admin_events_kind_valid', sql`${table.kind} in ('granted', 'revoked')`),
+        check('service_admin_events_source_valid', sql`${table.source} in ('web', 'bootstrap')`),
+        check(
+            'service_admin_events_bootstrap_grant',
+            sql`${table.source} <> 'bootstrap' or (${table.kind} = 'granted' and ${table.actorUserId} is null)`
+        )
+    ]
+);
 
 // 쿠키의 원본 세션 토큰은 저장하지 않고 SHA-256 해시만 보관한다.
 export const sessions = pgTable(

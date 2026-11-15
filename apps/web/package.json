@@ -11,6 +11,7 @@
         "test:db": "node tests/run.mjs hard:db",
         "db:generate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs generate",
         "db:migrate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs migrate",
+        "admin:bootstrap": "node --env-file-if-exists=.env --experimental-strip-types scripts/bootstrap-admin.mts",
         "preview": "vite preview",
         "prepare": "svelte-kit sync",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
