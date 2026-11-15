@@ -2,7 +2,14 @@ import { dev } from '$app/env';
 import { error as httpError, fail, type RequestEvent } from '@sveltejs/kit';
 import { parseRiotId, RIOT_ID_FORMAT_ERROR } from '#lib/features/me/riot-id.ts';
 import type { GuildDiscordSettingKey } from '#lib/features/guild/types.ts';
-import { getMockDiscord, isMockMember, listMockMembers, setMockDiscordSetting } from '#lib/mocks/admin.ts';
+import {
+    auditMockAccountChange,
+    getMockDiscord,
+    isMockMember,
+    listMockGuildAudit,
+    listMockMembers,
+    setMockDiscordSetting
+} from '#lib/mocks/admin.ts';
 import {
     linkMockRiotAccount,
     lookupMockRiotAccount,
@@ -15,6 +22,7 @@ import { linkRiotAccount, setPrimaryRiotAccount, unlinkRiotAccount } from '#lib/
 import { getDb } from '#lib/server/db/index.ts';
 import { DiscordError } from '#lib/server/discord/client.ts';
 import { DomainError } from '#lib/server/errors.ts';
+import { listGuildAudit } from '#lib/server/guild/audit.ts';
 import { getGuildDiscordSettings, setGuildDiscordSetting } from '#lib/server/guild/settings.ts';
 import { RiotError } from '#lib/server/riot/errors.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -67,7 +75,8 @@ async function runAction<T>(
 }
 
 export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) => {
-    const tab = url.searchParams.get('tab') === 'discord' ? 'discord' : 'members';
+    const requestedTab = url.searchParams.get('tab');
+    const tab = requestedTab === 'discord' || requestedTab === 'audit' ? requestedTab : 'members';
     const q = (url.searchParams.get('q') ?? '').slice(0, 50);
     const requestedPage = Number(url.searchParams.get('page'));
     const page =
@@ -81,6 +90,20 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
             return {
                 ...listMockMembers(params.guildId, { q, page, pageSize: PAGE_SIZE }),
                 discord: getMockDiscord(params.guildId, mockUser.userId),
+                audit: tab === 'audit' ? listMockGuildAudit(params.guildId, page, PAGE_SIZE) : null,
+                ...pagination
+            };
+        }
+        if (tab === 'audit') {
+            return {
+                members: [],
+                total: 0,
+                adminCount: 0,
+                discord: null,
+                audit: await listGuildAudit(getDb(), locals.actor, params.guildId, {
+                    page,
+                    pageSize: PAGE_SIZE
+                }),
                 ...pagination
             };
         }
@@ -90,6 +113,7 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
                 total: 0,
                 adminCount: 0,
                 discord: await getGuildDiscordSettings(getDb(), locals.actor, params.guildId),
+                audit: null,
                 ...pagination
             };
         }
@@ -100,6 +124,7 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
                 pageSize: PAGE_SIZE
             })),
             discord: null,
+            audit: null,
             ...pagination
         };
     } catch (error) {
@@ -170,7 +195,14 @@ export const actions: Actions = {
                     if (!parsed) return fail(400, { riotIdError: RIOT_ID_FORMAT_ERROR });
                     const result = await lookupMockRiotAccount(parsed.gameName, parsed.tagLine);
                     if ('status' in result) return fail(result.status, { riotIdError: result.message });
-                    await linkMockRiotAccount(userId, result);
+                    await auditMockAccountChange(
+                        params.guildId,
+                        mockUser.userId,
+                        userId,
+                        'riot_account_linked',
+                        null,
+                        () => linkMockRiotAccount(userId, result)
+                    );
                     return;
                 }
                 await linkRiotAccount(getDb(), locals.actor, params.guildId, userId, riotId);
@@ -185,7 +217,14 @@ export const actions: Actions = {
             if (isMockGuild(params.guildId)) {
                 requireMockAdmin(params.guildId);
                 requireMockMember(params.guildId, userId);
-                const failure = await setMockPrimary(userId, field(data, 'id'));
+                const failure = await auditMockAccountChange(
+                    params.guildId,
+                    mockUser.userId,
+                    userId,
+                    'riot_account_primary_changed',
+                    field(data, 'id'),
+                    () => setMockPrimary(userId, field(data, 'id'))
+                );
                 return failure ? fail(failure.status, { message: failure.message }) : undefined;
             }
             await setPrimaryRiotAccount(getDb(), locals.actor, params.guildId, userId, field(data, 'id'));
@@ -198,7 +237,14 @@ export const actions: Actions = {
             if (isMockGuild(params.guildId)) {
                 requireMockAdmin(params.guildId);
                 requireMockMember(params.guildId, userId);
-                const failure = await unlinkMockRiotAccount(userId, field(data, 'id'));
+                const failure = await auditMockAccountChange(
+                    params.guildId,
+                    mockUser.userId,
+                    userId,
+                    'riot_account_unlinked',
+                    field(data, 'id'),
+                    () => unlinkMockRiotAccount(userId, field(data, 'id'))
+                );
                 return failure ? fail(failure.status, { message: failure.message }) : undefined;
             }
             await unlinkRiotAccount(getDb(), locals.actor, params.guildId, userId, field(data, 'id'));

@@ -85,7 +85,7 @@ Discord 응답은 고정 adapter로 대체하고 실제 발송 성공으로 설�
 ## 구현 상태
 
 모집·개인 신청·게시 복구에 이어 경기 라인업·ROFL 결과 게시·운영자 요청 DM까지 코드에 연결했다.
-MSM1 pin의 [시즌 서비스](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)를 대조해 관리자 시즌 조회·원자적 전환도 연결했다. [명령 동작](bot.md#시즌-조회와-전환)·[MMR 보존](mmr.md#시즌-전환)을 따른다. 웹 전적·순위의 과거 시즌 선택 UI는 후속이다.
+MSM1 pin의 [시즌 서비스](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)를 대조해 관리자 시즌 조회·원자적 전환도 연결했다. [명령 동작](bot.md#시즌-조회와-전환)·[MMR 보존](mmr.md#시즌-전환)을 따른다. 웹 전적·통계·순위의 과거 시즌 선택과 운영 제한도 [후속 구현](ui-review/next.md)에서 완료했다.
 DB 스키마는 게시 대상 키와 DM 채널 점유를 지원하고, 봇은 DB 접근 없이 내부 API와 Discord 전송만 담당한다.
 게시 복구 자동완성은 내전 제목·경기·세트·수신자를 서버에서 검색한 뒤 최대 25개를 반환한다. 취소된 결과도 별도로 식별한다.
 자동 검증 범위와 실행 기록은 [테스트 문서](testing.md)를 따른다. 실제 Discord 로그인·명령 등록·메시지/DM 발송은 이번 검증에서 실행하지 않았다.
@@ -95,4 +95,4 @@ DB 스키마는 게시 대상 키와 DM 채널 점유를 지원하고, 봇은 DB
 
 - 지정 Discord 서버에서 명령 등록, 실제 권한·Components V2 게시·DM 수신 설정·재연결 및 복구를 검증한다. 현재 코드 구현과 자동 테스트 완료 범위에 실제 Discord 검증을 포함하지 않는다.
 - 저장소의 systemd·HTTPS nginx·CI·백업/빈 DB 복원 도구와 격리 검증은 [배포 문서](deployment.md)에 구현했다. 실제 VPS·공인 인증서·DB 백업/복구 운영과 원격 CI 실행 확인은 별도다. 자동 운영 배포나 봇 등록/기동은 추가하지 않았다.
-- 앱 요청 ID·업무 오류·처리 시간 관측, DB query/statement timeout과 처리량 제한, 실제 운영 환경의 비밀/백업 정책은 후속이다. 약관·개인정보 본문은 사용자 보류를 유지한다.
+- 앱 요청 ID·업무 오류·처리 시간 관측, DB statement/lock/transaction timeout과 ROFL 입장·본문·worker 제한은 구현·격리 검증했다. 실제 운영 환경의 한도 조정·비밀/백업 정책은 별도다. 약관·개인정보 본문은 사용자 보류를 유지한다.

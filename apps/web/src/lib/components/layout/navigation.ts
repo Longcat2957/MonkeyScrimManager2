@@ -3,7 +3,7 @@ import type { GuildContext } from '#lib/features/guild/types.ts';
 import { bracketPath, formationPath, hasResult } from '#lib/features/scrims/paths.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
 
-export type NavItem = { label: string; href: string; current: boolean };
+export type NavItem = { label: string; href: string; current: boolean; static?: boolean };
 
 // 하위 경로까지 현재 항목으로 표시한다. exact는 홈·요약처럼 하위 메뉴가 따로 있는 항목에 쓴다.
 function isCurrent(pathname: string, href: string, exact = false) {
@@ -22,7 +22,9 @@ export function guildNavItems(guild: GuildContext, pathname: string): NavItem[] 
     return items.map(({ label, href, exact }) => ({
         label,
         href,
-        current: isCurrent(pathname, href, exact)
+        current: isCurrent(pathname, href, exact),
+        // 관리 화면 안의 보기 전환과 같은 이동을 헤더에 중복하지 않는다.
+        static: label === '관리' && pathname === href
     }));
 }
 

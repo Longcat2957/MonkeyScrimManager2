@@ -63,7 +63,7 @@
 | 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 세트. 일치하는 세트가 없으면 기본 선택 |
 | 사용자 전적 | `season=<uuid>`, `position=all\|top\|jungle\|mid\|bot\|support`, `page` | 활성 시즌, `all`, `1` |
 | 서버 통계 | `season=<uuid>`, `position`, `recent=1`, `min` | 활성 시즌, 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 개발 샘플 업적의 사용자별 최근 10게임 집계에만 적용; 임의 기간 `range`는 미구현 |
-| 서버 관리 | `tab=members\|discord`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지 |
+| 서버 관리 | `tab=members\|discord\|audit`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지. 변경 이력은 별도20개 쪽 조회 |
 
 페이지 필터 변경은 `goto(url, { reset: false })`로 이동하고 `load`가 다시 읽는다. 검색은 폼 제출 시 반영한다. 목록 조건이 바뀌면 페이지를 초기화하며, 서버 관리 탭 변경은 해당 경로의 새 URL에서 시작한다.
 

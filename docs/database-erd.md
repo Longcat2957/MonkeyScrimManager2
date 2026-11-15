@@ -1,14 +1,15 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-15 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **41개 업무 테이블·93개 외래키**. Drizzle `getTableConfig`의 원본 스키마 집계이며 조회용 `relations`를 별도 제약으로 세지 않는다.
+기준: 2026-11-15 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **43개 업무 테이블·102개 외래키**. Drizzle `getTableConfig`의 원본 스키마 집계이며 조회용 `relations`를 별도 제약으로 세지 않는다.
 전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
 게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
 경기 라인업·결과 이력·게시 대상 확장은 [0003_match_results.sql](../apps/web/drizzle/0003_match_results.sql)에 포함한다.
 취소한 ROFL의 새 채택 이력과 활성 결과 고유키는 [0004_rofl_result_restoration.sql](../apps/web/drizzle/0004_rofl_result_restoration.sql)에 포함한다.
 경매의 직전 행위 원장은 [0005_auction_actions.sql](../apps/web/drizzle/0005_auction_actions.sql), 시작 전 취소 복구 근거는 [0006_scrim_cancellation_restore.sql](../apps/web/drizzle/0006_scrim_cancellation_restore.sql), 준비 단계 중도 종료·우세 팀 판정·재개 제약은 [0007_scrim_early_end.sql](../apps/web/drizzle/0007_scrim_early_end.sql)에 포함한다. 기존 행의 미확인 상태·행위를 추정해 채우지 않는다.
+진행 중 전체 취소 배치·Match 귀속은 [0008_scrim_result_cancellation.sql](../apps/web/drizzle/0008_scrim_result_cancellation.sql), 계정·설정 변경 감사 원장은 [0009_guild_audit.sql](../apps/web/drizzle/0009_guild_audit.sql)에 포함한다.
 인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
 
-배포 복원 검증은 별도 `msm2_deploy_probe` schema의 부모/자식 FK 하나를 추가해 **94개**로 관찰할 수 있다. 그 검증용 관계는 업무 ERD의 93개에 포함하지 않는다. 최종 검사 결과와 실행 범위는 [통합 검증 기록](../artifacts/ui-review/operations/checks.json)을 따른다.
+배포 복원 검증은 별도 `msm2_deploy_probe` schema의 부모/자식 FK를 만들 수 있으며 그 검증용 관계는 업무 ERD에 포함하지 않는다. `0007` 당시41개/93개와 probe 포함94개의 역사 실행은 [통합 검증 기록](../artifacts/ui-review/operations/checks.json)에 보존한다. 현재 원본 스키마·업그레이드 범위는 [후속 구현](remaining-implementation.md)을 따른다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
 밴픽 진행·픽 순서·수동 결과 승인 모델과 원본 ROFL 보관 테이블은 없다.
@@ -29,6 +30,9 @@ erDiagram
     guilds ||--o| guild_discord_settings : 게시_설정
     guilds ||--o{ guild_discord_roles : 역할_선택지
     guilds ||--o{ guild_discord_channels : 채널_선택지
+    guilds ||..o{ guild_audit_entries : 관리_이력
+    users |o..o{ guild_audit_entries : 실행자와_대상
+    riot_accounts |o..o{ guild_audit_entries : 대상과_대표_변경
 
     guilds ||..o{ mmr_seasons : MMR_시즌
     mmr_seasons ||..o{ user_position_mmr : 포지션별_점수
@@ -68,6 +72,9 @@ erDiagram
     scrim_bracket_nodes ||--o{ scrim_bracket_slots : 대진_자리
     matches |o..o| scrim_bracket_nodes : 실제_경기
     scrims ||..o{ matches : 경기
+    scrims ||..o{ scrim_cancellations : 전체_취소_배치
+    users |o..o{ scrim_cancellations : 취소_실행자
+    scrim_cancellations |o..o{ matches : 취소된_경기
     matches ||..o{ games : 개별_게임
     games ||--o{ game_participants : 출전_기록
     scrim_participants ||--o{ game_participants : 서비스_참가자
@@ -86,7 +93,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. 전체 FK 제약은 93개이며 Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. 전체 FK 제약은 102개이며 Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 

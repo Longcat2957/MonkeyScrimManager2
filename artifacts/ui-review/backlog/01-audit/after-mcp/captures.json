@@ -1,0 +1,94 @@
+[
+    {
+        "file": "artifacts/ui-review/backlog/01-audit/after-mcp/audit-1440-primary.png",
+        "url": "http://127.0.0.1:40943/g/970000000000000001/admin?tab=audit",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "role": "manager",
+        "state": "saved-five-actual-changes",
+        "auditIds": [
+            "30f894b5-f777-48a8-90f7-0eccdc9534de",
+            "27b2a9f3-3acd-4dc7-8697-42f21f808af7",
+            "63105bd5-ba0d-405f-8570-e51d1149177a",
+            "d65e92a0-f683-48c0-b412-1de756335f74",
+            "e44f0280-b107-41f1-864b-45810a665117"
+        ],
+        "overflow": false,
+        "errors": [],
+        "duplicateHeaderAdminLinks": 0,
+        "sha256": "77ec3a09a895c826464fcf0c362b986333f44dcc0c6707daabd4ad1fc9b26766",
+        "imageRead": true,
+        "reviewer": "root",
+        "captureTool": "Playwright MCP"
+    },
+    {
+        "file": "artifacts/ui-review/backlog/01-audit/after-mcp/audit-1440-dark.png",
+        "url": "http://127.0.0.1:40943/g/970000000000000001/admin?tab=audit",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "role": "manager",
+        "state": "saved-five-actual-changes",
+        "auditIds": [
+            "30f894b5-f777-48a8-90f7-0eccdc9534de",
+            "27b2a9f3-3acd-4dc7-8697-42f21f808af7",
+            "63105bd5-ba0d-405f-8570-e51d1149177a",
+            "d65e92a0-f683-48c0-b412-1de756335f74",
+            "e44f0280-b107-41f1-864b-45810a665117"
+        ],
+        "overflow": false,
+        "errors": [],
+        "duplicateHeaderAdminLinks": 0,
+        "sha256": "958dac6d90d32670674ac5d68b5828805b689073bb7f0761e25ce6de937d9b0d",
+        "imageRead": true,
+        "reviewer": "root",
+        "captureTool": "Playwright MCP"
+    },
+    {
+        "file": "artifacts/ui-review/backlog/01-audit/after-mcp/audit-390-primary.png",
+        "url": "http://127.0.0.1:40943/g/970000000000000001/admin?tab=audit",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "role": "manager",
+        "state": "saved-five-actual-changes",
+        "auditIds": [
+            "30f894b5-f777-48a8-90f7-0eccdc9534de",
+            "27b2a9f3-3acd-4dc7-8697-42f21f808af7",
+            "63105bd5-ba0d-405f-8570-e51d1149177a",
+            "d65e92a0-f683-48c0-b412-1de756335f74",
+            "e44f0280-b107-41f1-864b-45810a665117"
+        ],
+        "overflow": false,
+        "errors": [],
+        "duplicateHeaderAdminLinks": 0,
+        "sha256": "2cfdb428d29e9b48e5af4383e0dc82559fb6c60c377e09234b7c4d5e2e2bf3c5",
+        "imageRead": true,
+        "reviewer": "root",
+        "captureTool": "Playwright MCP"
+    },
+    {
+        "file": "artifacts/ui-review/backlog/01-audit/after-mcp/audit-390-dark.png",
+        "url": "http://127.0.0.1:40943/g/970000000000000001/admin?tab=audit",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "role": "manager",
+        "state": "saved-five-actual-changes",
+        "auditIds": [
+            "30f894b5-f777-48a8-90f7-0eccdc9534de",
+            "27b2a9f3-3acd-4dc7-8697-42f21f808af7",
+            "63105bd5-ba0d-405f-8570-e51d1149177a",
+            "d65e92a0-f683-48c0-b412-1de756335f74",
+            "e44f0280-b107-41f1-864b-45810a665117"
+        ],
+        "overflow": false,
+        "errors": [],
+        "duplicateHeaderAdminLinks": 0,
+        "sha256": "40185b582b01034a2a9ab924ff913c11c53f4e7d657f896675fa45009daf6a3c",
+        "imageRead": true,
+        "reviewer": "root",
+        "captureTool": "Playwright MCP"
+    }
+]

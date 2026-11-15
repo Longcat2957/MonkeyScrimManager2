@@ -5,6 +5,7 @@ import type {
     GuildDiscordSettings
 } from '#lib/features/guild/types.ts';
 import { listMockRiotAccounts } from './me.ts';
+import type { GuildAuditEntry, GuildAuditKind } from '#lib/features/guild/audit.ts';
 import type { MockFailure } from './scrims.ts';
 import { mockPlayers } from './ranking.ts';
 import { mockUser } from './session.ts';
@@ -61,6 +62,60 @@ const discord = new Map<string, GuildDiscord>([
 ]);
 
 const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
+const auditEntries = new Map<string, GuildAuditEntry[]>();
+
+function mockIdentity(guildId: string, userId: string) {
+    return {
+        userId,
+        displayName: members.get(guildId)?.find((member) => member.userId === userId)?.displayName ?? userId
+    };
+}
+
+function appendAudit(guildId: string, entry: Omit<GuildAuditEntry, 'id' | 'occurredAt'>) {
+    const rows = auditEntries.get(guildId) ?? [];
+    rows.unshift({ ...entry, id: crypto.randomUUID(), occurredAt: new Date().toISOString() });
+    auditEntries.set(guildId, rows);
+}
+
+/** 개발 샘플에서도 성공한 실제 조작만 이력으로 보여 준다. */
+export function listMockGuildAudit(guildId: string, page: number, pageSize: number) {
+    const rows = auditEntries.get(guildId) ?? [];
+    return {
+        entries: structuredClone(rows.slice((page - 1) * pageSize, page * pageSize)),
+        total: rows.length
+    };
+}
+
+export async function auditMockAccountChange(
+    guildId: string,
+    actorId: string,
+    userId: string,
+    kind: Exclude<GuildAuditKind, 'discord_setting_changed'>,
+    accountId: string | null,
+    run: () => Promise<MockFailure | null | void>
+) {
+    const before = listMockRiotAccounts(userId);
+    const failure = await run();
+    if (failure) return failure;
+    const after = listMockRiotAccounts(userId);
+    if (JSON.stringify(before) === JSON.stringify(after)) return null;
+    const account = accountId
+        ? before.find((entry) => entry.id === accountId)
+        : after.find((entry) => !before.some((previous) => previous.id === entry.id));
+    const primary = (rows: typeof before) => {
+        const entry = rows.find((row) => row.isPrimary);
+        return entry ? { id: entry.id, riotId: `${entry.gameName}#${entry.tagLine}` } : null;
+    };
+    appendAudit(guildId, {
+        kind,
+        actor: mockIdentity(guildId, actorId),
+        target: mockIdentity(guildId, userId),
+        account: account ? { id: account.id, gameName: account.gameName, tagLine: account.tagLine } : null,
+        primary: { before: primary(before), after: primary(after) },
+        setting: null
+    });
+    return null;
+}
 
 // 서버 관리자는 Discord 서버 관리 권한이 있거나 운영자 역할을 가진 멤버다.
 function isAdmin(member: Member, operatorRoleId: string | null) {
@@ -127,7 +182,25 @@ export async function setMockDiscordSetting(
         if (!channel) return { status: 404, message: '채널을 찾을 수 없어요' };
         if (!channel.botCanPost) return { status: 409, message: '봇이 이 채널에 글을 쓸 수 없어요' };
     }
+    const previous = guild.settings[key];
     guild.settings[key] = value;
+    if (previous !== value) {
+        const name = (id: string | null) =>
+            (key === 'operatorRoleId' ? guild.roles : guild.channels).find((item) => item.id === id)?.name ??
+            null;
+        appendAudit(guildId, {
+            kind: 'discord_setting_changed',
+            actor: mockIdentity(guildId, actorId),
+            target: null,
+            account: null,
+            primary: null,
+            setting: {
+                key,
+                before: previous ? { id: previous, name: name(previous) } : null,
+                after: value ? { id: value, name: name(value) } : null
+            }
+        });
+    }
     return null;
 }
 

@@ -82,7 +82,7 @@ lg: 2열 같은 폭
 
 ## `/g/[guildId]/admin` — 서버 관리
 
-**목적** 서버 관리자가 멤버의 Riot 계정 연결과 Discord 연동(운영자 역할, 모집·엔트리·결과 채널)을 관리한다. Riot 계정 연결은 사용자가 직접 하지 않고 여기서 운영자가 지정한다.
+**목적** 서버 관리자가 멤버의 Riot 계정 연결과 Discord 연동(운영자 역할, 모집·엔트리·결과 채널)을 관리하고 변경 이력을 확인한다. Riot 계정 연결은 사용자가 직접 하지 않고 여기서 운영자가 지정한다.
 
 **권한** 실제 세션의 현재 Discord 관리자 권한을 `load`와 모든 action에서 확인한다. 헤더 `관리` 메뉴도 관리자에게만 렌더링한다. 비로그인은 401, 소속이 없거나 대상이 사라지면 404, 소속은 있으나 권한이 없으면 403이다.
 
@@ -94,7 +94,7 @@ lg: 2열 같은 폭
 
 ```ts
 {
-  tab: 'members' | 'discord',                                   // ?tab=, 기본 members
+  tab: 'members' | 'discord' | 'audit',                         // ?tab=, 기본 members
   members: { userId, displayName, isAdmin, riotAccounts: RiotAccount[] }[],   // 서비스에 연결된 멤버만. 계정은 대표 먼저
   adminCount: number,
   discord: {                                                    // 멤버 탭에서는 불러오지 않아 null
@@ -102,15 +102,16 @@ lg: 2열 같은 폭
     channels: { id, name, category, botCanPost }[],
     settings: { operatorRoleId, recruitmentChannelId, entryChannelId, resultChannelId },   // 각각 null 가능
     actorRoleIds: string[] | null                               // 내 역할. 서버 관리 권한이 있으면 null(제한 없음)
-  } | null
+  } | null,
+  audit: { entries: GuildAuditEntry[], total: number } | null  // 변경 이력 탭에서만 조회
 }
 ```
 
-**화면** (한 열, `max-w-3xl`, 탭 두 개)
+**화면** (한 열, `max-w-3xl`, 탭 세 개)
 
 ```text
 [h1] 서버 관리
-[SelectionTabs] 멤버 | Discord 연동
+[SelectionTabs] 멤버 | Discord 연동 | 변경 이력
 
 ── 멤버 ──────────────────────────────────────────────
                                               관리자 2명
@@ -131,11 +132,14 @@ lg: 2열 같은 폭
 
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
-| 탭 | `SelectionTabs` (`role="group"` 래퍼, 선택 버튼 `aria-pressed`, 영역 제목은 `sr-only` `h2`) | `?tab=discord`. 기본은 멤버이며 탭을 바꾸면 기존 쿼리를 모두 지운다 |
+| 탭 | `SelectionTabs` (`role="group"` 래퍼, 선택 버튼 `aria-pressed`, 영역 제목은 `sr-only` `h2`) | `?tab=discord` 또는 `audit`. 기본은 멤버이며 탭을 바꾸면 기존 쿼리를 모두 지운다 |
 | 멤버 검색 | `<form role="search">` + `Input type="search"` | Enter·지우기로 `?q=` 갱신, 50자 제한. 이름 부분 일치, 대소문자 무시. 검색 변경 시 page 초기화. 폼에 `nonSubmitButtons`·`inputLabel`, 이동 중 `aria-busy` |
 | 멤버 행 | `<li>`: 사진·이름·`관리자` `StatusTag`·대표 Riot ID(`외 n`) + `Riot 계정` 버튼 | 관리자 여부는 표시만 한다. 긴 이름·Riot ID는 줄바꿈하고 계정 버튼은 최소 44px 높이를 유지한다 |
 | Riot 계정 | `Button fill="lineLight"` → `MemberRiotAccountsDialog`(`Popup`) | 연결된 계정 목록(대표 `Tag`, `대표로`·`해제`(→ `confirm`)) + `Input title="연결할 Riot ID"` → `조회` → 찾은 계정 확인 → `연결`. 첫 계정은 대표가 된다. 진행 중 내전에 쓰인 계정은 `해제` 비활성 + 이유. action: `lookup`·`link`·`primary`·`unlink`(대상 `userId`는 이 서버 멤버만) |
 | Discord 연동 항목 | `DiscordSettingRow`: 현재 값 `Button` → `ActionMenu`(데스크톱 팝오버, 모바일 시트) | 고르면 메뉴를 닫고 바로 저장(action `discord`, `key`·`value`). 맨 앞은 `설정 안 함`, 현재 값은 `현재 설정`으로 비활성. 값 버튼은 최소 44px 높이이며 항목 이름·현재 값으로 접근 가능한 이름을 제공한다 |
+| 변경 이력 | `GuildAuditHistory`의 순서 목록·`time`, `PageNav` | 계정 연결·해제·대표 변경·Discord 설정 변경을 최신 시각/ID순20개씩 조회. 대상·담당자·변경 전후를 표시하고 같은 값 반복·실패는 기록하지 않음. 빈 이력과 범위 밖 쪽을 구분 |
+
+감사 원장은 실제 변경과 같은 DB 트랜잭션에 저장한다. 권한 없는 사용자의 SSR·부분 데이터에 이력을 전달하지 않는다. 사용자·Riot 이름 스냅샷을 새로 복제하지 않으며 사용자/계정 참조에서 현재 표시 이름을 읽는다. 원장에는 세션·토큰·PUUID·요청/오류 원문을 저장하지 않는다. 개발 샘플도 해당 프로세스에서 성공한 조작만 가변 이력으로 보여 준다. [구현·검증 진행](../../remaining-implementation.md)을 따른다.
 
 선택지 규칙(서버도 같은 규칙으로 검사):
 

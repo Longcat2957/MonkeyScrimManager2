@@ -15,20 +15,24 @@
 <nav aria-label={label}>
     <ul class={['flex', vertical ? 'flex-col' : 'items-center gap-1']}>
         {#each items as item (item.href)}
+            {@const itemClass = [
+                'flex min-h-11 items-center rounded-(--radius-form) px-3 text-sm font-semibold no-underline',
+                item.current ? 'bg-bg-highlight dark:bg-bg-highlight-dark' : 'opacity-70',
+                vertical && 'w-full'
+            ]}
             <li>
-                <a
-                    href={item.href}
-                    aria-current={item.current ? 'page' : undefined}
-                    onclick={onnavigate}
-                    class={[
-                        'flex min-h-11 items-center rounded-(--radius-form) px-3 text-sm font-semibold no-underline',
-                        'hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark',
-                        item.current ? 'bg-bg-highlight dark:bg-bg-highlight-dark' : 'opacity-70',
-                        vertical && 'w-full'
-                    ]}
-                >
-                    {item.label}
-                </a>
+                {#if item.static}
+                    <span class={itemClass} aria-current={item.current ? 'page' : undefined}
+                        >{item.label}</span
+                    >
+                {:else}<a
+                        href={item.href}
+                        aria-current={item.current ? 'page' : undefined}
+                        onclick={onnavigate}
+                        class={[itemClass, 'hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark']}
+                    >
+                        {item.label}
+                    </a>{/if}
             </li>
         {/each}
     </ul>

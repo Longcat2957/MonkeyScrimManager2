@@ -5,6 +5,7 @@
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import DiscordSettingRow from '#lib/components/admin/DiscordSettingRow.svelte';
+    import GuildAuditHistory from '#lib/components/admin/GuildAuditHistory.svelte';
     import MemberRiotAccountsDialog from '#lib/components/admin/MemberRiotAccountsDialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
@@ -29,7 +30,8 @@
 
     const TABS = [
         { key: 'members', text: '멤버' },
-        { key: 'discord', text: 'Discord 연동' }
+        { key: 'discord', text: 'Discord 연동' },
+        { key: 'audit', text: '변경 이력' }
     ] as const;
     const active = $derived(TABS.findIndex((tab) => tab.key === data.tab));
 
@@ -166,7 +168,19 @@
         <SelectionTabs labels={TABS.map(({ text }) => ({ text }))} {active} onclickTab={selectTab} />
     </div>
 
-    {#if data.tab === 'discord'}
+    {#if data.tab === 'audit' && data.audit}
+        <section aria-labelledby="audit" class="flex flex-col gap-3" aria-busy={Boolean(navigating.to)}>
+            <h2 id="audit" class="sr-only">변경 이력</h2>
+            <GuildAuditHistory entries={data.audit.entries} total={data.audit.total} />
+            <PageNav
+                total={data.audit.total}
+                pageSize={data.pageSize}
+                current={data.page}
+                label="변경 이력 쪽 이동"
+                onchange={(current) => navigate({ page: current })}
+            />
+        </section>
+    {:else if data.tab === 'discord'}
         <section aria-labelledby="discord" class="flex flex-col gap-3">
             <h2 id="discord" class="sr-only">Discord 연동</h2>
             {#if discord}

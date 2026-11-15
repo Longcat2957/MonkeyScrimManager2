@@ -28,6 +28,7 @@ import { canManageDiscordGuild, isGuildOperator } from '../discord/membership.ts
 import { DomainError } from '../errors.ts';
 import { enqueueGuildPublications } from '../discord/publications.ts';
 import { assertGuildAccess, getGuildAccessDependencies, requireGuildAdmin } from './access.ts';
+import { writeGuildAudit } from './audit.ts';
 
 const ADMINISTRATOR = 1n << 3n;
 const VIEW_CHANNEL = 1n << 10n;
@@ -285,6 +286,35 @@ export async function setGuildDiscordSetting(
             if (!channel) throw new DomainError('NOT_FOUND', '채널을 찾을 수 없어요');
             if (!channel.botCanPost) throw new DomainError('CONFLICT', '봇이 이 채널에 글을 쓸 수 없어요');
         }
+        const previousId = settings[key];
+        const choiceName = (id: string | null) =>
+            (key === 'operatorRoleId' ? snapshot.roles : snapshot.channels).find((item) => item.id === id)
+                ?.name ?? null;
+        let previousName = choiceName(previousId);
+        if (previousId && previousId !== value) {
+            // 선택지 동기화가 지우기 전에 이전 역할·채널의 마지막 확인 이름을 보존한다.
+            const [stored] =
+                key === 'operatorRoleId'
+                    ? await tx
+                          .select({ name: guildDiscordRoles.name })
+                          .from(guildDiscordRoles)
+                          .where(
+                              and(
+                                  eq(guildDiscordRoles.guildId, guildId),
+                                  eq(guildDiscordRoles.roleId, previousId)
+                              )
+                          )
+                    : await tx
+                          .select({ name: guildDiscordChannels.name })
+                          .from(guildDiscordChannels)
+                          .where(
+                              and(
+                                  eq(guildDiscordChannels.guildId, guildId),
+                                  eq(guildDiscordChannels.channelId, previousId)
+                              )
+                          );
+            previousName = stored?.name ?? previousName;
+        }
         await synchronizeChoices(tx, guildId, snapshot, { ...settings, [key]: value });
         await tx
             .insert(guildDiscordSettings)
@@ -307,5 +337,14 @@ export async function setGuildDiscordSetting(
                 })
                 .where(eq(guildMembers.guildId, guildId));
         }
+        if (previousId !== value)
+            await writeGuildAudit(tx, {
+                kind: 'discord_setting_changed',
+                guildId,
+                actorUserId: user.userId,
+                key,
+                before: previousId ? { id: previousId, name: previousName } : null,
+                after: value ? { id: value, name: choiceName(value) } : null
+            });
     });
 }

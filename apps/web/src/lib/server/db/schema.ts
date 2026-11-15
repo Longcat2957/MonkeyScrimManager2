@@ -1,4 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
+import type { GuildAuditKind } from '../../features/guild/audit.ts';
+import type { GuildDiscordSettingKey } from '../../features/guild/types.ts';
 import {
     bigint,
     boolean,
@@ -163,6 +165,56 @@ export const guildRiotAccounts = pgTable(
         uniqueIndex('guild_riot_accounts_primary_unique')
             .on(table.guildId, table.userId)
             .where(sql`${table.isPrimary}`)
+    ]
+);
+
+// 관리 작업과 같은 트랜잭션에 기록한다. 개인정보는 복제하지 않고 현재 식별 행을 조회한다.
+export const guildAuditEntries = pgTable(
+    'guild_audit_entries',
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        guildId: text('guild_id')
+            .notNull()
+            .references(() => guilds.id, { onDelete: 'restrict' }),
+        kind: text('kind').$type<GuildAuditKind>().notNull(),
+        actorUserId: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+        targetUserId: text('target_user_id').references(() => users.id, { onDelete: 'set null' }),
+        riotAccountId: uuid('riot_account_id').references(() => riotAccounts.id, { onDelete: 'set null' }),
+        previousPrimaryAccountId: uuid('previous_primary_account_id').references(() => riotAccounts.id, {
+            onDelete: 'set null'
+        }),
+        nextPrimaryAccountId: uuid('next_primary_account_id').references(() => riotAccounts.id, {
+            onDelete: 'set null'
+        }),
+        // 참조가 삭제되어 null이 된 경우와 처음부터 대표가 없었던 경우를 구분한다.
+        previousPrimaryWasSet: boolean('previous_primary_was_set').default(false).notNull(),
+        nextPrimaryWasSet: boolean('next_primary_was_set').default(false).notNull(),
+        settingKey: text('setting_key').$type<GuildDiscordSettingKey>(),
+        previousSettingId: text('previous_setting_id'),
+        nextSettingId: text('next_setting_id'),
+        previousSettingName: text('previous_setting_name'),
+        nextSettingName: text('next_setting_name'),
+        createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull()
+    },
+    (table) => [
+        index('guild_audit_entries_recent_idx').on(table.guildId, table.createdAt, table.id),
+        index('guild_audit_entries_actor_idx').on(table.actorUserId),
+        index('guild_audit_entries_target_idx').on(table.targetUserId),
+        index('guild_audit_entries_account_idx').on(table.riotAccountId),
+        index('guild_audit_entries_previous_primary_idx').on(table.previousPrimaryAccountId),
+        index('guild_audit_entries_next_primary_idx').on(table.nextPrimaryAccountId),
+        check(
+            'guild_audit_entries_kind_valid',
+            sql`${table.kind} in ('riot_account_linked', 'riot_account_unlinked', 'riot_account_primary_changed', 'discord_setting_changed')`
+        ),
+        check(
+            'guild_audit_entries_setting_valid',
+            sql`(${table.kind} = 'discord_setting_changed' and ${table.settingKey} is not null and ${table.settingKey} in ('operatorRoleId', 'recruitmentChannelId', 'entryChannelId', 'resultChannelId')) or (${table.kind} <> 'discord_setting_changed' and ${table.settingKey} is null)`
+        ),
+        check(
+            'guild_audit_entries_primary_presence',
+            sql`(${table.previousPrimaryWasSet} or ${table.previousPrimaryAccountId} is null) and (${table.nextPrimaryWasSet} or ${table.nextPrimaryAccountId} is null)`
+        )
     ]
 );
 

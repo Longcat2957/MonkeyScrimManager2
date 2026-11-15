@@ -13,6 +13,7 @@ import {
 import { isDiscordId } from '../discord/client.ts';
 import { DomainError } from '../errors.ts';
 import { assertGuildAccess, requireGuildAdmin, requireGuildMember } from '../guild/access.ts';
+import { writeGuildAudit } from '../guild/audit.ts';
 import { ACTIVE_SCRIM_STATUSES, resolveRiotAccount, type AccountDependencies } from './queries.ts';
 
 function accountId(value: string): string {
@@ -150,6 +151,16 @@ export async function linkRiotAccount(
             linkedByUserId: user.userId,
             linkedAt: new Date()
         });
+        const previousPrimary = links.find((link) => link.isPrimary)?.riotAccountId ?? null;
+        await writeGuildAudit(tx, {
+            kind: 'riot_account_linked',
+            guildId,
+            actorUserId: user.userId,
+            targetUserId: userId,
+            riotAccountId: target.id,
+            previousPrimaryAccountId: previousPrimary,
+            nextPrimaryAccountId: previousPrimary ?? target.id
+        });
     });
 }
 
@@ -176,6 +187,15 @@ export async function setPrimaryRiotAccount(
             .update(guildRiotAccounts)
             .set({ isPrimary: true })
             .where(and(eq(guildRiotAccounts.guildId, guildId), eq(guildRiotAccounts.riotAccountId, id)));
+        await writeGuildAudit(tx, {
+            kind: 'riot_account_primary_changed',
+            guildId,
+            actorUserId: user.userId,
+            targetUserId: userId,
+            riotAccountId: id,
+            previousPrimaryAccountId: links.find((account) => account.isPrimary)?.riotAccountId ?? null,
+            nextPrimaryAccountId: id
+        });
     });
 }
 
@@ -197,14 +217,15 @@ export async function unlinkRiotAccount(
         await tx
             .delete(guildRiotAccounts)
             .where(and(eq(guildRiotAccounts.guildId, guildId), eq(guildRiotAccounts.riotAccountId, id)));
+        const previousPrimary = links.find((account) => account.isPrimary)?.riotAccountId ?? null;
+        const next = links
+            .filter((account) => account.riotAccountId !== id)
+            .sort(
+                (a, b) =>
+                    a.linkedAt.getTime() - b.linkedAt.getTime() ||
+                    a.riotAccountId.localeCompare(b.riotAccountId)
+            )[0];
         if (target.isPrimary) {
-            const next = links
-                .filter((account) => account.riotAccountId !== id)
-                .sort(
-                    (a, b) =>
-                        a.linkedAt.getTime() - b.linkedAt.getTime() ||
-                        a.riotAccountId.localeCompare(b.riotAccountId)
-                )[0];
             if (next)
                 await tx
                     .update(guildRiotAccounts)
@@ -216,5 +237,14 @@ export async function unlinkRiotAccount(
                         )
                     );
         }
+        await writeGuildAudit(tx, {
+            kind: 'riot_account_unlinked',
+            guildId,
+            actorUserId: user.userId,
+            targetUserId: userId,
+            riotAccountId: id,
+            previousPrimaryAccountId: previousPrimary,
+            nextPrimaryAccountId: target.isPrimary ? (next?.riotAccountId ?? null) : previousPrimary
+        });
     });
 }
