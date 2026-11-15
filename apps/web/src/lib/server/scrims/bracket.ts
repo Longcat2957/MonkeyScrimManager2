@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import {
     bracketSeats,
     bracketTemplate,
@@ -168,22 +168,30 @@ export async function getBracket(
 }
 
 export async function assertNoGames(tx: Transaction, scrimId: string): Promise<void> {
-    const [game] = await tx.select({ id: games.id }).from(games).where(eq(games.scrimId, scrimId)).limit(1);
+    const [game] = await tx
+        .select({ id: games.id })
+        .from(games)
+        .innerJoin(matches, eq(matches.id, games.matchId))
+        .where(and(eq(games.scrimId, scrimId), isNull(matches.cancellationBatchId)))
+        .limit(1);
     if (game) throw new DomainError('CONFLICT', '기록된 게임이 있어 이전 단계로 되돌릴 수 없어요');
 }
 
 /** Game이 하나도 없는 Match만 제거하며, 먼저 대진의 참조를 비운다. */
 export async function removeUnplayedMatches(tx: Transaction, scrimId: string): Promise<void> {
-    await tx
+    const current = await tx
         .select({ id: matches.id })
         .from(matches)
-        .where(eq(matches.scrimId, scrimId))
+        .where(and(eq(matches.scrimId, scrimId), isNull(matches.cancellationBatchId)))
         .orderBy(asc(matches.id))
         .for('update');
     await assertNoGames(tx, scrimId);
     await tx.update(scrimBracketNodes).set({ matchId: null }).where(eq(scrimBracketNodes.scrimId, scrimId));
-    await tx.delete(matchLineups).where(eq(matchLineups.scrimId, scrimId));
-    await tx.delete(matches).where(eq(matches.scrimId, scrimId));
+    if (current.length) {
+        const ids = current.map((match) => match.id);
+        await tx.delete(matchLineups).where(inArray(matchLineups.matchId, ids));
+        await tx.delete(matches).where(inArray(matches.id, ids));
+    }
 }
 
 export async function deleteDraftBracket(tx: Transaction, scrimId: string): Promise<void> {

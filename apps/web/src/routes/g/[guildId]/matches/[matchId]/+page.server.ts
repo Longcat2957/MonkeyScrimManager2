@@ -22,7 +22,10 @@ import { championResolver } from '#lib/server/ddragon/champions.ts';
 import { loadoutResolver } from '#lib/server/ddragon/loadout.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { RoflError } from '#lib/server/rofl/format.ts';
-import { projectRoflGame } from '#lib/server/rofl/projection.ts';
+import { readRoflForm } from '#lib/server/rofl/processing.ts';
+import { uploadAdmission, uploadLimits } from '#lib/server/rofl/processing-runtime.ts';
+import { noteRequestError, OperationLimitError } from '#lib/server/operations/errors.ts';
+import { noteOperationIssue } from '#lib/server/operations/context.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 // 실제 경기 파일은 수십 MB 안쪽이다. 이보다 크면 읽기 전에 거절한다.
@@ -62,9 +65,10 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
     }
 };
 
-function toRawGame(bytes: Uint8Array): RawGame | string {
+async function toRawGame(bytes: Uint8Array, signal: AbortSignal): Promise<RawGame | string> {
     try {
-        const projection = projectRoflGame(bytes);
+        const { projectRoflInWorker } = await import('#lib/server/rofl/processing-worker.ts');
+        const projection = await projectRoflInWorker(bytes, { timeoutMs: uploadLimits.parseMs, signal });
         if (projection.result.status !== 'consistent') return '결과를 확인할 수 없어 기록하지 않았어요';
         return {
             gameVersion: projection.gameVersion,
@@ -135,42 +139,60 @@ export const actions: Actions = {
     releaseLineup: (event) => changeLineup('releaseLineup', event),
     revertResult: (event) => changeLineup('revertResult', event),
     upload: async ({ request, params, locals, setHeaders }) => {
-        if (!(dev && findMockGuild(params.guildId))) {
-            try {
-                requireUser(locals.actor);
-                const data = await request.formData();
-                const file = data.get('file');
-                if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl'))
-                    return fail(400, { message: 'ROFL 파일을 골라 주세요' });
-                if (file.size > MAX_ROFL_BYTES) return fail(413, { message: '파일이 너무 커요' });
-                return await importMatchRofl(getDb(), locals.actor, params.guildId, params.matchId, {
+        let release: (() => void) | undefined;
+        try {
+            const preview = dev && Boolean(findMockGuild(params.guildId));
+            const user = preview ? null : requireUser(locals.actor);
+            release = uploadAdmission.claim(user?.userId ?? `demo:${params.guildId}`);
+            const data = await readRoflForm(request, uploadLimits.bodyMs);
+            const file = data.get('file');
+            if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl')) {
+                noteOperationIssue('INVALID_INPUT');
+                return fail(400, { message: 'ROFL 파일을 골라 주세요' });
+            }
+            if (file.size > MAX_ROFL_BYTES) {
+                noteOperationIssue('ROFL_BODY_TOO_LARGE');
+                return fail(413, { message: '파일이 너무 커요' });
+            }
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            if (preview) {
+                const raw = await toRawGame(bytes, request.signal);
+                if (typeof raw === 'string') return fail(422, { message: raw });
+                // 명시적 개발 샘플은 운영 DB와 분리된 메모리 예시만 변경한다.
+                const result = await recordMockGame(params.guildId, params.matchId, raw);
+                if ('status' in result) return fail(result.status, { message: result.message });
+                return { order: result.order };
+            }
+            return await importMatchRofl(
+                getDb(),
+                locals.actor,
+                params.guildId,
+                params.matchId,
+                {
                     expectedRevision: integer(data, 'expectedRevision'),
                     nextGameNumber: integer(data, 'expectedGameNumber'),
                     lineupId: String(data.get('lineupId') ?? ''),
                     blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
-                    bytes: new Uint8Array(await file.arrayBuffer())
-                });
-            } catch (cause) {
-                if (cause instanceof RoflError) return fail(422, { message: '읽을 수 없는 ROFL 파일이에요' });
-                if (cause instanceof RiotError) {
-                    if (cause.retryAfterSeconds)
-                        setHeaders({ 'Retry-After': String(cause.retryAfterSeconds) });
-                    return fail(cause.status, {
-                        message: 'Riot 계정 정보를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요'
-                    });
+                    bytes
+                },
+                {
+                    roflProcessing: { timeoutMs: uploadLimits.parseMs, signal: request.signal }
                 }
-                return actionFailure(cause, setHeaders);
+            );
+        } catch (cause) {
+            noteRequestError(cause);
+            if (cause instanceof OperationLimitError && [408, 413, 429].includes(cause.status))
+                setHeaders({ Connection: 'close' });
+            if (cause instanceof RoflError) return fail(422, { message: '읽을 수 없는 ROFL 파일이에요' });
+            if (cause instanceof RiotError) {
+                if (cause.retryAfterSeconds) setHeaders({ 'Retry-After': String(cause.retryAfterSeconds) });
+                return fail(cause.status, {
+                    message: 'Riot 계정 정보를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요'
+                });
             }
+            return actionFailure(cause, setHeaders);
+        } finally {
+            release?.();
         }
-        const file = (await request.formData()).get('file');
-        if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl'))
-            return fail(400, { message: 'ROFL 파일을 골라 주세요' });
-        if (file.size > MAX_ROFL_BYTES) return fail(413, { message: '파일이 너무 커요' });
-        const raw = toRawGame(new Uint8Array(await file.arrayBuffer()));
-        if (typeof raw === 'string') return fail(422, { message: raw });
-        // 명시적 개발 샘플은 운영 DB와 분리된 메모리 예시만 변경한다.
-        const result = await recordMockGame(params.guildId, params.matchId, raw);
-        if ('status' in result) return fail(result.status, { message: result.message });
-        return { order: result.order };
     }
 };

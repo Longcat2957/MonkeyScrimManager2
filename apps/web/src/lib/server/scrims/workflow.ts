@@ -16,6 +16,7 @@ import {
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { invalidateAuctionActions } from './auction-actions.ts';
+import { activeScrimCancellation } from './cancellation.ts';
 import {
     assertNoGames,
     createResolvedMatches,
@@ -323,13 +324,28 @@ export async function getScrimOperations(
             let nextAction: ScrimNextAction | null = null;
             let revert: ScrimRevertAction | null = null;
             let restore: ScrimRevertAction | null = null;
-            if (!guild.isAdmin) return { nextAction, revert, restore, endEarly: false };
-            if (row.status === 'cancelled')
+            let cancelGameCount: number | null = null;
+            let cancelledGameCount: number | null = null;
+            if (!guild.isAdmin)
+                return { nextAction, revert, restore, cancelGameCount, cancelledGameCount, endEarly: false };
+            if (row.status === 'in_progress') {
+                const recorded = await tx
+                    .select({ id: games.id })
+                    .from(games)
+                    .where(and(eq(games.scrimId, row.id), eq(games.status, 'completed')));
+                cancelGameCount = recorded.length;
+            }
+            if (row.status === 'cancelled') {
+                const full = await activeScrimCancellation(tx, row.id);
+                cancelledGameCount = full?.reversedGameCount ?? null;
                 restore = {
                     label: '내전 취소 복구',
-                    message: '취소 전 단계로 돌아가요. 참가자와 팀 편성·경매 포인트는 그대로 유지돼요.',
+                    message: full
+                        ? '마감된 모집의 편성 준비로 돌아가요. 참가자는 유지하며 취소한 결과와 MMR은 다시 적용하지 않아요.'
+                        : '취소 전 단계로 돌아가요. 참가자와 팀 편성·경매 포인트는 그대로 유지돼요.',
                     blockedReason: await cancellationRestoreBlock(tx, row)
                 };
+            }
             if (row.status === 'recruit') {
                 const selected = await tx
                     .select({ id: scrimParticipants.id })
@@ -389,7 +405,8 @@ export async function getScrimOperations(
                 const [game] = await tx
                     .select({ id: games.id })
                     .from(games)
-                    .where(eq(games.scrimId, row.id))
+                    .innerJoin(matches, eq(matches.id, games.matchId))
+                    .where(and(eq(games.scrimId, row.id), isNull(matches.cancellationBatchId)))
                     .limit(1);
                 revert = {
                     label: '대진 준비로 되돌리기',
@@ -418,6 +435,8 @@ export async function getScrimOperations(
                 nextAction,
                 revert,
                 restore,
+                cancelGameCount,
+                cancelledGameCount,
                 endEarly: ['preparing', 'ready', 'in_progress'].includes(row.status)
             };
         },

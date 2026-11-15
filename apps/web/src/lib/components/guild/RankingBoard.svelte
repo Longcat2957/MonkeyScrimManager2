@@ -4,6 +4,8 @@
     import LinkCell from '#lib/components/common/LinkCell.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
+    import type { RecordSeason } from '#lib/features/seasons.ts';
     import type { GuildRanking, LolPosition, RankingEntry, RankingPage } from '#lib/features/guild/types.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
     import type { SectionResult } from '#lib/features/section.ts';
@@ -12,9 +14,11 @@
         guildId: string;
         ranking: SectionResult<GuildRanking | null>;
         onretry: () => Promise<void>;
+        seasons?: RecordSeason[];
+        selectedSeasonId?: string | null;
     };
 
-    let { guildId, ranking, onretry }: Props = $props();
+    let { guildId, ranking, onretry, seasons = [], selectedSeasonId = null }: Props = $props();
 
     let active = $state(0);
     const position = $derived(POSITIONS[active]);
@@ -34,8 +38,10 @@
     $effect(() => {
         void guildId;
         void ranking;
+        void selectedSeasonId;
         loading = false;
         failed = false;
+        scroller?.scrollTo({ top: 0 });
         // 서버·첫 쪽 데이터가 바뀌거나 화면을 떠나면 이전 요청의 결과를 사용하지 않는다.
         return () => {
             controller?.abort();
@@ -55,6 +61,7 @@
         const current = pages[key];
         if (!current?.hasMore) return;
         const requestGuild = guildId;
+        const requestSeason = selectedSeasonId;
         const source = ranking;
         const request = new AbortController();
         controller = request;
@@ -62,10 +69,13 @@
             controller === request &&
             !request.signal.aborted &&
             guildId === requestGuild &&
+            selectedSeasonId === requestSeason &&
             ranking === source;
         const fetchPage = async (offset: number): Promise<RankingPage> => {
+            const query = new URLSearchParams({ position: key, offset: String(offset) });
+            if (requestSeason) query.set('season', requestSeason);
             const response = await fetch(
-                `${resolve('/g/[guildId]/ranking', { guildId: requestGuild })}?position=${key}&offset=${offset}`,
+                `${resolve('/g/[guildId]/ranking', { guildId: requestGuild })}?${query}`,
                 { signal: request.signal }
             );
             if (!response.ok) throw new Error(String(response.status));
@@ -103,7 +113,7 @@
 
 {#snippet row(entry: RankingEntry, line: boolean)}
     <LinkCell
-        href={resolve('/g/[guildId]/players/[userId]', { guildId, userId: entry.userId })}
+        href={`${resolve('/g/[guildId]/players/[userId]', { guildId, userId: entry.userId })}${selectedSeasonId ? `?season=${selectedSeasonId}` : ''}`}
         {line}
         title={entry.displayName}
         subTitle={`${entry.games}전 ${entry.wins}승 · 승률 ${winRate(entry)}%`}
@@ -155,9 +165,14 @@
 {/snippet}
 
 <section aria-labelledby="ranking" class="flex flex-col gap-3">
-    <div class="flex items-baseline justify-between gap-4">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <h2 id="ranking" class="text-lg font-semibold">서버 순위</h2>
-        {#if ranking.ok && ranking.value}
+        {#if seasons.length}
+            <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                <span class="text-xs text-text-muted">포지션별 MMR</span>
+                <SeasonSelector {seasons} {selectedSeasonId} />
+            </div>
+        {:else if ranking.ok && ranking.value}
             <span class="text-xs text-gray-500 dark:text-gray-400"
                 >{ranking.value.seasonName} · 포지션별 MMR</span
             >
@@ -167,7 +182,7 @@
     {#if !ranking.ok}
         <SectionState state="error" message="순위를 불러오지 못했어요" {onretry} />
     {:else if !ranking.value}
-        <SectionState state="empty" message="이번 시즌 순위가 아직 없어요" />
+        <SectionState state="empty" message="조회할 시즌의 순위가 아직 없어요" />
     {:else}
         <CellGroup my="0" mx="0" shadow="none">
             <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 포지션은 목록 이름으로 알린다. -->
@@ -191,7 +206,7 @@
                         {/each}
                     </ul>
                     {#if scroller}
-                        {#key position.key}
+                        {#key `${position.key}:${selectedSeasonId ?? ''}`}
                             <InfiniteScroll
                                 scrollTarget={scroller}
                                 bind:loading

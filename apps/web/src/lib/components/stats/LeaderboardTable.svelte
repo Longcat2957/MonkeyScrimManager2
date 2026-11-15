@@ -16,7 +16,11 @@
         'games' | 'kda' | 'winRate' | 'csPerMin' | 'damagePerMin' | 'visionPerGame' | 'killParticipation';
 
     // 사용자별 지표 표. 열 머리를 누르면 그 지표로 정렬하고, 다시 누르면 방향을 바꾼다.
-    let { rows, guildId }: { rows: Row[]; guildId: string } = $props();
+    let {
+        rows,
+        guildId,
+        seasonId = null
+    }: { rows: Row[]; guildId: string; seasonId?: string | null } = $props();
 
     const COLUMNS: { key: SortKey; label: string }[] = [
         { key: 'kda', label: 'KDA' },
@@ -140,10 +144,10 @@
                     >
                         <div class="flex min-w-0 items-center gap-2">
                             <a
-                                href={resolve('/g/[guildId]/players/[userId]', {
+                                href={`${resolve('/g/[guildId]/players/[userId]', {
                                     guildId,
                                     userId: row.userId
-                                })}
+                                })}${seasonId ? `?season=${seasonId}` : ''}`}
                                 class="flex min-h-11 min-w-0 flex-1 items-center gap-2 hover:underline"
                             >
                                 <PlayerFace name={row.displayName} imageUrl={row.iconUrl} size="sm" />

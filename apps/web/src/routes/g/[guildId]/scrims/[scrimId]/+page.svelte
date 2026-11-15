@@ -39,7 +39,8 @@
                 revert={data.can.revert}
                 restore={data.can.restore}
                 endEarly={data.can.endEarly}
-                cancellable={['recruit', 'preparing', 'ready'].includes(data.scrim.status)}
+                cancellable={['recruit', 'preparing', 'ready', 'in_progress'].includes(data.scrim.status)}
+                cancelGameCount={data.can.cancelGameCount}
                 settings={data.settings}
                 editable={data.editable}
                 notifyParticipants={data.can.notifyParticipants}

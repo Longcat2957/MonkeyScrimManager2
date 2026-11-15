@@ -29,6 +29,21 @@ export interface UpstreamRule {
 }
 export const HTTP_COOKIE = '__Host-monkeybot_session';
 export const HTTP_BOT_TOKEN = 'fixture-internal-bot-token';
+const operationKeys = [
+    'DB_STATEMENT_TIMEOUT_MS',
+    'DB_LOCK_TIMEOUT_MS',
+    'DB_QUERY_TIMEOUT_MS',
+    'ROFL_MAX_CONCURRENT',
+    'ROFL_USER_CONCURRENT',
+    'ROFL_USER_REQUEST_LIMIT',
+    'ROFL_RATE_WINDOW_MS',
+    'ROFL_BODY_TIMEOUT_MS',
+    'ROFL_PARSE_TIMEOUT_MS'
+] as const;
+export type HttpFixtureOptions = {
+    botInternalToken?: string;
+    operations?: Partial<Record<(typeof operationKeys)[number], string>>;
+};
 type HttpActionResult =
     | { type: 'success' | 'failure'; status: number; data?: string; location: string }
     | { type: 'error'; error: { status: number; message: string }; location: string }
@@ -151,7 +166,7 @@ export function fixtureUpstreams(): UpstreamRule[] {
 export async function createHttpFixture(
     t: TestContext,
     overrides: UpstreamRule[] = [],
-    options: { botInternalToken?: string } = {}
+    options: HttpFixtureOptions = {}
 ) {
     await access(new URL('../../../build/handler.js', import.meta.url)).catch(() => {
         throw new Error('HTTP hard에는 최신 웹 빌드가 필요합니다. pnpm test:hard:http 명령을 사용해 주세요.');
@@ -212,6 +227,11 @@ export async function createHttpFixture(
         BOT_STATUS_URL: '',
         MSM2_TEST_UPSTREAMS: JSON.stringify([...overrides, ...fixtureUpstreams()])
     };
+    for (const [key, value] of Object.entries(options.operations ?? {})) {
+        if (!(operationKeys as readonly string[]).includes(key) || typeof value !== 'string')
+            throw new Error('테스트에서 지원하지 않는 운영 제한입니다.');
+        environment[key] = value;
+    }
     const child = fork(fileURLToPath(new URL('./http-child.mjs', import.meta.url)), [], {
         cwd: fileURLToPath(new URL('../../../', import.meta.url)),
         env: environment,
@@ -219,8 +239,38 @@ export async function createHttpFixture(
         stdio: ['ignore', 'pipe', 'pipe', 'ipc']
     });
     // 서버 내부 로그에 연결 URL이 포함될 수 있으므로 실패 보고에는 비밀 값이 없는 상태만 사용한다.
-    child.stdout?.resume();
-    child.stderr?.resume();
+    const requestObservations: {
+        event: 'request';
+        requestId: string;
+        route: string;
+        method: string;
+        status: number;
+        code: string | null;
+        durationMs: number;
+    }[] = [];
+    let capturedOutput = '';
+    let pendingLine = '';
+    const capture = (chunk: Buffer) => {
+        capturedOutput = (capturedOutput + chunk.toString()).slice(-131_072);
+    };
+    child.stderr?.on('data', capture);
+    child.stdout?.on('data', (chunk: Buffer) => {
+        capture(chunk);
+        pendingLine += chunk.toString();
+        let end;
+        while ((end = pendingLine.indexOf('\n')) !== -1) {
+            const line = pendingLine.slice(0, end);
+            pendingLine = pendingLine.slice(end + 1);
+            try {
+                const value = JSON.parse(line);
+                if (value?.event === 'request' && typeof value.requestId === 'string') {
+                    requestObservations.push(value);
+                    if (requestObservations.length > 1000) requestObservations.shift();
+                }
+            } catch {}
+        }
+        pendingLine = pendingLine.slice(-131_072);
+    });
     const unexpected: string[] = [];
     const upstreamCalls: string[] = [];
     child.on('message', (message: unknown) => {
@@ -350,7 +400,17 @@ export async function createHttpFixture(
         const result = (await response.json()) as HttpActionResult;
         return { response, result };
     }
-    return { ...isolated, ...ready, season: season!, session, request, action, upstreamCalls };
+    return {
+        ...isolated,
+        ...ready,
+        season: season!,
+        session,
+        request,
+        action,
+        upstreamCalls,
+        requestObservations,
+        logsContain: (value: string) => capturedOutput.includes(value)
+    };
 }
 
 export function assertAction(

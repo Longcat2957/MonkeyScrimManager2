@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import test from 'node:test';
 import { chromium } from 'playwright';
 import type { BrowserContext, Page } from 'playwright';
@@ -6,6 +9,7 @@ import * as schema from '../../src/lib/server/db/schema.ts';
 import { createHttpMatchResultFixture } from '../api/support/http-match-fixtures.ts';
 
 type Fixture = Awaited<ReturnType<typeof createHttpMatchResultFixture>>;
+const recoveryCaptures: { file: string; sha256: string; path: string; width: number; state: string }[] = [];
 
 /** 브라우저가 보는 TLS 프록시·쿠키·origin 계약은 기존 브라우저 fixture와 같다. */
 async function sessionContext(context: BrowserContext, fixture: Fixture, cookie: string) {
@@ -148,3 +152,103 @@ for (const width of [1440, 390]) {
         }
     );
 }
+
+for (const width of [1440, 390])
+    for (const failure of ['rate', 'timeout'] as const)
+        test(
+            `ROFL ${failure === 'rate' ? '요청 제한' : '처리 시간 초과'} 후 선택 파일·블루 팀 보존: ${width}px`,
+            { timeout: 60_000 },
+            async (t) => {
+                const browser = await chromium.launch({ headless: true });
+                t.after(() => browser.close());
+                const fixture = await createHttpMatchResultFixture(t, [], {
+                    operations:
+                        failure === 'rate'
+                            ? { ROFL_USER_REQUEST_LIMIT: '1', ROFL_RATE_WINDOW_MS: '10000' }
+                            : { ROFL_PARSE_TIMEOUT_MS: '1' }
+                });
+                if (failure === 'rate') {
+                    const first = await fixture.action(
+                        fixture.path,
+                        'upload',
+                        { ...(await fixture.confirm()), file: fixture.file() },
+                        fixture.participant.cookie
+                    );
+                    assert.equal(first.response.status, 200);
+                }
+                const context = await browser.newContext({
+                    viewport: { width, height: width === 390 ? 844 : 1000 },
+                    reducedMotion: 'reduce'
+                });
+                await context.addInitScript(
+                    (mode) => localStorage.setItem('theme-mode', mode),
+                    width === 390 ? 'dark' : 'primary'
+                );
+                await sessionContext(context, fixture, fixture.participant.cookie);
+                const page = await context.newPage();
+                page.setDefaultTimeout(10_000);
+                const errors: string[] = [];
+                page.on('pageerror', (error) => errors.push(error.message));
+                const capture = async (state: string) => {
+                    const directory = process.env.MSM2_ROFL_CAPTURE_DIR;
+                    if (!directory) return;
+                    await mkdir(directory, { recursive: true });
+                    await page.waitForTimeout(500);
+                    const file = `${width}-${failure}-${state}.png`;
+                    const png = await page.screenshot({ path: join(directory, file) });
+                    recoveryCaptures.push({
+                        file,
+                        sha256: createHash('sha256').update(png).digest('hex'),
+                        path: new URL(page.url()).pathname,
+                        width,
+                        state
+                    });
+                    await writeFile(
+                        join(directory, 'captures.json'),
+                        JSON.stringify(recoveryCaptures, null, 4) + '\n'
+                    );
+                };
+                await page.goto(fixture.url + fixture.path);
+                await page.waitForTimeout(700);
+                const dialog = await prepareUpload(page, fixture.file(1_900_000));
+                const rejected = page.waitForResponse((reply) => reply.url().endsWith('?/upload'));
+                await dialog.getByRole('button', { name: '업로드', exact: true }).click();
+                const response = await rejected;
+                assert.equal(response.status(), failure === 'rate' ? 429 : 503);
+                await dialog.getByRole('button', { name: 'fixture.rofl 선택 해제', exact: true }).waitFor();
+                await dialog
+                    .getByRole('button', { name: '업로드', exact: true })
+                    .and(dialog.locator('button:enabled'))
+                    .waitFor();
+                assert.equal(
+                    await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(),
+                    false
+                );
+                assert.equal(
+                    (await fixture.db.select().from(schema.games)).length,
+                    failure === 'rate' ? 1 : 0
+                );
+                assert.equal(
+                    (await fixture.db.select().from(schema.mmrLedgerEntries)).length,
+                    failure === 'rate' ? 10 : 0
+                );
+                assert.equal(
+                    await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+                    false
+                );
+                await capture('input-preserved');
+                if (failure === 'rate') {
+                    const retryAfter = Number(response.headers()['retry-after']);
+                    assert.ok(retryAfter > 0 && retryAfter <= 10);
+                    await page.waitForTimeout(retryAfter * 1000 + 100);
+                    const retried = page.waitForResponse((reply) => reply.url().endsWith('?/upload'));
+                    // 파일과 진영을 다시 고르지 않고 같은 입력으로 재시도한다.
+                    await dialog.getByRole('button', { name: '업로드', exact: true }).press('Enter');
+                    assert.equal((await retried).status(), 200);
+                    await dialog.getByText('2세트로 기록했어요', { exact: true }).waitFor();
+                    assert.equal((await fixture.db.select().from(schema.games)).length, 2);
+                    await capture('retry-recorded');
+                }
+                assert.deepEqual(errors, []);
+            }
+        );

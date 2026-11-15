@@ -7,8 +7,15 @@
         title,
         records,
         guildId,
-        tone
-    }: { title: string; records: DuoRecord[]; guildId: string; tone: 'success' | 'error' } = $props();
+        tone,
+        seasonId = null
+    }: {
+        title: string;
+        records: DuoRecord[];
+        guildId: string;
+        tone: 'success' | 'error';
+        seasonId?: string | null;
+    } = $props();
 </script>
 
 <section class="flex flex-col gap-3">
@@ -18,7 +25,7 @@
             {#each records as record (record.userId)}
                 <li>
                     <a
-                        href={resolve('/g/[guildId]/players/[userId]', { guildId, userId: record.userId })}
+                        href={`${resolve('/g/[guildId]/players/[userId]', { guildId, userId: record.userId })}${seasonId ? `?season=${seasonId}` : ''}`}
                         class="flex items-center justify-between gap-3 rounded-(--radius-box) border border-border bg-bg-surface px-4 py-3 hover:bg-bg-highlight/50 dark:bg-bg-surface-dark dark:hover:bg-bg-highlight-dark/50"
                     >
                         <span class="flex min-w-0 flex-col">

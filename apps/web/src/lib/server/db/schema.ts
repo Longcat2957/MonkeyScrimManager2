@@ -324,6 +324,47 @@ export const scrims = pgTable(
 // 내전 하나에 경매 하나를 연결한다. 준비 단계로 되돌려도 같은 경매와 이력을 유지한다.
 // 편성 방식을 경매가 아닌 것으로 바꾸면 cancelled로 두고, 다시 경매를 고르면 같은 행을 setup으로 되돌린다.
 // 경매 방식의 Scrim인지와 상태 전환 조건은 서비스에서 검증한다.
+export type ScrimCancellationContext = {
+    version: 1;
+    scrim: Record<string, unknown>;
+    matches: Record<string, unknown>[];
+    lineups: Record<string, unknown>[];
+    lineupPlayers: Record<string, unknown>[];
+    bracket: {
+        rounds: Record<string, unknown>[];
+        nodes: Record<string, unknown>[];
+        slots: Record<string, unknown>[];
+    };
+    auction: { row: Record<string, unknown>; teams: Record<string, unknown>[] } | null;
+};
+
+// 진행 후 전체 취소는 원자료를 삭제하지 않고 당시 운영 문맥과 모집 복귀 근거를 남긴다.
+export const scrimCancellations = pgTable(
+    'scrim_cancellations',
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        scrimId: uuid('scrim_id')
+            .notNull()
+            .references(() => scrims.id, { onDelete: 'restrict' }),
+        actorUserId: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+        reason: text('reason').notNull(),
+        reversedGameCount: integer('reversed_game_count').notNull(),
+        context: jsonb('context').$type<ScrimCancellationContext>().notNull(),
+        cancelledAt: timestamp('cancelled_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        restoredAt: timestamp('restored_at', { withTimezone: true, precision: 3 })
+    },
+    (table) => [
+        unique('scrim_cancellations_scrim_id_unique').on(table.scrimId, table.id),
+        uniqueIndex('scrim_cancellations_active_unique')
+            .on(table.scrimId)
+            .where(sql`${table.restoredAt} is null`),
+        check('scrim_cancellations_reason', sql`length(btrim(${table.reason})) between 1 and 500`),
+        check('scrim_cancellations_game_count', sql`${table.reversedGameCount} >= 0`),
+        check('scrim_cancellations_context', sql`jsonb_typeof(${table.context}) = 'object'`),
+        check('scrim_cancellations_time_order', sql`${table.restoredAt} >= ${table.cancelledAt}`)
+    ]
+);
+
 export const auctions = pgTable(
     'auctions',
     {
@@ -908,6 +949,8 @@ export const matches = pgTable(
         statusBeforeScrimEnd: matchStatus('status_before_scrim_end'),
         endedAtBeforeScrimEnd: timestamp('ended_at_before_scrim_end', { withTimezone: true, precision: 3 }),
         endReasonBeforeScrimEnd: text('end_reason_before_scrim_end'),
+        // 전체 취소 배치가 검증한 과거 경기만 현재 편성의 Game 검사에서 분리한다.
+        cancellationBatchId: uuid('cancellation_batch_id'),
         createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
         updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
             .defaultNow()
@@ -940,6 +983,15 @@ export const matches = pgTable(
             sql`(${table.status} = 'completed' and ${table.winnerTeamId} is not null) or ${table.status} = 'ended_early' or (${table.status} not in ('completed', 'ended_early') and ${table.winnerTeamId} is null)`
         ),
         check('matches_time_order', sql`${table.endedAt} >= ${table.startedAt}`),
+        foreignKey({
+            name: 'matches_cancellation_batch_fk',
+            columns: [table.scrimId, table.cancellationBatchId],
+            foreignColumns: [scrimCancellations.scrimId, scrimCancellations.id]
+        }).onDelete('restrict'),
+        check(
+            'matches_cancellation_batch_state',
+            sql`${table.cancellationBatchId} is null or ${table.status} = 'cancelled'`
+        ),
         check(
             'matches_scrim_end_restore_state',
             sql`(${table.statusBeforeScrimEnd} is null and ${table.endedAtBeforeScrimEnd} is null and ${table.endReasonBeforeScrimEnd} is null) or (${table.statusBeforeScrimEnd} is not null and ((${table.statusBeforeScrimEnd} = 'pending' and ${table.status} in ('cancelled', 'ended_early')) or (${table.statusBeforeScrimEnd} = 'in_progress' and ${table.status} = 'ended_early')))`

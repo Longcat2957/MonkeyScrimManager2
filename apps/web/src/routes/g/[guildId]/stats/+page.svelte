@@ -8,6 +8,7 @@
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
     import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
     import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
     import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
@@ -39,6 +40,7 @@
         minGames = data.minGames;
         void data.position;
         void data.recent;
+        void data.selectedSeasonId;
         championPage = 1;
         achievementIndex = 0;
     });
@@ -63,10 +65,16 @@
 </svelte:head>
 
 <div class="flex flex-col gap-8">
-    <h1 class="text-2xl font-semibold">통계</h1>
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <h1 class="text-2xl font-semibold">통계</h1>
+        <SeasonSelector seasons={data.seasons} selectedSeasonId={data.selectedSeasonId} />
+    </header>
 
     {#if data.empty}
-        <SectionState state="empty" message="아직 기록된 게임이 없어요" />
+        <SectionState
+            state="empty"
+            message={data.selectedSeasonId ? '이 시즌에는 기록된 게임이 없어요' : '아직 기록된 게임이 없어요'}
+        />
     {:else}
         {@const kpis: [string, string, string | null, StatTone, string][] = [
 			['총 게임', String(data.kpis.games), null, 'info', 'm14.5 17.5-11-11V3h3.5l11 11m-5 5 6-6m-3 3 4 4m1-1-2 2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4m-2-1-3 3m-1-1 2 2'],
@@ -181,7 +189,7 @@
                     </div>
                 </div>
                 {#if data.leaderboard.length}
-                    <LeaderboardTable rows={data.leaderboard} {guildId} />
+                    <LeaderboardTable rows={data.leaderboard} {guildId} seasonId={data.selectedSeasonId} />
                 {:else}
                     <SectionState state="empty" message={`${data.minGames}게임 이상 뛴 사람이 없어요`} />
                 {/if}

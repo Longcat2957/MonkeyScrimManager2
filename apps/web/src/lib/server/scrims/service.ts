@@ -9,6 +9,7 @@ import {
     auctions,
     games,
     guildRiotAccounts,
+    matches,
     mmrSeasons,
     riotAccounts,
     scrimParticipantPreferences,
@@ -19,6 +20,13 @@ import {
     users
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { lockMmrSeason } from '../mmr/service.ts';
+import {
+    activeScrimCancellation,
+    cancelRunningScrimInTransaction,
+    fullCancellationRestoreBlock,
+    restoreFullCancellationInTransaction
+} from './cancellation.ts';
 import { enqueueScrimPublications } from '../discord/publications.ts';
 import {
     assertGuildAccess,
@@ -574,7 +582,8 @@ export async function reopenRecruitment(
         const [game] = await tx
             .select({ id: games.id })
             .from(games)
-            .where(eq(games.scrimId, row.id))
+            .innerJoin(matches, eq(matches.id, games.matchId))
+            .where(and(eq(games.scrimId, row.id), isNull(matches.cancellationBatchId)))
             .limit(1);
         if (auction || game)
             throw new DomainError('CONFLICT', '진행 이력이 있어 모집 단계로 되돌릴 수 없어요');
@@ -603,13 +612,26 @@ export async function cancelScrim(
     const expectedRevision = requireRevision(input.expectedRevision);
     await requireGuildAdmin(user, guildId, { ...access, db });
     await db.transaction(async (tx) => {
+        // 결과 취소와 같은 시즌 → 내전 순서다. 상태 변경 경쟁 뒤에도 시즌을 뒤늦게 잠그지 않는다.
+        const [target] = await tx
+            .select({ seasonId: scrims.mmrSeasonId })
+            .from(scrims)
+            .where(and(eq(scrims.id, scrimId), eq(scrims.guildId, guildId)));
+        if (target?.seasonId) await lockMmrSeason(tx, guildId, target.seasonId);
         const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
+        if (row.mmrSeasonId !== target?.seasonId)
+            throw new DomainError('CONFLICT', '내전의 MMR 시즌이 변경됐어요');
+        if (row.status === 'in_progress') {
+            await cancelRunningScrimInTransaction(tx, row, user);
+            return;
+        }
         if (!['recruit', 'preparing', 'ready'].includes(row.status))
-            throw new DomainError('CONFLICT', '경기 시작 전 내전만 취소할 수 있어요');
+            throw new DomainError('CONFLICT', '모집·편성·대진 준비·진행 중인 내전만 취소할 수 있어요');
         const [game] = await tx
             .select({ id: games.id })
             .from(games)
-            .where(eq(games.scrimId, row.id))
+            .innerJoin(matches, eq(matches.id, games.matchId))
+            .where(and(eq(games.scrimId, row.id), isNull(matches.cancellationBatchId)))
             .limit(1);
         if (game) throw new DomainError('CONFLICT', '기록된 경기가 있어 취소할 수 없어요');
         const [auction] = await tx
@@ -639,9 +661,16 @@ export async function cancellationRestoreBlock(
     row: ScrimRow
 ): Promise<string | null> {
     if (row.status !== 'cancelled') return '취소된 내전만 복구할 수 있어요';
+    const full = await activeScrimCancellation(db, row.id);
+    if (full) return fullCancellationRestoreBlock(db, row, full);
     if (!row.cancelledFromStatus || !['recruit', 'preparing', 'ready'].includes(row.cancelledFromStatus))
         return '취소 전 단계가 남아 있지 않아 복구할 수 없어요';
-    const [game] = await db.select({ id: games.id }).from(games).where(eq(games.scrimId, row.id)).limit(1);
+    const [game] = await db
+        .select({ id: games.id })
+        .from(games)
+        .innerJoin(matches, eq(matches.id, games.matchId))
+        .where(and(eq(games.scrimId, row.id), isNull(matches.cancellationBatchId)))
+        .limit(1);
     if (game) return '기록된 경기가 있어 내전 취소를 복구할 수 없어요';
     const [auction] = await db
         .select({ status: auctions.status })
@@ -671,6 +700,11 @@ export async function restoreCancelledScrim(
         const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
         const blocked = await cancellationRestoreBlock(tx, row);
         if (blocked) throw new DomainError('CONFLICT', blocked);
+        const full = await activeScrimCancellation(tx, row.id);
+        if (full) {
+            await restoreFullCancellationInTransaction(tx, row, full);
+            return;
+        }
         if (row.cancelledAuctionStatus !== null)
             await tx
                 .update(auctions)

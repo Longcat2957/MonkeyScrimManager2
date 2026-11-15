@@ -1,0 +1,242 @@
+[
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-primary-before-cancel.png",
+        "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "state": "before-cancel",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancel-confirm.png",
+        "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "state": "cancel-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancelled.png",
+        "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "state": "cancelled",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restore-confirm.png",
+        "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "state": "restore-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restored-preparing.png",
+        "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "state": "restored-preparing",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restored-manual.png",
+        "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4/manual",
+        "width": 1440,
+        "height": 1000,
+        "theme": "primary",
+        "state": "restored-manual",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-dark-before-cancel.png",
+        "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "state": "before-cancel",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-dark-cancel-confirm.png",
+        "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "state": "cancel-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-dark-cancelled.png",
+        "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "state": "cancelled",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restore-confirm.png",
+        "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "state": "restore-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restored-preparing.png",
+        "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "state": "restored-preparing",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restored-manual.png",
+        "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630/manual",
+        "width": 1440,
+        "height": 1000,
+        "theme": "dark",
+        "state": "restored-manual",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-primary-before-cancel.png",
+        "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "state": "before-cancel",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-primary-cancel-confirm.png",
+        "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "state": "cancel-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-primary-cancelled.png",
+        "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "state": "cancelled",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-primary-restore-confirm.png",
+        "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "state": "restore-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-primary-restored-preparing.png",
+        "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "state": "restored-preparing",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-primary-restored-manual.png",
+        "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464/manual",
+        "width": 390,
+        "height": 844,
+        "theme": "primary",
+        "state": "restored-manual",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-dark-before-cancel.png",
+        "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "state": "before-cancel",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-dark-cancel-confirm.png",
+        "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "state": "cancel-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-dark-cancelled.png",
+        "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "state": "cancelled",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-dark-restore-confirm.png",
+        "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "state": "restore-confirm",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-preparing.png",
+        "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "state": "restored-preparing",
+        "overflow": false,
+        "errors": []
+    },
+    {
+        "file": "/home/qed/workspace/MonkeyScrimManager2/artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-manual.png",
+        "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697/manual",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "state": "restored-manual",
+        "overflow": false,
+        "errors": []
+    }
+]

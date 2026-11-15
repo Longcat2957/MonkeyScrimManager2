@@ -11,6 +11,7 @@
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
     import StatTile from '#lib/components/common/StatTile.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import DuoList from '#lib/components/players/DuoList.svelte';
@@ -39,6 +40,7 @@
     let showAllChampions = $state(false);
     $effect(() => {
         void data.position;
+        void data.selectedSeasonId;
         showAllChampions = false;
     });
     const champions = $derived(showAllChampions ? data.champions : data.champions.slice(0, CHAMPION_PREVIEW));
@@ -129,39 +131,42 @@
 
 <div class="flex flex-col gap-8" aria-busy={changing}>
     <header class="flex flex-col gap-5">
-        <div class="flex items-center gap-4">
-            <PlayerFace name={data.player.displayName} imageUrl={data.player.iconUrl} size="lg" />
-            <div class="flex min-w-0 flex-col gap-1">
-                <div class="flex min-w-0 flex-wrap items-center gap-2">
-                    <h1 class="min-w-0 max-w-full text-2xl font-semibold [overflow-wrap:anywhere]">
-                        {data.player.displayName}
-                    </h1>
-                    {#if data.badges.length}
-                        <ul aria-label="1위 업적" class="flex flex-wrap gap-1">
-                            {#each data.badges as badge (badge.id)}
-                                <li
-                                    title={badge.title}
-                                    class="flex size-7 items-center justify-center rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark"
-                                >
-                                    <span aria-hidden="true">{badge.emoji}</span><span class="sr-only"
-                                        >{badge.title}</span
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex min-w-0 items-center gap-4">
+                <PlayerFace name={data.player.displayName} imageUrl={data.player.iconUrl} size="lg" />
+                <div class="flex min-w-0 flex-col gap-1">
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                        <h1 class="min-w-0 max-w-full text-2xl font-semibold [overflow-wrap:anywhere]">
+                            {data.player.displayName}
+                        </h1>
+                        {#if data.badges.length}
+                            <ul aria-label="1위 업적" class="flex flex-wrap gap-1">
+                                {#each data.badges as badge (badge.id)}
+                                    <li
+                                        title={badge.title}
+                                        class="flex size-7 items-center justify-center rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark"
                                     >
-                                </li>
-                            {/each}
-                        </ul>
+                                        <span aria-hidden="true">{badge.emoji}</span><span class="sr-only"
+                                            >{badge.title}</span
+                                        >
+                                    </li>
+                                {/each}
+                            </ul>
+                        {/if}
+                    </div>
+                    {#if data.player.riotIds.length}
+                        <p class="text-sm break-words text-text-muted">{data.player.riotIds.join(' · ')}</p>
+                    {/if}
+                    {#if data.recordWins !== null}
+                        <p class="text-sm font-semibold tabular-nums">
+                            <span class="text-info dark:text-dark">{data.recordWins}승</span> ·
+                            <span class="text-error">{overall - data.recordWins}패</span>
+                            · {overall}게임
+                        </p>
                     {/if}
                 </div>
-                {#if data.player.riotIds.length}
-                    <p class="text-sm break-words text-text-muted">{data.player.riotIds.join(' · ')}</p>
-                {/if}
-                {#if data.recordWins !== null}
-                    <p class="text-sm font-semibold tabular-nums">
-                        <span class="text-info dark:text-dark">{data.recordWins}승</span> ·
-                        <span class="text-error">{overall - data.recordWins}패</span>
-                        · {overall}게임
-                    </p>
-                {/if}
             </div>
+            <SeasonSelector seasons={data.seasons} selectedSeasonId={data.selectedSeasonId} />
         </div>
         {#if data.recent.length}
             <section aria-labelledby="recent-strip" class="flex flex-col gap-2">
@@ -199,7 +204,10 @@
     </header>
 
     {#if !data.summary && data.position === 'all'}
-        <SectionState state="empty" message="아직 기록된 게임이 없어요" />
+        <SectionState
+            state="empty"
+            message={data.selectedSeasonId ? '이 시즌에는 기록된 게임이 없어요' : '아직 기록된 게임이 없어요'}
+        />
     {:else}
         <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙인다. 포지션 필터는 요약·챔피언·최근 게임에 함께 적용한다. -->
         <div role="group" aria-label="포지션 필터" class="border-b border-border">
@@ -395,8 +403,20 @@
                     </section>
                 {/if}
 
-                <DuoList title="베스트 듀오" records={data.duos.best} {guildId} tone="success" />
-                <DuoList title="워스트 듀오" records={data.duos.worst} {guildId} tone="error" />
+                <DuoList
+                    title="베스트 듀오"
+                    records={data.duos.best}
+                    {guildId}
+                    seasonId={data.selectedSeasonId}
+                    tone="success"
+                />
+                <DuoList
+                    title="워스트 듀오"
+                    records={data.duos.worst}
+                    {guildId}
+                    seasonId={data.selectedSeasonId}
+                    tone="error"
+                />
             </aside>
         </div>
     {/if}

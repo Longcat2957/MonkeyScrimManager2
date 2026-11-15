@@ -1,8 +1,26 @@
 # 전체 화면 검토 범위
 
-최신 범위는 [운영 과업 실행 기록](operations.md)과 아래 추가 표를 따른다. [앞선 남은 과업 기록](remaining.md)·최초20페이지 검토·후속6페이지 DQ-01~13·[당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 약관·개인정보2페이지는 본문 미확정으로 사용자 요청에 따라 보류했다.
+최신 범위는 [추가 기능 구현·최종 검증](next.md)과 아래 첫 표를 따른다. [운영 과업 실행 기록](operations.md)·[앞선 남은 과업 기록](remaining.md)·최초20페이지 검토·후속6페이지 DQ-01~13·[당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 약관·개인정보2페이지는 본문 미확정으로 사용자 요청에 따라 보류했다.
 
 2026-11-14. 기준 주소: `http://127.0.0.1:5173`. 운영 18개 + 개발 전용 2개 = 전체 20개 화면. HTTP API·OAuth 핸들러는 별도 페이지로 세지 않는다.
+
+## 추가 기능의 최종 확인 범위
+
+2026-11-15. 전체 취소·과거 시즌 선택·DB/ROFL 제한의 핵심 대상 **7종을 검토·브라우저 재검증**했고 **5종의 UI를 직접 수정**했다. 수동 편성·경기 상세는 기존 UI에서 새 복구·실패 상태를 검증했다. 기존 전체20종을 다시 촬영한 것으로 합산하지 않는다. 아래 URL은 실제 격리 fixture의 실행 당시 값이며 전체 query·역할·상태·뷰포트·PNG 해시·판독 담당자는 [88장 통합 목록](../../artifacts/ui-review/next/screenshots.json)에 기록했다.
+
+| 페이지·실제 URL | 역할·상태·뷰포트 | 진단·수정·재검증 | 증거 |
+| --- | --- | --- | --- |
+| 서버 홈 `http://127.0.0.1:42483/g/970000000000000001?page=4` | 공개. 현재 빈 시즌·과거 기록·시즌 메뉴. 1440×1000/390×844·양 테마 | NX-03·03a 완료. 시즌 선택·순위 추가 조회·늦은 응답 차단, 운영 패널 현재 범위 유지 | [전](../../artifacts/ui-review/next/before/home-dark-390-season-menu.png) → [후](../../artifacts/ui-review/next/after/seasons/home-dark-390-season-menu.png) |
+| 개인 전적 `http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&page=4` | 공개. 현재 빈 기록·과거 ROFL3세트. 1440/390·양 테마 | NX-03·03a 완료. 기존 필터·선수 링크 시즌 보존, page 초기화·키보드/ARIA | [전](../../artifacts/ui-review/next/before/player-dark-390-season-menu.png) → [후](../../artifacts/ui-review/next/after/seasons/player-dark-390-season-menu.png) |
+| 통계 `http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&page=4` | 공개. 빈/과거·긴 옵션. 1440/390·양 테마, 320dark/768primary/1024dark 추가 | NX-03·03a 완료. 다른 필터 보존·page 초기화·선수 링크와 범위·텍스트 경계 | [전](../../artifacts/ui-review/next/before/stats-dark-390-season-menu.png) → [후](../../artifacts/ui-review/next/after/seasons/stats-dark-390-season-menu.png), [추가 폭](../../artifacts/ui-review/next/after/seasons/intermediate.json) |
+| 내전 요약 `http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4` | 실제 관리자. 진행·취소 확인·취소·복구 확인·편성 준비. 1440/390·양 테마 | NX-01·01a 완료. 실제 결과/MMR 역분개, 이력·참가자 보존과 복구 의미, 확인창 읽기 폭·안전 포커스 | [전](../../artifacts/ui-review/next/before/wide-1440-primary-cancel-confirm.png) → [후](../../artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancel-confirm.png), [24상태](../../artifacts/ui-review/next/after/cancellation-mcp/captures.json) |
+| 수동 편성 `http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4/manual` | 실제 관리자. 전체 취소 후 복구된 기존10명·두 팀·포지션·MMR. 1440/390·양 테마 | NX-01 완료. 화면 코드 변경 없이 복구 후 정상 배정과 재편성·다음 경기 생성 검증 | [복구 후](../../artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-manual.png), [DB/행동](../../artifacts/ui-review/next/cancellation.md) |
+| 대진 `http://127.0.0.1:43705/g/970000000000000001/scrims/7d36282e-5fed-457d-8603-aae490b4615e/bracket` | 공개·실제 관리자. 전체 취소 후 빈 대진. 1440primary/390dark | NX-01b 완료. 취소 원인 안내·편집 없음, 같은 내전 `/result`는307로 대진 이동. 이 경로를 별도 페이지로 세지 않음 | [전](../../artifacts/ui-review/next/before/cancelled-bracket-dark-390.png) → [후](../../artifacts/ui-review/next/after/cancelled-bracket-dark-390.png), [실제 URL](../../artifacts/ui-review/next/after/cancelled-bracket.json) |
+| 경기 상세 `/g/970000000000000001/matches/cb61160d-9306-4344-8025-24cea807df0f` | 실제 출전자. ROFL429·503·파일/블루팀 보존·재시도 성공. 1440primary/390dark, reduced-motion | NX-02 완료. 화면 코드 변경 없이 실제 서버 실패와 동일 입력 재시도, 중복 결과 방지 | [실패](../../artifacts/ui-review/next/after/rofl/1440-rate-input-preserved.png) → [성공](../../artifacts/ui-review/next/after/rofl/1440-rate-retry-recorded.png), [6장](../../artifacts/ui-review/next/after/rofl/captures.json) |
+
+before23장·after65장 모두 실제 이미지를 읽고 해시를 확인했다. before의 메뉴4장은 hydration/media 전환 중 촬영으로 비교에서 제외했고, 개발 mock 기본6장은 시즌 실데이터와 구분한다. fixture 재생성으로 일부 전후 UUID·포트는 다르며 같은 페이지 종류·상태·역할·폭을 비교했다. ROFL6장은 원본 메타데이터에 실제 pathname만 보존되어 origin을 추정하지 않았다. 외부 이미지·폰트가 차단된 fixture를 CDN·글꼴 품질 평가에 쓰지 않는다. 실제 fixture는 모두 종료·정리했다.
+
+공통 확인창의 기존 계정·경매·결과 사용처는 정규 브라우저 회귀22건에 포함된다. 마지막 취소 대진 안내 뒤 관련 lifecycle4건과 웹 build·실제 MCP 두 폭을 다시 확인했다. [최종 감사](next-audit.md)에서 새 차단 문제는 확인하지 못했다. 실제 외부 계정·운영 환경·물리 기기/보조기기와 사용자 보류 법적 본문은 미검증 범위로 유지한다.
 
 ## 운영 후속의 추가 확인 범위
 

@@ -131,7 +131,10 @@ async function expectEntries(page: Page, entries: RankingEntry[]) {
             const links = [...document.querySelectorAll('ul[aria-label="탑 순위"] li a')];
             return (
                 links.length === ids.length &&
-                links.every((link, index) => link.getAttribute('href')?.endsWith('/' + ids[index]))
+                links.every((link, index) => {
+                    const href = link.getAttribute('href');
+                    return href && new URL(href, location.origin).pathname.endsWith('/' + ids[index]);
+                })
             );
         },
         entries.map((entry) => entry.userId)

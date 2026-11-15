@@ -1,6 +1,6 @@
 # 라우트·레이아웃·내비게이션
 
-갱신일: 2026-11-14. `apps/web/src/routes/`와 공통 레이아웃의 현재 구현을 기준으로 한다. 실제 서버 ID는 DB 조회와 OAuth 세션을 사용하고 개발 샘플 ID만 목 화면을 제공한다.
+갱신일: 2026-11-15. `apps/web/src/routes/`와 공통 레이아웃의 현재 구현을 기준으로 한다. 실제 서버 ID는 DB 조회와 OAuth 세션을 사용하고 개발 샘플 ID만 목 화면을 제공한다.
 
 ## 1. 라우트
 
@@ -57,16 +57,19 @@
 
 | 페이지 | 실제 쿼리 | 기본값·범위 |
 | --- | --- | --- |
+| 서버 홈 순위 | `season=<uuid>` | 생략하면 활성 시즌, 명시하면 같은 서버의 해당 시즌. 운영 내전·최근 경기에는 미적용 |
 | 내전 목록 | `status=all\|recruit\|active\|done`, `page` | `all`, `1`; 페이지당 20 |
 | 경기 기록 | `q`, `page` | 빈 검색어, `1`; 검색어는 50자까지, 쪽 이동은 종료 목록에만 적용 |
 | 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 세트. 일치하는 세트가 없으면 기본 선택 |
-| 사용자 전적 | `position=all\|top\|jungle\|mid\|bot\|support`, `page` | `all`, `1` |
-| 서버 통계 | `position`, `recent=1`, `min` | 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 개발 샘플 업적의 사용자별 최근 10게임 집계에만 적용; 기간·시즌 `range`는 미구현 |
+| 사용자 전적 | `season=<uuid>`, `position=all\|top\|jungle\|mid\|bot\|support`, `page` | 활성 시즌, `all`, `1` |
+| 서버 통계 | `season=<uuid>`, `position`, `recent=1`, `min` | 활성 시즌, 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 개발 샘플 업적의 사용자별 최근 10게임 집계에만 적용; 임의 기간 `range`는 미구현 |
 | 서버 관리 | `tab=members\|discord`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지 |
 
 페이지 필터 변경은 `goto(url, { reset: false })`로 이동하고 `load`가 다시 읽는다. 검색은 폼 제출 시 반영한다. 목록 조건이 바뀌면 페이지를 초기화하며, 서버 관리 탭 변경은 해당 경로의 새 URL에서 시작한다.
 
-팝업 열림, 선택한 참가자·편성 자리, 서버 홈 현황/순위 탭, 업적 캐러셀 선택·순위 팝업, 통계 리더보드 정렬·쪽 번호 등은 컴포넌트 상태다. 서버 순위 추가 조회는 `/g/[guildId]/ranking?position=<포지션>&offset=<개수>`를 쓰며 페이지 URL을 바꾸지 않는다.
+세 화면의 시즌 선택은 `page`·`offset`만 제거하고 기존 포지션·최소 게임·최근 기록 등 다른 쿼리를 보존한다. 종료 시즌을 포함해 같은 서버의 한 시즌만 조회하고 전체 시즌 합산은 제공하지 않는다. 잘못된 UUID(빈 값 포함)는 400, 다른 서버 또는 없는 시즌은 404다. 활성 시즌이 없고 선택도 없으면 선택 ID는 `null`이다. 각 loader가 빈 상태에도 `seasons: {id,name,startedAt,endedAt}[]`·`selectedSeasonId`를 반환하며 개발 샘플에는 과거 이력을 만들지 않는다. 경기 목록의 기간·시즌 필터는 여전히 미구현이며 이 선택과 별개다.
+
+팝업 열림, 선택한 참가자·편성 자리, 서버 홈 현황/순위 탭, 업적 캐러셀 선택·순위 팝업, 통계 리더보드 정렬·쪽 번호 등은 컴포넌트 상태다. 서버 순위 추가 조회는 `/g/[guildId]/ranking?season=<선택한 UUID>&position=<포지션>&offset=<개수>`로 선택 시즌을 고정하고 페이지 URL을 바꾸지 않는다. 순위·리더보드·듀오의 사용자 전적 링크는 선택 시즌을 유지한다.
 
 개발 상태 재현용 쿼리는 서버 홈 `preview=error`(최근 경기 조회 실패), 내 정보의 `preview`, `/dev/error?status=403|404|500`이다. 각 화면이 실제로 읽는 값만 사용하며 모든 페이지에 공통 `preview` 기능이 있는 것은 아니다.
 
@@ -77,7 +80,7 @@
 - `/api/ddragon/versions`, `/api/ddragon/[version]/[locale]/[resource]`: Data Dragon 버전·리소스 응답.
 - `/api/riot/account/v1/accounts/by-riot-id/[gameName]/[tagLine]`, `/api/riot/account/v1/accounts/by-puuid/[puuid]`, `/api/riot/account/v1/region/by-game/lol/by-puuid/[puuid]`.
 - `/api/lol/summoner/v4/summoners/by-puuid/[puuid]`, `/api/lol/league/v4/entries/by-puuid/[puuid]`.
-- `/g/[guildId]/ranking`: `RankingBoard`의 무한 스크롤이 소비하는 서버 순위 다음 쪽.
+- `/g/[guildId]/ranking`: `RankingBoard`의 무한 스크롤이 소비하는 선택 시즌 서버 순위 다음 쪽. 기존 `RankingPage` 응답 형식은 유지한다.
 - `/g/[guildId]/scrims/[scrimId]/auction/live`: 경매 열람자의 자동/수동 갱신이 소비하는 현재 경매·내전 snapshot. 기존 공개 읽기 권한, `private, no-store`. 별도 사용자 페이지나 서버 입찰 endpoint가 아니다.
 
 Riot API 핸들러의 `region`·`platform` 등은 서버 클라이언트 설정과 검증을 따른다. 기존 프로필·티어 HTTP 조회는 공개이며, 서버 관리의 계정 조회·연결은 관리자 guard를 거친 서버 내부 호출이다.
@@ -148,4 +151,4 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 | `/g/[guildId]`와 일반 하위 화면 | 활성 DB 서버·대상을 공개 조회. 없음·비활성은 404. `/admin`은 현재 관리자 검사 |
 | `/`, `/docs`, `/terms`, `/privacy` | 정적 서비스 소개·이용 안내·정책 준비 중 화면 |
 
-기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 시즌 전환은 봇 운영 명령을 사용하고, 과거 시즌을 전적에서 선택하는 UI는 해당 페이지의 후속 범위로 남긴다.
+기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 시즌 전환은 봇 운영 명령을 사용하고, 과거 시즌 열람은 서버 홈의 순위·개인 전적·서버 통계에서 제공한다.

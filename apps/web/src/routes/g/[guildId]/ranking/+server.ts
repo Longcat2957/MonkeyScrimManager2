@@ -16,6 +16,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
     try {
         const result = await getRankingPage(params.guildId, position, {
             offset,
+            seasonId: url.searchParams.get('season'),
             userId: dev && findMockGuild(params.guildId) ? mockUser.userId : (locals.actor?.userId ?? null),
             version: await latestDataDragonVersion()
         });

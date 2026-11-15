@@ -10,7 +10,6 @@ import {
     lolPosition,
     matches,
     mmrLedgerEntries,
-    mmrSeasons,
     roflParticipantDataV1,
     scrimParticipants,
     scrims,
@@ -19,8 +18,9 @@ import {
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { readGuild } from '../scrims/queries.ts';
+import { selectRecordSeason } from '../records/seasons.ts';
 
-/** 현재 시즌의 유효 반영만 경기 수·승률에 포함하고, 점수와 순번은 반올림하지 않는다. */
+/** 선택한 시즌의 유효 반영만 경기 수·승률에 포함하고, 점수와 순번은 반올림하지 않는다. */
 export async function queryRankingPage(
     db: Database,
     actor: Actor | null,
@@ -31,6 +31,7 @@ export async function queryRankingPage(
         limit: number;
         userId: string | null;
         championIcon?: (championId: string) => string | null;
+        seasonId?: string | null;
     }
 ): Promise<{ seasonName: string; page: RankingPage } | null> {
     if (
@@ -45,9 +46,8 @@ export async function queryRankingPage(
         throw new DomainError('INVALID_INPUT', '순위 범위를 다시 확인해 주세요');
     }
     return readGuild(db, actor, guildId, async (tx) => {
-        const season = await tx.query.mmrSeasons.findFirst({
-            where: and(eq(mmrSeasons.guildId, guildId), isNull(mmrSeasons.endedAt))
-        });
+        const selection = await selectRecordSeason(tx, guildId, options.seasonId);
+        const season = selection.seasons.find((row) => row.id === selection.selectedSeasonId);
         if (!season) return null;
         const ranked = tx.$with('ranked').as(
             tx

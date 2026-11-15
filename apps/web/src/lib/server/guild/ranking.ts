@@ -6,6 +6,7 @@ import { dev } from '$app/env';
 import { findMockGuild } from '../../mocks/session.ts';
 import { getDb } from '../db/index.ts';
 import { queryRankingPage } from './ranking-queries.ts';
+import { mockRecordSeasons } from '../records/seasons.ts';
 
 export const RANKING_PAGE_SIZE = 10;
 export const POSITION_KEYS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
@@ -23,19 +24,26 @@ export async function latestDataDragonVersion() {
 export async function getRankingPage(
     guildId: string,
     position: LolPosition,
-    { offset, userId, version }: { offset: number; userId: string | null; version: string | null }
+    {
+        offset,
+        userId,
+        version,
+        seasonId
+    }: { offset: number; userId: string | null; version: string | null; seasonId?: string | null }
 ): Promise<{ seasonName: string; page: RankingPage } | null> {
     if (!(dev && findMockGuild(guildId))) {
         return queryRankingPage(getDb(), null, guildId, position, {
             offset,
             limit: RANKING_PAGE_SIZE,
             userId,
+            seasonId,
             championIcon: (championId) =>
                 version && /^[A-Za-z0-9]{1,64}$/.test(championId)
                     ? dataDragonImageUrl(version, 'champion', `${championId}.png`)
                     : null
         });
     }
+    mockRecordSeasons(seasonId);
     const result = await getMockRankingPage(guildId, position, { offset, limit: RANKING_PAGE_SIZE, userId });
     if (!result) return null;
     const withIcon = ({ championId, ...entry }: MockRankingEntry): RankingEntry => ({

@@ -1,0 +1,804 @@
+{
+    "기록시각": "2026-11-15T10:13:18.028062+00:00",
+    "범위": "진행 중 내전의 전체 결과 취소와 마감된 모집의 편성 준비 복구",
+    "MSM1": {
+        "저장소": "https://github.com/Longcat2957/MonkeyScrimManager",
+        "pin": "d60df685e48c180b236342eae81b389ae87e38bf",
+        "실독": true,
+        "근거": [
+            {
+                "파일": "apps/api-python/src/monkeybot_api/services/auctions/cancellation.py",
+                "행": "53–103",
+                "확인": "허용 단계·현재 시즌/원장 경계에서 모든 결과를 역순 무효화하고 모집과 내전을 취소한다"
+            },
+            {
+                "파일": "apps/api-python/src/monkeybot_api/repositories/auctions/cancellation_commands.py",
+                "행": "46–85",
+                "확인": "Match 취소·승자와 라인업 확정 해제·원본 라인업 보존·최신 확정 결과부터 취소"
+            },
+            {
+                "파일": "apps/api-python/tests/integration/auctions/test_cancellation.py",
+                "행": "292–425",
+                "확인": "2결과20역분개·라인업10행 보존·동일 점수 체크포인트 뒤 최신 역분개까지 전체 rollback"
+            },
+            {
+                "파일": "apps/api-python/src/monkeybot_api/services/auctions/recruitments.py",
+                "행": "349–357",
+                "확인": "마감 시각이 있으면 복구 후 CLOSED, 결과 및 tournament 재활성화가 아니다"
+            }
+        ]
+    },
+    "구현": {
+        "추가외부API": false,
+        "트랜잭션": "고정 시즌 → 내전 → 후속 대진의 Match → Game → 점수; 같은 Transaction 안에서 전체 역분개·배치·상태·게시 예약",
+        "현재대진분리": "scrim_cancellations 1배치와 Match.cancellationBatchId, 원본 Match/lineup/Game/ROFL/FK 유지",
+        "복구": "preparing, 수동 배정 유지; 경매 팀장/시작 포인트 유지하고 영입은 무효화한 setup",
+        "기존미시작취소": "recruit/preparing/ready의 원래 단계·경매 상태 복구 유지",
+        "운영수량권한": "cancelGameCount/cancelledGameCount 관리자에게만 숫자 또는 null, 공개/비관리자 null",
+        "업무테이블": 42,
+        "외래키": 96,
+        "배포probe외래키포함아님": true
+    },
+    "검증": [
+        {
+            "명령": "pnpm exec tsc --noEmit -p apps/web/tests/tsconfig.json",
+            "결과": "통과",
+            "현재소스": true
+        },
+        {
+            "범위": "새 전체취소 DB+0008 migration",
+            "파일": [
+                "apps/web/tests/api/hard/db/scrim-full-cancellation.test.ts",
+                "apps/web/tests/api/hard/db/scrim-full-cancellation-migration.test.ts"
+            ],
+            "통과": 14,
+            "실패": 0,
+            "현재소스": true,
+            "로그": "/tmp/msm2-next-cancellation-final-db.log"
+        },
+        {
+            "범위": "전체 취소+기존 취소·중도 종료·대진·결과·MMR 관련 DB",
+            "통과": 84,
+            "실패": 0,
+            "현재소스": false,
+            "시점": "최종 경매 상태 손상 시 복구 차단 1개를 추가하기 직전; 새 14개를 최종 소스로 재실행",
+            "로그": "/tmp/msm2-next-cancellation-regression.log"
+        },
+        {
+            "범위": "개발 목의 기존/진행 취소·중도 종료",
+            "통과": 10,
+            "실패": 0,
+            "현재소스": true,
+            "로그": "/tmp/msm2-next-cancellation-mock.log"
+        },
+        {
+            "범위": "실제 HTTP action 통합",
+            "상태": "최신 shared production build에서 통과; 독자 재빌드 없음",
+            "파일": "apps/web/tests/api/hard/http/scrim-full-cancellation.test.ts",
+            "통과": 2,
+            "실패": 0,
+            "현재소스": true,
+            "로그": "/tmp/msm2-next-cancellation-http.log",
+            "확인": "실제 upload→cancel/restore, 권한·서버·revision·원본 보존·MMR 역분개, 보정 이후409/전체무변경"
+        },
+        {
+            "범위": "브라우저·코드 전체 검사",
+            "상태": "Root 담당, 최종 build 후 합성 예정"
+        },
+        {
+            "범위": "최종 통합 DB 중 발견한 중도 종료 fixture의 조회 순서 의존 수정",
+            "문제": "ORDER BY 없는 f.matches의 배열 index를 준결승 계정 slice에 대응하여 다른 경기의 참가자가 업로드됨",
+            "재현": "준결승2→준결승1 처리 순서를 강제하면 수정 전 동일 results.ts305 CONFLICT로 결정적1/1실패",
+            "수정": "실제 match.teamAId/teamBId에 해당하는 fixture계정을 선택하며 결승에도 같은 매핑을 사용. 강제 역순을 유지",
+            "파일": "apps/web/tests/api/hard/db/scrim-early-end.test.ts",
+            "제품규칙변경": false,
+            "공유fixture변경": false,
+            "수정전로그": "/tmp/msm2-next-early-end-order-before.log",
+            "수정후로그": "/tmp/msm2-next-early-end-order-after.log",
+            "관련DB통과": 25,
+            "관련DB실패": 0,
+            "타입": "tests TS 통과",
+            "테스트전체개수변경": false,
+            "Root전체DB재검사": "대기"
+        }
+    ],
+    "제한": [
+        "완료·중도 종료 내전 전체 취소는 이번 범위에 포함하지 않음",
+        "다른 내전의 유효 후속 MMR·관리 보정을 넘어 취소하지 않음",
+        "취소 결과/MMR을 다시 적용하는 복구는 제공하지 않음",
+        "실서비스 DB·Discord에 쓰지 않음; 각 DB/HTTP fixture는 독립 스키마와 가짜 상류 API 사용",
+        "과거 취소의 복귀 근거는 추정하지 않음"
+    ],
+    "소스동결": {
+        "여부": true,
+        "파일": [
+            {
+                "경로": "apps/web/src/lib/server/db/schema.ts",
+                "sha256": "a5e93d41bd6be0002f9c7677e31568abb58bafc328916fcada2efb2e35dcc657"
+            },
+            {
+                "경로": "apps/web/drizzle/0008_scrim_result_cancellation.sql",
+                "sha256": "5fbd9b7849ace168325014c04c2da49c8435e539c988591661d049f067baa18b"
+            },
+            {
+                "경로": "apps/web/drizzle/meta/0008_snapshot.json",
+                "sha256": "e56a82dc51cbbdc345d3323ad704f26c2d66039999924769c7f3fc229f6b9424"
+            },
+            {
+                "경로": "apps/web/drizzle/meta/_journal.json",
+                "sha256": "91b9759fd79592ac42803e5758ff82340ecd507994cb3e156233c737135e1cd9"
+            },
+            {
+                "경로": "apps/web/src/lib/server/scrims/cancellation.ts",
+                "sha256": "3c0edc33f02af045ffda938b96d57ab72b6135985efbafd5fd04c23a6710249e"
+            },
+            {
+                "경로": "apps/web/src/lib/server/scrims/service.ts",
+                "sha256": "a9afb52d19086c3198752fe4a6e2069758c94b20aa3b094791c3d4b6da710963"
+            },
+            {
+                "경로": "apps/web/src/lib/server/scrims/workflow.ts",
+                "sha256": "b2a9e47203087df683216cc7ad1106323ab9b2302b511dea6e937f97546880c9"
+            },
+            {
+                "경로": "apps/web/src/lib/server/scrims/bracket.ts",
+                "sha256": "613144e102802ae3aa839207ed22500b0c5a5c64dde37b2f18074011b890e1ff"
+            },
+            {
+                "경로": "apps/web/src/lib/mocks/scrims.ts",
+                "sha256": "d78bf935cfec4770eaf56726969cac6ad78708258a3192c23a565e2a4d492448"
+            },
+            {
+                "경로": "apps/web/src/lib/mocks/workflow.ts",
+                "sha256": "db9519e017443670ce2f63016340b71f157ff641ce3d19bae953e8617539b6d5"
+            },
+            {
+                "경로": "apps/web/src/lib/mocks/bracket.ts",
+                "sha256": "024e55ab4a6eb9c3867799ade8ee5e7569e8a014b32f512ddc70662eeaaabadc"
+            },
+            {
+                "경로": "apps/web/src/lib/mocks/teams.ts",
+                "sha256": "34628c262566309f021dbfc6ca6eb6e85dd907789e872ab956652039a3b00f2a"
+            },
+            {
+                "경로": "apps/web/src/lib/mocks/matches.ts",
+                "sha256": "39de5909c4f0aae8ea503c8bcf0e6c086deb098e85c093679a27c74a8f895ec4"
+            },
+            {
+                "경로": "apps/web/tests/api/hard/db/scrim-full-cancellation.test.ts",
+                "sha256": "bd7e65db4c08849d0e39fd25a16f0ea38704410c3324090610d8d5f274cc3814"
+            },
+            {
+                "경로": "apps/web/tests/api/hard/db/scrim-full-cancellation-migration.test.ts",
+                "sha256": "ded9265d74fd7f5ce68eb8808ca43395791e2c7b50a15fa3e5820c278ea3b073"
+            },
+            {
+                "경로": "apps/web/tests/api/hard/http/scrim-full-cancellation.test.ts",
+                "sha256": "a6715820ee3e24adf0bd51248d42808b8cc5eb669d71aa1d8f0cd698011e4056"
+            },
+            {
+                "경로": "apps/web/tests/scrim-lifecycle.test.ts",
+                "sha256": "053c4f0d1acecd879190b5b539895ae9e2cec3d03aa060a6d6d804e6144fbf8b"
+            },
+            {
+                "경로": "apps/web/tests/api/hard/db/scrim-early-end.test.ts",
+                "sha256": "1648fad2a4434bb7628d6704981ebaebff1700ef207c219ee10c92781a443bd2"
+            }
+        ]
+    },
+    "MCPfixture": {
+        "스크립트": "/tmp/msm2-full-cancel-bootstrap.mjs",
+        "검사": "node --check와 최신 shared build의 Root MCP4조건×6상태 검증 완료. 최신24장 직접 판독:1440 formation_records12장,390 Root12장.",
+        "범위": "1440×1000/390×844와 primary/dark의 격리 실제1ROFL fixture4개",
+        "쿠키": "mode0600 /tmp 전용JSON, 콘솔·저장소 증거에 기록하지 않음",
+        "정리": "Root가 fixture4개 전부 종료했다고 확인. 재사용하지 않는 bootstrap 및 privateJSON 잔여 파일도 정리."
+    },
+    "수정전시각검토": {
+        "기록시각": "2026-11-15T10:28:19.641248+00:00",
+        "범위": "확인창 수정 전 Root MCP 촬영 원본8장, 정적 이미지 독립 판독",
+        "검토기준": [
+            "Impeccable layout: 확인창 콘텐츠 폭과 행동 그룹",
+            "Impeccable typeset: 긴 문구의 줄 길이·정렬",
+            "Impeccable adapt:390px에서 문구·버튼 노출",
+            "Impeccable clarify: 전체 취소와 복구의 서로 다른 결과"
+        ],
+        "이미지": [
+            {
+                "파일": "artifacts/ui-review/next/before/wide-1440-dark-cancel-confirm.png",
+                "sha256": "ff4a98f39d595d8349a7d1598ad149131d4d01829699ba2750d65fdbdad83a51",
+                "PNG크기": [1440, 1472],
+                "뷰포트폭": 1440,
+                "테마": "dark",
+                "상태": "전체 취소 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "거의 전체 화면 폭의 확인창 안에서 본문이 한 줄로 길어지고 두 버튼도 과도하게 넓어짐. 제목·본문·취소/확인 순서는 명확함."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-1440-dark-restore-confirm.png",
+                "sha256": "05240cc0b45380e4aa65f17032a61eccd277183a70952bc220bff9f56acbe960",
+                "PNG크기": [1440, 1316],
+                "뷰포트폭": 1440,
+                "테마": "dark",
+                "상태": "취소 복구 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "거의 전체 화면 폭의 확인창 안에서 본문이 한 줄로 길어지고 두 버튼도 과도하게 넓어짐. 제목·본문·취소/확인 순서는 명확함."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-1440-primary-cancel-confirm.png",
+                "sha256": "e74453c0773f0aab391e25c192da817c9d28cfb1605e8572fcfbd303d13b6cff",
+                "PNG크기": [1440, 1472],
+                "뷰포트폭": 1440,
+                "테마": "primary",
+                "상태": "전체 취소 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "거의 전체 화면 폭의 확인창 안에서 본문이 한 줄로 길어지고 두 버튼도 과도하게 넓어짐. 제목·본문·취소/확인 순서는 명확함."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-1440-primary-restore-confirm.png",
+                "sha256": "5fb9861e717fc443732df22d868c45d62750bc6a463ced84d590565d32184c6a",
+                "PNG크기": [1440, 1316],
+                "뷰포트폭": 1440,
+                "테마": "primary",
+                "상태": "취소 복구 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "거의 전체 화면 폭의 확인창 안에서 본문이 한 줄로 길어지고 두 버튼도 과도하게 넓어짐. 제목·본문·취소/확인 순서는 명확함."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-390-dark-cancel-confirm.png",
+                "sha256": "e5492856d0b5e216f7dd38f043130c241701aa38ac5259ea557a83acf37b1e4f",
+                "PNG크기": [390, 1508],
+                "뷰포트폭": 390,
+                "테마": "dark",
+                "상태": "전체 취소 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "문구와 두 버튼은 화면 안에 표시됨. 긴 본문의 중앙 정렬로 여러 줄의 시작점이 달라짐. 명백한 문구/버튼 잘림은 보이지 않음."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-390-dark-restore-confirm.png",
+                "sha256": "8d961ec7baf0c1087c1e518314521e38b4fe8fa82aabca172bfc19569dcd2b12",
+                "PNG크기": [390, 1320],
+                "뷰포트폭": 390,
+                "테마": "dark",
+                "상태": "취소 복구 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "문구와 두 버튼은 화면 안에 표시됨. 긴 본문의 중앙 정렬로 여러 줄의 시작점이 달라짐. 명백한 문구/버튼 잘림은 보이지 않음."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-390-primary-cancel-confirm.png",
+                "sha256": "da589ecc7141fd3f8ffa0045f314746b14a29664b13452081c5d8c07ebab4143",
+                "PNG크기": [390, 1508],
+                "뷰포트폭": 390,
+                "테마": "primary",
+                "상태": "전체 취소 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "문구와 두 버튼은 화면 안에 표시됨. 긴 본문의 중앙 정렬로 여러 줄의 시작점이 달라짐. 명백한 문구/버튼 잘림은 보이지 않음."
+            },
+            {
+                "파일": "artifacts/ui-review/next/before/wide-390-primary-restore-confirm.png",
+                "sha256": "5f3a790ad3b1bfe082359a96e23940e5ac4e5453fd5a978ab918819eefb72209",
+                "PNG크기": [390, 1320],
+                "뷰포트폭": 390,
+                "테마": "primary",
+                "상태": "취소 복구 확인",
+                "실제읽기": true,
+                "방법": "view_image로 원본 PNG 직접 읽음",
+                "담당": "formation_records",
+                "관찰": "문구와 두 버튼은 화면 안에 표시됨. 긴 본문의 중앙 정렬로 여러 줄의 시작점이 달라짐. 명백한 문구/버튼 잘림은 보이지 않음."
+            }
+        ],
+        "직접확인문제": [
+            {
+                "ID": "NX-01a",
+                "우선순위": "P2",
+                "문제": "데스크톱 확인창의 읽기 폭이 거의 전체 화면으로 늘어나며 긴 본문과 두 버튼이 지나치게 넓어짐",
+                "영향": "공통 ConfirmDialog의 취소·복구 확인, 양 테마1440px에서 직접 확인.390px에서는 잘림 없이 표시되나 긴 본문 중앙 정렬의 읽기 순서가 분산됨",
+                "개선": "중앙 확인창의 최대 콘텐츠 폭 제한·장문 왼쪽 정렬·짧은 뷰포트 내 높이 제한",
+                "적용기능": ["layout", "typeset", "adapt", "polish"],
+                "상태": "완료: 최신1440 양 테마12장은 formation_records,390 양 테마12장은 Root가 직접 판독. 확인창 폭·본문 정렬·버튼 노출과 기본/취소/복구/편성 흐름을 확인.",
+                "완료조건": "최종1440 양 테마에서 적정 폭의 여러 줄 본문·정렬·취소/확인 노출,390 양 테마에서 잘림 없음·기능 검증 유지"
+            }
+        ],
+        "유지점": [
+            "확인창 제목이 전체 취소와 복구를 구분함",
+            "취소 안내의 결과 수량·MMR 역분개와 복구 후 결과 미재개가 화면에서 읽힘",
+            "두 행동은 취소/확인의 한 쌍이며 복구 확인에서 취소 포커스 링이 보임",
+            "모바일에서 문구와 두 버튼은 화면 안에 들어감"
+        ],
+        "한계": [
+            "정적 이미지 판독으로 키보드·스크린리더·스크롤 잠금·성능·정량 대비를 새로 측정하지 않음",
+            "fullPage PNG에서 fixed 배경 dim이 뷰포트 높이 아래에 이어지지 않는 경계는 촬영 특성이며 이 이미지로 UI 결함을 단정하지 않음",
+            "격리 fixture는 외부 이미지·폰트를 차단하므로 해당 로딩 품질은 판정하지 않음",
+            "Root의 functional MCP와 Node browser 검증은 별도 근거이며 이 담당자의 직접 상호작용으로 기록하지 않음"
+        ],
+        "변경": "문서만 갱신, 소스·기존 이미지·새 촬영 없음"
+    },
+    "수정후데스크톱시각검토": {
+        "기록시각": "2026-11-15T10:37:39.327685+00:00",
+        "범위": "최신 Root Playwright MCP1440×1000·primary/dark·6상태,12장",
+        "담당": "formation_records",
+        "이미지": [
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-before-cancel.png",
+                "sha256": "d2d6d49151f6c465fcf8a1e0ae174fda502d5bdb8663cfa83a0d60d61d7551f8",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1472],
+                "theme": "primary",
+                "state": "before-cancel",
+                "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "제목·진행 중 태그와 4 진행 단계가 일치하고 운영 메뉴/비활성 내전 종료 및 참가자 목록의 위계가 유지됨."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancel-confirm.png",
+                "sha256": "adcba06f2996b126649e3684d945f16ca6b313e203e840e280c62b5688c9c429",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1472],
+                "theme": "primary",
+                "state": "cancel-confirm",
+                "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "최대36rem의 중앙 확인창으로 폭이 제한되고 결과1개·MMR역분개·기록 보존·복구 결과의 장문이 왼쪽 정렬됨. 취소/확인 두 버튼이 본문 아래 함께 보임."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancelled.png",
+                "sha256": "c2fd6a31ab5bf2fa6fd21e5bc1caffb2f33acd300c7ddf5b45c095f47788c7e7",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1316],
+                "theme": "primary",
+                "state": "cancelled",
+                "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "취소 태그가 표시되고 진행 단계/내전 종료 조작이 남지 않음. 참가자10명 목록과 운영 메뉴 한 곳을 유지함."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restore-confirm.png",
+                "sha256": "db92e2be0c3a604a90cbeff0a65bfc83bb869c6635d8c3a395906f46d7e2509c",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1316],
+                "theme": "primary",
+                "state": "restore-confirm",
+                "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "폭이 제한된 중앙 확인창에서 편성 준비 복귀·참가자 유지·결과/MMR 미재적용 안내가 왼쪽 정렬됨. 취소 포커스 링과 확인 버튼을 함께 볼 수 있음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restored-preparing.png",
+                "sha256": "34ae6e0ec9974ae739ffd9a21056d81f8cacabe14c06ef04f9726ca0fe8269d9",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1627],
+                "theme": "primary",
+                "state": "restored-preparing",
+                "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "편성 중 태그와 2 편성 단계로 복귀함. 팀 편성 확정 안내·참가자10명·선택된 수동 편성 방식이 일치하며 진행 중 결과를 재개한 표현이 없음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restored-manual.png",
+                "sha256": "62e2ea3e5a97cca88676d9ae06a0a08d775ac1a2577c96359541184afe24f43d",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1174],
+                "theme": "primary",
+                "state": "restored-manual",
+                "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4/manual",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "수동 편성 작업판은10/10배치·미배정0명·두 팀5명씩을 유지함. 상세/방식 변경/초기화/편성 확정은 한 도구줄에 있고 배정·해제 조작과 읽기 위계가 보임."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-before-cancel.png",
+                "sha256": "7ee3a4ff9f9b809397dfe9e20d61bd9ad8d034a6d6731fdb0a50120912dd2f33",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1472],
+                "theme": "dark",
+                "state": "before-cancel",
+                "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "제목·진행 중 태그와 4 진행 단계가 일치하고 운영 메뉴/비활성 내전 종료 및 참가자 목록의 위계가 유지됨."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-cancel-confirm.png",
+                "sha256": "7345df32317a3affde0640d4f9242adba2d1fdf2217550118943fdb76a9af70e",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1472],
+                "theme": "dark",
+                "state": "cancel-confirm",
+                "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "최대36rem의 중앙 확인창으로 폭이 제한되고 결과1개·MMR역분개·기록 보존·복구 결과의 장문이 왼쪽 정렬됨. 취소/확인 두 버튼이 본문 아래 함께 보임."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-cancelled.png",
+                "sha256": "bc122bff3e8419cb8b1ee7fb93792a3e0068f5ba092ac7222690c431252867dc",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1316],
+                "theme": "dark",
+                "state": "cancelled",
+                "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "취소 태그가 표시되고 진행 단계/내전 종료 조작이 남지 않음. 참가자10명 목록과 운영 메뉴 한 곳을 유지함."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restore-confirm.png",
+                "sha256": "12d9d058b0b7172476b323edb451fc1717b577a993521ea236372f8e7d869682",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1316],
+                "theme": "dark",
+                "state": "restore-confirm",
+                "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "폭이 제한된 중앙 확인창에서 편성 준비 복귀·참가자 유지·결과/MMR 미재적용 안내가 왼쪽 정렬됨. 취소 포커스 링과 확인 버튼을 함께 볼 수 있음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restored-preparing.png",
+                "sha256": "39a64015a0d35beae4d46441a1d7942d042d4685788209e755cd3c58ef1ce163",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1627],
+                "theme": "dark",
+                "state": "restored-preparing",
+                "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "편성 중 태그와 2 편성 단계로 복귀함. 팀 편성 확정 안내·참가자10명·선택된 수동 편성 방식이 일치하며 진행 중 결과를 재개한 표현이 없음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restored-manual.png",
+                "sha256": "8065d9b5bb89a02600f99322b60a71a0a515741b6e5025dd765f9baa46096cc0",
+                "imageRead": true,
+                "reviewer": "formation_records",
+                "방법": "view_image 원본 PNG 직접 판독",
+                "뷰포트": {
+                    "width": 1440,
+                    "height": 1000
+                },
+                "PNG크기": [1440, 1174],
+                "theme": "dark",
+                "state": "restored-manual",
+                "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630/manual",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "수동 편성 작업판은10/10배치·미배정0명·두 팀5명씩을 유지함. 상세/방식 변경/초기화/편성 확정은 한 도구줄에 있고 배정·해제 조작과 읽기 위계가 보임."
+            }
+        ],
+        "시각결론": "양 테마의 확인창 폭 제한·왼쪽 본문 정렬을 확인. 진행 중→취소→편성 준비→기존 수동 배정으로의 화면 위계·상태 일치·조작 위치 유지. 추가 수정할 시각 결함을 확인하지 못함.",
+        "NX-01a": "완료: 데스크톱 formation_records12장·모바일 Root12장, 최신24장 직접 판독 완료.",
+        "자동검증근거": {
+            "captures.json": "12건 모두 overflow=false·errors=[]를 파일에서 확인",
+            "확인본문폭": "Root 보고: 캡처 시600px이하 자동 검사 모두통과.이담당자가DOM을새로측정한수치는아님"
+        },
+        "비교": "수정 전 wide8장과 같은 서비스 경로·역할·상태·뷰포트의 의미를 비교.각격리fixture의UUID/참가자정렬은달라 픽셀동일성검사로사용하지않음.",
+        "유지점": [
+            "기본화면에서 제목→상태/단계→운영→참가자의 읽기 순서 유지",
+            "취소·복구 확인창에서 구체적 결과와 취소/확인 행동을 한 곳에서 제시",
+            "취소 후 참가자 목록 보존과 편성 준비 복귀의 단계 표시가 구분됨",
+            "수동 편성 복귀 후 기존10명 배정과 편성 확정의 시작점 유지",
+            "전체 페이지에서 같은 대상의 조작이 추가로 중복 배치된 모습은 발견하지 못함"
+        ],
+        "한계": [
+            "390px최신12장은Root판독범위로이담당자의imageRead로추가하지않음",
+            "정적이미지판독으로키보드/스크린리더/실제스크롤잠금/성능/정량대비를새로측정하지않음",
+            "fullPage PNG의fixed dim뷰포트경계는UI결함으로세지않음",
+            "격리fixture에서차단한외부이미지/폰트로품질회귀를판정하지않음"
+        ],
+        "변경": "문서만갱신.소스/기존PNG/캡처metadata수정및새촬영없음"
+    },
+    "수정후모바일시각검토": {
+        "기록시각": "2026-11-15T10:38:51.567314+00:00",
+        "범위": "최신 Root Playwright MCP:390×844·primary/dark·6상태,12장",
+        "담당": "root",
+        "이미지": [
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-before-cancel.png",
+                "sha256": "a7b0d78bd870f3e208b8353337e746c75fe30625f763acb7fa90c6695b05a4f0",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1508],
+                "theme": "primary",
+                "state": "before-cancel",
+                "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "진행 중 상태와 단계·운영 메뉴·참가자10명 목록이 좁은 화면에서 읽히고 가로 넘침 없이 유지됨."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-cancel-confirm.png",
+                "sha256": "fc8365ac013b56789f097cc0f64cc9f2fc47e42aab9586db9f01414c8d911d38",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1508],
+                "theme": "primary",
+                "state": "cancel-confirm",
+                "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 결과1개와 MMR 반영 취소·이력 보존·복구 후 결과 미재개 안내가 명확하며 읽기 폭과 두 버튼 노출이 적절함."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-cancelled.png",
+                "sha256": "7bdda9e1f8357ad8d5e099268b198ae1d9a907bc43e16e29729021a64f49b213",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1320],
+                "theme": "primary",
+                "state": "cancelled",
+                "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 취소 상태로 전환되고 참가자10명과 복구의 운영 진입점을 유지함."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-restore-confirm.png",
+                "sha256": "b6651302a158cb3ef74ea150171be0151a796ce4da222dfbc5111fab7d743989",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1320],
+                "theme": "primary",
+                "state": "restore-confirm",
+                "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 편성 준비 복귀와 결과/MMR 미재적용 안내를 읽을 수 있고 취소/확인 두 버튼이 잘리지 않음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-restored-preparing.png",
+                "sha256": "f59797c3bbd249b760990e54f261ee05698cf152ee42c87498ac437b417b5610",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1766],
+                "theme": "primary",
+                "state": "restored-preparing",
+                "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 편성 중 단계로 돌아가며 참가자10명과 기존 수동 방식이 유지돼 결과 재개와 구분됨."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-restored-manual.png",
+                "sha256": "31d44e66a7c5bc96768978ae9c2c75be8974f8d85157d14fb602773931f5da30",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1749],
+                "theme": "primary",
+                "state": "restored-manual",
+                "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464/manual",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 기존10명 배정·두 팀 구성·MMR1500 복원이 명확하고 모바일 작업판의 주요 조작을 사용할 수 있음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-before-cancel.png",
+                "sha256": "8e0e765a7cc775969080abd9a880846f6831e5463cd06fc4acd84f7e5a45024c",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1508],
+                "theme": "dark",
+                "state": "before-cancel",
+                "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "진행 중 상태와 단계·운영 메뉴·참가자10명 목록이 좁은 화면에서 읽히고 가로 넘침 없이 유지됨."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-cancel-confirm.png",
+                "sha256": "a661c7c5ab6538b2b8451a1f4cfbacbb45ab57e7fbbfc418f99ca13038adae1f",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1508],
+                "theme": "dark",
+                "state": "cancel-confirm",
+                "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 결과1개와 MMR 반영 취소·이력 보존·복구 후 결과 미재개 안내가 명확하며 읽기 폭과 두 버튼 노출이 적절함."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-cancelled.png",
+                "sha256": "4aa08103f6901a40ee6d7b1ed25b42979eb2257f64a6a661fb19753c3fa34c55",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1320],
+                "theme": "dark",
+                "state": "cancelled",
+                "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 취소 상태로 전환되고 참가자10명과 복구의 운영 진입점을 유지함."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-restore-confirm.png",
+                "sha256": "50469c19b8767622fec2f9ba98b15775b66695438de0eb72d382a07f9db58552",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1320],
+                "theme": "dark",
+                "state": "restore-confirm",
+                "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 편성 준비 복귀와 결과/MMR 미재적용 안내를 읽을 수 있고 취소/확인 두 버튼이 잘리지 않음."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-preparing.png",
+                "sha256": "2769a2034f7bace8b4cd79559def3555acc03d5410ec6af2b8ee96e5f96dbd94",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1766],
+                "theme": "dark",
+                "state": "restored-preparing",
+                "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 편성 중 단계로 돌아가며 참가자10명과 기존 수동 방식이 유지돼 결과 재개와 구분됨."
+            },
+            {
+                "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-manual.png",
+                "sha256": "54f51c6fe89f5ebda4969103a85c72d210d6b3117a140257a03a6a1ecaee7eeb",
+                "imageRead": true,
+                "reviewer": "root",
+                "방법": "Root가 최신 원본 PNG를 직접 읽고 이 담당자에게 결과 전달; 파일 해시는 formation_records가 계산",
+                "뷰포트": {
+                    "width": 390,
+                    "height": 844
+                },
+                "PNG크기": [390, 1749],
+                "theme": "dark",
+                "state": "restored-manual",
+                "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697/manual",
+                "metadataOverflow": false,
+                "metadataErrors": [],
+                "관찰": "Root 직접 판독: 기존10명 배정·두 팀 구성·MMR1500 복원이 명확하고 모바일 작업판의 주요 조작을 사용할 수 있음."
+            }
+        ],
+        "시각결론": "Root의 직접 판독으로 결과1개·복구 미재개 안내, 읽기 폭과 두 버튼 노출, 상태 전환, 기존10명 배정과 MMR1500 복원이 명확함을 확인. 추가 시각 결함 없음.",
+        "NX-01a": "모바일 완료. 데스크톱12장과 합쳐 최신24장 판독 완료.",
+        "자동검증근거": "captures.json의 모바일12건 모두 overflow=false·errors=[] 확인. 확인 본문 폭600px이하 자동 검사도 Root가 통과 확인.",
+        "한계": [
+            "모바일 실제 판독 담당자는 Root이며 formation_records의 직접 판독으로 집계하지 않음",
+            "실제 물리 모바일 기기·음성 스크린리더·정량 대비·외부 이미지/폰트 로딩 검증은 이 정적 이미지 증거 범위가 아님"
+        ],
+        "변경": "문서에 기존 Root 판독 근거만 병합. 소스·PNG·captures.json·새 촬영 변경 없음"
+    }
+}

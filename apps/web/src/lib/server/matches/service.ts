@@ -14,6 +14,7 @@ import { bumpMatchRevision, conflict, lockMatch, readLineup, readRoster } from '
 export type MatchDependencies = {
     discord?: DiscordClient;
     riot?: Pick<typeof import('../riot/account.ts'), 'getAccountByRiotId'>;
+    roflProcessing?: { timeoutMs?: number; signal?: AbortSignal };
 };
 export type MatchSlotInput = { expectedRevision: number; nextGameNumber: number };
 export type MatchLineupInput = {

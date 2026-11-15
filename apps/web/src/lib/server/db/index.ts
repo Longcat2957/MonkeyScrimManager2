@@ -1,7 +1,14 @@
 import { dev } from '$app/env';
-import { DATABASE_URL } from '$app/env/private';
+import {
+    DATABASE_URL,
+    DB_STATEMENT_TIMEOUT_MS,
+    DB_LOCK_TIMEOUT_MS,
+    DB_QUERY_TIMEOUT_MS
+} from '$app/env/private';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
+import { databaseLimits } from './config.ts';
+import { boundedDatabasePool } from './pool.ts';
 import * as schema from './schema.ts';
 
 const developmentState = globalThis as typeof globalThis & {
@@ -16,9 +23,13 @@ function createDatabase() {
 
     let pool = dev ? developmentState.__msm2PostgresPool : undefined;
     if (!pool) {
-        pool = new Pool({ connectionString, max: 10, connectionTimeoutMillis: 10_000 });
-        pool.on('error', () => {
-            console.error('[database] PostgreSQL 유휴 연결에서 오류가 발생했습니다.');
+        pool = boundedDatabasePool(
+            connectionString,
+            databaseLimits({ DB_STATEMENT_TIMEOUT_MS, DB_LOCK_TIMEOUT_MS, DB_QUERY_TIMEOUT_MS })
+        );
+        const active = pool;
+        process.once('sveltekit:shutdown', () => {
+            void active.end().catch(() => {});
         });
         if (dev) developmentState.__msm2PostgresPool = pool;
     }

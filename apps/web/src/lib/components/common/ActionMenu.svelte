@@ -12,9 +12,10 @@
         // 데스크톱에서 메뉴를 붙일 요소. 모바일은 하단 시트로 열리므로 쓰지 않는다.
         trigger: HTMLElement | null;
         onselect: (index: number) => void;
+        wrapContent?: boolean;
     };
 
-    let { open = $bindable(false), label, actions, trigger, onselect }: Props = $props();
+    let { open = $bindable(false), label, actions, trigger, onselect, wrapContent = false }: Props = $props();
 
     // STDF ActionPopover는 초기화 중 document를 읽으므로 SSR에서는 렌더링하지 않는다.
     let mounted = $state(false);
@@ -30,6 +31,7 @@
 	- STDF는 설명이 있는 항목을 h-10으로 고정해 구분선이 설명에 붙으므로 높이를 내용에 맞추고 위아래 여백을 준다.
 -->
 <div
+    class:wrap-content={wrapContent}
     class={desktop.current
         ? '[&_button]:text-left [&_button>div]:h-auto [&_button>div]:min-h-12 [&_button>div]:gap-0.5 [&_button>div]:py-2.5'
         : undefined}
@@ -56,3 +58,26 @@
         />
     {/if}
 </div>
+
+<style>
+    /* 시즌명처럼 판단에 필요한 긴 선택지는 STDF의 고정 높이·말줄임을 해제한다. */
+    .wrap-content :global(button) {
+        min-block-size: 3rem;
+        max-inline-size: 100%;
+        padding-block: 0.5rem;
+        padding-inline: 1rem;
+    }
+
+    .wrap-content :global(button > div) {
+        min-inline-size: 0;
+        max-inline-size: 100%;
+    }
+
+    .wrap-content :global(button > div > div) {
+        height: auto;
+        overflow: visible;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+    }
+</style>

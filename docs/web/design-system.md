@@ -140,8 +140,9 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 공통 컴포넌트 | 위치 | 실제 인터페이스·책임 |
 | --- | --- | --- |
 | `AppHeader`·`ContextNav`·`MenuButton`·`AppFooter` | `lib/components/layout/` | 루트 헤더·범위 링크·메뉴 트리거·푸터. 항목 생성은 `navigation.ts`, 사용자·서버 메뉴는 `AppHeader` |
-| `ConfirmDialog` | `lib/components/common/` | 루트 단일 확인창 호스트. STDF `Dialog`와 `overlay`를 연결하고 경로 이동·호스트 해제 시 미결 요청 취소 |
-| `ActionMenu` | `lib/components/common/` | `open` 바인딩, `label`, `actions`, `trigger`, `onselect`. 데스크톱 popover·모바일 sheet와 overlay 보완 |
+| `ConfirmDialog` | `lib/components/common/` | 루트 단일 확인창 호스트. STDF `Dialog`와 `overlay`를 연결하고 경로 이동·호스트 해제 시 미결 요청 취소. 실제 패널 최대36rem/85dvh, 본문 왼쪽 정렬·28px 행간. 설치 버전에 최대 폭 옵션이 없어 호스트의 패널에만 CSS 적용 |
+| `ActionMenu` | `lib/components/common/` | `open` 바인딩, `label`, `actions`, `trigger`, `onselect`. 데스크톱 popover·모바일 sheet와 overlay 보완. 선택적 `wrapContent`는 긴 이름·설명의 고정 높이·말줄임을 해제하며 현재 시즌 선택에서만 사용 |
+| `SeasonSelector` | 같은 폴더 | `seasons`, `selectedSeasonId`. 전적·통계·순위의 공통 URL 선택. 0개 숨김/선택한1개 정적 이름/여러 개48px 버튼+ActionMenu. 빈 기록에서도 유지, 실제 버튼 aria-haspopup/expanded 보완, 다른 쿼리 유지·page/offset 제거 |
 | `LinkCell` | 같은 폴더 | `href: string \| null`, `title`/`titleChild`, `subTitle`, `detail`/`detailChild`, `info`/`infoChild`, `leftChild`, `line`. 오른쪽 정보는 제목·부제 줄에 맞춤. `href`가 있으면 `<a>`, `null`이면 링크 효과·포커스 없는 정적 `<div>` |
 | `StatusTag` | 같은 폴더 | `text`, `state`. 장식 Tag와 숨긴 상태 문구 |
 | `DateBadge` | 같은 폴더 | `iso`, `emptyText`. 월·일 또는 날짜 없음 표시 |

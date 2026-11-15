@@ -1,0 +1,2279 @@
+{
+    "recordedAt": "2026-11-15",
+    "scope": "기존 전체20화면과 별도로 승인된 추가 기능의 핵심7종 화면. 직접 UI 수정5종. 이 파일은 촬영88장 전부를 포함한다.",
+    "counts": {
+        "before": 23,
+        "after": 65,
+        "imageRead": 88,
+        "usableComparison": 84,
+        "excludedTransitionCaptures": 4
+    },
+    "limitations": [
+        "격리 fixture는 종료·정리되어 실행 당시 URL이 현재 접근 가능함을 뜻하지 않음.",
+        "fixture를 다시 생성하여 일부 전후 UUID·포트는 다름. 같은 페이지 종류·상태·역할·뷰포트로 비교했으며 같은 DB 행의 golden 비교라고 주장하지 않음.",
+        "개발 mock 기본6장은 기준 맥락이며 실데이터 시즌 fixture와 구분함.",
+        "실제 fixture의 외부 이미지·폰트 차단을 자산·CDN 품질 평가에 사용하지 않음.",
+        "ROFL6장은 원본에서 실제 pathname만 보존함. origin 미기록을 감추거나 추정 URL을 만들지 않음."
+    ],
+    "screenshots": [
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-before-cancel.png",
+            "sha256": "7ee3a4ff9f9b809397dfe9e20d61bd9ad8d034a6d6731fdb0a50120912dd2f33",
+            "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1472
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "before-cancel",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-cancel-confirm.png",
+            "sha256": "7345df32317a3affde0640d4f9242adba2d1fdf2217550118943fdb76a9af70e",
+            "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1472
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancel-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-cancelled.png",
+            "sha256": "bc122bff3e8419cb8b1ee7fb93792a3e0068f5ba092ac7222690c431252867dc",
+            "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1316
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancelled",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restore-confirm.png",
+            "sha256": "12d9d058b0b7172476b323edb451fc1717b577a993521ea236372f8e7d869682",
+            "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1316
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "restore-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restored-manual.png",
+            "sha256": "8065d9b5bb89a02600f99322b60a71a0a515741b6e5025dd765f9baa46096cc0",
+            "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630/manual",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1174
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-manual",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-dark-restored-preparing.png",
+            "sha256": "39a64015a0d35beae4d46441a1d7942d042d4685788209e755cd3c58ef1ce163",
+            "url": "http://127.0.0.1:40027/g/970000000000000001/scrims/00eba1f5-e049-4e86-9a13-57c62134f630",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1627
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-preparing",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-before-cancel.png",
+            "sha256": "d2d6d49151f6c465fcf8a1e0ae174fda502d5bdb8663cfa83a0d60d61d7551f8",
+            "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1472
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "before-cancel",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancel-confirm.png",
+            "sha256": "adcba06f2996b126649e3684d945f16ca6b313e203e840e280c62b5688c9c429",
+            "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1472
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancel-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-cancelled.png",
+            "sha256": "c2fd6a31ab5bf2fa6fd21e5bc1caffb2f33acd300c7ddf5b45c095f47788c7e7",
+            "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1316
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancelled",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restore-confirm.png",
+            "sha256": "db92e2be0c3a604a90cbeff0a65bfc83bb869c6635d8c3a395906f46d7e2509c",
+            "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1316
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "restore-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restored-manual.png",
+            "sha256": "62e2ea3e5a97cca88676d9ae06a0a08d775ac1a2577c96359541184afe24f43d",
+            "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4/manual",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1174
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-manual",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/1440-primary-restored-preparing.png",
+            "sha256": "34ae6e0ec9974ae739ffd9a21056d81f8cacabe14c06ef04f9726ca0fe8269d9",
+            "url": "http://127.0.0.1:41989/g/970000000000000001/scrims/8bcf4169-1688-4be4-bc20-3c258924e6e4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1627
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-preparing",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-before-cancel.png",
+            "sha256": "8e0e765a7cc775969080abd9a880846f6831e5463cd06fc4acd84f7e5a45024c",
+            "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1508
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "before-cancel",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-cancel-confirm.png",
+            "sha256": "a661c7c5ab6538b2b8451a1f4cfbacbb45ab57e7fbbfc418f99ca13038adae1f",
+            "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1508
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancel-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-cancelled.png",
+            "sha256": "4aa08103f6901a40ee6d7b1ed25b42979eb2257f64a6a661fb19753c3fa34c55",
+            "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1320
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancelled",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-restore-confirm.png",
+            "sha256": "50469c19b8767622fec2f9ba98b15775b66695438de0eb72d382a07f9db58552",
+            "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1320
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "restore-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-manual.png",
+            "sha256": "54f51c6fe89f5ebda4969103a85c72d210d6b3117a140257a03a6a1ecaee7eeb",
+            "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697/manual",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1749
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-manual",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-dark-restored-preparing.png",
+            "sha256": "2769a2034f7bace8b4cd79559def3555acc03d5410ec6af2b8ee96e5f96dbd94",
+            "url": "http://127.0.0.1:44295/g/970000000000000001/scrims/56ac5060-f5d3-4812-b2d9-15c42591f697",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1766
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-preparing",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-before-cancel.png",
+            "sha256": "a7b0d78bd870f3e208b8353337e746c75fe30625f763acb7fa90c6695b05a4f0",
+            "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1508
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "before-cancel",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-cancel-confirm.png",
+            "sha256": "fc8365ac013b56789f097cc0f64cc9f2fc47e42aab9586db9f01414c8d911d38",
+            "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1508
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancel-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-cancelled.png",
+            "sha256": "7bdda9e1f8357ad8d5e099268b198ae1d9a907bc43e16e29729021a64f49b213",
+            "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1320
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "cancelled",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-restore-confirm.png",
+            "sha256": "b6651302a158cb3ef74ea150171be0151a796ce4da222dfbc5111fab7d743989",
+            "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1320
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "restore-confirm",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-restored-manual.png",
+            "sha256": "31d44e66a7c5bc96768978ae9c2c75be8974f8d85157d14fb602773931f5da30",
+            "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464/manual",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1749
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-manual",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancellation-mcp/390-primary-restored-preparing.png",
+            "sha256": "f59797c3bbd249b760990e54f261ee05698cf152ee42c87498ac437b417b5610",
+            "url": "http://127.0.0.1:46473/g/970000000000000001/scrims/785832e6-5fb8-483f-8e9f-c70fa0ed8464",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1766
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "after",
+            "state": "restored-preparing",
+            "issueIds": ["NX-01", "NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancelled-bracket-dark-390.png",
+            "sha256": "c886e054f73b13bf296fb1df786ea41996d66bddc798d51f943a7049852691a5",
+            "url": "http://127.0.0.1:43705/g/970000000000000001/scrims/7d36282e-5fed-457d-8603-aae490b4615e/bracket",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "내전이 취소되어 표시할 대진이 없어요.",
+            "issueIds": ["NX-01b"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/cancelled-bracket-primary-1440.png",
+            "sha256": "a491cb16e99eaad4eeff7e700b80c06a567ba3d9e20145647fd892cb07660b3e",
+            "url": "http://127.0.0.1:43705/g/970000000000000001/scrims/7d36282e-5fed-457d-8603-aae490b4615e/bracket",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "내전이 취소되어 표시할 대진이 없어요.",
+            "issueIds": ["NX-01b"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/rofl/1440-rate-input-preserved.png",
+            "sha256": "c75ee8b4c807bedade8538aa62c7a14e420a668fa2b9a1065d1d04b4b1e0a1ae",
+            "url": "/g/970000000000000001/matches/cb61160d-9306-4344-8025-24cea807df0f",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "participant",
+            "phase": "after",
+            "state": "input-preserved",
+            "issueIds": ["NX-02"],
+            "captureTool": "Node Playwright",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "urlKind": "relative-path",
+            "originNote": "촬영 시 실행한 loopback 포트는 원본 메타데이터가 보존하지 않음. 실제 pathname만 기록하며 origin을 추정하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/after/rofl/1440-rate-retry-recorded.png",
+            "sha256": "a9fce09e28e729e7540e7e66f084aaf1b6e4fa8e9c67782f33ed76821b2f82f3",
+            "url": "/g/970000000000000001/matches/cb61160d-9306-4344-8025-24cea807df0f",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "participant",
+            "phase": "after",
+            "state": "retry-recorded",
+            "issueIds": ["NX-02"],
+            "captureTool": "Node Playwright",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "urlKind": "relative-path",
+            "originNote": "촬영 시 실행한 loopback 포트는 원본 메타데이터가 보존하지 않음. 실제 pathname만 기록하며 origin을 추정하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/after/rofl/1440-timeout-input-preserved.png",
+            "sha256": "65b4ceb03feae022195eb34f8d4d35a0e7f0b99c6b629820b51f6a005a19e961",
+            "url": "/g/970000000000000001/matches/8e50cc88-63c3-470f-b05d-4a8d44401774",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "participant",
+            "phase": "after",
+            "state": "input-preserved",
+            "issueIds": ["NX-02"],
+            "captureTool": "Node Playwright",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "urlKind": "relative-path",
+            "originNote": "촬영 시 실행한 loopback 포트는 원본 메타데이터가 보존하지 않음. 실제 pathname만 기록하며 origin을 추정하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/after/rofl/390-rate-input-preserved.png",
+            "sha256": "22f9fde91dcc8b7f7dd6af93662046e815dc1f712d4e584082536c75c60bf185",
+            "url": "/g/970000000000000001/matches/d7fee38a-a406-4bbb-a806-40dca0a09093",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "participant",
+            "phase": "after",
+            "state": "input-preserved",
+            "issueIds": ["NX-02"],
+            "captureTool": "Node Playwright",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "urlKind": "relative-path",
+            "originNote": "촬영 시 실행한 loopback 포트는 원본 메타데이터가 보존하지 않음. 실제 pathname만 기록하며 origin을 추정하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/after/rofl/390-rate-retry-recorded.png",
+            "sha256": "2cb6ba0d742a86b75ef0a355f79e0dcd383bb0bf28a3ead83d09191c67aa6c96",
+            "url": "/g/970000000000000001/matches/d7fee38a-a406-4bbb-a806-40dca0a09093",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "participant",
+            "phase": "after",
+            "state": "retry-recorded",
+            "issueIds": ["NX-02"],
+            "captureTool": "Node Playwright",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "urlKind": "relative-path",
+            "originNote": "촬영 시 실행한 loopback 포트는 원본 메타데이터가 보존하지 않음. 실제 pathname만 기록하며 origin을 추정하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/after/rofl/390-timeout-input-preserved.png",
+            "sha256": "4b2e88796a59437ea24793b2faffc0cde15d4578685c81472c4b5a685aa8b88f",
+            "url": "/g/970000000000000001/matches/02ef4200-2c1e-44bf-85d0-38ebabd41c9e",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "participant",
+            "phase": "after",
+            "state": "input-preserved",
+            "issueIds": ["NX-02"],
+            "captureTool": "Node Playwright",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "urlKind": "relative-path",
+            "originNote": "촬영 시 실행한 loopback 포트는 원본 메타데이터가 보존하지 않음. 실제 pathname만 기록하며 origin을 추정하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-dark-1440-current-empty.png",
+            "sha256": "1215b91431e41c54165cd229d56532ec132b502f1d3bf99bbad1d0d7064b9a88",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?page=4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-dark-1440-past-records.png",
+            "sha256": "1e0269a262a075025cb4aa8e47e7aae116e79fe14b9404215ba864c84c5bd50c",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-dark-390-current-empty.png",
+            "sha256": "cc7b885df49d6dea6b8ac917761012284c7c32424bd5b4dab04ffaf24550e0f6",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1146
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-dark-390-past-records.png",
+            "sha256": "215aee1625e3b40cb3890881dba3f86c021362edc3f642ff14055244e91501d7",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1217
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-dark-390-season-menu.png",
+            "sha256": "9c9420c974559d11607f43907441eba915d669c132cde2df9f2b0df2cef575c6",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1146
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "season-menu",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-primary-1440-current-empty.png",
+            "sha256": "e80a2a4b8e41e67ef26f25e9a2e75e8f6296ceaf7e3961be0a42d21deb57ab2f",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?page=4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-primary-1440-past-records.png",
+            "sha256": "cf7d29d5b0aec3136b33528b35921215144b15902b859bbde852524b66a355ad",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-primary-390-current-empty.png",
+            "sha256": "35580c222171e16a6952c6f452dfc6609b4ef78b826bef469479aff68768d30e",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1146
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/home-primary-390-past-records.png",
+            "sha256": "b0ce4517a73ced21604805f7b0938544c7c939ffbc781e6a6adbfda280c70f07",
+            "url": "http://127.0.0.1:42483/g/970000000000000001?season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1217
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-dark-1440-current-empty.png",
+            "sha256": "b73ef9643ad6d7c3d0af29420c3a9af828e833549bd9d0deef3c0938a96fd2df",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&page=4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-dark-1440-past-records.png",
+            "sha256": "b52d273c0b3aff3f60bd1c0c69afa4876e5620b4d27eb42eb2a2cda30a983b23",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1143
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-dark-390-current-empty.png",
+            "sha256": "097cb9457db1e9405b3bcdde0f2bce0026c51dd81bc17d626d07e28bf2a7e863",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-dark-390-past-records.png",
+            "sha256": "934409e19c304436ce78059dda6444e9d13ff4104ce5778c47247d1097358663",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 2020
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-dark-390-season-menu.png",
+            "sha256": "04b9e695395aae4061e7a4af2639a0fcc47edd7cd7667d05be69e100afd944d6",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "season-menu",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-primary-1440-current-empty.png",
+            "sha256": "5e7815f7a1aea226854b180e360eca535a339ba1f79611cdba33a8a79be67607",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&page=4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-primary-1440-past-records.png",
+            "sha256": "5d606208e1a7c3f9b6752f3dbc803207adc60a3773d56890b2c7c8a3d33ae1c3",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1143
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-primary-390-current-empty.png",
+            "sha256": "92e29280a84cea6f146d8325f24878d6c5b4fef760e3477478f4b409bdd3f297",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/player-primary-390-past-records.png",
+            "sha256": "a5ee953241ab0e67cfecf14cd2f34f6e65a61f51f77dc0fa2feec9a87835ec75",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/players/970000000000000012?position=top&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 2020
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-1024-current-empty.png",
+            "sha256": "3562e403ab1583f12c08038de59b4c8af1bf771136fd89b4ddf89d9882df4b65",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1",
+            "viewport": {
+                "width": 1024,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1024,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-1024-season-menu.png",
+            "sha256": "c849b8dd8315336c0579680a92b000a938207c4ff1dee10deda085023a5a3bda",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1",
+            "viewport": {
+                "width": 1024,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1024,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "season-menu",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-1440-current-empty.png",
+            "sha256": "ef0b6acd41cbaffb0e0ca23043755c72778572ae24946c95c5388efe98284c6e",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&page=4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-1440-past-records.png",
+            "sha256": "22bae3a490d12ba6abd192064447163b68c136bcf0f837b6ccf7025cc7d35f98",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-320-current-empty.png",
+            "sha256": "5e5f8a898ff07f7b9d3e02affc2ea5bf80223a61f6b6b97d803dc82e926b1446",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1",
+            "viewport": {
+                "width": 320,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 320,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-320-season-menu.png",
+            "sha256": "873733d211be0892205fc438946afbb5198e4d2adfc76b50ecab4e57baa9af1d",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1",
+            "viewport": {
+                "width": 320,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 320,
+                "height": 1000
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "season-menu",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-390-current-empty.png",
+            "sha256": "80e1599b3ca4b196b5436180a7dc84824c9380746eeb1882eb90970893348d2e",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-390-past-records.png",
+            "sha256": "53d8e3d5063ecb5dacedf8a28bd5edac158efb97c6ce4f1fccdd5e9a15b2c1f5",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1301
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-dark-390-season-menu.png",
+            "sha256": "7400c6e04bad81e6e0f979bcd149dff2509c3066944c0c68f61b0abeb5e9e4e8",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "after",
+            "state": "season-menu",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-primary-1440-current-empty.png",
+            "sha256": "0f72b7d579d7b7e787f3f897d41d0e5e025593c63f8734e6fa38f7efc7577ac5",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&page=4",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-primary-1440-past-records.png",
+            "sha256": "ee6a27a0788d3662a5aa4cbd1c2f98cfd11ed5dc212febe7593ae6cc547844ab",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "auction_profile",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-primary-390-current-empty.png",
+            "sha256": "1247559b244fe83f2a03d0d57936032ef1154f4ad1fb730b8a716c35f3546303",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-primary-390-past-records.png",
+            "sha256": "bb4bb51bdba2557cf2c195b92eaceb3e778461200b203ca47982fe1cf2cb61d6",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1&recent=1&season=2b4f777e-f899-46d8-8979-f81d30474376",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1301
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "past-records",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-primary-768-current-empty.png",
+            "sha256": "beea464fa88b2c73f1076225ab7c46e023cb995a82998ecea4a896beff8f4f57",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1",
+            "viewport": {
+                "width": 768,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 768,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "current-empty",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/after/seasons/stats-primary-768-season-menu.png",
+            "sha256": "c9ce435e748d4458ba22bdac8c8ad43c660d3b8fb122632af2a633a778e1f2d4",
+            "url": "http://127.0.0.1:42483/g/970000000000000001/stats?position=top&min=1",
+            "viewport": {
+                "width": 768,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 768,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "after",
+            "state": "season-menu",
+            "issueIds": ["NX-03", "NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/cancel-menu-dark-1440.png",
+            "sha256": "7daf63894d384ebe2995a8c8396234f8c99258c4821579646da1f14b4711fdc3",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1606
+            },
+            "theme": "dark",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "hydration/media-transition",
+            "issueIds": ["NX-01"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": false,
+            "reason": "메뉴를 hydration/media 안정화 전에 열어 전환 중 패널이 촬영됨. 정적 디자인 비교 근거로 사용하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/before/cancel-menu-dark-390.png",
+            "sha256": "b65302db9c382fa6a938e0f53bc9a95b4dfbf5bca81c52bacbbfb89d2db1e689",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1618
+            },
+            "theme": "dark",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "hydration/media-transition",
+            "issueIds": ["NX-01"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": false,
+            "reason": "메뉴를 hydration/media 안정화 전에 열어 전환 중 패널이 촬영됨. 정적 디자인 비교 근거로 사용하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/before/cancel-menu-primary-1440.png",
+            "sha256": "9a51f47fa37b62017cb4142e53632501e04ee10c4d7f5101d0b5bd1f64537216",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1606
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "hydration/media-transition",
+            "issueIds": ["NX-01"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": false,
+            "reason": "메뉴를 hydration/media 안정화 전에 열어 전환 중 패널이 촬영됨. 정적 디자인 비교 근거로 사용하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/before/cancel-menu-primary-390.png",
+            "sha256": "e315268b502fb0f527538519f53c6e7685cb30e369ec4fca60821456caffd72d",
+            "url": "http://127.0.0.1:5173/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1618
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "hydration/media-transition",
+            "issueIds": ["NX-01"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": false,
+            "reason": "메뉴를 hydration/media 안정화 전에 열어 전환 중 패널이 촬영됨. 정적 디자인 비교 근거로 사용하지 않음."
+        },
+        {
+            "file": "artifacts/ui-review/next/before/cancelled-bracket-dark-390.png",
+            "sha256": "3316dfdc3640ed4724e5326c341edcf84834bb5ab1aec7603e2a55cce0332d22",
+            "url": "http://127.0.0.1:36763/g/970000000000000001/scrims/e7b20d9c-41d6-432f-beaf-28cb4462b005/bracket",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "before",
+            "state": "팀 편성이 끝나면 대진을 만들 수 있어요",
+            "issueIds": ["NX-01b"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/cancelled-bracket-primary-1440.png",
+            "sha256": "61cb42331df2b6ddad39939d58bad3ee55c4dc3de1a548649fdc2e505c96f4a7",
+            "url": "http://127.0.0.1:36763/g/970000000000000001/scrims/e7b20d9c-41d6-432f-beaf-28cb4462b005/bracket",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "role": "public",
+            "phase": "before",
+            "state": "팀 편성이 끝나면 대진을 만들 수 있어요",
+            "issueIds": ["NX-01b"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/home-dark-390-season-menu.png",
+            "sha256": "a8cd6cdfc726fd95d281f06dd360e71c1dd6fb1fd1252d113f19f42d6d14f904",
+            "url": "http://127.0.0.1:37733/g/970000000000000001?page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1146
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "before",
+            "state": "long-season-menu",
+            "issueIds": ["NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/home-primary-desktop.png",
+            "sha256": "daa05388bc9573a8af53a6e0269e9ccc57cd2b62047e24846efab415a30fc00d",
+            "url": "http://127.0.0.1:5173/g/devGuild001",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1608
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "baseline-context",
+            "issueIds": ["NX-03"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/home-primary-mobile.png",
+            "sha256": "3076d2b4fec95222777df0138a7ca8b2a368e51d07366e742d1a7cc0f638be28",
+            "url": "http://127.0.0.1:5173/g/devGuild001",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 2089
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "baseline-context",
+            "issueIds": ["NX-03"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/player-dark-390-season-menu.png",
+            "sha256": "9bcce6b3c2b2a2fa3a5b7ae94493d88dd721413938fbba6dd7da3e9aa68f6c8a",
+            "url": "http://127.0.0.1:37733/g/970000000000000001/players/970000000000000012?position=top&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "before",
+            "state": "long-season-menu",
+            "issueIds": ["NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/player-primary-desktop.png",
+            "sha256": "2da96fb35c0cb7ffd0faf2c57874ee1dd20aec6430bc5bda89f4e4eb435d12e1",
+            "url": "http://127.0.0.1:5173/g/devGuild001/players/devUser001",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 2000
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "baseline-context",
+            "issueIds": ["NX-03"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/player-primary-mobile.png",
+            "sha256": "8d9669829fe288bb50e3ce6a67a0cb4110ce979d7b8b9dd7a60bf9918a9f32b9",
+            "url": "http://127.0.0.1:5173/g/devGuild001/players/devUser001",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 3492
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "baseline-context",
+            "issueIds": ["NX-03"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/stats-dark-390-season-menu.png",
+            "sha256": "f4b673219360fd9c88b47e5a04216e265d0e0ab319c4e1dcf78560346190475a",
+            "url": "http://127.0.0.1:37733/g/970000000000000001/stats?position=top&min=1&recent=1&page=4",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "role": "public",
+            "phase": "before",
+            "state": "long-season-menu",
+            "issueIds": ["NX-03a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/stats-primary-desktop.png",
+            "sha256": "1def4db8942aeeae27a9b97556c6b30948b7d3e4eb22086bb6878f4ee75332fb",
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 3284
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "baseline-context",
+            "issueIds": ["NX-03"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/stats-primary-mobile.png",
+            "sha256": "a4e14c5b3c59ba96092062022eace20d10f5ea11726441067b670b8bed380944",
+            "url": "http://127.0.0.1:5173/g/devGuild001/stats",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 3548
+            },
+            "theme": "primary",
+            "role": "development-mock",
+            "phase": "before",
+            "state": "baseline-context",
+            "issueIds": ["NX-03"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "root",
+                "tool": "view_image"
+            },
+            "usableComparison": true,
+            "overflow": false
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-1440-dark-cancel-confirm.png",
+            "sha256": "ff4a98f39d595d8349a7d1598ad149131d4d01829699ba2750d65fdbdad83a51",
+            "url": "http://127.0.0.1:46861/g/970000000000000001/scrims/8f9b4bb5-7a58-447f-b3ec-c5fe21235849",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1472
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "before",
+            "state": "전체 취소 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-1440-dark-restore-confirm.png",
+            "sha256": "05240cc0b45380e4aa65f17032a61eccd277183a70952bc220bff9f56acbe960",
+            "url": "http://127.0.0.1:46861/g/970000000000000001/scrims/8f9b4bb5-7a58-447f-b3ec-c5fe21235849",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1316
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "before",
+            "state": "취소 복구 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-1440-primary-cancel-confirm.png",
+            "sha256": "e74453c0773f0aab391e25c192da817c9d28cfb1605e8572fcfbd303d13b6cff",
+            "url": "http://127.0.0.1:38749/g/970000000000000001/scrims/9efcefce-c5f4-4971-8966-ec8297ab26ac",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1472
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "before",
+            "state": "전체 취소 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-1440-primary-restore-confirm.png",
+            "sha256": "5fb9861e717fc443732df22d868c45d62750bc6a463ced84d590565d32184c6a",
+            "url": "http://127.0.0.1:38749/g/970000000000000001/scrims/9efcefce-c5f4-4971-8966-ec8297ab26ac",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "pngSize": {
+                "width": 1440,
+                "height": 1316
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "before",
+            "state": "취소 복구 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-390-dark-cancel-confirm.png",
+            "sha256": "e5492856d0b5e216f7dd38f043130c241701aa38ac5259ea557a83acf37b1e4f",
+            "url": "http://127.0.0.1:46477/g/970000000000000001/scrims/6557eaef-163e-47dc-9712-f362f1d1336e",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1508
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "before",
+            "state": "전체 취소 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-390-dark-restore-confirm.png",
+            "sha256": "8d961ec7baf0c1087c1e518314521e38b4fe8fa82aabca172bfc19569dcd2b12",
+            "url": "http://127.0.0.1:46477/g/970000000000000001/scrims/6557eaef-163e-47dc-9712-f362f1d1336e",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1320
+            },
+            "theme": "dark",
+            "role": "manager",
+            "phase": "before",
+            "state": "취소 복구 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-390-primary-cancel-confirm.png",
+            "sha256": "da589ecc7141fd3f8ffa0045f314746b14a29664b13452081c5d8c07ebab4143",
+            "url": "http://127.0.0.1:36883/g/970000000000000001/scrims/8ff8e8fc-5114-49e8-9b78-751271a5deac",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1508
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "before",
+            "state": "전체 취소 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        },
+        {
+            "file": "artifacts/ui-review/next/before/wide-390-primary-restore-confirm.png",
+            "sha256": "5f3a790ad3b1bfe082359a96e23940e5ac4e5453fd5a978ab918819eefb72209",
+            "url": "http://127.0.0.1:36883/g/970000000000000001/scrims/8ff8e8fc-5114-49e8-9b78-751271a5deac",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "pngSize": {
+                "width": 390,
+                "height": 1320
+            },
+            "theme": "primary",
+            "role": "manager",
+            "phase": "before",
+            "state": "취소 복구 확인",
+            "issueIds": ["NX-01a"],
+            "captureTool": "Playwright MCP",
+            "imageRead": {
+                "read": true,
+                "reviewer": "formation_records",
+                "tool": "view_image"
+            },
+            "usableComparison": true
+        }
+    ]
+}

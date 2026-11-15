@@ -13,6 +13,7 @@
 
 {#if $confirmation}
     <div
+        class="confirmation-host"
         aria-describedby="confirmation-content"
         {@attach overlay({ open: true, label: $confirmation.title, onclose: cancel })}
     >
@@ -32,8 +33,17 @@
             onclose={cancel}
         >
             {#snippet contentChild()}
-                <p id="confirmation-content">{$confirmation.content}</p>
+                <p id="confirmation-content" class="text-left leading-7">{$confirmation.content}</p>
             {/snippet}
         </Dialog>
     </div>
 {/if}
+
+<style>
+    /* STDF 3 중앙 팝업에는 최대 폭 옵션이 없어 이 호스트의 실제 패널만 제한한다. */
+    .confirmation-host > :global(div) > :global(div) > :global(div) {
+        max-inline-size: 36rem;
+        max-block-size: 85dvh;
+        margin-inline: auto;
+    }
+</style>

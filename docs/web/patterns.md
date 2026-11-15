@@ -38,7 +38,7 @@
 
 - 초기 읽기는 주로 `+page.server.ts`·`+layout.server.ts`의 `load`가 담당한다. 화면용 타입은 `lib/features/`, 목 데이터·목 변경 함수는 `lib/mocks/`에 있다.
 - 실제 서버 ID는 DB 업무 모듈을 읽고 변경한다. 개발 모드의 `devGuild001`·`devGuild002` 및 명시적 `mock=1` 미리보기만 목 사용자·저장소를 사용하며 실제 조회 실패를 목으로 대체하지 않는다.
-- Data Dragon 이미지·챔피언/장비 정보와 백오피스 서비스 상태는 각각 서버 모듈을 사용한다. 서버 홈 순위 GET은 DB의 현재 시즌·포지션 MMR을 읽는다. 점수 계산·반영은 ROFL 결과 저장 트랜잭션에서 수행하며 읽기가 점수를 변경하지 않는다. 기능별 데이터 출처는 페이지 문서에 기록한다.
+- Data Dragon 이미지·챔피언/장비 정보와 백오피스 서비스 상태는 각각 서버 모듈을 사용한다. 서버 홈 순위 GET은 DB의 기본 활성 시즌 또는 명시한 같은 서버 시즌·포지션 MMR을 읽는다. 추가 조회와 선수 이동도 선택 시즌을 유지한다. 점수 계산·반영은 ROFL 결과 저장 트랜잭션에서 수행하며 읽기가 점수를 변경하지 않는다. 기능별 데이터 출처는 페이지 문서에 기록한다.
 - 컴포넌트는 목 모듈을 직접 읽지 않는다. 다만 `RankingBoard`는 초기 순위 props에서 시작해 무한 스크롤 시 전용 `/ranking` GET 경로를 직접 조회하고, 기능 컴포넌트는 필요한 form action을 호출한다. 모든 통신이 `load`에만 있는 구조는 아니다.
 - URL에 저장한 필터·검색·쪽 상태는 `goto(url, { reset: false })` → `load`로 갱신한다. 서버 홈 탭·통계 정렬 등 로컬 상태는 URL에 저장하지 않는다.
 - 경매 열람자는 편성 단계의 준비·진행 화면을 5초 간격으로 조회한다. 자동 갱신 일시정지·단일 수동 새로고침·숨김/offline 중지·15초 timeout·실패 backoff·늦은 응답 차단·정리를 제공한다. 진행자의 입력과 서버 입찰을 자동 갱신하지 않는다. 그 외 화면과 Discord 게시 완료는 자동 구독하지 않으며 참가 안내 건수는 페이지 데이터를 갱신할 때 다시 읽는다.
@@ -91,7 +91,7 @@
 | 입력 팝업 | `Popup` + 내용 상자 또는 폼. 기본 데스크톱 `center`, 모바일 `bottom`. 모집 설정·신청·멤버 계정·ROFL은 닫힌 상태에서만 위치를 갱신해 열린 채 폭이 바뀌어도 입력 트리를 하나만 유지. 업적 순위·경기 선수 상세도 열린 동안 위치 유지 |
 | 헤더·행 메뉴 | `ActionMenu`: 마운트 후 데스크톱 `ActionPopover`, 모바일 `ActionSheet` |
 | 상세 보기 | `GamePlayerDialog`는 데스크톱 `right`, 모바일 `bottom`. 후보·업적 목록은 각 팝업 구성 사용. `AchievementRankingDialog`도 열린 동안 right/bottom 위치 유지 |
-| 확인 | `confirm(content, title?)`가 루트 `ConfirmDialog`의 STDF `Dialog`를 열고 `Promise<boolean>` 반환. `Feedback`은 토스트 등 기존 피드백 담당 |
+| 확인 | `confirm(content, title?)`가 루트 `ConfirmDialog`의 STDF `Dialog`를 열고 `Promise<boolean>` 반환. 실제 패널은 최대36rem/85dvh이며 긴 본문은 왼쪽 정렬한다. `Feedback`은 토스트 등 기존 피드백 담당 |
 
 `Popup`·`ActionMenu`·`ConfirmDialog`를 감싸는 `overlay({ open, label, onclose })` attachment의 실제 책임은 다음과 같다.
 

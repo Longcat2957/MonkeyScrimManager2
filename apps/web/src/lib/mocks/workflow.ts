@@ -111,15 +111,31 @@ async function revertAction(scrim: MockScrim): Promise<ScrimRevertAction | null>
 /** 요약 화면의 운영 작업. 운영 권한이 없으면 모두 null·false다. */
 export async function getMockScrimOperations(guildId: string, scrimId: string) {
     const scrim = findMockScrimRecord(guildId, scrimId);
-    if (!scrim?.canManage) return { nextAction: null, revert: null, restore: null, endEarly: false };
+    if (!scrim?.canManage)
+        return {
+            nextAction: null,
+            revert: null,
+            restore: null,
+            endEarly: false,
+            cancelGameCount: null,
+            cancelledGameCount: null
+        };
+    const fullCancellation = scrim.fullCancellation && !scrim.fullCancellation.restored;
     return {
+        cancelGameCount:
+            scrim.status === 'in_progress'
+                ? ((await getMockBracketProgress(guildId, scrimId))?.recordedGames ?? 0)
+                : null,
+        cancelledGameCount: fullCancellation ? scrim.fullCancellation!.gameCount : null,
         nextAction: await nextAction(scrim),
         revert: await revertAction(scrim),
         restore:
             scrim.status === 'cancelled'
                 ? {
                       label: '내전 취소 복구',
-                      message: '취소 전 단계로 돌아가요. 참가자와 팀 편성·경매 포인트는 그대로 유지돼요.',
+                      message: fullCancellation
+                          ? '참가자를 유지하고 편성 준비로 돌아가요. 취소한 결과·MMR은 다시 적용하지 않아요.'
+                          : '취소 전 단계로 돌아가요. 참가자와 팀 편성·경매 포인트는 그대로 유지돼요.',
                       blockedReason: mockCancellationRestoreBlock(scrim)
                   }
                 : null,

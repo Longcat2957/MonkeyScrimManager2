@@ -6,7 +6,8 @@ import {
     findMockScrimRecord,
     restoreMockCancelledScrim
 } from '../src/lib/mocks/scrims.ts';
-import { getMockBracket } from '../src/lib/mocks/bracket.ts';
+import { getMockBracket, getMockBracketProgress } from '../src/lib/mocks/bracket.ts';
+import { getMockMatch, type GameResolvers } from '../src/lib/mocks/matches.ts';
 import {
     awardMockLot,
     drawMockLot,
@@ -79,7 +80,7 @@ test('개발 샘플 경매 취소 복구는 포인트·후보·마지막 행위 
     );
 });
 
-test('개발 샘플의 과거 취소와 진행 중 취소는 거절한다', async () => {
+test('개발 샘플의 근거 없는 과거 취소는 복구하지 않으며 새 진행 취소는 편성 준비로 복구한다', async () => {
     const scrim = await fixture();
     scrim.status = 'cancelled';
     assert.match(
@@ -88,7 +89,36 @@ test('개발 샘플의 과거 취소와 진행 중 취소는 거절한다', asyn
     );
     assert.equal((await restoreMockCancelledScrim(guildId, scrim.id))?.status, 409);
     scrim.status = 'in_progress';
-    assert.equal((await cancelMockScrim(guildId, scrim.id))?.status, 409);
+    scrim.formationMethod = 'manual';
+    const participants = structuredClone(scrim.participants);
+    assert.equal((await getMockScrimOperations(guildId, scrim.id)).cancelGameCount, 0);
+    assert.equal(await cancelMockScrim(guildId, scrim.id), null);
+    assert.equal((await getMockScrimOperations(guildId, scrim.id)).cancelledGameCount, 0);
+    assert.equal(await restoreMockCancelledScrim(guildId, scrim.id), null);
+    assert.equal(scrim.status, 'preparing');
+    assert.deepEqual(scrim.participants, participants);
+});
+
+test('진행 샘플의 전체 취소는 과거 결과를 보존하되 재편성에 다시 주입하지 않는다', async () => {
+    const scrim = findMockScrimRecord(guildId, 'devScrim004')!;
+    assert.equal((await getMockBracketProgress(guildId, scrim.id))!.recordedGames, 2);
+    assert.equal(await cancelMockScrim(guildId, scrim.id), null);
+    assert.equal((await getMockScrimOperations(guildId, scrim.id)).cancelledGameCount, 2);
+    const resolvers: GameResolvers = {
+        champion: (id) => ({ id, name: id, iconUrl: null }),
+        item: () => null,
+        spell: () => null,
+        rune: () => null,
+        splash: () => null
+    };
+    const past = (await getMockMatch(guildId, 'devMatch001', null, resolvers))!;
+    assert.equal(past.match.status, 'cancelled');
+    assert.deepEqual([past.match.scoreA, past.match.scoreB], [0, 0]);
+    assert.deepEqual(past.match.games, []);
+    assert.equal(await restoreMockCancelledScrim(guildId, scrim.id), null);
+    assert.equal(scrim.status, 'preparing');
+    scrim.status = 'ready';
+    assert.equal((await getMockBracketProgress(guildId, scrim.id))!.recordedGames, 0);
 });
 
 for (const stage of ['unselected', 'manual', 'auction', 'ready'] as const)

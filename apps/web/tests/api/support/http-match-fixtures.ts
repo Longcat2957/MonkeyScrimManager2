@@ -2,10 +2,20 @@ import type { TestContext } from 'node:test';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../../src/lib/server/db/schema.ts';
 import { MMR_POSITIONS } from '../../../src/lib/server/mmr/rules.ts';
-import { assertAction, createHttpFixture, HTTP_IDS, type UpstreamRule } from './http.ts';
+import {
+    assertAction,
+    createHttpFixture,
+    HTTP_IDS,
+    type UpstreamRule,
+    type HttpFixtureOptions
+} from './http.ts';
 import { replayBytes, replayPlayer } from './match-fixtures.ts';
 
-export async function createHttpMatchResultFixture(t: TestContext, overrides: UpstreamRule[] = []) {
+export async function createHttpMatchResultFixture(
+    t: TestContext,
+    overrides: UpstreamRule[] = [],
+    options: HttpFixtureOptions = {}
+) {
     const userIds = [
         HTTP_IDS.member,
         ...Array.from({ length: 9 }, (_, index) => String(970000000000001000n + BigInt(index)))
@@ -36,7 +46,7 @@ export async function createHttpMatchResultFixture(t: TestContext, overrides: Up
             }
         }
     ]);
-    const f = await createHttpFixture(t, [...overrides, ...upstreams]);
+    const f = await createHttpFixture(t, [...overrides, ...upstreams], options);
     await f.db
         .insert(schema.users)
         .values(identities.slice(1).map((person) => ({ id: person.userId, username: person.gameName })));

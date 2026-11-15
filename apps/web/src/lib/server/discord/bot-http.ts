@@ -2,6 +2,7 @@ import { BOT_INTERNAL_TOKEN } from '$app/env/private';
 import { DomainError } from '../errors.ts';
 import { DiscordError } from './client.ts';
 import { requireBotAuthorization } from './bot-auth.ts';
+import { noteRequestError, operationalFailure, OperationLimitError } from '../operations/errors.ts';
 
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
@@ -11,6 +12,16 @@ export async function botResponse(request: Request, operation: () => Promise<unk
         requireBotAuthorization(request.headers.get('authorization'), BOT_INTERNAL_TOKEN);
         return new Response(JSON.stringify(await operation()), { status: 200, headers });
     } catch (cause) {
+        cause = operationalFailure(cause);
+        noteRequestError(cause);
+        if (cause instanceof OperationLimitError)
+            return new Response(JSON.stringify({ error: { code: cause.code, message: cause.message } }), {
+                status: cause.status,
+                headers: {
+                    ...headers,
+                    ...(cause.retryAfterSeconds ? { 'Retry-After': String(cause.retryAfterSeconds) } : {})
+                }
+            });
         if (cause instanceof DomainError)
             return new Response(JSON.stringify({ error: { code: cause.code, message: cause.message } }), {
                 status: cause.status,
@@ -28,7 +39,6 @@ export async function botResponse(request: Request, operation: () => Promise<unk
                 }
             );
         // 입력 본문·토큰·외부 응답을 오류 로그나 응답에 남기지 않는다.
-        console.error('[bot-api] 내부 업무 처리 중 예상하지 못한 오류가 발생했습니다.');
         return new Response(
             JSON.stringify({
                 error: {

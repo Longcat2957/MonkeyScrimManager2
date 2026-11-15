@@ -16,6 +16,8 @@ import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { getGuildRecords, type GuildPlayerRecords } from '#lib/server/records/queries.ts';
 import { routeError } from '#lib/server/http.ts';
+import type { RecordSeasonSelection } from '#lib/features/seasons.ts';
+import { mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import type { PageServerLoad } from './$types';
 
 const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
@@ -27,7 +29,15 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
     const { guild } = await parent();
     if (!guild) error(404, '서버를 찾을 수 없습니다.');
     const demo = dev && Boolean(findMockGuild(params.guildId));
-    if (demo && params.guildId !== 'devGuild001') return { empty: true as const };
+    let seasonSelection: RecordSeasonSelection = { seasons: [], selectedSeasonId: null };
+    if (demo) {
+        try {
+            seasonSelection = mockRecordSeasons(url.searchParams.get('season'));
+        } catch (cause) {
+            routeError(cause);
+        }
+        if (params.guildId !== 'devGuild001') return { ...seasonSelection, empty: true as const };
+    }
     const champion = await championResolver(await latestDataDragonVersion());
     let players: GuildPlayerRecords[];
     let allGames: PlayerGame[];
@@ -38,16 +48,19 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
         recordedGames = [];
     } else {
         try {
-            ({ players, allGames, recordedGames } = await getGuildRecords(
+            const result = await getGuildRecords(
                 getDb(),
                 locals.actor,
                 params.guildId,
-                champion
-            ));
+                champion,
+                url.searchParams.get('season')
+            );
+            ({ players, allGames, recordedGames } = result);
+            seasonSelection = { seasons: result.seasons, selectedSeasonId: result.selectedSeasonId };
         } catch (cause) {
             routeError(cause);
         }
-        if (!recordedGames.length) return { empty: true as const };
+        if (!recordedGames.length) return { ...seasonSelection, empty: true as const };
     }
 
     const requested = url.searchParams.get('position') as LolPosition;
@@ -91,6 +104,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
     };
 
     return {
+        ...seasonSelection,
         empty: false as const,
         showAchievements: demo,
         kpis: {

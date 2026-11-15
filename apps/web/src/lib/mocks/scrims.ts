@@ -15,7 +15,13 @@ import type {
     ScrimStatusFilter
 } from '#lib/features/scrims/types.ts';
 import { mockMainChampion, mockUser } from './session.ts';
-import { getMockAuction, getMockAuctionStatus, setMockAuctionStatus } from './teams.ts';
+import {
+    cancelMockAuctionResults,
+    getMockAuction,
+    getMockAuctionStatus,
+    reopenMockFormation,
+    setMockAuctionStatus
+} from './teams.ts';
 
 // 개발 서버가 살아 있는 동안 유지되는 내전 목 저장소다. 실제 DB 연결 전까지 사용한다.
 
@@ -44,6 +50,7 @@ export type MockScrim = ScrimSettings & {
     cancelledFromStatus?: ScrimStatus | null;
     cancelledAuctionStatus?: AuctionStatus | null;
     endedEarlyFromStatus?: ScrimStatus | null;
+    fullCancellation?: { gameCount: number; restored: boolean };
     canManage: boolean;
     createdAt: string;
     participants: MockParticipant[];
@@ -664,6 +671,17 @@ export async function cancelMockScrim(guildId: string, scrimId: string): Promise
     const scrim = find(guildId, scrimId);
     if (!scrim) return { status: 404, message: '내전을 찾을 수 없어요' };
     if (!scrim.canManage) return { status: 403, message: '내전을 운영할 권한이 없어요' };
+    if (scrim.status === 'in_progress') {
+        const { cancelMockBracketResults } = await import('./bracket.ts');
+        const gameCount = await cancelMockBracketResults(guildId, scrimId);
+        reopenMockFormation(scrim);
+        if (scrim.formationMethod === 'auction') cancelMockAuctionResults(scrimId);
+        scrim.fullCancellation = { gameCount, restored: false };
+        scrim.cancelledFromStatus = null;
+        scrim.cancelledAuctionStatus = null;
+        scrim.status = 'cancelled';
+        return null;
+    }
     if (!['recruit', 'preparing', 'ready'].includes(scrim.status))
         return { status: 409, message: '경기 시작 전 내전만 취소할 수 있어요' };
     if (scrim.formationMethod === 'auction') await getMockAuction(guildId, scrimId);
@@ -676,6 +694,7 @@ export async function cancelMockScrim(guildId: string, scrimId: string): Promise
 
 export function mockCancellationRestoreBlock(scrim: MockScrim): string | null {
     if (scrim.status !== 'cancelled') return '취소된 내전만 복구할 수 있어요';
+    if (scrim.fullCancellation && !scrim.fullCancellation.restored) return null;
     if (!scrim.cancelledFromStatus || !['recruit', 'preparing', 'ready'].includes(scrim.cancelledFromStatus))
         return '취소 전 단계가 남아 있지 않아 복구할 수 없어요';
     const auction = getMockAuctionStatus(scrim.id);
@@ -697,6 +716,12 @@ export async function restoreMockCancelledScrim(
     if (!scrim.canManage) return { status: 403, message: '내전을 운영할 권한이 없어요' };
     const blocked = mockCancellationRestoreBlock(scrim);
     if (blocked) return { status: 409, message: blocked };
+    if (scrim.fullCancellation && !scrim.fullCancellation.restored) {
+        if (scrim.formationMethod === 'auction') setMockAuctionStatus(scrimId, 'setup');
+        scrim.fullCancellation.restored = true;
+        scrim.status = 'preparing';
+        return null;
+    }
     if (scrim.cancelledAuctionStatus != null) setMockAuctionStatus(scrimId, scrim.cancelledAuctionStatus);
     scrim.status = scrim.cancelledFromStatus!;
     scrim.cancelledFromStatus = null;

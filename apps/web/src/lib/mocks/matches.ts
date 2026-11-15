@@ -45,6 +45,7 @@ type StoredMatch = Omit<MatchListItem, 'scoreA' | 'scoreB'> & {
     hardFearless: boolean;
     // 게임 기록 없이 점수만 아는 조회용 경기의 점수다. 게임이 있으면 게임으로 센다.
     fixedScore?: [number, number];
+    cancelledByScrim?: boolean;
     games: StoredGame[];
 };
 
@@ -202,6 +203,7 @@ const matches: StoredMatch[] = [
 ];
 
 function score(match: StoredMatch): [number, number] {
+    if (match.cancelledByScrim) return [0, 0];
     if (match.fixedScore) return match.fixedScore;
     let a = 0;
     let b = 0;
@@ -385,7 +387,8 @@ export async function getMockMatch(
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
     if (!match) return null;
     const [scoreA, scoreB] = score(match);
-    const selected = match.games.find((game) => game.id === gameId) ?? match.games.at(-1) ?? null;
+    const currentGames = match.cancelledByScrim ? [] : match.games;
+    const selected = currentGames.find((game) => game.id === gameId) ?? currentGames.at(-1) ?? null;
     const detail: MatchDetail = {
         id: match.id,
         scrim: { id: match.scrimId, title: match.scrimTitle },
@@ -396,7 +399,7 @@ export async function getMockMatch(
         bestOf: match.bestOf,
         status: match.status,
         hardFearless: match.hardFearless,
-        games: match.games.map((game) => ({ id: game.id, order: game.order, winner: winnerOf(game) }))
+        games: currentGames.map((game) => ({ id: game.id, order: game.order, winner: winnerOf(game) }))
     };
     const game = selected
         ? toGame(
@@ -449,4 +452,10 @@ export async function recordMockGame(
 export function setMockMatchStatus(guildId: string, matchId: string, status: MatchListItem['status']) {
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
     if (match) match.status = status;
+}
+
+/** 원본 결과는 보존하지만 취소한 내전의 현재 점수·게임 목록에서는 제외한다. */
+export function cancelMockMatchResults(guildId: string, matchId: string) {
+    const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
+    if (match) Object.assign(match, { status: 'cancelled', cancelledByScrim: true });
 }

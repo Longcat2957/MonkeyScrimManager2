@@ -11,7 +11,7 @@ import {
 } from '#lib/features/scrims/bracket.ts';
 import { parseSlot } from '#lib/features/scrims/formation.ts';
 import { findMockScrimRecord, type IconResolver, type MockFailure, type MockScrim } from './scrims.ts';
-import { setMockMatchStatus } from './matches.ts';
+import { cancelMockMatchResults, setMockMatchStatus } from './matches.ts';
 import { getMockAuction, getMockManualFormation } from './teams.ts';
 
 type BracketState = {
@@ -23,6 +23,7 @@ type BracketState = {
 
 // 개발 서버가 살아 있는 동안만 보관한다.
 const states = new Map<string, BracketState>();
+const cancelledStates = new Map<string, BracketState[]>();
 const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
 const noIcon: IconResolver = () => null;
 
@@ -82,7 +83,7 @@ function initialState(scrim: MockScrim, teams: BracketTeam[]): BracketState {
     const matches = bracketTemplate(teams.length);
     const bestOf = teams.length === 2 ? { final: 3 as const } : { semi: 3 as const, final: 5 as const };
     const state: BracketState = { matches, bestOf, confirmed: scrim.status !== 'ready' };
-    if (scrim.status === 'ready') return state;
+    if (scrim.status === 'ready' || cancelledStates.has(`${scrim.guildId}/${scrim.id}`)) return state;
     // 진행·종료된 내전은 자리 순서대로 팀을 놓고 기록된 결과를 붙인다.
     bracketSeats(matches).forEach((seat, index) => placeTeam(state, seat.key, teams[index]?.id ?? null));
     for (const item of matches) Object.assign(item, RESULTS[scrim.id]?.[item.key]);
@@ -218,8 +219,22 @@ export async function getMockBracketProgress(guildId: string, scrimId: string) {
         confirmed: target.state.confirmed,
         // 게임이 하나라도 기록됐거나 진행 중인 경기가 있으면 시작된 대진이다.
         started: matches.some((item) => item.status !== 'pending' || item.scoreA + item.scoreB > 0),
-        finished: matches.every((item) => item.status === 'completed')
+        finished: matches.every((item) => item.status === 'completed'),
+        recordedGames: matches.reduce((sum, item) => sum + item.scoreA + item.scoreB, 0)
     };
+}
+
+/** 과거 대진은 보관하고 다음 편성에 재사용하지 않는다. */
+export async function cancelMockBracketResults(guildId: string, scrimId: string) {
+    const target = await load(guildId, scrimId, noIcon);
+    if (!target?.state) return 0;
+    const key = `${guildId}/${scrimId}`;
+    const previous = cancelledStates.get(key) ?? [];
+    previous.push(structuredClone(target.state));
+    cancelledStates.set(key, previous);
+    for (const item of target.state.matches) if (item.matchId) cancelMockMatchResults(guildId, item.matchId);
+    states.delete(key);
+    return target.state.matches.reduce((sum, item) => sum + item.scoreA + item.scoreB, 0);
 }
 
 /** 중도 종료의 실제 점수 우세 팀만 기록하며, 재개는 바꾼 경기의 상태·승자를 그대로 복원한다. */

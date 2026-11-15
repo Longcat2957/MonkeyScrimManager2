@@ -46,11 +46,36 @@ unit은 실패 시 재시작하고 SIGTERM으로 종료한다. 봇의 `After=mon
 
 [사이트 예제](../deploy/nginx.conf.example)는 nginx `http` 문맥의 sites-enabled에 포함한다. 예제의 도메인과 인증서 두 경로를 바꾸고, [내부 차단·프록시 조각](../deploy/nginx-internal.conf.example)을 `/etc/nginx/snippets/monkeybot-internal.conf`에 설치한다. HTTP는 지정 도메인의 HTTPS로 이동하며 `/internal`과 `/internal/…`은 외부에서 404다.
 
-nginx의 업로드 제한은 `70m`, 연결/송신/응답 대기는 각각 5/60/60초다. `proxy_request_buffering off`와 HTTP/1.1로 업로드 본문을 프록시 임시 파일에 쓰지 않고 앱으로 전달한다. 이 시간 제한은 앱에서 실행 중인 SQL을 취소하는 기능이 아니다. 헤더는 nginx가 덮어쓰고 adapter-node에는 `PROTOCOL_HEADER`를 함께 설정한다.
+nginx의 업로드 제한은 `70m`, 연결/송신/응답 대기는 각각 5/60/60초다. `proxy_request_buffering off`와 HTTP/1.1로 업로드 본문을 프록시 임시 파일에 쓰지 않고 앱으로 전달한다. 프록시 시간 제한과 별도로 아래 앱 제한이 실제 SQL·본문 읽기·파싱을 중단한다. 헤더는 nginx가 덮어쓰고 adapter-node에는 `PROTOCOL_HEADER`를 함께 설정한다.
 
-OAuth callback의 code/state가 접근 로그에 남지 않게 이 사이트의 access log를 끈다. callback 경로는 upstream 장애의 error log도 끄며, 다른 nginx error log는 접근 제한한 운영 로그로 취급한다. 토큰을 수집하지 않는 요청 ID·업무 오류·처리 시간 관측과 DB query/statement timeout, 처리량 제한은 [기존 운영 기준](backend-plan.md#102-배포와-완료-조건)의 별도 후속 작업이다. 이번 예제에 앱 관측 기능이나 새 상태 API를 추가하지 않았다.
+OAuth callback의 code/state가 접근 로그에 남지 않게 이 사이트의 access log를 끈다. callback 경로는 upstream 장애의 error log도 끄며, 다른 nginx error log는 접근 제한한 운영 로그로 취급한다. 앱은 아래 요청 요약을 stdout/journal로 남기며 새 상태 API는 추가하지 않는다.
 
 인증서 발급·갱신과 실제 서버의 TLS·방화벽·도메인 점검은 운영 환경에서 수행한다. 검증 도구의 하루짜리 자체 서명 인증서를 운영 인증서로 사용하지 않는다.
+
+## DB·ROFL 운영 제한과 요청 관측
+
+[환경 예제](../apps/web/.env.example)의 제한은 운영 환경 파일에 설정하고 웹을 재시작한다. 잘못된 값·0·순서 역전은 무제한으로 대체하지 않고 거절한다. 실제 구현은 [DB 풀](../apps/web/src/lib/server/db/pool.ts), [ROFL 입장/본문](../apps/web/src/lib/server/rofl/processing.ts), [파싱 worker](../apps/web/src/lib/server/rofl/processing-worker.ts), [요청 관측](../apps/web/src/lib/server/operations/context.ts)을 따른다.
+
+| 설정 | 기본값·의미 |
+| --- | --- |
+| `DB_LOCK_TIMEOUT_MS` | 5000. PostgreSQL이 실제 잠금 대기를 취소 |
+| `DB_STATEMENT_TIMEOUT_MS` | 15000. PostgreSQL이 실제 SQL statement를 취소 |
+| `DB_QUERY_TIMEOUT_MS` | 30000. PostgreSQL 17의 전체 transaction·idle-in-transaction 상한. Node의 연결 점유는 서버 종료/응답 유예 1초 뒤 실제 연결 종료로 해제 |
+| `ROFL_MAX_CONCURRENT` | 2. 본문 읽기부터 외부 식별·DB 저장 종료까지 한 프로세스의 진행 요청 수. 허용 범위 1~8 |
+| `ROFL_USER_CONCURRENT` | 미설정이면 min(2, 전역 한도). 지정하면 전역 한도 이하 |
+| `ROFL_USER_REQUEST_LIMIT`, `ROFL_RATE_WINDOW_MS` | 사용자별 입장 시도 12회/60000ms. 입장한 잘못된 파일·실패·중복 시도도 포함하며 429 거절은 추가 횟수를 소모하지 않음 |
+| `ROFL_BODY_TIMEOUT_MS` | 30000. 본문 수신 총 시간. 실제 reader 취소로 연결을 중단 |
+| `ROFL_PARSE_TIMEOUT_MS` | 5000. worker 시작을 포함한 파싱 시간. 제한 시 worker terminate 완료 후 요청 슬롯 반환 |
+
+DB 풀은 기존 최대 10개·연결 대기 10초를 유지한다. `pg.query_timeout`의 응답만 끝내는 동작은 사용하지 않는다. 서버 statement/transaction 제한이 SQL·열린 트랜잭션을 중단하고, 추가 연결 점유 상한은 실제 pg 연결을 닫는다. 읽기·쓰기 timeout과 새 연결을 얻지 못한 실패는 원시 SQL/연결 오류를 노출하지 않는 503이며, form action·내부 봇 제한 응답에는 `Retry-After`를 제공한다. 일반 SQL 오류를 연결 실패로 바꾸지는 않는다. 실패한 트랜잭션의 부분 변경은 롤백한다. 연결 응답을 잃은 경우에는 저장 여부를 추정하지 않고 현재 상태를 재확인한다. migration·백업 CLI는 이 앱 풀을 사용하지 않으므로 별도의 작업/복구 절차를 따른다.
+
+ROFL은 큐·파일을 limiter에 저장하지 않고 입장 불가 시 바로 429와 초 단위 `Retry-After`를 반환한다. 사용자별 기간 자료는 짧게 유지하고 크기를 제한한다. 본문은 70MiB, 파일 자체는 기존 64MiB, 파서 메타데이터는 기존 2MiB 제한이다. 본문 취소는 adapter-node의 실제 요청 연결을 닫을 수 있어 408 대신 네트워크 중단으로 보일 수 있으며, 브라우저는 파일/블루 팀 선택을 보존해 다시 시도한다.
+
+원본 바이트의 복사본만 worker로 이전하고 기존 parser·identity·적재 모델을 그대로 실행한다. worker의 JS heap은 64MiB이며 파일 ArrayBuffer 등 외부 메모리는 그 heap 제한과 별도다. 파일 크기와 진행 요청 수가 함께 메모리 사용을 제한한다. 정상 파싱과 파싱 중 취소 모두 thread 종료를 기다린다. 기존 채택본 복구/중복 경로는 필요한 원본 확인 뒤 불필요한 재파싱 없이 기존 데이터·MMR 의미를 유지한다. 제한은 **프로세스별**이다. 여러 Node worker·replica에서는 합산 동시성과 사용자별 횟수가 늘어나므로 인스턴스 수·메모리·트래픽에 맞춰 각 한도를 정해야 한다. 이 구현에 분산 limiter나 새로운 서비스 의존성은 없다.
+
+요청마다 서버가 UUID를 만들고 `X-Request-ID`로 반환한다. JSON 로그에는 `event`, `requestId`, manifest의 `route` 템플릿, 허용된 `method`, `status`, 허용된 오류 `code`, `durationMs`만 기록한다. 요청 본문·쿠키·토큰·Riot ID·원본 파일·실행자 ID·실제 경로/URL query·원시 SQL/예외 객체는 기록하지 않는다. 부분 실패도 코드만 기록하고 SvelteKit의 기본 원시 오류 출력은 대체한다. 풀의 대기 요청은 connect 호출 당시 문맥에 연결해 다른 요청에 오류를 잘못 귀속하지 않는다.
+
+`durationMs`는 서버가 응답 객체를 만들 때까지의 시간이며 브라우저의 전체 전송 시간이나 CWV가 아니다. stdout/journal의 실제 저장·접근 권한·회전·보존과 알림·대시보드는 운영 환경에서 정한다. 앱은 로그 수집 외부 서비스나 자동 경보를 추가하지 않는다. 실행 증거와 검사 범위는 [운영 안정성 검증](../artifacts/ui-review/next/operations.md)을 따른다.
 
 ## DB migration과 백업·복원
 
@@ -111,5 +136,6 @@ node scripts/verify_deployment.mjs --report /tmp/msm2-deployment-check.json
 
 - [GitHub PostgreSQL 서비스](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers), [setup-node](https://github.com/actions/setup-node), [pnpm setup](https://github.com/pnpm/action-setup)
 - [nginx proxy_request_buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_request_buffering)
-- [PostgreSQL 17 pg_dump](https://www.postgresql.org/docs/17/app-pgdump.html), [pg_restore](https://www.postgresql.org/docs/17/app-pgrestore.html)
+- [PostgreSQL 17 pg_dump](https://www.postgresql.org/docs/17/app-pgdump.html), [pg_restore](https://www.postgresql.org/docs/17/app-pgrestore.html), [statement·transaction timeout](https://www.postgresql.org/docs/17/runtime-config-client.html)
+- [pg Client 설정](https://node-postgres.com/apis/client), [Node 24 worker 종료](https://nodejs.org/docs/latest-v24.x/api/worker_threads.html#workerterminate), [SvelteKit hooks](https://svelte.dev/docs/kit/hooks)
 - 설치된 `@sveltejs/adapter-node/src/handler.js`, `src/index.js`, `index.js`와 기존 `apps/web/tests/api/support/http-child.mjs`의 실제 헤더·종료 계약

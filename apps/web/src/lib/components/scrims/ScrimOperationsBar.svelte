@@ -20,6 +20,7 @@
         endEarly: boolean;
         // 끝난 내전은 취소할 수 없다.
         cancellable: boolean;
+        cancelGameCount?: number | null;
         settings: ScrimSettings;
         editable: ScrimSettingsField[];
         notifyParticipants?: boolean;
@@ -32,6 +33,7 @@
         restore = null,
         endEarly,
         cancellable,
+        cancelGameCount = null,
         settings,
         editable,
         notifyParticipants = false,
@@ -146,7 +148,9 @@
         else if (key === 'cancel')
             await run(
                 'cancel',
-                '이 내전을 취소할까요? 참가자와 편성은 보존하며 취소 전 단계로 복구할 수 있어요.',
+                cancelGameCount !== null
+                    ? `${cancelGameCount > 0 ? `기록된 세트 결과 ${cancelGameCount}개와 해당 MMR 반영을 모두 취소할까요?` : '진행 중인 경기를 모두 취소할까요?'} 참가자·경기·출전 기록은 이력으로 남아요. 복구하면 편성 준비로 돌아가며 취소한 결과·MMR은 재개하지 않아요.`
+                    : '이 내전을 취소할까요? 참가자와 편성은 보존하며 취소 전 단계로 복구할 수 있어요.',
                 '내전 취소'
             );
     }

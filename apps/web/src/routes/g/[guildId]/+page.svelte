@@ -36,7 +36,13 @@
             heroShown={Boolean(data.nextScrim)}
             onretry={retry}
         />
-        <RankingBoard {guildId} ranking={data.ranking} onretry={retry} />
+        <RankingBoard
+            {guildId}
+            ranking={data.ranking}
+            seasons={data.seasons}
+            selectedSeasonId={data.selectedSeasonId}
+            onretry={retry}
+        />
     </div>
 
     {#if data.achievements.length}

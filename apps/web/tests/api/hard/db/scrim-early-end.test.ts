@@ -168,7 +168,16 @@ test('준결승의 우세 팀은 결승 진출·우승으로 바꾸지 않고 �
 
 test('결승의 실제 현재 우세 팀은 중도 종료 승자이며 재개하면 원래 경기로 돌아간다', async (t) => {
     const f = await createMatchResultFixture(t, { teams: 4, keepAutomaticLineup: true });
-    for (const [index, match] of f.matches.entries())
+    const playersForMatch = (match: typeof f.match, winning = true) =>
+        [match.teamAId, match.teamBId]
+            .flatMap((id) => {
+                const index = f.teams.findIndex((team) => team.id === id);
+                assert.ok(index >= 0);
+                return f.accounts.slice(index * 5, index * 5 + 5);
+            })
+            .map((account, index) => replayPlayer(account.gameName!, account.tagLine!, index, winning));
+    // 조회 순서가 준결승 순서와 다른 경우를 고정한다. 계정은 배열 인덱스 대신 실제 경기의 팀으로 고른다.
+    for (const match of [f.matches.find((row) => row.id !== f.match.id)!, f.match])
         for (const number of [1, 2])
             await importMatchRofl(
                 f.db,
@@ -177,16 +186,14 @@ test('결승의 실제 현재 우세 팀은 중도 종료 승자이며 재개하
                 match.id,
                 {
                     ...(await f.slot(number, match.id)),
-                    bytes: replayBytes(f.players(true, index * 10), { gameLengthMs: number * 1_900_000 })
+                    bytes: replayBytes(playersForMatch(match), { gameLengthMs: number * 1_900_000 })
                 },
                 f.dependencies
             );
     const final = (await f.db.select().from(schema.matches)).find(
         (match) => !f.matches.some((semi) => semi.id === match.id)
     )!;
-    const finalPlayers = [...f.accounts.slice(0, 5), ...f.accounts.slice(10, 15)].map((account, index) =>
-        replayPlayer(account.gameName!, account.tagLine!, index, false)
-    );
+    const finalPlayers = playersForMatch(final, false);
     await importMatchRofl(
         f.db,
         f.manager,

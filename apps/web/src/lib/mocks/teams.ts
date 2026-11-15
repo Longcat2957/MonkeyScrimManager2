@@ -273,6 +273,14 @@ export function setMockAuctionStatus(scrimId: string, status: AuctionStatus): vo
     if (state) state.status = status;
 }
 
+/** 경기까지 전체 취소하면 영입은 무효로 남기고 팀장·시작 포인트만 보존한다. */
+export function cancelMockAuctionResults(scrimId: string): void {
+    const state = auctionStates.get(scrimId);
+    if (!state) return;
+    for (const lot of state.lots) lot.voided = true;
+    Object.assign(state, { status: 'cancelled', queue: [], open: null, unsold: [], lastAction: null });
+}
+
 function acquisitions(state: AuctionState) {
     return state.lots.filter((lot) => !lot.voided && (lot.result === 'sold' || lot.result === 'manual'));
 }

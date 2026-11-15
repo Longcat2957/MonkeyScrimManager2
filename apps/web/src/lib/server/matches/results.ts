@@ -25,9 +25,9 @@ import {
 import { DomainError } from '../errors.ts';
 import { requireGuildAdmin, requireGuildMember } from '../guild/access.ts';
 import { applyGameMmr, reverseGameMmr } from '../mmr/service.ts';
-import { prepareRoflImport, type RoflImportData } from '../rofl/import-model.ts';
+import type { RoflImportData } from '../rofl/import-model.ts';
 import { RoflError } from '../rofl/format.ts';
-import { readRoflIdentity } from '../rofl/identity.ts';
+import type { RoflIdentity } from '../rofl/identity.ts';
 import { RiotError } from '../riot/errors.ts';
 import { createResolvedMatches } from '../scrims/bracket.ts';
 import { assertRevision, requireRevision, requireUuid } from '../scrims/validation.ts';
@@ -292,7 +292,7 @@ async function lockReplayAccounts(
 /** 기존 서버 계정으로 팀을 확인한 뒤 파일의 명시적 포지션과 확정 라인업을 대조한다. */
 function linkReplayParticipants(
     prepared: RoflImportData,
-    identity: ReturnType<typeof readRoflIdentity>,
+    identity: RoflIdentity[],
     accounts: Awaited<ReturnType<typeof lockReplayAccounts>>,
     players: Awaited<ReturnType<typeof validateLineupRoster>>,
     match: typeof matches.$inferSelect
@@ -559,18 +559,22 @@ export async function importMatchRofl(
     if (existing?.kind === 'cancelled')
         return restoreImport(db, user, guildId, matchId, input, fileSha256, lineupUserIds);
     let prepared: RoflImportData;
-    let identity: ReturnType<typeof readRoflIdentity>;
+    let identity: RoflIdentity[];
     try {
-        identity = readRoflIdentity(input.bytes);
-        prepared = prepareRoflImport(input.bytes, {
-            guildId,
-            scrimId: before.scrim.id,
-            matchId,
-            gameId: randomUUID(),
-            gameNumber: input.nextGameNumber,
-            uploadedByUserId: user.userId,
-            uploadedAt: new Date()
-        });
+        const { prepareRoflInWorker } = await import('../rofl/processing-worker.ts');
+        ({ identity, prepared } = await prepareRoflInWorker(
+            input.bytes,
+            {
+                guildId,
+                scrimId: before.scrim.id,
+                matchId,
+                gameId: randomUUID(),
+                gameNumber: input.nextGameNumber,
+                uploadedByUserId: user.userId,
+                uploadedAt: new Date()
+            },
+            dependencies.roflProcessing
+        ));
     } catch (error) {
         if (error instanceof RoflError) throw new DomainError('INVALID_INPUT', error.message);
         throw error;

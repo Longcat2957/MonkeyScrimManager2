@@ -11,4 +11,8 @@
     <title>{data.scrim.title} · 대진 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<BracketBoard bracket={data.bracket} guildId={page.params.guildId!} />
+<BracketBoard
+    bracket={data.bracket}
+    guildId={page.params.guildId!}
+    emptyMessage={data.scrim.status === 'cancelled' ? '내전이 취소되어 표시할 대진이 없어요.' : undefined}
+/>

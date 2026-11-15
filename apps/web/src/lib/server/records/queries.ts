@@ -11,7 +11,6 @@ import {
     lolPosition,
     matches,
     mmrLedgerEntries,
-    mmrSeasons,
     riotAccounts,
     roflGameDataV1,
     roflParticipantDataV1,
@@ -24,6 +23,7 @@ import { isDiscordId } from '../discord/client.ts';
 import { DomainError } from '../errors.ts';
 import { INITIAL_MMR } from '../mmr/rules.ts';
 import { readGuild } from '../scrims/queries.ts';
+import { selectRecordSeason } from './seasons.ts';
 
 type ChampionResolver = (id: string) => ChampionRef;
 export type GuildPlayerRecords = {
@@ -34,12 +34,6 @@ export type GuildPlayerRecords = {
     games: PlayerGame[];
 };
 type RecordedGame = { id: string; durationSec: number | null; kills: number | null };
-
-async function activeSeason(tx: Transaction, guildId: string) {
-    return tx.query.mmrSeasons.findFirst({
-        where: and(eq(mmrSeasons.guildId, guildId), isNull(mmrSeasons.endedAt))
-    });
-}
 
 /** 현재 계정 연결과 무관하게 당시 출전자 및 Game에 채택된 ROFL만 전적의 원천으로 사용한다. */
 async function recordsInTransaction(
@@ -60,7 +54,7 @@ async function recordsInTransaction(
         .innerJoin(scrims, eq(scrims.id, games.scrimId))
         .innerJoin(matches, eq(matches.id, games.matchId))
         .leftJoin(roflGameDataV1, eq(roflGameDataV1.roflMetadataId, games.roflMetadataId))
-        // MSM1처럼 현재 시즌의 유효 경기만 집계한다. 중도 종료까지 정상 기록된 Game은 유지한다.
+        // MSM1처럼 선택한 시즌의 유효 경기만 집계한다. 중도 종료까지 정상 기록된 Game은 유지한다.
         .where(
             and(
                 eq(scrims.guildId, guildId),
@@ -187,11 +181,16 @@ export async function getGuildRecords(
     db: Database,
     actor: Actor | null,
     guildId: string,
-    champion: ChampionResolver
+    champion: ChampionResolver,
+    seasonId?: string | null
 ) {
-    return readGuild(db, actor, guildId, async (tx) =>
-        recordsInTransaction(tx, guildId, (await activeSeason(tx, guildId))?.id ?? null, champion)
-    );
+    return readGuild(db, actor, guildId, async (tx) => {
+        const selection = await selectRecordSeason(tx, guildId, seasonId);
+        return {
+            ...selection,
+            ...(await recordsInTransaction(tx, guildId, selection.selectedSeasonId, champion))
+        };
+    });
 }
 
 export async function getPlayerRecords(
@@ -199,7 +198,8 @@ export async function getPlayerRecords(
     actor: Actor | null,
     guildId: string,
     userId: string,
-    champion: ChampionResolver
+    champion: ChampionResolver,
+    seasonId?: string | null
 ) {
     if (!isDiscordId(userId)) throw new DomainError('NOT_FOUND', '사용자를 찾을 수 없어요');
     return readGuild(db, actor, guildId, async (tx) => {
@@ -224,9 +224,10 @@ export async function getPlayerRecords(
             .limit(1);
         if (!member && !linked.length && !participant)
             throw new DomainError('NOT_FOUND', '이 서버의 사용자를 찾을 수 없어요');
-        const season = await activeSeason(tx, guildId);
-        const records = await recordsInTransaction(tx, guildId, season?.id ?? null, champion);
-        const ratings = season
+        const selection = await selectRecordSeason(tx, guildId, seasonId);
+        const selectedId = selection.selectedSeasonId;
+        const records = await recordsInTransaction(tx, guildId, selectedId, champion);
+        const ratings = selectedId
             ? await tx
                   .select({
                       id: userPositionMmr.id,
@@ -234,7 +235,7 @@ export async function getPlayerRecords(
                       rating: userPositionMmr.mmr
                   })
                   .from(userPositionMmr)
-                  .where(and(eq(userPositionMmr.seasonId, season.id), eq(userPositionMmr.userId, userId)))
+                  .where(and(eq(userPositionMmr.seasonId, selectedId), eq(userPositionMmr.userId, userId)))
             : [];
         const counts = ratings.length
             ? await tx
@@ -288,6 +289,7 @@ export async function getPlayerRecords(
                   .groupBy(mmrLedgerEntries.ratingId)
             : [];
         return {
+            ...selection,
             ...records,
             player: {
                 userId,
@@ -299,7 +301,7 @@ export async function getPlayerRecords(
             },
             games: records.players.find((player) => player.userId === userId)?.games ?? [],
             // 시즌과 사용자가 확정된 미출전 포지션의 1500은 MSM1의 초기값이며 추정 통계가 아니다.
-            mmr: season
+            mmr: selectedId
                 ? lolPosition.enumValues.map((position) => {
                       const rating = ratings.find((entry) => entry.position === position);
                       return {

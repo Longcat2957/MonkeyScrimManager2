@@ -11,6 +11,8 @@ import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { getPlayerRecords, type GuildPlayerRecords } from '#lib/server/records/queries.ts';
 import { routeError } from '#lib/server/http.ts';
+import type { RecordSeasonSelection } from '#lib/features/seasons.ts';
+import { mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import type { PageServerLoad } from './$types';
 
 const PAGE_SIZE = 10;
@@ -27,7 +29,13 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
     let games: PlayerGame[];
     let guildPlayers: GuildPlayerRecords[];
     let mmr: { position: LolPosition; rating: number; games: number }[];
+    let seasonSelection: RecordSeasonSelection;
     if (demo) {
+        try {
+            seasonSelection = mockRecordSeasons(url.searchParams.get('season'));
+        } catch (cause) {
+            routeError(cause);
+        }
         const mock = findMockPlayer(params.guildId, params.userId);
         if (!mock) error(404, '사용자를 찾을 수 없습니다.');
         guildPlayers = listMockGuildPlayers(champion);
@@ -50,10 +58,12 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
                 locals.actor,
                 params.guildId,
                 params.userId,
-                champion
+                champion,
+                url.searchParams.get('season')
             );
             ({ player, games, mmr } = result);
             guildPlayers = result.players;
+            seasonSelection = { seasons: result.seasons, selectedSeasonId: result.selectedSeasonId };
         } catch (cause) {
             routeError(cause);
         }
@@ -85,6 +95,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
     );
 
     return {
+        ...seasonSelection,
         player,
         overallGames: games.length,
         recordWins: games.length ? games.filter((game) => game.win).length : null,
