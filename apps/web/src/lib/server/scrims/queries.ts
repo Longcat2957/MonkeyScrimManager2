@@ -14,6 +14,7 @@ import type {
     ScrimStatusFilter
 } from '../../features/scrims/types.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     guildRiotAccounts,
@@ -109,6 +110,10 @@ async function listItems(tx: Transaction, rows: ScrimRow[], user: Actor | null):
             asc(scrimParticipantRegistrations.joinedAt),
             asc(scrimParticipantRegistrations.id)
         );
+    const identities = await readPublicIdentities(
+        tx,
+        active.map((entry) => entry.userId)
+    );
     return rows.map((row) => {
         const registered = active.filter((registration) => registration.scrimId === row.id);
         return {
@@ -123,9 +128,14 @@ async function listItems(tx: Transaction, rows: ScrimRow[], user: Actor | null):
             myRegistration: user
                 ? (registered.find((registration) => registration.userId === user.userId)?.status ?? null)
                 : null,
-            members: registered
-                .slice(0, 5)
-                .map((registration) => ({ key: registration.id, name: registration.name, iconUrl: null }))
+            members: registered.slice(0, 5).map((registration) => ({
+                key: registration.id,
+                name: publicDisplayName(
+                    registration.userId ? identities.get(registration.userId) : undefined,
+                    registration.name
+                ),
+                iconUrl: null
+            }))
         };
     });
 }
@@ -300,19 +310,29 @@ export async function getScrimDetail(
                       .where(inArray(scrimParticipantPreferences.scrimParticipantId, participantIds))
                       .orderBy(asc(scrimParticipantPreferences.priority))
                 : [];
-            const participants: (ScrimParticipant & { participantId: string })[] = entries.map((entry) => ({
-                registrationId: entry.registrationId,
-                participantId: entry.participantId,
-                userId: entry.userId,
-                displayName: entry.displayName,
-                iconUrl: null,
-                riotId: entry.gameName && entry.tagLine ? `${entry.gameName}#${entry.tagLine}` : null,
-                positions: preferences
-                    .filter((preference) => preference.scrimParticipantId === entry.participantId)
-                    .map((preference) => preference.position),
-                status: entry.status,
-                registeredAt: entry.joinedAt.toISOString()
-            }));
+            const identities = await readPublicIdentities(
+                tx,
+                entries.map((entry) => entry.userId)
+            );
+            const participants: (ScrimParticipant & { participantId: string })[] = entries.map((entry) => {
+                const identity = entry.userId ? identities.get(entry.userId) : undefined;
+                return {
+                    registrationId: entry.registrationId,
+                    participantId: entry.participantId,
+                    userId: identity?.userId ?? null,
+                    displayName: publicDisplayName(identity, entry.displayName),
+                    iconUrl: null,
+                    riotId:
+                        identity?.showRiotIds && entry.gameName && entry.tagLine
+                            ? `${entry.gameName}#${entry.tagLine}`
+                            : null,
+                    positions: preferences
+                        .filter((preference) => preference.scrimParticipantId === entry.participantId)
+                        .map((preference) => preference.position),
+                    status: entry.status,
+                    registeredAt: entry.joinedAt.toISOString()
+                };
+            });
             const mine = user
                 ? entries.find(
                       (entry) =>

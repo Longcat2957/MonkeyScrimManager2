@@ -81,7 +81,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 숫자 직접 입력 | `Input` | 값은 문자열. STDF `type="number"`는 숫자 키보드 유도이며 형식·범위는 직접 검증 |
 | 작은 범위 정수 | `Stepper` | 팀 수·추가 신청 정원·통계 최소 게임. 이름 있는 그룹의 `stepperLabels`, `injClassBtn="min-h-11 min-w-11"` 사용. 모집 범위는 `features/scrims/settings.ts` 기준 |
 | 단일·다중 선택 | `Radio`·`Checkbox` | 계정·팀·희망 포지션 등. 그룹은 `<fieldset><legend>` |
-| 켜짐/꺼짐 | `SwitchCell` | 헤더의 화면 모드 변경과 모집 설정 폼의 하드 피어리스 바인딩. 변경 책임은 호출 컴포넌트 |
+| 켜짐/꺼짐 | `SwitchCell` | 헤더 화면 모드·모집 하드 피어리스·본인 공개 설정의 바인딩. 실제 버튼에 switch 역할·선택/비활성 상태·제목과 부제 설명을 연결하며 변경 책임은 호출 컴포넌트 |
 | Discord 역할·채널 | `DiscordSettingRow`·`ActionMenu` | 현재 값 버튼으로 선택 목록을 열고 고르면 저장 |
 | 날짜 | `Calendar popup={null}` | `ScrimSettingsDialog` 안에 펼침. 선택 결과는 `YYYY-MM-DD`, `height={32}`는 뷰포트 높이의 32%이며 px 값이 아님 |
 | 시각 | `Input` | `HH:mm` 문자열과 직접 형식 검증 |
@@ -210,7 +210,8 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | Popup·확인창에 앱이 필요한 dialog 의미·포커스·배경 차단이 모두 내장되어 있지 않음 | Popup/Menu와 `ConfirmDialog`에 `overlay` 적용. 함수형 `dialog.confirm`은 공개 visible·snippet이 없어 앱 확인창은 STDF `Dialog`를 직접 사용. 보완 범위와 검증은 [오버레이 패턴](patterns.md#4-오버레이) 참고 |
 | `Button`·`Input` 등은 임의 HTML 속성을 그대로 전달하지 않음 | `injClass`·공개 prop·snippet·외부 래퍼 사용. 모든 컴포넌트가 모든 `aria-*`를 지원하지 않는다고 일반화하지 말고 해당 타입 확인 |
 | `Input`은 네이티브 label로 입력을 감싸며 title/titleChild를 이름으로 사용하지만 `name` 전달은 없고, clear 버튼 이름이 입력 이름에 합쳐짐 | 보이는 제목을 제공하고 formData를 구성한다. 실제 입력 이름·기존 clear 버튼은 `inputLabel`, 오류·설명은 `inputFeedback` attachment로 필요한 래퍼에서 보완한다 |
-| `Switch`·`Radio`·`Checkbox`에 기대하는 선택 상태 ARIA가 없음 | 그룹 legend·현재 상태 문구 사용. 네이티브 라디오/체크박스 의미를 완전히 대체하지 않음. 통계의 `최근 10게임만`은 기존 버튼과 상태 문구를 감싼 label 전체에 최소 44px 높이를 제공하며 label 여백 클릭과 Space 조작을 함께 확인 |
+| `Switch` 실제 버튼의 역할·선택·비활성·type 누락 | `SwitchCell`에서 실제 버튼에 role=switch·aria-checked·native disabled/type을 보완. 헤더·모집 설정·본인 공개 설정 모두 Space 조작과 부제 설명 분리 확인 |
+| `Radio`·`Checkbox`에 기대하는 선택 상태 ARIA가 없음 | 그룹 legend·현재 상태 문구 사용. 네이티브 라디오/체크박스 의미를 완전히 대체하지 않음. 통계의 `최근 10게임만`은 기존 버튼과 상태 문구를 감싼 label 전체에 최소 44px 높이를 제공하며 label 여백 클릭과 Space 조작을 함께 확인 |
 | `Tab`에 선택 상태 ARIA가 없음 | `SelectionTabs`가 실제 8개 사용처를 담당한다. 이름 있는 group 안의 native button에 aria-pressed·type=button·최소 44px 높이를 제공한다. tablist 역할을 임의로 추가하지 않는다 |
 | `Button size="md"\|"sm"`은 현재 스타일에서 실질 크기 규칙이 부족함 | 제품 버튼은 주로 `auto`·`full`; `auto`에는 `injClass` 가로 여백. `heightIn`은 패딩이며 고정 높이 아님 |
 | `Button disabledLoading` 기본값은 true | `loading={pending ? {} : null}`로 해당 버튼 자동 비활성 |

@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { BotPublicationData } from '../../../../../../shared/bot-api.js';
 import type { Transaction } from '../db/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import {
     discordPublicationJobs,
     gameParticipants,
@@ -26,6 +27,7 @@ export async function publicationData(tx: Transaction, scrimId: string): Promise
     const people = await tx
         .select({
             id: scrimParticipants.id,
+            userId: scrimParticipants.userId,
             name: scrimParticipants.displayName,
             teamId: scrimParticipants.teamId,
             position: scrimParticipants.position,
@@ -39,6 +41,10 @@ export async function publicationData(tx: Transaction, scrimId: string): Promise
         .where(and(eq(scrimParticipants.scrimId, scrimId), isNull(scrimParticipantRegistrations.withdrawnAt)))
         .orderBy(asc(scrimParticipantRegistrations.joinedAt), asc(scrimParticipantRegistrations.id));
     const ids = people.map((person) => person.id);
+    const identities = await readPublicIdentities(
+        tx,
+        people.map((person) => person.userId)
+    );
     const preferences = ids.length
         ? await tx
               .select()
@@ -64,7 +70,10 @@ export async function publicationData(tx: Transaction, scrimId: string): Promise
         participants: people
             .filter((person) => person.status === 'selected' || person.status === 'standby')
             .map((person) => ({
-                name: person.name,
+                name: publicDisplayName(
+                    person.userId ? identities.get(person.userId) : undefined,
+                    person.name
+                ),
                 status: person.status as 'selected' | 'standby',
                 positions: preferences
                     .filter((preference) => preference.scrimParticipantId === person.id)
@@ -74,7 +83,13 @@ export async function publicationData(tx: Transaction, scrimId: string): Promise
             name: team.name,
             players: people
                 .filter((person) => person.teamId === team.id && person.status === 'selected')
-                .map((person) => ({ name: person.name, position: person.position }))
+                .map((person) => ({
+                    name: publicDisplayName(
+                        person.userId ? identities.get(person.userId) : undefined,
+                        person.name
+                    ),
+                    position: person.position
+                }))
         }))
     };
 }
@@ -107,12 +122,20 @@ export async function matchPublicationData(tx: Transaction, job: Job): Promise<B
     let players: NonNullable<BotPublicationData['match']>['players'];
     if (job.kind === 'lineup') {
         const rows = await tx
-            .select({ player: matchLineupPlayers, name: scrimParticipants.displayName })
+            .select({
+                player: matchLineupPlayers,
+                userId: scrimParticipants.userId,
+                name: scrimParticipants.displayName
+            })
             .from(matchLineupPlayers)
             .innerJoin(scrimParticipants, eq(scrimParticipants.id, matchLineupPlayers.participantId))
             .where(eq(matchLineupPlayers.lineupId, context.id));
-        players = rows.map(({ player, name }) => ({
-            name,
+        const identities = await readPublicIdentities(
+            tx,
+            rows.map((row) => row.userId)
+        );
+        players = rows.map(({ player, userId, name }) => ({
+            name: publicDisplayName(userId ? identities.get(userId) : undefined, name),
             position: player.position,
             side: null,
             teamSlot: player.teamId === match.teamAId ? 'a' : 'b',
@@ -123,8 +146,13 @@ export async function matchPublicationData(tx: Transaction, job: Job): Promise<B
         }));
     } else {
         const rows = await tx
-            .select({ player: gameParticipants, rofl: roflParticipantDataV1 })
+            .select({
+                player: gameParticipants,
+                userId: scrimParticipants.userId,
+                rofl: roflParticipantDataV1
+            })
             .from(gameParticipants)
+            .innerJoin(scrimParticipants, eq(scrimParticipants.id, gameParticipants.scrimParticipantId))
             .leftJoin(
                 roflParticipantDataV1,
                 and(
@@ -133,8 +161,12 @@ export async function matchPublicationData(tx: Transaction, job: Job): Promise<B
                 )
             )
             .where(eq(gameParticipants.gameId, context.id));
-        players = rows.map(({ player, rofl }) => ({
-            name: player.displayName,
+        const identities = await readPublicIdentities(
+            tx,
+            rows.map((row) => row.userId)
+        );
+        players = rows.map(({ player, userId, rofl }) => ({
+            name: publicDisplayName(userId ? identities.get(userId) : undefined, player.displayName),
             position: player.position,
             side: player.side,
             teamSlot: (player.side === 'blue') === (blueTeamSlot === 'a') ? 'a' : 'b',

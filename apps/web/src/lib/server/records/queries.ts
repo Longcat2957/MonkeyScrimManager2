@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import type { ChampionRef, PlayerGame } from '../../features/players/types.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities, resolveRecordUser } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     gameMmrApplications,
@@ -10,6 +11,7 @@ import {
     guildRiotAccounts,
     lolPosition,
     matches,
+    mmrSeasons,
     mmrLedgerEntries,
     riotAccounts,
     roflGameDataV1,
@@ -19,10 +21,12 @@ import {
     userPositionMmr,
     users
 } from '../db/schema.ts';
-import { isDiscordId } from '../discord/client.ts';
+import { DiscordError, isDiscordId } from '../discord/client.ts';
 import { DomainError } from '../errors.ts';
+import { requireGuildAdmin } from '../guild/access.ts';
 import { INITIAL_MMR } from '../mmr/rules.ts';
 import { readGuild } from '../scrims/queries.ts';
+import type { ScrimAccessDependencies } from '../scrims/service.ts';
 import { selectRecordSeason } from './seasons.ts';
 
 type ChampionResolver = (id: string) => ChampionRef;
@@ -75,12 +79,10 @@ async function recordsInTransaction(
               .select({
                   participant: gameParticipants,
                   userId: scrimParticipants.userId,
-                  user: users,
                   data: roflParticipantDataV1
               })
               .from(gameParticipants)
               .innerJoin(scrimParticipants, eq(scrimParticipants.id, gameParticipants.scrimParticipantId))
-              .leftJoin(users, eq(users.id, scrimParticipants.userId))
               .leftJoin(
                   roflParticipantDataV1,
                   and(
@@ -96,6 +98,10 @@ async function recordsInTransaction(
               )
               .orderBy(asc(gameParticipants.roflParticipantIndex))
         : [];
+    const identities = await readPublicIdentities(
+        tx,
+        participants.map((entry) => entry.userId)
+    );
     const participantsByGame = new Map<string, typeof participants>();
     for (const entry of participants) {
         const gameId = entry.participant.gameId;
@@ -123,7 +129,7 @@ async function recordsInTransaction(
         const roster = (participantsByGame.get(game.id) ?? []).filter(
             (entry) => entry.participant.roflMetadataId === game.roflMetadataId
         );
-        for (const { participant, userId, user, data } of roster) {
+        for (const { participant, userId, data } of roster) {
             const s = data?.stats;
             const teammates = roster.filter((entry) => entry.participant.side === participant.side);
             const kills = teammates.map((entry) => entry.data?.stats.kills ?? null);
@@ -153,20 +159,26 @@ async function recordsInTransaction(
                         ? kills.reduce<number>((sum, value) => sum + value!, 0)
                         : null,
                 durationSec: result ? Math.floor(result.gameLengthMs / 1000) : null,
-                teammates: teammates.flatMap((entry) =>
-                    entry.userId && entry.userId !== userId
-                        ? [{ userId: entry.userId, displayName: entry.participant.displayName }]
-                        : []
-                )
+                teammates: teammates.flatMap((entry) => {
+                    const identity = entry.userId ? identities.get(entry.userId) : undefined;
+                    return identity && entry.userId !== userId
+                        ? [
+                              {
+                                  userId: identity.userId,
+                                  displayName: publicDisplayName(identity, entry.participant.displayName)
+                              }
+                          ]
+                        : [];
+                })
             };
             allGames.push(record);
             if (!userId) continue;
+            const identity = identities.get(userId);
+            if (!identity) continue;
             const player = players.get(userId) ?? {
-                userId,
-                displayName: user?.globalName ?? user?.username ?? participant.displayName,
-                iconUrl: user?.avatarHash
-                    ? `https://cdn.discordapp.com/avatars/${userId}/${user.avatarHash}.webp?size=128`
-                    : null,
+                userId: identity.userId,
+                displayName: publicDisplayName(identity),
+                iconUrl: identity.avatarUrl,
                 championId: null,
                 games: []
             };
@@ -197,14 +209,32 @@ export async function getPlayerRecords(
     db: Database,
     actor: Actor | null,
     guildId: string,
-    userId: string,
+    identifier: string,
     champion: ChampionResolver,
-    seasonId?: string | null
+    seasonId?: string | null,
+    access?: ScrimAccessDependencies
 ) {
-    if (!isDiscordId(userId)) throw new DomainError('NOT_FOUND', '사용자를 찾을 수 없어요');
+    // 기존 Discord 경로의 관리자 예외만 실효 권한을 확인한다. 공개 UUID 조회는 외부 연동이 필요 없다.
+    let privateLegacyAdmin = false;
+    if (isDiscordId(identifier) && actor && actor.userId !== identifier) {
+        const [profile] = await db
+            .select({ publicProfile: users.publicProfile, withdrawnAt: users.withdrawnAt })
+            .from(users)
+            .where(eq(users.id, identifier));
+        if (profile && (!profile.publicProfile || profile.withdrawnAt !== null)) {
+            try {
+                await requireGuildAdmin(actor, guildId, { ...access, db });
+                privateLegacyAdmin = true;
+            } catch (cause) {
+                if (!(cause instanceof DomainError || cause instanceof DiscordError)) throw cause;
+                throw new DomainError('NOT_FOUND', '사용자를 찾을 수 없어요');
+            }
+        }
+    }
     return readGuild(db, actor, guildId, async (tx) => {
-        const [user] = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
-        if (!user) throw new DomainError('NOT_FOUND', '사용자를 찾을 수 없어요');
+        const user = await resolveRecordUser(tx, identifier, actor, privateLegacyAdmin);
+        const userId = user.id;
+        const identity = (await readPublicIdentities(tx, [userId])).get(userId)!;
         const [member] = await tx
             .select({ id: guildMembers.userId })
             .from(guildMembers)
@@ -222,8 +252,15 @@ export async function getPlayerRecords(
             .innerJoin(scrims, eq(scrims.id, scrimParticipants.scrimId))
             .where(and(eq(scrims.guildId, guildId), eq(scrimParticipants.userId, userId)))
             .limit(1);
-        if (!member && !linked.length && !participant)
-            throw new DomainError('NOT_FOUND', '이 서버의 사용자를 찾을 수 없어요');
+        if (!member && !linked.length && !participant) {
+            const [rating] = await tx
+                .select({ id: userPositionMmr.id })
+                .from(userPositionMmr)
+                .innerJoin(mmrSeasons, eq(mmrSeasons.id, userPositionMmr.seasonId))
+                .where(and(eq(mmrSeasons.guildId, guildId), eq(userPositionMmr.userId, userId)))
+                .limit(1);
+            if (!rating) throw new DomainError('NOT_FOUND', '이 서버의 사용자를 찾을 수 없어요');
+        }
         const selection = await selectRecordSeason(tx, guildId, seasonId);
         const selectedId = selection.selectedSeasonId;
         const records = await recordsInTransaction(tx, guildId, selectedId, champion);
@@ -292,14 +329,14 @@ export async function getPlayerRecords(
             ...selection,
             ...records,
             player: {
-                userId,
-                displayName: user.globalName ?? user.username,
-                iconUrl: user.avatarHash
-                    ? `https://cdn.discordapp.com/avatars/${userId}/${user.avatarHash}.webp?size=128`
-                    : null,
-                riotIds: linked.map((account) => `${account.gameName}#${account.tagLine}`)
+                userId: identity.userId,
+                displayName: publicDisplayName(identity),
+                iconUrl: identity.avatarUrl,
+                riotIds: identity.showRiotIds
+                    ? linked.map((account) => `${account.gameName}#${account.tagLine}`)
+                    : []
             },
-            games: records.players.find((player) => player.userId === userId)?.games ?? [],
+            games: records.players.find((player) => player.userId === identity.userId)?.games ?? [],
             // 시즌과 사용자가 확정된 미출전 포지션의 1500은 MSM1의 초기값이며 추정 통계가 아니다.
             mmr: selectedId
                 ? lolPosition.enumValues.map((position) => {

@@ -65,6 +65,11 @@ export function listMockRiotAccounts(userId: string): RiotAccount[] {
     );
 }
 
+/** 개발 미리보기의 탈퇴는 해당 목 사용자의 연결만 정리한다. */
+export function clearMockRiotAccounts(userId: string) {
+    accounts.delete(userId);
+}
+
 export function getMockMe(preview: string | null) {
     return {
         riotAccounts: preview === 'empty' ? [] : listMockRiotAccounts(mockUser.userId)

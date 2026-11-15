@@ -8,6 +8,8 @@
 경매의 직전 행위 원장은 [0005_auction_actions.sql](../apps/web/drizzle/0005_auction_actions.sql), 시작 전 취소 복구 근거는 [0006_scrim_cancellation_restore.sql](../apps/web/drizzle/0006_scrim_cancellation_restore.sql), 준비 단계 중도 종료·우세 팀 판정·재개 제약은 [0007_scrim_early_end.sql](../apps/web/drizzle/0007_scrim_early_end.sql)에 포함한다. 기존 행의 미확인 상태·행위를 추정해 채우지 않는다.
 진행 중 전체 취소 배치·Match 귀속은 [0008_scrim_result_cancellation.sql](../apps/web/drizzle/0008_scrim_result_cancellation.sql), 계정·설정 변경 감사 원장은 [0009_guild_audit.sql](../apps/web/drizzle/0009_guild_audit.sql)에 포함한다.
 서비스 운영자 지정·회수 감사는 [0010_service_admin_events.sql](../apps/web/drizzle/0010_service_admin_events.sql)에 포함한다.
+본인 공개 설정·탈퇴 상태·고유 공개 UUID와 탈퇴 시 비공개 제약은 [0011_account_privacy.sql](../apps/web/drizzle/0011_account_privacy.sql)에 포함한다. 내부 사용자 ID·과거 경기·MMR·canonical PUUID는 유지한다.
+알려진 기존 글만 갱신하고 유실/채널 변경 때 과거 새글 생성을 차단하는 작업 표식은 [0012_privacy_publication_refresh.sql](../apps/web/drizzle/0012_privacy_publication_refresh.sql)에 포함한다.
 인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
 
 배포 복원 검증은 별도 `msm2_deploy_probe` schema의 부모/자식 FK를 만들 수 있으며 그 검증용 관계는 업무 ERD에 포함하지 않는다. `0007` 당시41개/93개와 probe 포함94개의 역사 실행은 [통합 검증 기록](../artifacts/ui-review/operations/checks.json)에 보존한다. 현재 원본 스키마·업그레이드 범위는 [후속 구현](remaining-implementation.md)을 따른다.

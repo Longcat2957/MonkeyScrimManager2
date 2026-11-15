@@ -42,7 +42,7 @@
 
 ## `/me` — 내 정보
 
-**목적** 내 Discord 계정과 서버별로 나에게 연결된 Riot 계정 확인. Riot 계정 연결·해제·대표 지정은 서버 운영자가 [서버 관리](guild.md#gguildidadmin--서버-관리)에서 한다. 별도 공개 범위 설정은 두지 않으며 서버 전적·Riot ID는 공개 열람 정책을 따른다.
+**목적** 내 Discord 계정·서버별 Riot 계정 확인, 프로필·Riot ID 공개 설정과 서비스 탈퇴. Riot 계정 연결·해제·대표 지정은 서버 운영자가 [서버 관리](guild.md#gguildidadmin--서버-관리)에서 한다. 경기·MMR 공개 열람은 유지하며 개인 식별 정보는 본인의 공개 설정을 따른다.
 
 **권한** 실제 세션의 본인만 조회한다. 비로그인 요청은 401이며 다른 사용자 ID를 받아 조회하지 않는다.
 
@@ -53,7 +53,9 @@
 ```ts
 {
   me: { userId, displayName, avatarUrl },
-  groups: { guildId, guildName, riotAccounts: { id, gameName, tagLine, region, isPrimary }[] }[] // 서버마다 대표 먼저
+  groups: { guildId, guildName, riotAccounts: { id, gameName, tagLine, region, isPrimary }[] }[], // 서버마다 대표 먼저
+  privacy: { publicProfile, publicRiotIds, withdrawalBlock },
+  preview: boolean
 }
 ```
 
@@ -71,11 +73,23 @@
   Hide on bush  #KR1 · KR 서버        [대표]
   원숭이부캐    #KR2 · KR 서버
 (없음) 연결된 Riot 계정이 없어요
+
+[h2] 공개 설정
+[SwitchCell] 프로필 정보 공개 / Riot ID 공개
+[Button] 공개 설정 저장
+
+[h2] 서비스 탈퇴
+(불가) 진행 중 내전 또는 운영자 권한 정리 안내
+[Button] 서비스 탈퇴 → 기존 확인창
 ```
 
-**구성** 쓰기 action이 없다. 본인 식별과 계정 목록 모두 동작이 없으므로 `Cell`(버튼) 대신 같은 모양의 정적 목록을 쓴다. 화면 모드와 로그아웃은 헤더에서 제공한다. 긴 표시 이름·Riot ID·서버 이름은 줄바꿈하고 대표 배지는 읽을 공간을 유지한다. 빈 계정은 운영자에게 연결을 요청하는 다음 행동을 안내한다.
+**구성** 본인 식별·Riot 계정 목록은 정적이고, `PrivacySettings`가 `privacy`·`withdraw` 본인 전용 action을 맡는다. 두 공개 항목은 독립적이며 정확한 `true|false`만 받는다. 저장 실패 시 선택값을 보존하고 처리 중 중복 요청을 막는다. 결과 불명 또는 저장 뒤 화면 갱신 실패는 추가 요청을 멈추고 새로고침으로 현재 상태를 확인하게 한다. 화면 모드·일반 로그아웃은 헤더 한 곳이다. 긴 이름은 줄바꿈한다.
 
-**미구현·미결정** 탈퇴·데이터 삭제 경로. 선호 챔피언과 개인별 공개 설정 UI는 없다.
+프로필 비공개는 표시 이름·아바타·Discord ID를 공개 DTO에서 가리고 별도 공개 UUID로 과거 전적을 연결한다. 기존 비공개 Snowflake 경로는 비로그인404이며 본인/현재 서버 관리자 예외만 허용한다. 공개 UUID는 완전한 익명성을 뜻하지 않는다. 현재 서버 운영에 필요한 관리자 계정 조회와 본인 세션의 실제 식별자는 유지한다. 기존 사용자의 두 설정은 기본 공개다. 이 식별자 기본값은 구현 판단으로, 사용자 확정 범위와 [작업표](../../remaining-implementation.md)에서 구분한다.
+
+탈퇴는 진행 중 내전의 신청·확정 출전 또는 서비스 운영 권한이 있으면409다. 성공 시 모든 본인 세션·서버별 Riot 연결·소속·선호를 정리하고 이름/아바타를 지운다. 역사적 경기·원장과 canonical PUUID는 유지하고 다른 사용자의 공유 계정 연결은 손대지 않는다. 명시 OAuth 재로그인으로 복귀할 수 있으며 비공개 설정은 유지한다. 사용자 DB 적용과 실제 외부 발송은 [검증 기록](../../ui-review/backlog.md)과 구분한다.
+
+**미구현·미결정** 포지션별 선호 챔피언 편집은 후속 순서에 있다. 법적 약관·개인정보 본문은 사용자 보류다.
 
 ## `/docs` — 이용 문서
 

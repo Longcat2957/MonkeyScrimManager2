@@ -33,6 +33,7 @@ import {
     type ScrimAccessDependencies
 } from './service.ts';
 import { requireUuid } from './validation.ts';
+import { assertRecoverableParticipants } from './recovery.ts';
 
 /** 방식 변경·모집 복귀에서 경매 원장을 보존하고 현재 편성 효과만 무효화한다. */
 export async function invalidateAuctionFormation(
@@ -161,6 +162,10 @@ export async function revertScrim(
         scrimId,
         input,
         async (tx, row, user) => {
+            if (row.status === 'completed' || row.status === 'ended_early')
+                await assertRecoverableParticipants(tx, row);
+            if (row.status === 'preparing')
+                await assertRecoverableParticipants(tx, row, { includeStandby: true });
             switch (row.status) {
                 case 'preparing':
                     await deleteDraftBracket(tx, row.id);
@@ -233,7 +238,8 @@ export async function revertScrim(
                     throw new DomainError('CONFLICT', '되돌릴 단계가 없어요');
             }
         },
-        access
+        access,
+        { userLifecycle: true }
     );
 }
 

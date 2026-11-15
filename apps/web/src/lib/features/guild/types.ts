@@ -32,6 +32,8 @@ export type NextScrim = {
 export type RankingEntry = {
     rank: number;
     userId: string;
+    // 공개 설정으로 userId가 바뀌어도 추가 조회에서 같은 사람임을 확인하는 공개 키다.
+    identityKey?: string;
     displayName: string;
     mmr: number;
     games: number;

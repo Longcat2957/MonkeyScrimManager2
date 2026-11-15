@@ -22,22 +22,37 @@ import {
 } from 'drizzle-orm/pg-core';
 
 // Discord 봇에서 참가 신청하거나 웹에 로그인하면 자동으로 만든다. 별도 가입 절차는 없다.
-export const users = pgTable('users', {
-    // Discord 사용자 ID를 그대로 사용하며, 정밀도 손실을 막기 위해 문자열로 저장한다.
-    id: text('id').primaryKey(),
-    username: text('username').notNull(),
-    // Discord 전역 프로필이며, 서버별 닉네임이나 아바타와는 구분한다.
-    globalName: text('global_name'),
-    avatarHash: text('avatar_hash'),
-    // 백오피스 접근을 위한 서비스 운영자 여부이며 길드별 관리자 권한과는 별도로 관리한다.
-    isServiceAdmin: boolean('is_service_admin').default(false).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
-    // 자동 갱신은 Drizzle을 통한 수정에만 적용된다. 직접 SQL을 쓰면 명시적으로 갱신한다.
-    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
-        .defaultNow()
-        .notNull()
-        .$onUpdate(() => new Date())
-});
+export const users = pgTable(
+    'users',
+    {
+        // Discord 사용자 ID를 그대로 사용하며, 정밀도 손실을 막기 위해 문자열로 저장한다.
+        id: text('id').primaryKey(),
+        // 비공개 전적의 공개 경로용 식별자이며 인증·권한·MMR의 내부 사용자 ID를 대신하지 않는다.
+        publicId: uuid('public_id').defaultRandom().notNull().unique(),
+        username: text('username').notNull(),
+        // Discord 전역 프로필이며, 서버별 닉네임이나 아바타와는 구분한다.
+        globalName: text('global_name'),
+        avatarHash: text('avatar_hash'),
+        // 백오피스 접근을 위한 서비스 운영자 여부이며 길드별 관리자 권한과는 별도로 관리한다.
+        isServiceAdmin: boolean('is_service_admin').default(false).notNull(),
+        publicProfile: boolean('public_profile').default(true).notNull(),
+        publicRiotIds: boolean('public_riot_ids').default(true).notNull(),
+        // 과거 경기·점수의 내부 사용자 연결은 유지하며, 명시적 OAuth 로그인으로만 재활성화한다.
+        withdrawnAt: timestamp('withdrawn_at', { withTimezone: true, precision: 3 }),
+        createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        // 자동 갱신은 Drizzle을 통한 수정에만 적용된다. 직접 SQL을 쓰면 명시적으로 갱신한다.
+        updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
+            .defaultNow()
+            .notNull()
+            .$onUpdate(() => new Date())
+    },
+    (table) => [
+        check(
+            'users_withdrawn_private',
+            sql`${table.withdrawnAt} is null or (not ${table.publicProfile} and not ${table.publicRiotIds} and not ${table.isServiceAdmin})`
+        )
+    ]
+);
 
 // 서비스 운영자 변경만 기록하며 길드 운영 권한에는 영향을 주지 않는다. 이름은 복제하지 않는다.
 export const serviceAdminEvents = pgTable(
@@ -1640,6 +1655,8 @@ export const discordPublicationJobs = pgTable(
             .notNull(),
         subjectId: text('subject_id').default('scrim').notNull(),
         revision: integer('revision').default(1).notNull(),
+        // 개인정보 재반영은 이미 알려진 이 메시지만 수정하며 부재·교체 시 새 글을 만들지 않는다.
+        privacyRefreshMessageId: text('privacy_refresh_message_id'),
         status: text('status')
             .$type<'pending' | 'processing' | 'sent' | 'blocked' | 'uncertain'>()
             .default('pending')
@@ -1674,6 +1691,10 @@ export const discordPublicationJobs = pgTable(
             sql`${table.status} in ('pending', 'processing', 'sent', 'blocked', 'uncertain')`
         ),
         check('discord_publication_jobs_counts_valid', sql`${table.revision} > 0 and ${table.attempts} >= 0`),
+        check(
+            'discord_publication_jobs_privacy_public_only',
+            sql`${table.privacyRefreshMessageId} is null or ${table.kind} <> 'confirmation_dm'`
+        ),
         check(
             'discord_publication_jobs_lease_complete',
             sql`${table.status} <> 'processing' or (${table.leaseToken} is not null and ${table.leaseUntil} is not null and ${table.leaseRevision} is not null and (${table.leaseChannelId} is not null or ${table.kind} = 'confirmation_dm') and ${table.leaseOperation} is not null and ${table.leaseOperation} in ('upsert', 'delete'))`

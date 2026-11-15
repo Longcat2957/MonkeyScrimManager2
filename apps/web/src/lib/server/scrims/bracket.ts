@@ -10,6 +10,7 @@ import {
     type BracketView
 } from '../../features/scrims/bracket.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     games,
@@ -61,6 +62,7 @@ export async function getBracketInTransaction(
     const members = await tx
         .select({
             id: scrimParticipants.id,
+            userId: scrimParticipants.userId,
             teamId: scrimParticipants.teamId,
             displayName: scrimParticipants.displayName,
             position: scrimParticipants.position
@@ -78,6 +80,10 @@ export async function getBracketInTransaction(
             )
         )
         .orderBy(asc(scrimParticipants.id));
+    const identities = await readPublicIdentities(
+        tx,
+        members.map((member) => member.userId)
+    );
     const keys = new Map(
         nodes.map((node) => [
             node.id,
@@ -134,7 +140,15 @@ export async function getBracketInTransaction(
             name: team.name,
             members: members
                 .filter((member) => member.teamId === team.id)
-                .map(({ teamId: _, ...member }) => ({ ...member, iconUrl: null }))
+                .map((member) => ({
+                    id: member.id,
+                    position: member.position,
+                    displayName: publicDisplayName(
+                        member.userId ? identities.get(member.userId) : undefined,
+                        member.displayName
+                    ),
+                    iconUrl: null
+                }))
         })),
         matches: resolveWinners(entries),
         bestOf,

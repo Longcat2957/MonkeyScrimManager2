@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import type { LolPosition, RankingEntry, RankingPage } from '../../features/guild/types.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database } from '../db/types.ts';
 import {
     gameMmrApplications,
@@ -182,10 +183,15 @@ export async function queryRankingPage(
                   .groupBy(scrimParticipants.userId, roflParticipantDataV1.champion)
                   .orderBy(desc(count()), asc(roflParticipantDataV1.champion))
             : [];
+        const identities = await readPublicIdentities(tx, selectedUsers);
         const entry = (row: (typeof rows)[number]): RankingEntry => {
             const championId = championCounts.find((champion) => champion.userId === row.userId)?.champion;
+            const identity = identities.get(row.userId)!;
             return {
                 ...row,
+                userId: identity.userId,
+                identityKey: identity.identityKey,
+                displayName: publicDisplayName(identity),
                 iconUrl: championId ? (options.championIcon?.(championId) ?? null) : null,
                 isMe: row.userId === options.userId
             };

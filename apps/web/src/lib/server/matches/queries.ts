@@ -9,6 +9,7 @@ import type {
     MatchStatusFilter
 } from '../../features/matches/types.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     gameMmrApplications,
@@ -183,6 +184,10 @@ export async function getMatch(
                   )
                   .orderBy(asc(gameParticipants.roflParticipantIndex))
             : [];
+        const identities = await readPublicIdentities(
+            tx,
+            players.map((entry) => entry.userId)
+        );
         const selected = recorded.find((item) => item.game.id === gameId) ?? recorded.at(-1);
         const match: MatchDetail = {
             id: row.match.id,
@@ -252,12 +257,13 @@ export async function getMatch(
                             )
                             .map(({ player, userId, data }): GamePlayer => {
                                 const s = data?.stats;
+                                const identity = userId ? identities.get(userId) : undefined;
                                 return {
                                     key: player.scrimParticipantId,
-                                    userId,
-                                    displayName: player.displayName,
+                                    userId: identity?.userId ?? null,
+                                    displayName: publicDisplayName(identity, player.displayName),
                                     riotId:
-                                        player.riotGameName && player.riotTagLine
+                                        identity?.showRiotIds && player.riotGameName && player.riotTagLine
                                             ? `${player.riotGameName}#${player.riotTagLine}`
                                             : null,
                                     champion: data?.champion

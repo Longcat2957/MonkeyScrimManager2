@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { GuildContext } from '../../features/guild/types.ts';
 import type { Database } from '../db/types.ts';
 import { guildDiscordSettings, guildMembers, guilds, users } from '../db/schema.ts';
@@ -75,7 +75,7 @@ export async function synchronizeGuildMembership(
         });
         const manageGuild = canManageDiscordGuild(guild, member);
         const isAdmin = isGuildOperator(guild, member, settings?.operatorRoleId ?? null);
-        await tx
+        const [saved] = await tx
             .insert(users)
             .values(member.user)
             .onConflictDoUpdate({
@@ -84,8 +84,17 @@ export async function synchronizeGuildMembership(
                     username: member.user.username,
                     globalName: member.user.globalName,
                     avatarHash: member.user.avatarHash
-                }
-            });
+                },
+                setWhere: isNull(users.withdrawnAt)
+            })
+            .returning({ id: users.id });
+        if (!saved) {
+            // Gateway·권한 조회는 탈퇴한 프로필이나 멤버십을 다시 만들지 않는다.
+            await tx
+                .delete(guildMembers)
+                .where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, userId)));
+            return null;
+        }
         const currentRoles = new Set(guild.roles.map((role) => role.id));
         const permissions = {
             isAdmin,

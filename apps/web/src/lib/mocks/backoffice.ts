@@ -31,6 +31,7 @@ export function setMockServiceAdmin(actorUserId: string, targetUserId: string, e
     if (!enabled && people.filter((person) => person.isAdmin).length === 1)
         throw new DomainError('CONFLICT', '마지막 서비스 운영자는 권한을 해제할 수 없어요');
     target.isAdmin = enabled;
+    if (target.userId === mockUser.userId) mockUser.isServiceAdmin = enabled;
     entries.unshift({
         id: crypto.randomUUID(),
         occurredAt: new Date().toISOString(),

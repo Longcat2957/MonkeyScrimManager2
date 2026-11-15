@@ -1,4 +1,5 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
+import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import type { Database } from '../db/types.ts';
 import { sessions, users } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
@@ -19,6 +20,8 @@ export function createSessionStore(getDb: () => Database) {
         const previousHash = previousToken ? hashSessionToken(previousToken) : null;
         try {
             const user = await getDb().transaction(async (tx) => {
+                // 명시 로그인도 탈퇴와 순서를 정해 뒤늦은 프로필 저장만 남지 않게 한다.
+                await lockUserLifecycleChanges(tx);
                 // OAuth 프로필 갱신은 DB에서 관리하는 서비스 운영 권한을 변경하지 않는다.
                 const [saved] = await tx
                     .insert(users)
@@ -28,7 +31,9 @@ export function createSessionStore(getDb: () => Database) {
                         set: {
                             username: profile.username,
                             globalName: profile.globalName,
-                            avatarHash: profile.avatarHash
+                            avatarHash: profile.avatarHash,
+                            // 사용자가 시작한 OAuth 로그인만 탈퇴 상태를 해제하며 공개 설정은 보존한다.
+                            withdrawnAt: null
                         }
                     })
                     .returning();
@@ -48,7 +53,11 @@ export function createSessionStore(getDb: () => Database) {
 
     async function getUser(userId: string) {
         try {
-            const [user] = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
+            const [user] = await getDb()
+                .select()
+                .from(users)
+                .where(and(eq(users.id, userId), isNull(users.withdrawnAt)))
+                .limit(1);
             return user ? sessionUser(user) : null;
         } catch {
             throw sessionUnavailable();
@@ -66,6 +75,10 @@ export function createSessionStore(getDb: () => Database) {
                 .where(eq(sessions.tokenHash, tokenHash))
                 .limit(1);
             if (!row) return null;
+            if (row.user.withdrawnAt) {
+                await getDb().delete(sessions).where(eq(sessions.userId, row.user.id));
+                return null;
+            }
             if (sessionExpired(row.expiresAt, now)) {
                 await getDb().delete(sessions).where(eq(sessions.tokenHash, tokenHash));
                 return null;

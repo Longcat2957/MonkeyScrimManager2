@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { TEAM_SIZE, type AuctionView } from '../../features/scrims/formation.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     auctionAcquisitions,
@@ -23,7 +24,7 @@ import {
     type AuctionOperationKind
 } from './auction-actions.ts';
 import { createBracketDraft } from './bracket.ts';
-import { formationPlayers, selectedParticipants } from './manual.ts';
+import { formationPlayers, publicFormationPlayers, selectedParticipants } from './manual.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
 import { findScrim, readGuild } from './queries.ts';
 import type { RevisionInput, ScrimAccessDependencies } from './service.ts';
@@ -168,11 +169,20 @@ export async function getAuction(
                 throw new DomainError('CONFLICT', '경매 편성 내전이 아니에요');
             if (row.status === 'recruit') return null;
             const state = await auctionState(tx, row);
-            const players = await formationPlayers(tx, row, state.selected);
+            const rawPlayers = await formationPlayers(tx, row, state.selected);
+            const players = await publicFormationPlayers(tx, rawPlayers);
             const participants = await tx
-                .select({ id: scrimParticipants.id, displayName: scrimParticipants.displayName })
+                .select({
+                    id: scrimParticipants.id,
+                    userId: scrimParticipants.userId,
+                    displayName: scrimParticipants.displayName
+                })
                 .from(scrimParticipants)
                 .where(eq(scrimParticipants.scrimId, row.id));
+            const identities = await readPublicIdentities(
+                tx,
+                participants.map((entry) => entry.userId)
+            );
             const pick = (id: string) => players.find((player) => player.participantId === id);
             const openLot = state.open ? (pick(state.open.scrimParticipantId) ?? null) : null;
             return {
@@ -204,7 +214,14 @@ export async function getAuction(
                 openLot,
                 openLotId: state.open?.id ?? null,
                 openProfile: openLot
-                    ? await auctionTargetProfile(tx, guildId, row.mmrSeasonId, openLot.userId, champion)
+                    ? await auctionTargetProfile(
+                          tx,
+                          guildId,
+                          row.mmrSeasonId,
+                          rawPlayers.find((player) => player.participantId === openLot.participantId)
+                              ?.userId ?? null,
+                          champion
+                      )
                     : null,
                 queue: state.queue.flatMap((entry) =>
                     pick(entry.scrimParticipantId) ? [pick(entry.scrimParticipantId)!] : []
@@ -214,11 +231,14 @@ export async function getAuction(
                     .filter((lot) => lot.status === 'sold' || lot.status === 'unsold')
                     .map((lot) => {
                         const acquisition = state.acquisitions.find((entry) => entry.lotId === lot.id);
+                        const participant = participants.find(
+                            (entry) => entry.id === lot.scrimParticipantId
+                        )!;
+                        const identity = participant.userId ? identities.get(participant.userId) : undefined;
                         return {
                             id: lot.id,
                             order: lot.sequenceNumber,
-                            displayName: participants.find((entry) => entry.id === lot.scrimParticipantId)!
-                                .displayName,
+                            displayName: publicDisplayName(identity, participant.displayName),
                             result:
                                 acquisition?.method === 'manual'
                                     ? 'manual'

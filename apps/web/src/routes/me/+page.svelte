@@ -1,9 +1,10 @@
 <script lang="ts">
     import { SERVICE_NAME } from '#lib/branding.ts';
     import RiotAccountList from '#lib/components/me/RiotAccountList.svelte';
+    import PrivacySettings from '#lib/components/me/PrivacySettings.svelte';
     import type { PageProps } from './$types';
 
-    let { data }: PageProps = $props();
+    let { data, form }: PageProps = $props();
 </script>
 
 <svelte:head>
@@ -32,11 +33,18 @@
                 </span>
             {/if}
             <div class="flex min-w-0 flex-col">
-                <span class="text-lg font-semibold">{data.me.displayName}</span>
+                <span class="text-lg font-semibold wrap-anywhere">{data.me.displayName}</span>
                 <span class="text-sm opacity-70">Discord 계정으로 로그인했어요</span>
             </div>
         </div>
     </header>
 
     <RiotAccountList groups={data.groups} />
+    <PrivacySettings
+        privacy={data.privacy}
+        preview={data.preview}
+        initialValues={form && 'values' in form ? form.values : undefined}
+        initialError={form && 'action' in form && form.action === 'privacy' ? form.message : ''}
+        initialWithdrawError={form && 'action' in form && form.action === 'withdraw' ? form.message : ''}
+    />
 </div>

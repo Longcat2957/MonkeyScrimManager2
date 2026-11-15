@@ -1,6 +1,7 @@
 import { asc, eq, inArray } from 'drizzle-orm';
 import type { MatchOperationContext } from '../../features/matches/types.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database } from '../db/types.ts';
 import { games, riotAccounts, scrimTeams } from '../db/schema.ts';
 import { assertGuildView } from '../guild/access.ts';
@@ -22,6 +23,10 @@ export async function getMatchOperationContext(
             const nextGameNumber = completed.length + 1;
             const lineup = await readLineup(tx, matchId);
             const roster = await readRoster(tx, match);
+            const identities = await readPublicIdentities(
+                tx,
+                roster.map(({ participant }) => participant.userId)
+            );
             const teams = await tx
                 .select()
                 .from(scrimTeams)
@@ -74,12 +79,15 @@ export async function getMatchOperationContext(
                         .filter(({ participant }) => participant.teamId === teamId)
                         .map(({ participant }) => {
                             const account = accounts.find((row) => row.id === participant.riotAccountId);
+                            const identity = participant.userId
+                                ? identities.get(participant.userId)
+                                : undefined;
                             return {
                                 participantId: participant.id,
-                                userId: participant.userId,
-                                displayName: participant.displayName,
+                                userId: identity?.userId ?? null,
+                                displayName: publicDisplayName(identity, participant.displayName),
                                 riotId:
-                                    account?.gameName && account.tagLine
+                                    identity?.showRiotIds && account?.gameName && account.tagLine
                                         ? `${account.gameName}#${account.tagLine}`
                                         : null,
                                 position: participant.position

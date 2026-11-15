@@ -1,0 +1,78 @@
+[
+    {
+        "file": "1440-primary-own-profile.png",
+        "sha256": "eb895b34240506cc0684ce9e4e5787ef65b00a93637c48f5d5823d71a04220cd",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "own-profile-before",
+        "url": "http://127.0.0.1:36809/me",
+        "path": "/me",
+        "source": "bd46e15 운영 빌드·실제 SSR·격리 DB·멤버 세션과 실제 관리자 Riot 연결 action, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "reviewedAt": "2026-11-15T11:54:41.572Z",
+        "imageReview": "현재 내 정보의 본인 식별·실제 서버별 Riot 연결 계정·공통 헤더와 하단을 읽음. 네 조건에서 잘림·중복 조작·반복 설명·가로 넘침·JavaScript 오류 없음."
+    },
+    {
+        "file": "1440-dark-own-profile.png",
+        "sha256": "e5f0d2bc5b707e3b1fdbdcb812d9f0ca0ed52b3097481bd7876e18e12e612b59",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "own-profile-before",
+        "url": "http://127.0.0.1:41831/me",
+        "path": "/me",
+        "source": "bd46e15 운영 빌드·실제 SSR·격리 DB·멤버 세션과 실제 관리자 Riot 연결 action, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "reviewedAt": "2026-11-15T11:54:41.572Z",
+        "imageReview": "현재 내 정보의 본인 식별·실제 서버별 Riot 연결 계정·공통 헤더와 하단을 읽음. 네 조건에서 잘림·중복 조작·반복 설명·가로 넘침·JavaScript 오류 없음."
+    },
+    {
+        "file": "390-primary-own-profile.png",
+        "sha256": "8b8908434a9815d989a59e6c14d3899751c36ee0c57ed62877c10a9754a16206",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "own-profile-before",
+        "url": "http://127.0.0.1:38099/me",
+        "path": "/me",
+        "source": "bd46e15 운영 빌드·실제 SSR·격리 DB·멤버 세션과 실제 관리자 Riot 연결 action, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "reviewedAt": "2026-11-15T11:54:41.572Z",
+        "imageReview": "현재 내 정보의 본인 식별·실제 서버별 Riot 연결 계정·공통 헤더와 하단을 읽음. 네 조건에서 잘림·중복 조작·반복 설명·가로 넘침·JavaScript 오류 없음."
+    },
+    {
+        "file": "390-dark-own-profile.png",
+        "sha256": "2dc68099392fdef393df848607bc2de29e5f362d45c1bb3f8a598ecd6dfac40a",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "own-profile-before",
+        "url": "http://127.0.0.1:32853/me",
+        "path": "/me",
+        "source": "bd46e15 운영 빌드·실제 SSR·격리 DB·멤버 세션과 실제 관리자 Riot 연결 action, 외부 요청은 fixture로 제한",
+        "overflow": false,
+        "errors": [],
+        "imageRead": true,
+        "reviewer": "guidance_readthrough",
+        "reviewedAt": "2026-11-15T11:54:41.572Z",
+        "imageReview": "현재 내 정보의 본인 식별·실제 서버별 Riot 연결 계정·공통 헤더와 하단을 읽음. 네 조건에서 잘림·중복 조작·반복 설명·가로 넘침·JavaScript 오류 없음."
+    }
+]

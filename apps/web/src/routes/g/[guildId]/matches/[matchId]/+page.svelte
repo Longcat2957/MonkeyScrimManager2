@@ -13,7 +13,6 @@
     import RoflUploadDialog from '#lib/components/matches/RoflUploadDialog.svelte';
     import MatchLineupBoard from '#lib/components/matches/MatchLineupBoard.svelte';
     import { MATCH_STATUS } from '#lib/features/labels.ts';
-    import type { GamePlayer } from '#lib/features/matches/types.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import type { PageProps } from './$types';
@@ -51,7 +50,18 @@
 
     let uploadOpen = $state(false);
     let detailOpen = $state(false);
-    let detailPlayer = $state<GamePlayer | null>(null);
+    let detailSelection = $state<{ gameId: string; playerKey: string } | null>(null);
+    // 공개 설정·결과를 새로 읽으면 열린 상세도 현재 자료를 사용한다.
+    const detailPlayer = $derived(
+        detailSelection?.gameId === data.game?.id
+            ? (data.game?.sides
+                  .flatMap((side) => side.players)
+                  .find((player) => player.key === detailSelection?.playerKey) ?? null)
+            : null
+    );
+    $effect(() => {
+        if (detailOpen && !detailPlayer) detailOpen = false;
+    });
     let reverting = $state(false);
     let revertFailure = $state('');
 
@@ -185,7 +195,10 @@
                     {guildId}
                     durationSec={data.game.durationSec}
                     {maxDamage}
-                    ondetail={(player) => ((detailPlayer = player), (detailOpen = true))}
+                    ondetail={(player) => {
+                        detailSelection = { gameId: data.game!.id, playerKey: player.key };
+                        detailOpen = true;
+                    }}
                 />
             {/each}
         </section>

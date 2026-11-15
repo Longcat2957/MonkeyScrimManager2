@@ -3,6 +3,7 @@ import { playCapacity, TEAM_NAMES } from '../../features/scrims/settings.ts';
 import type { LolPosition } from '../../features/guild/types.ts';
 import type { ScrimSettings } from '../../features/scrims/types.ts';
 import { requireUser } from '../auth/guards.ts';
+import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
@@ -20,6 +21,7 @@ import {
     users
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { assertRecoverableParticipants } from './recovery.ts';
 import { lockMmrSeason } from '../mmr/service.ts';
 import {
     activeScrimCancellation,
@@ -125,7 +127,7 @@ async function lockRegistrationAccounts(
     nextAccountId?: string
 ) {
     const [user] = await tx.select().from(users).where(eq(users.id, actor.userId)).for('no key update');
-    if (!user) throw new DomainError('UNAUTHENTICATED', '다시 로그인해 주세요');
+    if (!user || user.withdrawnAt) throw new DomainError('UNAUTHENTICATED', '다시 로그인해 주세요');
     const [participant] = await tx
         .select()
         .from(scrimParticipants)
@@ -697,9 +699,13 @@ export async function restoreCancelledScrim(
     const expectedRevision = requireRevision(input.expectedRevision);
     await requireGuildAdmin(user, guildId, { ...access, db });
     await db.transaction(async (tx) => {
+        await lockUserLifecycleChanges(tx);
         const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
         const blocked = await cancellationRestoreBlock(tx, row);
         if (blocked) throw new DomainError('CONFLICT', blocked);
+        await assertRecoverableParticipants(tx, row, {
+            includeStandby: row.cancelledFromStatus === 'recruit'
+        });
         const full = await activeScrimCancellation(tx, row.id);
         if (full) {
             await restoreFullCancellationInTransaction(tx, row, full);

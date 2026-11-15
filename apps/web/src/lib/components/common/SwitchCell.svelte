@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
+    import type { Attachment } from 'svelte/attachments';
     import { Switch } from 'stdf';
 
     type Props = {
@@ -24,6 +25,22 @@
         leftChild,
         onchange
     }: Props = $props();
+    const id = $props.id();
+
+    // STDF 3의 Switch는 상태·비활성 의미를 실제 버튼에 전달하지 않는다.
+    const accessible: Attachment<HTMLLabelElement> = (node) => {
+        const checked = active;
+        const unavailable = disabled;
+        const button = node.querySelector('button');
+        if (!button) return;
+        button.type = 'button';
+        button.disabled = unavailable;
+        button.setAttribute('role', 'switch');
+        button.setAttribute('aria-checked', String(checked));
+        button.setAttribute('aria-labelledby', `${id}-title`);
+        if (subTitle) button.setAttribute('aria-describedby', `${id}-description`);
+        else button.removeAttribute('aria-describedby');
+    };
 </script>
 
 <!--
@@ -31,7 +48,7 @@
 	행은 label로 만들어 STDF Switch 하나만 조작 요소로 두고, 제목·현재 값을 그 이름으로 쓴다.
 	모양은 CellGroup 안의 Cell과 같은 클래스를 쓴다.
 -->
-<label class="block cursor-pointer bg-bg-surface px-3 dark:bg-bg-surface-dark">
+<label class="block cursor-pointer bg-bg-surface px-3 dark:bg-bg-surface-dark" {@attach accessible}>
     <span
         class={[
             'flex w-full items-center justify-between gap-4 py-4',
@@ -40,9 +57,9 @@
     >
         {#if leftChild}<span class="shrink-0">{@render leftChild()}</span>{/if}
         <span class="flex min-w-0 flex-1 flex-col">
-            <span class="font-medium">{title}<span class="sr-only">, {active ? '켜짐' : '꺼짐'}</span></span>
+            <span id={`${id}-title`} class="font-medium">{title}</span>
             {#if subTitle}
-                <span class="text-xs text-gray-500 dark:text-gray-400">{subTitle}</span>
+                <span id={`${id}-description`} class="text-xs text-text-muted">{subTitle}</span>
             {/if}
         </span>
         <span class="shrink-0">

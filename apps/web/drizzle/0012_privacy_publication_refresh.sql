@@ -1,0 +1,2 @@
+ALTER TABLE "discord_publication_jobs" ADD COLUMN "privacy_refresh_message_id" text;--> statement-breakpoint
+ALTER TABLE "discord_publication_jobs" ADD CONSTRAINT "discord_publication_jobs_privacy_public_only" CHECK ("discord_publication_jobs"."privacy_refresh_message_id" is null or "discord_publication_jobs"."kind" <> 'confirmation_dm');

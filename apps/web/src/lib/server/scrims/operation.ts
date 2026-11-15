@@ -3,6 +3,7 @@ import { requireUser } from '../auth/guards.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import type { scrims } from '../db/schema.ts';
 import { requireGuildAdmin } from '../guild/access.ts';
+import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import { bumpRevision, lockScrim, type RevisionInput, type ScrimAccessDependencies } from './service.ts';
 import { requireRevision, requireUuid } from './validation.ts';
 
@@ -16,13 +17,15 @@ export async function mutateScrim<T>(
     scrimId: string,
     input: RevisionInput,
     operation: (tx: Transaction, row: ScrimRow, actor: Actor) => Promise<T>,
-    access?: ScrimAccessDependencies
+    access?: ScrimAccessDependencies,
+    options: { userLifecycle?: boolean } = {}
 ): Promise<T> {
     const user = requireUser(actor);
     requireUuid(scrimId, '내전');
     const revision = requireRevision(input.expectedRevision);
     await requireGuildAdmin(user, guildId, { ...access, db });
     return db.transaction(async (tx) => {
+        if (options.userLifecycle) await lockUserLifecycleChanges(tx);
         const row = await lockScrim(tx, user, guildId, scrimId, true, revision);
         const result = await operation(tx, row, user);
         await bumpRevision(tx, row.id);

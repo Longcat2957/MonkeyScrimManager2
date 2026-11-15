@@ -1,9 +1,9 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { GuildContext } from '../../features/guild/types.ts';
 import { requireUser } from '../auth/guards.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
-import { guildDiscordSettings, guildMembers, guilds } from '../db/schema.ts';
+import { guildDiscordSettings, guildMembers, guilds, users } from '../db/schema.ts';
 import { createDiscordClient, DiscordError, isDiscordId, type DiscordClient } from '../discord/client.ts';
 import { synchronizeGuildMembership } from '../discord/membership.ts';
 import { DomainError } from '../errors.ts';
@@ -61,8 +61,15 @@ export async function assertGuildView(
                 operatorRoleId: guildDiscordSettings.operatorRoleId
             })
             .from(guildMembers)
+            .innerJoin(users, eq(users.id, guildMembers.userId))
             .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, guildMembers.guildId))
-            .where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, actor.userId)))
+            .where(
+                and(
+                    eq(guildMembers.guildId, guildId),
+                    eq(guildMembers.userId, actor.userId),
+                    isNull(users.withdrawnAt)
+                )
+            )
             .limit(1);
         // 화면에 보여 주는 운영 기능의 힌트이며, 쓰기는 항상 실시간 권한 검사와 트랜잭션 검사를 거친다.
         if (membership?.syncedAt && Date.now() - membership.syncedAt.getTime() <= 60_000) {
@@ -143,8 +150,15 @@ export async function assertGuildAccess(
         })
         .from(guildMembers)
         .innerJoin(guilds, eq(guilds.id, guildMembers.guildId))
+        .innerJoin(users, eq(users.id, guildMembers.userId))
         .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, guildMembers.guildId))
-        .where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, user.userId)))
+        .where(
+            and(
+                eq(guildMembers.guildId, guildId),
+                eq(guildMembers.userId, user.userId),
+                isNull(users.withdrawnAt)
+            )
+        )
         .limit(1);
     if (!membership?.isActive) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
     if (!membership.syncedAt || Date.now() - membership.syncedAt.getTime() > 60_000) {

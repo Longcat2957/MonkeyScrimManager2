@@ -522,7 +522,9 @@ export async function retryBotPublication(
         .innerJoin(scrims, eq(scrims.id, discordPublicationJobs.scrimId))
         .where(and(eq(discordPublicationJobs.id, jobId), eq(scrims.guildId, guildId)));
     if (!before) throw new DomainError('NOT_FOUND', '게시 작업을 찾을 수 없어요');
-    const needsConfirmation = before.job.status === 'uncertain';
+    const needsConfirmation =
+        before.job.status === 'uncertain' ||
+        (before.job.status === 'blocked' && before.job.privacyRefreshMessageId !== null);
     if (needsConfirmation && !input.messageId && input.confirmAbsent !== true)
         throw new DomainError('INVALID_INPUT', '게시된 메시지 ID 또는 메시지가 없다는 확인이 필요해요');
     let recovered: { id: string; channelId: string } | null = null;
@@ -639,6 +641,8 @@ export async function retryBotPublication(
                         attempts: 0,
                         nextAttemptAt: new Date(),
                         errorCode: null,
+                        // 실제 글 또는 부재를 확인한 운영자의 명시 복구는 기존 게시 정책으로 재개한다.
+                        privacyRefreshMessageId: null,
                         nonce: input.confirmAbsent
                             ? randomUUID().replaceAll('-', '').slice(0, 24)
                             : job.nonce,

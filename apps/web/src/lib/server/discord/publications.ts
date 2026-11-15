@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, exists, inArray, isNull, lte, sql } from 'drizzle-orm';
 import type {
     BotPublication,
     BotPublicationKind,
@@ -50,10 +50,16 @@ function messageScope(job: Pick<Job, 'scrimId' | 'kind' | 'subjectId'>) {
     );
 }
 
-async function enqueue(tx: Transaction, scrimId: string, kind: BotPublicationKind, subjectId = 'scrim') {
+async function enqueue(
+    tx: Transaction,
+    scrimId: string,
+    kind: BotPublicationKind,
+    subjectId = 'scrim',
+    privacyRefreshMessageId: string | null = null
+) {
     await tx
         .insert(discordPublicationJobs)
-        .values({ scrimId, kind, subjectId, nonce: nonce() })
+        .values({ scrimId, kind, subjectId, nonce: nonce(), privacyRefreshMessageId })
         .onConflictDoUpdate({
             target: [
                 discordPublicationJobs.scrimId,
@@ -61,12 +67,53 @@ async function enqueue(tx: Transaction, scrimId: string, kind: BotPublicationKin
                 discordPublicationJobs.subjectId
             ],
             set: {
+                privacyRefreshMessageId,
                 revision: sql`${discordPublicationJobs.revision} + 1`,
                 status: sql`case when ${discordPublicationJobs.status} in ('processing', 'uncertain') then ${discordPublicationJobs.status} else 'pending' end`,
                 nextAttemptAt: new Date(),
                 attempts: sql`case when ${discordPublicationJobs.status} in ('processing', 'uncertain') then ${discordPublicationJobs.attempts} else 0 end`
             }
         });
+}
+
+/** 알려진 같은 채널의 공개 글만 수정 예약한다. 과거 새 글이나 DM을 만들지 않는다. */
+export async function enqueueKnownPrivacyPublications(tx: Transaction, userId: string): Promise<void> {
+    const participant = tx
+        .select({ one: sql`1` })
+        .from(scrimParticipants)
+        .where(
+            and(
+                eq(scrimParticipants.scrimId, scrimDiscordMessages.scrimId),
+                eq(scrimParticipants.userId, userId)
+            )
+        );
+    const messages = await tx
+        .select()
+        .from(scrimDiscordMessages)
+        .where(
+            and(
+                exists(participant),
+                inArray(scrimDiscordMessages.kind, ['recruitment', 'entry', 'lineup', 'result'])
+            )
+        )
+        .orderBy(
+            asc(scrimDiscordMessages.scrimId),
+            asc(scrimDiscordMessages.kind),
+            asc(scrimDiscordMessages.subjectId)
+        );
+    for (const message of messages) {
+        const target = await targetFor(tx, message);
+        if (
+            !target.active ||
+            !target.needed ||
+            target.operation !== 'upsert' ||
+            target.messageId !== message.messageId ||
+            target.channelId !== message.channelId ||
+            target.desiredChannelId !== message.channelId
+        )
+            continue;
+        await enqueue(tx, message.scrimId, message.kind, message.subjectId, message.messageId);
+    }
 }
 
 /** 최신 상태가 바뀌면 대기 작업 하나로 합친다. 처리 중·전달 불명 작업의 점유는 훼손하지 않는다. */
@@ -241,7 +288,7 @@ export function publicationChannel(
     return settings?.entryChannelId ?? null;
 }
 
-async function targetFor(tx: Transaction, job: Job) {
+async function targetFor(tx: Transaction, job: Pick<Job, 'scrimId' | 'kind' | 'subjectId'>) {
     const [row] = await tx
         .select({ guildId: scrims.guildId, status: scrims.status, active: guilds.isActive })
         .from(scrims)
@@ -387,6 +434,19 @@ export async function claimPublication(
                 await tx
                     .update(discordPublicationJobs)
                     .set({ status: 'blocked', errorCode: 'GUILD_INACTIVE', ...clearLease })
+                    .where(eq(discordPublicationJobs.id, job.id));
+                continue;
+            }
+            if (
+                job.privacyRefreshMessageId &&
+                (target.operation !== 'upsert' ||
+                    target.messageId !== job.privacyRefreshMessageId ||
+                    target.channelId !== target.desiredChannelId)
+            ) {
+                // 예약 뒤 글·채널이 달라졌다면 개인정보 요청을 새 글 생성으로 바꾸지 않는다.
+                await tx
+                    .update(discordPublicationJobs)
+                    .set({ status: 'blocked', errorCode: 'PRIVACY_TARGET_CHANGED', ...clearLease })
                     .where(eq(discordPublicationJobs.id, job.id));
                 continue;
             }

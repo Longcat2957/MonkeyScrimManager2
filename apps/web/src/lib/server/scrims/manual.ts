@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { LANES, slotKey, type Assignments, type FormationPlayer } from '../../features/scrims/formation.ts';
 import type { LolPosition } from '../../features/guild/types.ts';
 import type { Actor } from '../auth/types.ts';
+import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     scrimParticipantPreferences,
@@ -120,16 +121,37 @@ export async function getManualFormation(
             for (const { participant } of selected)
                 if (participant.teamId && participant.position)
                     assignments[participant.id] = slotKey(participant.teamId, participant.position);
+            const pairs = await formationPairRecords(tx, guildId, row.mmrSeasonId, players);
             return {
                 teams,
-                players,
+                players: await publicFormationPlayers(tx, players),
                 assignments,
                 confirmed: ['ready', 'in_progress', 'completed', 'ended_early'].includes(row.status),
-                pairs: await formationPairRecords(tx, guildId, row.mmrSeasonId, players)
+                pairs
             };
         },
         access
     );
+}
+
+/** 편성의 실제 사용자·MMR 계산을 끝낸 뒤 공개 표현만 바꾼다. 참가자 UUID와 배정은 유지한다. */
+export async function publicFormationPlayers(
+    tx: Transaction,
+    players: FormationPlayer[]
+): Promise<FormationPlayer[]> {
+    const identities = await readPublicIdentities(
+        tx,
+        players.map((player) => player.userId)
+    );
+    return players.map((player) => {
+        const identity = player.userId ? identities.get(player.userId) : undefined;
+        return {
+            ...player,
+            userId: identity?.userId ?? null,
+            displayName: publicDisplayName(identity, player.displayName),
+            iconUrl: identity?.profileVisible ? player.iconUrl : null
+        };
+    });
 }
 
 export function parseManualSlot(value: string | null): { teamId: string; position: LolPosition } | null {

@@ -87,7 +87,7 @@
             const next = await fetchPage(current.entries.length);
             if (!activeRequest()) return;
             const entries = [...current.entries, ...next.entries];
-            if (new Set(entries.map((entry) => entry.userId)).size !== entries.length) {
+            if (new Set(entries.map(identityKey)).size !== entries.length) {
                 // 순위 변동으로 쪽이 겹치면 빠진 사용자를 임의로 건너뛰지 않고 첫 쪽부터 다시 시작한다.
                 const first = await fetchPage(0);
                 if (!activeRequest()) return;
@@ -108,6 +108,7 @@
     }
 
     const MEDAL = ['bg-medal-gold', 'bg-medal-silver', 'bg-medal-bronze'];
+    const identityKey = (entry: RankingEntry) => entry.identityKey ?? entry.userId;
     const winRate = (entry: RankingEntry) => (entry.games ? Math.round((entry.wins / entry.games) * 100) : 0);
 </script>
 
@@ -201,7 +202,7 @@
                 <!-- 카드 안에서 스크롤하며 다음 순위를 불러온다. 페이지 전체 길이는 늘어나지 않는다. -->
                 <div bind:this={scroller} class="relative max-h-[26rem] overflow-y-auto overscroll-contain">
                     <ul aria-label={`${position.text} 순위`}>
-                        {#each board.entries as entry, index (entry.userId)}
+                        {#each board.entries as entry, index (identityKey(entry))}
                             <li>{@render row(entry, index < board.entries.length - 1)}</li>
                         {/each}
                     </ul>

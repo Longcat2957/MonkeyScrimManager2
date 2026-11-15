@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { parseRiotId } from '../../features/me/riot-id.ts';
+import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import { requireUser } from '../auth/guards.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -30,6 +31,7 @@ import { RoflError } from '../rofl/format.ts';
 import type { RoflIdentity } from '../rofl/identity.ts';
 import { RiotError } from '../riot/errors.ts';
 import { createResolvedMatches } from '../scrims/bracket.ts';
+import { assertRecoverableParticipants } from '../scrims/recovery.ts';
 import { assertRevision, requireRevision, requireUuid } from '../scrims/validation.ts';
 import type { MatchDependencies, MatchSlotInput } from './service.ts';
 import { validateLineupRoster } from './service.ts';
@@ -655,6 +657,7 @@ export async function revertLastMatchGame(
         throw new DomainError('INVALID_INPUT', '결과 취소 사유를 500자 이내로 입력해 주세요');
     await requireGuildAdmin(user, guildId, { db, discord: dependencies.discord });
     return db.transaction(async (tx) => {
+        await lockUserLifecycleChanges(tx);
         const context = await lockMatch(tx, user, guildId, matchId, true, true);
         assertRevision(context.match.revision, input.expectedRevision);
         const [game] = await tx
@@ -665,6 +668,8 @@ export async function revertLastMatchGame(
         if (!game) throw new DomainError('NOT_FOUND', '이 경기의 게임을 찾을 수 없어요');
         const blocked = await resultReversalBlock(tx, context.scrim, context.match, game);
         if (blocked) conflict(blocked);
+        if (context.scrim.status === 'completed')
+            await assertRecoverableParticipants(tx, context.scrim, { matchId });
         const [application] = await tx
             .select()
             .from(gameMmrApplications)

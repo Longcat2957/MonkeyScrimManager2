@@ -45,14 +45,14 @@ async function authorize(
 async function lockAccounts(tx: Transaction, actor: Actor, guildId: string, userId: string, puuid?: string) {
     const userIds = [...new Set([actor.userId, userId])].sort();
     const lockedUsers = await tx
-        .select({ id: users.id })
+        .select({ id: users.id, withdrawnAt: users.withdrawnAt })
         .from(users)
         .where(inArray(users.id, userIds))
         .orderBy(asc(users.id))
         .for('no key update');
-    if (!lockedUsers.some((user) => user.id === actor.userId))
+    if (!lockedUsers.some((user) => user.id === actor.userId && !user.withdrawnAt))
         throw new DomainError('UNAUTHENTICATED', '다시 로그인해 주세요');
-    if (!lockedUsers.some((user) => user.id === userId))
+    if (!lockedUsers.some((user) => user.id === userId && !user.withdrawnAt))
         throw new DomainError('NOT_FOUND', '멤버를 찾을 수 없어요');
     await assertGuildAccess(tx, actor, guildId, true);
     await assertGuildAccess(tx, { userId, isServiceAdmin: false }, guildId);
