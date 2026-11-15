@@ -2,6 +2,8 @@
 
 웹은 SvelteKit adapter-node, 봇은 별도 Node.js 프로세스, DB는 PostgreSQL 17을 사용한다. 이 문서는 Linux VPS의 systemd·nginx 예제와 저장소 CI·백업 도구를 설명한다. 실제 서버 주소·사용자·SSH 설정·인증서·운영 비밀 값은 포함하지 않는다. 현재 실제 Discord 로그인·명령 등록·게시/DM 발송과 운영 배포는 검증하지 않았다. 약관·개인정보 본문은 기존 사용자 보류를 유지한다.
 
+최신 기능과 migration의 전체 CI·브라우저·격리 배포 결과는 [릴리스 통합 검증](release-validation.md)을 따른다. 과거 격리 실행이나 부분 테스트 통과를 새 커밋의 전체 성공으로 대체하지 않는다.
+
 ## 실행 전제
 
 - `package.json`의 Node 엔진은 `^22.17.0 || >=24.0.0`, pnpm은 `10.20.0`이다. 새 CI와 격리 배포 검사는 실제 확인한 Node 24 계열을 사용한다.
@@ -131,8 +133,8 @@ node scripts/verify_deployment.mjs --report /tmp/msm2-deployment-check.json
 검사 범위는 다음과 같다.
 
 1. 예제 unit의 사용자·경로를 임시 값으로 렌더링해 `systemd-analyze verify`로 검사한다. 서비스를 등록·기동하지 않는다.
-2. 임시 PostgreSQL에 실제 `drizzle-kit migrate`를 적용한다. 별도 검증 schema에 Unicode·null·큰 정수·정밀 숫자·FK·identity 자료를 넣는다.
-3. 실제 백업 도구로 dump·SHA256을 만들고 별도 빈 DB에 복원한다. 모든 테이블의 행 hash·제약·sequence를 대조하고 덮어쓰기·비어 있지 않은 대상·확인 누락·hash 오류·실패 파일 정리를 검사한다. 일반 `DATABASE_URL`을 사용하지 않는다.
+2. 임시 PostgreSQL에 현재 journal의 실제 `drizzle-kit migrate`를 적용한다. 별도 검증 schema에 Unicode·null·큰 정수·정밀 숫자·FK·identity 자료를 넣고, 직접 만든 업무 테이블에만 가짜 공개/비공개/탈퇴 사용자·계정 연결·세션·감사 이력·순서 있는 선호 챔피언을 준비한다. 실제 사용자 자료는 복사하지 않는다.
+3. 실제 백업 도구로 dump·SHA256을 만들고 별도 빈 DB에 복원한다. 모든 테이블의 행 hash·제약·sequence와 전체 열의 자료형·기본값·NOT NULL·identity·generated를 대조한다. 덮어쓰기·비어 있지 않은 대상·확인 누락·hash 오류·실패 파일 정리를 검사하며 일반 `DATABASE_URL`을 사용하지 않는다.
 4. 외부 fetch를 차단하고 운영 웹 build를 격리 DB와 빈 외부 자격 증명으로 실행한다. 실제 nginx·로컬 TLS를 통해 `/docs` 200, HTTP 이동, 내부 경로 404, HTTPS origin/CSRF, 위조 헤더 덮어쓰기, 크기 제한 413, 웹 SIGTERM 종료를 확인한다. `/docs`에 없는 form action의 POST는 origin 검사를 통과한 뒤 405여야 하며, 다른 origin은 403이어야 한다.
 5. 직접 만든 프로세스·label이 일치하는 컨테이너·임시 인증서·dump를 정리한다. JSON에는 버전·단계·hash·정리 결과를 남기고 URL·쿠키·인증서 private key·DB 자료·원시 도구 오류를 넣지 않는다.
 

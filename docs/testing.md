@@ -78,6 +78,20 @@ DB 설정·접속 또는 Chromium 실행 파일이 없으면 실패하며 건너
 | `formation-records.test.ts` | 실제 ROFL 결과로 수동 편성의 시너지·5포지션 상대 전적을 표시하고 같은 서버·고정 시즌의 경매 후보 전적을 조회하는 1440×1000 통합 경로 |
 | `auction-operations.test.ts` | 실제 관리자 키보드 추첨·직전 작업 취소와 영입/포인트/초기화 보존, 390×844 관전자 자동 갱신·503/15초 timeout·backoff·일시정지/수동/재개·숨김/offline/SPA 종료·POST0 |
 | `scrim-lifecycle.test.ts` | 1440×1000·390×844 양 테마의 취소 확인/Escape·정확 복구·무방식 편성 전 중도 종료·원래 단계 복귀·실제 ROFL 우세 결과/재개와 Game/MMR 보존 |
+| `guild-audit.test.ts` | 실제 계정·설정 변경과 관리자 감사 이력, 긴 이름·다량 이력·쪽 범위 밖 복귀·키보드 |
+| `service-admin.test.ts` | 서비스 운영자 지정·회수·감사·마지막 운영자 보호, 실패 입력·동명이인·현재 권한 |
+| `privacy.test.ts` | 본인 공개 설정·실패 복구·탈퇴, 과거 경기/MMR 보존과 세션 종료 |
+| `privacy-detail.test.ts` | 열린 선수 상세의 최신 공개 설정·다른 세트 이동·Escape 직후 빠른 재열기 |
+| `record-seasons.test.ts` | 서버 홈·선수·통계의 실제 과거 시즌 선택과 필터·링크·추가 조회 문맥 |
+| `match-filters.test.ts` | 검색·시즌·KST 기간의 초안/원자 조회, 오류·빈 결과·쪽 이동·늦은 응답과 입력 보존 |
+| `guild-seasons.test.ts` | 웹 시즌 전환 확인·409 복구·입력 보존·단일 요청과 기존 ROFL/MMR 불변 |
+| `stats-live.test.ts` | 실제 결과 증가, 갱신 실패·중지·timeout·backoff·숨김/offline·이동과 로컬 선택 보존 |
+| `champion-preferences.test.ts` | 포지션별 초안·순서·10개 제한·저장 실패·카탈로그 재조회·빈 배열 해제·공개 경매 연결 |
+| `champion-preferences-native.test.ts` | 중복 native POST의400 안내와 고유 선택 복원·제거 조작·hydration 오류 방지 |
+| `footer-contact.test.ts` | 공개·본인·관리·404의 단일 문의 URI·44px·키보드·SPA 전환과 기존 정책 링크 |
+
+2026-11-16 기준 실행기는 위17개 `.test.ts`를 동적으로 수집한다. 표에 없는 파일을 제외하는 허용 목록은 없다.
+최근8개 기능의 부분 검사와 최신 커밋의 전체 CI 검사는 [릴리스 통합 검증](release-validation.md)에서 구분한다.
 
 ## hard DB
 
@@ -156,6 +170,10 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 - Discord Gateway·interaction·실제 메시지 게시, 실제 Riot/Discord 자격 증명, 브라우저 UI·드래그 조작은 이 API 테스트의 실행 범위가 아니다.
 - 별도 브라우저 명령은 계정 연결·순위 갱신·정상 ROFL·편성 참고 자료 회귀를 검증한다. 합성 ROFL2와 고정된 상류 응답을 사용하며 전체 UI·드래그 조작·실제 League 클라이언트 파일의 자동 검증 완료를 뜻하지 않는다.
 - 기존 프론트 목·표현 테스트와 ROFL 파서 테스트를 새 API 저장 기능의 검증 수로 계산하지 않는다.
+
+## 최신 릴리스 통합 검증
+
+2026-11-16, 후속8항목 이후 전체 hard520·브라우저17파일61·웹453/봇80·check/테스트타입/봇 build와0013까지의 격리 배포/복원을 통과했다. 오래된 정상 fixture와 메뉴 초기 포커스 전제를 바로잡았으며 제품 규칙은 변경하지 않았다. 수정 전 원격 CI 실패·좁은 재현·새 전체 로컬 결과·원격 상태 확인 방법은 [릴리스 통합 검증](release-validation.md)을 따른다. 과거 아래 실행과 합산하지 않는다.
 
 ## 실행 기록
 

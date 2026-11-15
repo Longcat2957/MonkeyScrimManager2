@@ -291,10 +291,34 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
     await f.db
         .insert(schema.guildMembers)
         .values(players.map((player) => ({ guildId: HTTP_IDS.guild, userId: player.id })));
+    // 중도 종료를 재개할 정상 출전자는 해당 서버에 현재 연결된 Riot 계정을 가져야 한다.
+    const accounts = await f.db
+        .insert(schema.riotAccounts)
+        .values(
+            players.map((player) => ({
+                puuid: 'http-manual-' + player.id,
+                gameName: player.username,
+                tagLine: 'KR1'
+            }))
+        )
+        .returning();
+    await f.db.insert(schema.guildRiotAccounts).values(
+        players.map((player, index) => ({
+            guildId: HTTP_IDS.guild,
+            userId: player.id,
+            riotAccountId: accounts[index]!.id,
+            isPrimary: true
+        }))
+    );
     const people = await f.db
         .insert(schema.scrimParticipants)
         .values(
-            players.map((player) => ({ scrimId: scrim!.id, userId: player.id, displayName: player.username }))
+            players.map((player, index) => ({
+                scrimId: scrim!.id,
+                userId: player.id,
+                riotAccountId: accounts[index]!.id,
+                displayName: player.username
+            }))
         )
         .returning();
     await f.db

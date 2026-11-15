@@ -1,0 +1,22 @@
+{
+    "baselineCommit": "ee1e5d81a91672eb1b3e04c0536c67571eb7cbf9",
+    "run": 43731623595,
+    "url": "https://github.com/Longcat2957/MonkeyScrimManager2/actions/runs/43731623595",
+    "conclusion": "failure",
+    "failedStage": "웹 운영 빌드와 DB·HTTP hard 테스트",
+    "hard": {
+        "total": 520,
+        "pass": 519,
+        "fail": 1
+    },
+    "failure": {
+        "file": "apps/web/tests/api/hard/http/actions.test.ts",
+        "line": 364,
+        "operation": "ended_early revert",
+        "expected": 200,
+        "actual": 409,
+        "reason": "참가자 Riot 계정/동일 서버 연결이 없는 테스트 fixture"
+    },
+    "skippedStages": ["browser", "isolated deployment/backup/restore"],
+    "realExternalEffects": false
+}

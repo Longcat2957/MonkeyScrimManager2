@@ -97,6 +97,22 @@ test(
         const f = await createBrowserFixture(t, { width: 390 });
         await f.page.setViewportSize({ width: 390, height: 844 });
         const a = await prepareHttpAuctionFixture(f);
+        // 공개 이름을 검증하는 후보는 같은 서버의 활성 사용자와 연결한다. 사용자 없는 과거 이름은 공개하지 않는다.
+        const users = a.people.map((person, index) => ({
+            id: String(970000000000002100n + BigInt(index)),
+            username: person.displayName
+        }));
+        await f.db.insert(schema.users).values(users);
+        await f.db
+            .insert(schema.guildMembers)
+            .values(
+                users.map((user) => ({ guildId: HTTP_IDS.guild, userId: user.id, syncedAt: new Date() }))
+            );
+        for (const [index, person] of a.people.entries())
+            await f.db
+                .update(schema.scrimParticipants)
+                .set({ userId: users[index]!.id })
+                .where(eq(schema.scrimParticipants.id, person.id));
         assertAction(await a.setup(), 200);
         await f.page.clock.install();
         let requests = 0;

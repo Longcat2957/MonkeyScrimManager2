@@ -54,6 +54,24 @@ async function season(page: Page, name: string) {
     const trigger = page.getByRole('button', { name: /^시즌:/ });
     await trigger.press('Enter');
     const dialog = page.getByRole('dialog', { name: '조회할 시즌', exact: true });
+    // 오버레이의 최초 포커스가 완료된 뒤 선택 대상을 누르면 초기 rAF와 키 입력이 경합하지 않는다.
+    await page.waitForFunction(
+        (node) => {
+            const first = node
+                ? [
+                      ...node.querySelectorAll<HTMLButtonElement>(
+                          'button:not(:disabled):not([aria-hidden="true"]):not([tabindex="-1"])'
+                      )
+                  ].find(
+                      (button) =>
+                          button.getClientRects().length > 0 &&
+                          getComputedStyle(button).visibility !== 'hidden'
+                  )
+                : undefined;
+            return Boolean(first && first === document.activeElement);
+        },
+        await dialog.elementHandle()
+    );
     await dialog.getByRole('button', { name: new RegExp('^' + escape(name)) }).press('Enter');
     await dialog.getByRole('button', { name: new RegExp('^' + escape(name)) }).waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: '시즌: ' + name, exact: true }).waitFor();

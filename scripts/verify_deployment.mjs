@@ -210,7 +210,23 @@ async function snapshot(database) {
     ) t;`
         )
     );
-    return { rows, constraints };
+    const columns = JSON.parse(
+        await sql(
+            database,
+            `select coalesce(json_agg(t order by n, r, ordinal), '[]') from (
+        select n.nspname n, r.relname r, a.attname c, a.attnum ordinal,
+            format_type(a.atttypid, a.atttypmod) data_type, a.attnotnull not_null,
+            pg_get_expr(d.adbin, d.adrelid, true) default_expression,
+            a.attidentity identity_kind, a.attgenerated generated_kind
+        from pg_attribute a join pg_class r on r.oid=a.attrelid
+        join pg_namespace n on n.oid=r.relnamespace
+        left join pg_attrdef d on d.adrelid=a.attrelid and d.adnum=a.attnum
+        where n.nspname !~ '^pg_' and n.nspname <> 'information_schema'
+            and r.relkind in ('r', 'p') and a.attnum > 0 and not a.attisdropped
+    ) t;`
+        )
+    );
+    return { rows, constraints, columns };
 }
 
 try {
@@ -325,6 +341,72 @@ try {
             insert into msm2_deploy_probe.parent values (9007199254740991, '격리 복원 검증 Ω', null, 1500.123456789);
             insert into msm2_deploy_probe.child(parent_id) values (9007199254740991), (9007199254740991);`
         );
+        // 새 격리 DB에만 가짜 연결 행을 만든다. 실제 사용자 자료나 외부 서비스는 사용하지 않는다.
+        await sql(
+            sourceDatabase,
+            `begin;
+            insert into public.users (id, username, global_name, avatar_hash, is_service_admin, public_profile, public_riot_ids)
+                values ('999000000000000001', '격리 복원 사용자 Ω', '격리 프로필 Ω', null, true, true, false);
+            insert into public.users (id, public_id, username, global_name, avatar_hash, public_profile, public_riot_ids, withdrawn_at)
+                values ('999000000000000002', '10000000-0000-4000-8000-000000000002', '격리 비공개 사용자', null, null, false, false, null),
+                    ('999000000000000003', '10000000-0000-4000-8000-000000000003', '탈퇴한 사용자', null, null, false, false, '2026-01-02T03:04:05.678Z');
+            insert into public.guilds (id, name)
+                values ('999000000000000101', '격리 복원 서버 Ω');
+            insert into public.guild_members (guild_id, user_id, is_admin, manage_guild, role_ids)
+                values ('999000000000000101', '999000000000000001', true, true, array['999000000000000301']::text[]),
+                    ('999000000000000101', '999000000000000002', false, false, '{}'::text[]);
+            insert into public.riot_accounts (id, puuid, game_name, tag_line, platform)
+                values ('10000000-0000-4000-8000-000000000101', 'msm2-deploy-fixture-puuid-only', '격리 전용 Ω', 'TEST', 'kr');
+            insert into public.guild_riot_accounts (guild_id, riot_account_id, user_id, is_primary, linked_by_user_id)
+                values ('999000000000000101', '10000000-0000-4000-8000-000000000101', '999000000000000002', true, '999000000000000001');
+            insert into public.sessions (token_hash, user_id, created_at, expires_at)
+                values (repeat('a', 64), '999000000000000002', '2026-01-01T00:00:00.123Z', '2030-01-01T00:00:00.123Z');
+            insert into public.user_champion_preferences (user_id, position, champion_id, ordinal)
+                values ('999000000000000002', 'mid', 99, 1), ('999000000000000002', 'mid', 103, 2);
+            insert into public.user_champion_preferences (user_id, position, champion_id)
+                values ('999000000000000002', 'top', 103);
+            insert into public.service_admin_events (id, actor_user_id, target_user_id, kind, source)
+                values ('10000000-0000-4000-8000-000000000201', null, '999000000000000001', 'granted', 'bootstrap');
+            insert into public.guild_discord_settings (guild_id, result_channel_id)
+                values ('999000000000000101', '999000000000000201');
+            insert into public.guild_audit_entries (id, guild_id, kind, actor_user_id, target_user_id, riot_account_id, next_primary_account_id, next_primary_was_set)
+                values ('10000000-0000-4000-8000-000000000202', '999000000000000101', 'riot_account_linked', '999000000000000001', '999000000000000002', '10000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000101', true);
+            insert into public.guild_audit_entries (id, guild_id, kind, actor_user_id, setting_key, next_setting_id, next_setting_name)
+                values ('10000000-0000-4000-8000-000000000203', '999000000000000101', 'discord_setting_changed', '999000000000000001', 'resultChannelId', '999000000000000201', '격리 결과 채널 Ω');
+            commit;`
+        );
+        const expectedFixtureRows = {
+            users: 3,
+            guilds: 1,
+            guild_members: 2,
+            riot_accounts: 1,
+            guild_riot_accounts: 1,
+            sessions: 1,
+            user_champion_preferences: 3,
+            service_admin_events: 1,
+            guild_discord_settings: 1,
+            guild_audit_entries: 2
+        };
+        const fixtureRows = JSON.parse(
+            await sql(
+                sourceDatabase,
+                `select json_agg(t order by relation) from (${Object.keys(expectedFixtureRows)
+                    .map(
+                        (relation) =>
+                            `select '${relation}'::text relation, count(*)::integer rows from public.${quoted(relation)}`
+                    )
+                    .join(' union all ')}) t;`
+            )
+        );
+        assert.deepEqual(
+            Object.fromEntries(fixtureRows.map(({ relation, rows }) => [relation, rows])),
+            expectedFixtureRows
+        );
+        result.syntheticBusinessFixture = {
+            syntheticOnly: true,
+            tables: fixtureRows,
+            totalRows: fixtureRows.reduce((total, table) => total + table.rows, 0)
+        };
         await succeed('docker', ['exec', containers[0], 'createdb', '-U', 'msm2_check', targetDatabase]);
         await mkdir(executableDirectory);
         // 호스트 PostgreSQL CLI 대신 이 검사가 소유한 컨테이너의 같은 버전 CLI를 사용한다.
@@ -389,10 +471,13 @@ try {
             foreignKeys: before.constraints.filter((constraint) => constraint.d.startsWith('FOREIGN KEY'))
                 .length,
             allConstraints: before.constraints.length,
+            allColumns: before.columns.length,
             archiveBytes: (await stat(file)).size,
             completeSnapshotEqual: true,
             verified: [
                 '모든 테이블 행 hash·제약·sequence 상태 일치',
+                '모든 테이블 열의 자료형·기본값·NOT NULL·identity·generated 일치',
+                '가짜 공개·비공개·탈퇴 사용자·연결·세션·감사·선호 순서 보존',
                 'Unicode·null·정밀 숫자·큰 정수·FK 보존',
                 '파일과 SHA256 권한 0600',
                 '기존 파일 덮어쓰기 거절',

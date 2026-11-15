@@ -1,0 +1,237 @@
+{
+    "startedAt": "2026-11-15T18:19:15.993Z",
+    "node": "v24.22.3",
+    "scope": "직접 만든 임시 PostgreSQL·nginx와 기존 production build의 로컬 검사",
+    "containers": ["msm2-deploy-check-4086796c-126-postgres", "msm2-deploy-check-4086796c-126-nginx"],
+    "label": "dev.monkeybot.validation=msm2-deploy-check-4086796c-126",
+    "stages": [
+        {
+            "name": "도구·운영 빌드 확인",
+            "passed": true,
+            "durationMs": 35
+        },
+        {
+            "name": "systemd 예제 정적 검사",
+            "passed": true,
+            "durationMs": 87
+        },
+        {
+            "name": "직접 만든 PostgreSQL·실제 migration 준비",
+            "passed": true,
+            "durationMs": 1917
+        },
+        {
+            "name": "전용 백업·빈 DB 복원·거절 경로",
+            "passed": true,
+            "durationMs": 10571
+        },
+        {
+            "name": "실제 운영 앱·로컬 TLS 프록시",
+            "passed": true,
+            "durationMs": 914
+        }
+    ],
+    "limits": [
+        "실제 운영 서비스·DB·계정·토큰·인증서를 사용하지 않는다.",
+        "로컬 자체 서명 인증서 검사는 공인 인증서 발급·갱신이나 실제 VPS 설정의 검증이 아니다.",
+        "systemd는 렌더링한 예제의 정적 검사만 하며 서비스를 시작하지 않는다.",
+        "GitHub Actions 원격 실행·실제 Discord·물리 기기는 이 검사 범위에 없다."
+    ],
+    "docker": "29.9.3",
+    "nodeMajor": 24,
+    "files": [
+        {
+            "path": ".github/workflows/ci.yml",
+            "sha256": "a8147791a2867f9897c6894acad22faea5055bf5c159e480a9a0060980723f08"
+        },
+        {
+            "path": "deploy/monkeybot-web.service.example",
+            "sha256": "7facd2715554f126d136a9ec096771252a06310dd69d1f93fe902f4d10379933"
+        },
+        {
+            "path": "deploy/monkeybot-bot.service.example",
+            "sha256": "e335897486ed3cddee890f39eadb019782426c7fef6eadbda7fede34b0608142"
+        },
+        {
+            "path": "deploy/nginx.conf.example",
+            "sha256": "8184b89f81e2919073b52359f99acaa0625ad8ee2cfc3ac3cb3816f05f1be6c3"
+        },
+        {
+            "path": "deploy/nginx-internal.conf.example",
+            "sha256": "0fb036f1824de27910b54e9f3703e66be836029cbfb696e0c584a9180e270c67"
+        },
+        {
+            "path": "scripts/database_backup.mjs",
+            "sha256": "c3d204e7723c2e76e0279d6d8021019f30407b7c4b89404dee706ec2fd80413e"
+        },
+        {
+            "path": "scripts/verify_deployment.mjs",
+            "sha256": "9b7310ec9911fc8921ccbd045b0080985ab8ded3157bcb473eb08d450effba8f"
+        },
+        {
+            "path": "apps/web/build/handler.js",
+            "sha256": "e2094669bdd34ff2dcd8703177d5993d2c6579cac39681d90ea71029519adbcb"
+        },
+        {
+            "path": "apps/web/build/server/index.js",
+            "sha256": "2dbcf7aa8aa807133d038967a3b2c1089ef5a4d1a916fee1776c0d5a657ef41b"
+        }
+    ],
+    "migrations": [
+        {
+            "tag": "0000_initial_schema",
+            "sha256": "2138c3dd49dbaff08a47042430b1b7cfb0f11f53b98c5b8cd2a3f324254e85ec"
+        },
+        {
+            "tag": "0001_discord_bot",
+            "sha256": "7a710288fba08193c7d44e3839c793a2f1068e2dce56c1a4bcdaf8633f71ecb5"
+        },
+        {
+            "tag": "0002_discord_lease_constraint",
+            "sha256": "e223bd7cfac4879fdd7dda94123ed33a63a98610e8172e5e61706871a4f46f25"
+        },
+        {
+            "tag": "0003_match_results",
+            "sha256": "cb099dc3e9015e0bdae7032f2bdcb2bfb7cc346548bb3f68e48f28acc01e7374"
+        },
+        {
+            "tag": "0004_rofl_result_restoration",
+            "sha256": "5b6446cdef645547d7e40feefb1029f61d13d9002fc5b1932301c41790402f79"
+        },
+        {
+            "tag": "0005_auction_actions",
+            "sha256": "08588ccf0291e37782d7c5a030e3dee2b69eee15ac95e12a0a66e4dc88e2fbea"
+        },
+        {
+            "tag": "0006_scrim_cancellation_restore",
+            "sha256": "32b7b7cdd4170c12457f8ced35700d5bef2a0bd6d10f45173e326fb4455bd8b8"
+        },
+        {
+            "tag": "0007_scrim_early_end",
+            "sha256": "28fda2a93a408e1b9573d0a5999b84e10bf7691ba543320703d0e9872a40a6d9"
+        },
+        {
+            "tag": "0008_scrim_result_cancellation",
+            "sha256": "5fbd9b7849ace168325014c04c2da49c8435e539c988591661d049f067baa18b"
+        },
+        {
+            "tag": "0009_guild_audit",
+            "sha256": "e42640e7be32ad815c9186422dd1ec6e2ade4c51164c4ed273c43ebcbd522d98"
+        },
+        {
+            "tag": "0010_service_admin_events",
+            "sha256": "87e502c9875232c7ca188f933c691ef083845f5452e4a9961d248b5a0cd9b109"
+        },
+        {
+            "tag": "0011_account_privacy",
+            "sha256": "5ae8b668b629cb95869e85775198f3ab0ca09509023273ec14d0a858f6f5a64c"
+        },
+        {
+            "tag": "0012_privacy_publication_refresh",
+            "sha256": "3b0505dea6a7613bad7ad30c6716d6c92565ad0aab402d795910a854c507d373"
+        },
+        {
+            "tag": "0013_champion_preference_order",
+            "sha256": "b81cc79ce8f93edde432860def6a25862b83ebb1e5989832dfafb245960ad3c3"
+        }
+    ],
+    "syntheticBusinessFixture": {
+        "syntheticOnly": true,
+        "tables": [
+            {
+                "relation": "guild_audit_entries",
+                "rows": 2
+            },
+            {
+                "relation": "guild_discord_settings",
+                "rows": 1
+            },
+            {
+                "relation": "guild_members",
+                "rows": 2
+            },
+            {
+                "relation": "guild_riot_accounts",
+                "rows": 1
+            },
+            {
+                "relation": "guilds",
+                "rows": 1
+            },
+            {
+                "relation": "riot_accounts",
+                "rows": 1
+            },
+            {
+                "relation": "service_admin_events",
+                "rows": 1
+            },
+            {
+                "relation": "sessions",
+                "rows": 1
+            },
+            {
+                "relation": "user_champion_preferences",
+                "rows": 3
+            },
+            {
+                "relation": "users",
+                "rows": 3
+            }
+        ],
+        "totalRows": 16
+    },
+    "backup": {
+        "applicationTables": 44,
+        "allTables": 47,
+        "foreignKeys": 105,
+        "allConstraints": 302,
+        "allColumns": 395,
+        "archiveBytes": 181088,
+        "completeSnapshotEqual": true,
+        "verified": [
+            "모든 테이블 행 hash·제약·sequence 상태 일치",
+            "모든 테이블 열의 자료형·기본값·NOT NULL·identity·generated 일치",
+            "가짜 공개·비공개·탈퇴 사용자·연결·세션·감사·선호 순서 보존",
+            "Unicode·null·정밀 숫자·큰 정수·FK 보존",
+            "파일과 SHA256 권한 0600",
+            "기존 파일 덮어쓰기 거절",
+            "명시적 복원 확인 필요",
+            "기존 DB 복원 거절",
+            "SHA256 불일치 거절",
+            "실패 백업 파일 제거",
+            "원본 격리 DB 무변경"
+        ]
+    },
+    "proxy": {
+        "docs": 200,
+        "redirect": 308,
+        "internalPaths": 4,
+        "internalStatus": 404,
+        "validOriginWithoutAction": 405,
+        "forgedForwardedProtoOverwritten": true,
+        "foreignOrigin": 403,
+        "excessiveContentLength": 413,
+        "publicCertificate": false,
+        "callbackFailureStatus": 502,
+        "callbackQueryExcludedFromErrorLog": true
+    },
+    "webSigtermExit": 0,
+    "passed": true,
+    "cleanup": {
+        "msm2-deploy-check-4086796c-126-postgres": true,
+        "msm2-deploy-check-4086796c-126-nginx": true
+    },
+    "images": [
+        {
+            "container": "msm2-deploy-check-4086796c-126-postgres",
+            "image": "sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536"
+        },
+        {
+            "container": "msm2-deploy-check-4086796c-126-nginx",
+            "image": "sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a"
+        }
+    ],
+    "temporaryDirectoryRemoved": true,
+    "finishedAt": "2026-11-15T18:19:29.881Z"
+}

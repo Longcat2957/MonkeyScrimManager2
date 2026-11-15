@@ -1,0 +1,46 @@
+{
+    "sourceBaseline": "ee1e5d8",
+    "initialWholeBrowser": {
+        "tests": 61,
+        "pass": 59,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0
+    },
+    "corrections": [
+        {
+            "id": "RV-01",
+            "file": "apps/web/tests/api/hard/http/actions.test.ts",
+            "kind": "fixture",
+            "observed": "revert after ended_early rejects missing Riot accounts/current guild links with409",
+            "preservedStateTables": 11,
+            "narrowHttpPassed": 47,
+            "wholeHardPassed": 520
+        },
+        {
+            "id": "RV-02a",
+            "file": "apps/web/tests/browser/auction-operations.test.ts",
+            "kind": "fixture",
+            "observed": "live200 and same current lot; userId=null candidates correctly render 삭제된 사용자; stale expected snapshot name locator times out",
+            "fix": "connect only guest-case candidates to synthetic active users/current guild",
+            "narrowBrowserPassed": 1
+        },
+        {
+            "id": "RV-02b",
+            "file": "apps/web/tests/browser/match-filters.test.ts",
+            "kind": "automation synchronization",
+            "observed": "initial overlay rAF moves focus between locator focus and Enter; current season selected instead of requested past season",
+            "singleFailedTraceMs": {
+                "openEnter": 225.3,
+                "locatorTargetFocus": 234.8,
+                "initialOverlayFocus": 235.5,
+                "actualEnterClick": 236.7
+            },
+            "fix": "wait for actual initial active button focus; preserve existing past-season and focus-return assertions",
+            "narrowBrowserPassed": 4
+        }
+    ],
+    "productionBusinessOrUiChanged": false,
+    "timeoutOrStaticSleepAdded": false,
+    "exclusions": "No user database/Discord/OAuth/mail/real deployment"
+}
