@@ -31,7 +31,11 @@ test('HTTP: 기존 39개 form action은 유효한 입력이어도 비로그인 �
         { path: scrimPath, name: 'participants', fields: { ...revision, ids: id, status: 'selected' } },
         { path: scrimPath, name: 'advance', fields: { ...revision, key: 'close' } },
         { path: scrimPath, name: 'chooseMethod', fields: { ...revision, method: 'manual' } },
-        ...['revert', 'endEarly', 'cancel'].map((name) => ({ path: scrimPath, name, fields: revision })),
+        ...['revert', 'endEarly', 'cancel', 'restore'].map((name) => ({
+            path: scrimPath,
+            name,
+            fields: revision
+        })),
         { path: scrimPath, name: 'settings', fields: { ...revision, ...settings } },
         {
             path: scrimPath + '/manual',
@@ -105,7 +109,7 @@ test('HTTP: 기존 39개 form action은 유효한 입력이어도 비로그인 �
         })),
         { path: guildPath + '/matches/' + id, name: 'upload', fields: {} }
     ];
-    assert.equal(entries.length, 39);
+    assert.equal(entries.length, 40);
     for (const entry of entries)
         await t.test(entry.path + '?/' + entry.name, async () => {
             assertAction(await f.action(entry.path, entry.name, entry.fields), 401);

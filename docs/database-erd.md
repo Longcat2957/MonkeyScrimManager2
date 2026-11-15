@@ -1,11 +1,14 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-05 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **40개 테이블·88개 외래키**.
+기준: 2026-11-15 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **41개 업무 테이블·93개 외래키**. Drizzle `getTableConfig`의 원본 스키마 집계이며 조회용 `relations`를 별도 제약으로 세지 않는다.
 전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
 게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
 경기 라인업·결과 이력·게시 대상 확장은 [0003_match_results.sql](../apps/web/drizzle/0003_match_results.sql)에 포함한다.
 취소한 ROFL의 새 채택 이력과 활성 결과 고유키는 [0004_rofl_result_restoration.sql](../apps/web/drizzle/0004_rofl_result_restoration.sql)에 포함한다.
+경매의 직전 행위 원장은 [0005_auction_actions.sql](../apps/web/drizzle/0005_auction_actions.sql), 시작 전 취소 복구 근거는 [0006_scrim_cancellation_restore.sql](../apps/web/drizzle/0006_scrim_cancellation_restore.sql), 준비 단계 중도 종료·우세 팀 판정·재개 제약은 [0007_scrim_early_end.sql](../apps/web/drizzle/0007_scrim_early_end.sql)에 포함한다. 기존 행의 미확인 상태·행위를 추정해 채우지 않는다.
 인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
+
+배포 복원 검증은 별도 `msm2_deploy_probe` schema의 부모/자식 FK 하나를 추가해 **94개**로 관찰할 수 있다. 그 검증용 관계는 업무 ERD의 93개에 포함하지 않는다. 최종 검사 결과와 실행 범위는 [통합 검증 기록](../artifacts/ui-review/operations/checks.json)을 따른다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
 밴픽 진행·픽 순서·수동 결과 승인 모델과 원본 ROFL 보관 테이블은 없다.
@@ -55,6 +58,10 @@ erDiagram
     auctions ||..o{ auction_lots : 후보_등장
     auction_teams ||..o{ auction_acquisitions : 구매_이력
     auction_lots |o..o{ auction_acquisitions : 낙찰과_정정
+    auctions ||..o{ auction_actions : 순서별_행위
+    auction_lots ||..o{ auction_actions : 행위_대상
+    auction_acquisitions |o..o{ auction_actions : 영입_행위
+    auction_actions |o..o| auction_actions : 일회_되돌림
 
     scrims ||..o{ scrim_rounds : 라운드
     scrim_rounds ||..o{ scrim_bracket_nodes : 계획_경기
@@ -79,7 +86,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. 전체 제약은 88개이며 Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. 전체 FK 제약은 93개이며 Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -254,6 +261,8 @@ MMR은 길드·시즌·Discord 사용자·포지션별로 관리한다. 길드 �
 반영별 사용자/참가자·원본당 역분개를 고유키로 구분한다. 변경 전·후 수치를 저장하고 증감은 두 값의 차로 구한다.
 원장은 참가자·반영 회차를 참조한다. 정정할 때 기존 Game·출전·ROFL·원장을 보존하고 새 Game에 별도 결과를 등록한다.
 
+봇의 시즌 전환은 기존 활성 시즌의 종료와 다음 시즌 생성을 한 트랜잭션으로 처리한다. 이미 생성한 내전의 `mmr_season_id`·진행 경기·과거 원장은 바꾸지 않으며 새 시즌으로 MMR을 복제하거나 이월하지 않는다. 신규 내전 생성은 활성 시즌 행을 `FOR SHARE`로 읽어 전환의 `FOR UPDATE`와 조정한다.
+
 스키마는 예외 자료의 결과 보존과 MMR 미반영을 표현할 수 있다. 정상 결과 처리에는 MSM1처럼 확정 시즌·출전 라인업을 사용하고 Game·MMR을 같은 트랜잭션으로 반영한다.
 Elo 계산과 원장·현재값의 원자적 반영, 안전한 마지막 Game 역분개는 [내부 MMR 서비스](../apps/web/src/lib/server/mmr/README.md)에 구현했다.
 ROFL 결과 저장·시리즈 종료·대진 진출도 같은 트랜잭션에서 처리하며 [MMR 저장 계약](mmr.md)을 따른다.
@@ -268,6 +277,9 @@ erDiagram
         text created_by_user_id FK "NULL 허용"
         uuid mmr_season_id FK "NULL 허용"
         enum status
+        enum cancelled_from_status "NULL 허용"
+        enum cancelled_auction_status "NULL 허용"
+        enum ended_early_from_status "NULL 허용"
         enum formation_method "NULL 허용"
         integer team_count
         integer reserve_capacity
@@ -354,14 +366,14 @@ erDiagram
 
 아래 단계 전이는 `server/scrims/service.ts`·`manual.ts`·`bracket.ts`·`workflow.ts`의 DB 트랜잭션에 연결했다.
 `formation_method`는 운영자가 모집 중·편성 중(`preparing`)에 정하거나 바꾸며, 비어 있어도 모집을 마감할 수
-있다. `ready` 이후 상태에서는 반드시 값이 있다(`scrims_formation_method_required`). 편성 중에 방식을 바꾸거나
+있다. 대진 준비·진행 중·정상 종료에는 반드시 값이 있다(`scrims_formation_method_required`). 편성 방식 미선택인 준비 단계에서 중도 종료했다면 `ended_early_from_status = 'preparing'`을 근거로 null을 보존한다. 편성 중에 방식을 바꾸거나
 비우면 그 내전의 수동 배정·경매 효과를 무효화하고, 모집을 다시 열면 미확정 편성을 비우되 참가·영입 이력과 방식은 유지한다.
 진행 중 경매를 팀장 설정으로 되돌릴 때는 유효 영입을 무효화하고 열린 후보를 취소한 뒤 `setup`으로 바꾼다. `scrim_teams.name`은 입력받지 않고 팀 순서대로
 `포로팀`·`칼날부리팀`·`돌거북팀`·`바위게팀`을 붙인다.
 
-내전 단계는 운영자가 한 단계씩 되돌릴 수 있다(편성 중 → 모집 중, 대진 준비 → 편성 중, 게임 기록이 없는
-진행 중 → 대진 준비, 종료·중도 종료 → 진행 중). 중도 종료는 진행 중 Match를 `ended_early`, 시작 전 Match를
-`cancelled`로 바꾸며 기록된 Game과 점수는 보존한다. 되돌릴 때도 Game을 지우지 않는다.
+내전 단계는 운영자가 한 단계씩 되돌릴 수 있다(편성 중 → 모집 중, 대진 준비 → 편성 중, 게임 기록이 없는 진행 중 → 대진 준비, 정상 종료 → 진행 중). 새 시작 전 취소는 `cancelled_from_status`에 `recruit`·`preparing`·`ready` 중 원래 단계를, `cancelled_auction_status`에 존재하는 경매의 이전 상태를 보존한다. 경매 상태만 함께 취소하며 참가자·편성·포인트·후보·행위 원장은 유지한다. 복구는 저장한 단계로 돌아가 두 필드를 비운다. `scrims_cancellation_restore_state`는 취소 상태에서만 이 근거를 허용하고 경매 근거만 분리해 남기는 것을 막는다. 과거 근거 없는 취소는 복구하지 않는다.
+
+중도 종료는 편성 중·대진 준비·진행 중에서 가능하다. `ended_early_from_status`는 그 원래 단계를 보존하며 `scrims_early_end_restore_state`가 상태와 허용 단계를 검사한다. 진행 전·진행 중의 실제 Match는 `ended_early`로 바꾸고 현재 완료 Game 점수의 우세 팀을 승자로, 동점은 null로 기록한다. 완료 Match·Game·ROFL·출전·MMR은 유지하고 새 후속 Match를 만들지 않는다. 재개는 저장한 내전 단계와 그 동작이 멈춘 Match만 복원한다. 이전 복귀 단계가 null인 중도 종료 행은 기존 진행 중 재개 동작을 유지한다.
 
 ## Discord 작업과 요청 기록
 
@@ -468,6 +480,20 @@ erDiagram
         text voided_by_user_id FK "NULL 허용"
         uuid supersedes_id FK, UK "NULL 허용"
     }
+    auction_actions {
+        uuid id PK
+        uuid scrim_id FK
+        uuid auction_id FK
+        integer sequence_number
+        enum kind
+        uuid scrim_participant_id FK
+        uuid lot_id FK
+        uuid acquisition_id FK "NULL 허용"
+        uuid reverses_id FK, UK "NULL 허용"
+        text recorded_by_user_id FK "NULL 허용"
+        timestamptz recorded_at
+        timestamptz invalidated_at "NULL 허용"
+    }
 
     scrims ||..o| auctions : scrim_id
     auctions ||--o{ auction_teams : "scrim_id, auction_id"
@@ -486,12 +512,19 @@ erDiagram
     users |o..o{ auction_acquisitions : recorded_by_user_id
     users |o..o{ auction_acquisitions : voided_by_user_id
     auction_acquisitions |o..o| auction_acquisitions : "auction_id, supersedes_id"
+    auctions ||..o{ auction_actions : "scrim_id, auction_id"
+    auction_lots ||..o{ auction_actions : "auction_id, scrim_participant_id, lot_id"
+    auction_acquisitions |o..o{ auction_actions : "auction_id, acquisition_id"
+    auction_actions |o..o| auction_actions : "auction_id, reverses_id"
+    users |o..o{ auction_actions : recorded_by_user_id
 ```
 
 경매는 내전당 하나이므로 한 팀·참가자가 연결되는 경매 팀 행도 각각 최대 하나다.
 열린 경매 후보는 경매당 하나, 무효화되지 않은 영입은 경매·참가자당 하나다.
 낙찰은 구매자·경매 시도·비음수 가격이 필수이고, 수동 배정은 구매자·가격이 `NULL`이다.
-현재 되돌리기는 기존 lot·영입을 무효화하고 재영입 시 새 행을 남긴다. 스키마에는 `supersedes_id` 정정 연결이 있지만 현재 경매 서비스는 이 값을 기록하지 않는다.
+`auction_actions`는 추첨(`draw`)·유찰(`pass`)·낙찰(`award`)·현재 후보 수동 배치(`assign_current`)·유찰자 수동 배치(`assign_unsold`)·유찰자 다시 올리기(`restore`)를 같은 순서로 저장한다. `(auction_id, sequence_number)`는 유일하고 양수이며, 해당 경매의 lot·영입·역행위를 복합 FK로 연결한다. `auction_actions_payload`는 영입 행위의 acquisition 필수 여부와 `revert`의 원본 행위·비자기참조를 검사한다. 같은 원본 행위의 역기록은 하나다.
+
+직전 작업 취소는 기존 lot·영입을 무효화하고 필요한 후보를 복원한 뒤 `revert` 행을 남긴다. 역기록 자체가 최신 행위이므로 다음 새 행위 전에는 연속 스택 되감기를 제공하지 않는다. 초기화·팀장 재설정·방식 변경·모집 복귀는 기존 행위를 삭제하지 않고 `invalidated_at` 경계를 남기며, 단순 내전 취소·복구는 그 원장을 보존한다. 이전 lot 이력에서 누락된 행위를 추정해 backfill하지 않는다. 스키마에는 `supersedes_id` 정정 연결도 있지만 현재 경매 서비스는 이 값을 기록하지 않는다.
 아직 등장하지 않은 후보의 순서는 `auction_queue_entries`, 현재 후보는 열린 lot, 영입 결과는 acquisition이 저장 원천이다.
 
 ## 라운드·대진·경기 결과
@@ -575,9 +608,10 @@ erDiagram
 `Match`는 두 팀이 BO 전체를 진행하는 경기이고 `Game`은 그 안의 한 판이다. 점수는 완료 Game에서 집계한다.
 `matches.revision`은 라인업·결과 변경의 동시 수정 검사에 사용하며 내전의 revision과 구분한다.
 `winner_team_id`는 별도 FK가 아니라 A/B 팀 중 하나인지 확인하는 `CHECK`로 제한한다.
+`matches_winner_requires_completion`은 정상 완료의 승자를 필수로 두고 중도 종료에는 현재 점수 우세 또는 동점 null을 허용한다. 다른 상태에서는 승자가 null이어야 한다.
 대진 자리는 직접 지정한 팀 또는 이전 대진의 승자 중 하나를 참조하며 둘 다 미정일 수도 있다.
 2·3·4팀 대진과 라운드별 BO 1·3·5, 활성 팀 순서, 중복 직접 시드에 DB 제약을 둔다.
-시작 시 양 팀이 정해진 노드만 Match를 만들며, 중도 종료의 복원 필드는 그 동작이 멈춘 Match만 재개하는 데 쓴다.
+시작 시 양 팀이 정해진 노드만 Match를 만들며, 중도 종료의 복원 필드는 그 동작이 멈춘 Match만 재개하는 데 쓴다. `matches_scrim_end_restore_state`는 `pending`·`in_progress`였던 상태와 중단 상태의 조합을 검사하며 기존 pending→cancelled 복원 근거도 보존한다. 재개 시 원래 종료 시각·사유와 승자 null을 되돌리고 경기 revision을 높인다. 준결승 우세를 새 결승·우승으로 바꾸지 않는다.
 `games`의 `(match_id, game_number)` 고유 인덱스는 `status <> 'cancelled'`인 행에만 적용한다.
 정정한 이전 Game은 취소 상태로 남고 같은 번호의 새 Game을 별도 ID로 등록한다. `rofl_metadata_id`도 취소되지 않은 Game 사이에서만 고유하다. 같은 파일을 복구할 때 원본 메타데이터를 다시 참조하며, 이전 Game의 채택 근거는 유지한다.
 

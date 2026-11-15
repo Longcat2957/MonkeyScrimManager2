@@ -1,4 +1,24 @@
 /** 웹 내부 API와 봇이 공유하는 JSON 계약이다. 런타임 업무 코드는 웹 서버에 둔다. */
+export interface BotSeason {
+    id: string;
+    name: string;
+    startedAt: string;
+    endedAt: string | null;
+}
+
+export interface BotSeasonSnapshot {
+    current: BotSeason | null;
+    completed: BotSeason[];
+}
+
+export interface BotRotateSeasonInput {
+    actorId: string;
+    interactionId: string;
+    expectedCurrentSeasonId: string;
+    name: string;
+    confirm: boolean;
+}
+
 export type BotPosition = 'top' | 'jungle' | 'mid' | 'bot' | 'support';
 export type BotScrimStatus =
     'recruit' | 'preparing' | 'ready' | 'in_progress' | 'completed' | 'ended_early' | 'cancelled';

@@ -16,6 +16,7 @@
     type Props = {
         nextAction: ScrimNextAction | null;
         revert: ScrimRevertAction | null;
+        restore?: ScrimRevertAction | null;
         endEarly: boolean;
         // 끝난 내전은 취소할 수 없다.
         cancellable: boolean;
@@ -28,6 +29,7 @@
     let {
         nextAction,
         revert,
+        restore = null,
         endEarly,
         cancellable,
         settings,
@@ -37,7 +39,7 @@
     }: Props = $props();
 
     type MenuItem = {
-        key: 'settings' | 'revert' | 'endEarly' | 'cancel' | 'notifyParticipants';
+        key: 'settings' | 'revert' | 'restore' | 'endEarly' | 'cancel' | 'notifyParticipants';
         action: ActionProps;
     };
 
@@ -65,6 +67,15 @@
                     content: revert.label,
                     desc: revert.blockedReason ?? undefined,
                     disabled: Boolean(revert.blockedReason)
+                }
+            });
+        if (restore)
+            items.push({
+                key: 'restore',
+                action: {
+                    content: restore.label,
+                    desc: restore.blockedReason ?? undefined,
+                    disabled: Boolean(restore.blockedReason)
                 }
             });
         if (endEarly) items.push({ key: 'endEarly', action: { content: '중도 종료', style: 'error' } });
@@ -125,14 +136,19 @@
                 notifying = false;
             }
         } else if (key === 'revert' && revert) await run('revert', revert.message, revert.label);
+        else if (key === 'restore' && restore) await run('restore', restore.message, restore.label);
         else if (key === 'endEarly')
             await run(
                 'endEarly',
-                '남은 경기를 치르지 않고 내전을 끝낼까요? 지금까지 기록된 게임과 점수는 전적에 남아요.',
+                '남은 경기를 치르지 않고 내전을 끝낼까요? 기록된 게임과 점수는 남고, 진행 중 경기의 현재 점수 우세 팀을 결과로 표시해요. 동점이면 승자를 정하지 않아요.',
                 '중도 종료'
             );
         else if (key === 'cancel')
-            await run('cancel', '이 내전을 취소할까요? 취소하면 되돌릴 수 없어요.', '내전 취소');
+            await run(
+                'cancel',
+                '이 내전을 취소할까요? 참가자와 편성은 보존하며 취소 전 단계로 복구할 수 있어요.',
+                '내전 취소'
+            );
     }
 </script>
 

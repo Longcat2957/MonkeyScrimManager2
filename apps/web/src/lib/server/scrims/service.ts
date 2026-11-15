@@ -227,7 +227,8 @@ export async function createScrimInTransaction(
         .select({ id: mmrSeasons.id })
         .from(mmrSeasons)
         .where(and(eq(mmrSeasons.guildId, guildId), isNull(mmrSeasons.endedAt)))
-        .limit(1);
+        .limit(1)
+        .for('share');
     if (!season) throw new DomainError('CONFLICT', '활성 시즌이 없어요. 서버 초기 설정을 먼저 완료해 주세요');
     const [created] = await tx
         .insert(scrims)
@@ -611,9 +612,78 @@ export async function cancelScrim(
             .where(eq(games.scrimId, row.id))
             .limit(1);
         if (game) throw new DomainError('CONFLICT', '기록된 경기가 있어 취소할 수 없어요');
+        const [auction] = await tx
+            .select({ status: auctions.status })
+            .from(auctions)
+            .where(eq(auctions.scrimId, row.id))
+            .for('update');
         await tx
             .update(scrims)
-            .set({ status: 'cancelled', revision: row.revision + 1 })
+            .set({
+                status: 'cancelled',
+                cancelledFromStatus: row.status,
+                cancelledAuctionStatus: auction?.status ?? null,
+                revision: row.revision + 1
+            })
+            .where(eq(scrims.id, row.id));
+        // 복구할 편성·포인트·이력과 시각은 보존하고 경매의 현재 상태만 함께 잠근다.
+        if (auction)
+            await tx.update(auctions).set({ status: 'cancelled' }).where(eq(auctions.scrimId, row.id));
+        await enqueueScrimPublications(tx, row.id);
+    });
+}
+
+/** 과거 취소 행의 복귀 단계를 현재 편성 자료에서 추정하지 않는다. */
+export async function cancellationRestoreBlock(
+    db: Database | Transaction,
+    row: ScrimRow
+): Promise<string | null> {
+    if (row.status !== 'cancelled') return '취소된 내전만 복구할 수 있어요';
+    if (!row.cancelledFromStatus || !['recruit', 'preparing', 'ready'].includes(row.cancelledFromStatus))
+        return '취소 전 단계가 남아 있지 않아 복구할 수 없어요';
+    const [game] = await db.select({ id: games.id }).from(games).where(eq(games.scrimId, row.id)).limit(1);
+    if (game) return '기록된 경기가 있어 내전 취소를 복구할 수 없어요';
+    const [auction] = await db
+        .select({ status: auctions.status })
+        .from(auctions)
+        .where(eq(auctions.scrimId, row.id));
+    if (
+        (row.cancelledAuctionStatus === null && auction) ||
+        (row.cancelledAuctionStatus !== null && (!auction || auction.status !== 'cancelled'))
+    )
+        return '취소 전 경매 상태를 확인할 수 없어 복구할 수 없어요';
+    return null;
+}
+
+export async function restoreCancelledScrim(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    scrimId: string,
+    input: RevisionInput,
+    access?: ScrimAccessDependencies
+): Promise<void> {
+    const user = requireUser(actor);
+    requireUuid(scrimId, '내전');
+    const expectedRevision = requireRevision(input.expectedRevision);
+    await requireGuildAdmin(user, guildId, { ...access, db });
+    await db.transaction(async (tx) => {
+        const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
+        const blocked = await cancellationRestoreBlock(tx, row);
+        if (blocked) throw new DomainError('CONFLICT', blocked);
+        if (row.cancelledAuctionStatus !== null)
+            await tx
+                .update(auctions)
+                .set({ status: row.cancelledAuctionStatus })
+                .where(eq(auctions.scrimId, row.id));
+        await tx
+            .update(scrims)
+            .set({
+                status: row.cancelledFromStatus!,
+                cancelledFromStatus: null,
+                cancelledAuctionStatus: null,
+                revision: row.revision + 1
+            })
             .where(eq(scrims.id, row.id));
         await enqueueScrimPublications(tx, row.id);
     });

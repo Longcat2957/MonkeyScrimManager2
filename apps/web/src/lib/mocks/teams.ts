@@ -243,6 +243,12 @@ type Lot = {
 
 type AuctionTeamState = FormationTeam & { captainId: string | null; startPoints: number };
 
+type MockAuctionAction = {
+    kind: 'draw' | 'pass' | 'award' | 'assign_current' | 'assign_unsold' | 'restore';
+    participantId: string;
+    lotId?: string;
+};
+
 type AuctionState = {
     status: AuctionStatus;
     teams: AuctionTeamState[];
@@ -251,10 +257,21 @@ type AuctionState = {
     unsold: string[];
     lots: Lot[];
     seq: number;
+    lastAction: MockAuctionAction | null;
 };
 
 const auctionStates = new Map<string, AuctionState>();
 const DEFAULT_POINTS = 1000;
+
+// 취소 복구는 이미 생성된 개발 상태의 단계만 바꾸고 후보·이력·포인트를 보존한다.
+export function getMockAuctionStatus(scrimId: string): AuctionStatus | null {
+    return auctionStates.get(scrimId)?.status ?? null;
+}
+
+export function setMockAuctionStatus(scrimId: string, status: AuctionStatus): void {
+    const state = auctionStates.get(scrimId);
+    if (state) state.status = status;
+}
 
 function acquisitions(state: AuctionState) {
     return state.lots.filter((lot) => !lot.voided && (lot.result === 'sold' || lot.result === 'manual'));
@@ -281,7 +298,7 @@ function auctionState(scrim: MockScrim): AuctionState {
         captainId: null as string | null,
         startPoints: DEFAULT_POINTS
     }));
-    state = { status: 'setup', teams, queue: [], open: null, unsold: [], lots: [], seq: 0 };
+    state = { status: 'setup', teams, queue: [], open: null, unsold: [], lots: [], seq: 0, lastAction: null };
     // 이미 편성이 끝난 내전은 팀장 다음 순서로 돌아가며 낙찰된 완료 상태를 만든다.
     if (!['recruit', 'preparing'].includes(scrim.status)) {
         const ids = selected(scrim).map((participant) => participant.registrationId);
@@ -319,6 +336,7 @@ export async function getMockAuction(
 
     return {
         status: state.status,
+        canRevert: state.status === 'in_progress' && Boolean(state.lastAction),
         players,
         teams: state.teams.map((team) => ({
             id: team.id,
@@ -403,6 +421,7 @@ export async function startMockAuction(guildId: string, scrimId: string) {
             .filter((id) => !captains.has(id))
     );
     state.status = 'in_progress';
+    state.lastAction = null;
     return null;
 }
 
@@ -423,6 +442,7 @@ export async function drawMockLot(guildId: string, scrimId: string) {
     const next = state.queue.shift();
     if (!next) return { status: 409, message: '대기 중인 후보가 없어요' };
     state.open = next;
+    state.lastAction = { kind: 'draw', participantId: next };
     return null;
 }
 
@@ -447,6 +467,11 @@ export async function awardMockLot(guildId: string, scrimId: string, teamId: str
         price,
         voided: false
     });
+    state.lastAction = {
+        kind: 'award',
+        participantId: state.lots.at(-1)!.participantId,
+        lotId: state.lots.at(-1)!.id
+    };
     state.open = null;
     completeIfFull(scrim, state);
     return null;
@@ -466,6 +491,11 @@ export async function passMockLot(guildId: string, scrimId: string) {
         price: null,
         voided: false
     });
+    state.lastAction = {
+        kind: 'pass',
+        participantId: state.lots.at(-1)!.participantId,
+        lotId: state.lots.at(-1)!.id
+    };
     state.unsold.push(state.open);
     state.open = null;
     return null;
@@ -492,6 +522,11 @@ export async function assignMockUnsold(
         price: null,
         voided: false
     });
+    state.lastAction = {
+        kind: 'assign_unsold',
+        participantId: state.lots.at(-1)!.participantId,
+        lotId: state.lots.at(-1)!.id
+    };
     state.unsold = state.unsold.filter((id) => id !== participantId);
     completeIfFull(scrim, state);
     return null;
@@ -506,21 +541,34 @@ export async function restoreMockUnsold(guildId: string, scrimId: string, partic
     if (!state.unsold.includes(participantId)) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
     state.unsold = state.unsold.filter((id) => id !== participantId);
     state.open = participantId;
+    state.lastAction = { kind: 'restore', participantId };
     return null;
 }
 
-// 마지막 기록을 무효로 남기고 그 후보를 다시 진행 중으로 올린다. 진행 중이던 후보는 대기열 맨 앞으로 돌아간다.
+// 직전 여섯 종류의 작업만 한 번 되돌린다. 새 작업을 해야 다시 되돌릴 수 있다.
 export async function revertMockLot(guildId: string, scrimId: string) {
     await wait();
     const target = auctionTarget(guildId, scrimId, 'in_progress');
     if ('status' in target) return target;
     const { state } = target;
-    const last = state.lots.findLast((lot) => !lot.voided);
-    if (!last) return { status: 409, message: '되돌릴 기록이 없어요' };
-    last.voided = true;
-    state.unsold = state.unsold.filter((id) => id !== last.participantId);
-    if (state.open) state.queue.unshift(state.open);
-    state.open = last.participantId;
+    const action = state.lastAction;
+    if (!action) return { status: 409, message: '되돌릴 작업이 없어요' };
+    if (action.kind === 'draw' || action.kind === 'restore') {
+        if (state.open !== action.participantId) return { status: 409, message: '현재 후보가 바뀌었어요' };
+        state.open = null;
+        if (action.kind === 'draw') state.queue.unshift(action.participantId);
+        else state.unsold.push(action.participantId);
+    } else {
+        const lot = state.lots.find((entry) => entry.id === action.lotId && !entry.voided);
+        if (!lot || state.open) return { status: 409, message: '마지막 작업 상태가 바뀌었어요' };
+        lot.voided = true;
+        if (action.kind === 'assign_unsold') state.unsold.push(action.participantId);
+        else {
+            state.unsold = state.unsold.filter((id) => id !== action.participantId);
+            state.open = action.participantId;
+        }
+    }
+    state.lastAction = null;
     return null;
 }
 
@@ -538,16 +586,18 @@ export async function resetMockAuction(guildId: string, scrimId: string) {
     );
     state.open = null;
     state.unsold = [];
+    state.lastAction = null;
     return null;
 }
 
-// 진행 중인 경매를 팀장·시작 포인트 설정으로 되돌린다. 낙찰·유찰 기록은 지우고, 지금 설정은 고치기 쉽게 남긴다.
+// 진행 중인 경매를 준비로 되돌린다. 기록은 무효로 보존하고 지금 설정은 고치기 쉽게 남긴다.
 export async function reopenMockAuctionSetup(guildId: string, scrimId: string) {
     await wait();
     const target = auctionTarget(guildId, scrimId, 'in_progress');
     if ('status' in target) return target;
     const { state } = target;
-    Object.assign(state, { status: 'setup', queue: [], open: null, unsold: [], lots: [] });
+    for (const lot of state.lots) lot.voided = true;
+    Object.assign(state, { status: 'setup', queue: [], open: null, unsold: [], lastAction: null });
     return null;
 }
 
@@ -569,6 +619,11 @@ export async function assignMockCurrent(guildId: string, scrimId: string, teamId
         price: null,
         voided: false
     });
+    state.lastAction = {
+        kind: 'assign_current',
+        participantId: state.lots.at(-1)!.participantId,
+        lotId: state.lots.at(-1)!.id
+    };
     state.open = null;
     completeIfFull(scrim, state);
     return null;

@@ -9,11 +9,9 @@
 
     let { data }: PageProps = $props();
 
-    // 끝난 내전에는 내 신청 줄을 두지 않는다. 운영 줄은 종료·중도 종료를 되돌릴 수 있게 취소된 내전에서만 뺀다.
+    // 끝난 내전에는 내 신청 줄을 두지 않는다. 운영자는 종료 재개와 취소 복구를 같은 운영 메뉴에서 찾는다.
     const showRegistration = $derived(!data.finished && data.me !== null);
-    const showOperations = $derived(
-        data.scrim.status !== 'cancelled' && data.can.manage && data.settings !== null
-    );
+    const showOperations = $derived(data.can.manage && data.settings !== null);
     // 팀 편성을 확정하기 전(모집 중·편성 중)에는 운영자가 여기서 편성 방식을 고르거나 바꾼다.
     const choosingMethod = $derived(data.can.manage && ['recruit', 'preparing'].includes(data.scrim.status));
 </script>
@@ -39,8 +37,9 @@
             <ScrimOperationsBar
                 nextAction={data.can.nextAction}
                 revert={data.can.revert}
+                restore={data.can.restore}
                 endEarly={data.can.endEarly}
-                cancellable={!data.finished}
+                cancellable={['recruit', 'preparing', 'ready'].includes(data.scrim.status)}
                 settings={data.settings}
                 editable={data.editable}
                 notifyParticipants={data.can.notifyParticipants}

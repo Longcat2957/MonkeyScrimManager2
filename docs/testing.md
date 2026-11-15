@@ -76,6 +76,8 @@ DB 설정·접속 또는 Chromium 실행 파일이 없으면 실패하며 건너
 | `ranking.test.ts` | 360/1440px 순위 중복 후 첫 쪽 재조회·스크롤 복귀·다음 쪽 정상 조회, 재조회 실패 후 기존 목록 유지·수동 재시도, 서버 이동·화면 종료 시 요청 취소. 순위 응답만 바꾸고 실제 운영 번들·라우터·컴포넌트를 사용 |
 | `rofl-results.test.ts` | 390×844/1440×1000 실제 출전자의 정상 파일 선택·등록, 중복 409 뒤 파일·기존 결과 보존, 관리자 취소·같은 파일 복구·같은 경기 라인업의 2세트로 시리즈 완료. 실제 Game·출전·MMR 원장과 역분개를 검증 |
 | `formation-records.test.ts` | 실제 ROFL 결과로 수동 편성의 시너지·5포지션 상대 전적을 표시하고 같은 서버·고정 시즌의 경매 후보 전적을 조회하는 1440×1000 통합 경로 |
+| `auction-operations.test.ts` | 실제 관리자 키보드 추첨·직전 작업 취소와 영입/포인트/초기화 보존, 390×844 관전자 자동 갱신·503/15초 timeout·backoff·일시정지/수동/재개·숨김/offline/SPA 종료·POST0 |
+| `scrim-lifecycle.test.ts` | 1440×1000·390×844 양 테마의 취소 확인/Escape·정확 복구·무방식 편성 전 중도 종료·원래 단계 복귀·실제 ROFL 우세 결과/재개와 Game/MMR 보존 |
 
 ## hard DB
 
@@ -139,7 +141,7 @@ adapter-node의 `PROTOCOL_HEADER`로 HTTPS 프록시 뒤 HTTP 연결을 재현�
 | `guild-view-refresh.test.ts` | 61초 만료·layout 재사용 요청의 권한 갱신, 회수·탈퇴·503·비로그인 공개 열람 |
 | `auth.test.ts` | 개인 페이지 인증, 세션 만료, OAuth 시작·고정 프로필 콜백, 쿠키 속성, POST/출처 검사와 로그아웃 |
 | `public-reads.test.ts` | 실제 DB 제목·사용자 표시, 공개 조회, 다른 서버·개발 샘플 404, 순위 JSON·입력 오류, 관리 페이지 권한 |
-| `actions.test.ts` | 기존 39개 action의 비로그인 차단, 모집 생성·신청·철회·revision, 계정·설정, 수동 편성→대진→시작, 경매 낙찰·되돌리기 |
+| `actions.test.ts` | 40개 action의 비로그인 차단(취소 복구 포함), 모집 생성·신청·철회·revision, 계정·설정, 수동 편성→대진→시작, 경매 낙찰·되돌리기 |
 | `external-api.test.ts` | Riot·LoL endpoint의 JSON·오류·Retry-After·no-store, Data Dragon 공개 캐시 |
 | `match-results.test.ts` | 실제 multipart ROFL 등록·세션/출전자 권한·오류·stale 요청·결과 취소·참가 안내 DM 예약 |
 | `match-result-restoration.test.ts` | 실제 multipart 동일 파일 복구·문맥/권한 거부·동시/반복 요청, Riot 재조회 없이 이력 보존 |
@@ -158,6 +160,12 @@ SvelteKit 3의 action 결과는 일반 JSON endpoint와 구분한다. `success`/
 ## 실행 기록
 
 아래 날짜별 수치는 당시 명령 범위의 결과다. 2026-11-05부터 기본/lite 명령에 봇 테스트가 포함된다.
+
+### 2026-11-15 운영 후속
+
+웹430·봇80, 실제 PostgreSQL hard DB263·HTTP116, Chromium 브라우저16개가 통과했다. 포맷·브랜딩·Svelte·웹/봇 타입과 production build도 통과했다. 이번 추가 동작은 경매6종 직전 작업 취소·원장, 취소 복구와 준비/진행 중도 종료·재개, 관전자 갱신 실패/timeout/일시정지, 시즌 명령의 원자 전환·멱등·권한·기존 시즌 ROFL 보존이다. 담당별 부분 실행을 이 전체 숫자에 다시 더하지 않는다. 새 restore action과 봇 시즌 POST의 비로그인/토큰 없는 요청도 명시적으로 확인했다.
+
+migration0005~0007 업그레이드·CHECK와 로컬 HTTPS/백업·빈 DB 복원·CI 정적 검사는 [운영 후속 기록](ui-review/operations.md)·[전체 게이트](../artifacts/ui-review/operations/checks.json)·[배포 검증](../artifacts/ui-review/operations/deployment.md)을 따른다. 원격 CI/실VPS/운영DB/실제 Discord 등록·발송·원본 ROFL·물리 기기 검증과 구분한다.
 
 ### 2026-11-14 남은 UI·편성 참고 자료
 

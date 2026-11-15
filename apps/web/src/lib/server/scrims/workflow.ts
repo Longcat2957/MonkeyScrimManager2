@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { FormationMethod, ScrimNextAction, ScrimRevertAction } from '../../features/scrims/types.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -15,6 +15,7 @@ import {
     scrims
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { invalidateAuctionActions } from './auction-actions.ts';
 import {
     assertNoGames,
     createResolvedMatches,
@@ -24,7 +25,12 @@ import {
 } from './bracket.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
 import { findScrim, readGuild } from './queries.ts';
-import { closeRecruitment, type RevisionInput, type ScrimAccessDependencies } from './service.ts';
+import {
+    cancellationRestoreBlock,
+    closeRecruitment,
+    type RevisionInput,
+    type ScrimAccessDependencies
+} from './service.ts';
 import { requireUuid } from './validation.ts';
 
 /** 방식 변경·모집 복귀에서 경매 원장을 보존하고 현재 편성 효과만 무효화한다. */
@@ -37,6 +43,7 @@ export async function invalidateAuctionFormation(
 ): Promise<void> {
     const [auction] = await tx.select().from(auctions).where(eq(auctions.scrimId, row.id)).for('update');
     if (!auction) return;
+    await invalidateAuctionActions(tx, auction.id);
     const now = new Date();
     await tx
         .update(auctionAcquisitions)
@@ -202,15 +209,23 @@ export async function revertScrim(
                             .update(matches)
                             .set({
                                 status: match.statusBeforeScrimEnd,
+                                winnerTeamId: null,
                                 endedAt: match.endedAtBeforeScrimEnd,
                                 endReason: match.endReasonBeforeScrimEnd,
                                 statusBeforeScrimEnd: null,
                                 endedAtBeforeScrimEnd: null,
-                                endReasonBeforeScrimEnd: null
+                                endReasonBeforeScrimEnd: null,
+                                revision: sql`${matches.revision} + 1`
                             })
                             .where(eq(matches.id, match.id));
                     }
-                    await tx.update(scrims).set({ status: 'in_progress' }).where(eq(scrims.id, row.id));
+                    await tx
+                        .update(scrims)
+                        .set({
+                            status: row.endedEarlyFromStatus ?? 'in_progress',
+                            endedEarlyFromStatus: null
+                        })
+                        .where(eq(scrims.id, row.id));
                     break;
                 }
                 default:
@@ -236,29 +251,55 @@ export async function endScrimEarly(
         scrimId,
         input,
         async (tx, row) => {
-            if (row.status !== 'in_progress')
-                throw new DomainError('CONFLICT', '진행 중인 내전만 중도 종료할 수 있어요');
+            if (!['preparing', 'ready', 'in_progress'].includes(row.status))
+                throw new DomainError('CONFLICT', '편성 중·대진 준비·진행 중인 내전만 중도 종료할 수 있어요');
             const existing = await tx
                 .select()
                 .from(matches)
                 .where(eq(matches.scrimId, row.id))
                 .orderBy(asc(matches.id))
                 .for('update');
+            const completed = await tx
+                .select({
+                    matchId: games.matchId,
+                    blueTeamSlot: games.blueTeamSlot,
+                    winnerSide: games.winnerSide
+                })
+                .from(games)
+                .where(and(eq(games.scrimId, row.id), eq(games.status, 'completed')));
             for (const match of existing) {
                 if (match.status !== 'pending' && match.status !== 'in_progress') continue;
+                let scoreA = 0;
+                let scoreB = 0;
+                for (const game of completed.filter((game) => game.matchId === match.id)) {
+                    const winner =
+                        game.winnerSide === 'blue'
+                            ? game.blueTeamSlot
+                            : game.blueTeamSlot === 'a'
+                              ? 'b'
+                              : 'a';
+                    if (winner === 'a') scoreA++;
+                    else scoreB++;
+                }
                 await tx
                     .update(matches)
                     .set({
-                        status: match.status === 'pending' ? 'cancelled' : 'ended_early',
+                        status: 'ended_early',
+                        winnerTeamId:
+                            scoreA > scoreB ? match.teamAId : scoreB > scoreA ? match.teamBId : null,
                         endedAt: new Date(),
                         endReason: '내전 중도 종료',
                         statusBeforeScrimEnd: match.status,
                         endedAtBeforeScrimEnd: match.endedAt,
-                        endReasonBeforeScrimEnd: match.endReason
+                        endReasonBeforeScrimEnd: match.endReason,
+                        revision: sql`${matches.revision} + 1`
                     })
                     .where(eq(matches.id, match.id));
             }
-            await tx.update(scrims).set({ status: 'ended_early' }).where(eq(scrims.id, row.id));
+            await tx
+                .update(scrims)
+                .set({ status: 'ended_early', endedEarlyFromStatus: row.status })
+                .where(eq(scrims.id, row.id));
         },
         access
     );
@@ -281,7 +322,14 @@ export async function getScrimOperations(
             if (!row) throw new DomainError('NOT_FOUND', '내전을 찾을 수 없어요');
             let nextAction: ScrimNextAction | null = null;
             let revert: ScrimRevertAction | null = null;
-            if (!guild.isAdmin) return { nextAction, revert, endEarly: false };
+            let restore: ScrimRevertAction | null = null;
+            if (!guild.isAdmin) return { nextAction, revert, restore, endEarly: false };
+            if (row.status === 'cancelled')
+                restore = {
+                    label: '내전 취소 복구',
+                    message: '취소 전 단계로 돌아가요. 참가자와 팀 편성·경매 포인트는 그대로 유지돼요.',
+                    blockedReason: await cancellationRestoreBlock(tx, row)
+                };
             if (row.status === 'recruit') {
                 const selected = await tx
                     .select({ id: scrimParticipants.id })
@@ -348,13 +396,30 @@ export async function getScrimOperations(
                     message: '경기를 시작하기 전 대진 준비로 돌아가요.',
                     blockedReason: game ? '기록된 게임이 있어 되돌릴 수 없어요' : null
                 };
-            } else if (row.status === 'completed' || row.status === 'ended_early')
+            } else if (row.status === 'ended_early' && row.endedEarlyFromStatus === 'preparing')
+                revert = {
+                    label: '팀 편성으로 되돌리기',
+                    message: '중도 종료 전 팀 편성 단계로 돌아가요. 기존 배정과 경매 기록은 유지돼요.',
+                    blockedReason: null
+                };
+            else if (row.status === 'ended_early' && row.endedEarlyFromStatus === 'ready')
+                revert = {
+                    label: '대진 준비로 되돌리기',
+                    message: '중도 종료 전 대진 준비 단계로 돌아가요. 기존 배치와 확정 상태는 유지돼요.',
+                    blockedReason: null
+                };
+            else if (row.status === 'completed' || row.status === 'ended_early')
                 revert = {
                     label: '진행 중으로 되돌리기',
                     message: '내전을 다시 열어요. 중도 종료가 멈춘 경기도 재개돼요.',
                     blockedReason: null
                 };
-            return { nextAction, revert, endEarly: row.status === 'in_progress' };
+            return {
+                nextAction,
+                revert,
+                restore,
+                endEarly: ['preparing', 'ready', 'in_progress'].includes(row.status)
+            };
         },
         access
     );

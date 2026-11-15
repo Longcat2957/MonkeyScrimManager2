@@ -18,6 +18,7 @@ type BracketState = {
     matches: BracketMatch[];
     bestOf: Partial<Record<BracketStage, BestOf>>;
     confirmed: boolean;
+    interrupted?: { key: string; status: BracketMatch['status']; winner: BracketMatch['winner'] }[];
 };
 
 // 개발 서버가 살아 있는 동안만 보관한다.
@@ -37,6 +38,7 @@ const RESULTS: Record<string, Record<string, Partial<BracketMatch>>> = {
 
 const teamsConfirmed = (scrim: MockScrim) =>
     scrim.formationMethod !== null &&
+    !(scrim.status === 'ended_early' && scrim.endedEarlyFromStatus === 'preparing') &&
     ['ready', 'in_progress', 'completed', 'ended_early'].includes(scrim.status);
 
 async function scrimTeams(scrim: MockScrim, icon: IconResolver): Promise<BracketTeam[]> {
@@ -220,27 +222,27 @@ export async function getMockBracketProgress(guildId: string, scrimId: string) {
     };
 }
 
-/**
- * 내전을 중도 종료하면 진행 중인 경기는 지금 점수로 중도 종료, 시작하지 않은 경기는 취소한다.
- * 되돌리면 반대로 연다. 기록된 게임과 점수는 어느 쪽에서도 지우지 않는다.
- */
+/** 중도 종료의 실제 점수 우세 팀만 기록하며, 재개는 바꾼 경기의 상태·승자를 그대로 복원한다. */
 export async function setMockBracketEnded(guildId: string, scrimId: string, ended: boolean) {
     const target = await load(guildId, scrimId, noIcon);
     if (!target?.state) return;
-    for (const item of target.state.matches) {
-        const next = ended
-            ? item.status === 'in_progress'
-                ? 'ended_early'
-                : item.status === 'pending'
-                  ? 'cancelled'
-                  : null
-            : item.status === 'ended_early'
-              ? 'in_progress'
-              : item.status === 'cancelled'
-                ? 'pending'
-                : null;
-        if (!next) continue;
-        item.status = next;
-        if (item.matchId) setMockMatchStatus(guildId, item.matchId, next);
+    if (ended) {
+        target.state.interrupted = [];
+        for (const item of target.state.matches) {
+            if (!['pending', 'in_progress'].includes(item.status)) continue;
+            target.state.interrupted.push({ key: item.key, status: item.status, winner: item.winner });
+            item.status = 'ended_early';
+            item.winner = item.scoreA > item.scoreB ? 'a' : item.scoreB > item.scoreA ? 'b' : null;
+            if (item.matchId) setMockMatchStatus(guildId, item.matchId, item.status);
+        }
+    } else {
+        for (const before of target.state.interrupted ?? []) {
+            const item = target.state.matches.find((match) => match.key === before.key);
+            if (!item) continue;
+            item.status = before.status;
+            item.winner = before.winner;
+            if (item.matchId) setMockMatchStatus(guildId, item.matchId, item.status);
+        }
+        delete target.state.interrupted;
     }
 }

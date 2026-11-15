@@ -53,7 +53,7 @@ test('등록할 명령은 Discord가 검증하는 빌더 계약을 만족한다'
     const values = commands.map((command) => command.toJSON());
     assert.deepEqual(
         values.map((value) => value.name),
-        ['초기설정', '내전모집', '내전목록', '게시복구']
+        ['초기설정', '시즌', '내전모집', '내전목록', '게시복구']
     );
     assert.ok(values.every((value) => value.contexts?.length === 1));
     assert.equal(

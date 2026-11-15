@@ -1,0 +1,69 @@
+name: CI
+
+on:
+    push:
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    verify:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 40
+        services:
+            postgres:
+                image: postgres:17-bookworm
+                env:
+                    POSTGRES_USER: msm2_test
+                    POSTGRES_DB: msm2_test
+                    # 이 일회용 CI DB에만 사용하며 운영 인증 설정으로 복사하지 않는다.
+                    POSTGRES_HOST_AUTH_METHOD: trust
+                ports:
+                    - 127.0.0.1:5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U msm2_test -d msm2_test"
+                    --health-interval 5s
+                    --health-timeout 3s
+                    --health-retries 10
+        env:
+            TEST_DATABASE_URL: postgresql://msm2_test@127.0.0.1:5432/msm2_test
+        steps:
+            - name: 저장소 읽기
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: pnpm 준비
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+              with:
+                  version: 10.20.0
+                  run_install: false
+            - name: Node.js 준비
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: 24
+                  cache: pnpm
+                  cache-dependency-path: pnpm-lock.yaml
+            - name: 잠금 파일로 의존성 설치
+              run: pnpm install --frozen-lockfile
+            - name: Chromium과 시스템 의존성 준비
+              run: pnpm --filter @msm2/web exec playwright install --with-deps chromium
+            - name: 포맷·브랜딩·앱 타입 검사
+              run: pnpm check
+            - name: 테스트 타입 검사
+              run: pnpm check:tests
+            - name: 기본 웹·봇 테스트
+              run: pnpm test
+            - name: 봇 운영 빌드
+              run: pnpm build:bot
+            # 두 명령은 각자 최신 웹 빌드를 검증한다. 별도의 세 번째 웹 빌드는 반복하지 않는다.
+            - name: 웹 운영 빌드와 DB·HTTP hard 테스트
+              run: pnpm test:hard
+            - name: 웹 운영 빌드와 브라우저 테스트
+              run: pnpm test:browser
+            - name: 격리 배포·백업·복원 검사
+              run: node scripts/verify_deployment.mjs

@@ -237,9 +237,11 @@ export const scrimStatus = pgEnum('scrim_status', [
 
 export const scrimFormationMethod = pgEnum('scrim_formation_method', ['manual', 'auction']);
 
+export const auctionStatus = pgEnum('auction_status', ['setup', 'in_progress', 'completed', 'cancelled']);
+
 // 모집부터 종료까지 같은 내전을 유지한다. 기록된 Game이 있으면 팀을 다시 편성하지 않는다.
 // 무결과 시작 취소와 단계별 변경 조건은 서비스 로직에서 검사한다.
-// 중도 종료 시 확정된 Game 결과와 Match 점수는 보존하며, 미완료 시리즈의 승자를 임의로 확정하지 않는다.
+// 중도 종료 시 Game·MMR은 보존하고 실제 세트 점수가 앞선 팀만 경기 승자로 기록한다.
 export const scrims = pgTable(
     'scrims',
     {
@@ -262,6 +264,11 @@ export const scrims = pgTable(
         }),
         title: text('title').notNull(),
         status: scrimStatus('status').default('recruit').notNull(),
+        // 취소 전 단계를 기록한 새 취소만 정확히 복구한다. 과거 취소 행의 단계는 추정하지 않는다.
+        cancelledFromStatus: scrimStatus('cancelled_from_status'),
+        cancelledAuctionStatus: auctionStatus('cancelled_auction_status'),
+        // 중도 종료한 준비·진행 단계를 복원한다. 이전 행은 기존 진행 중 재개 동작을 유지한다.
+        endedEarlyFromStatus: scrimStatus('ended_early_from_status'),
         // 운영자가 모집 중·편성 중에 정하거나 바꾼다. 비어 있어도 모집을 마감할 수 있고, 대진 준비부터는 반드시 있다.
         // 편성 중에 바꾸거나 비우면 기존 수동 배정·경매 기록을 무효화한다.
         formationMethod: scrimFormationMethod('formation_method'),
@@ -294,6 +301,14 @@ export const scrims = pgTable(
         check('scrims_team_count_range', sql`${table.teamCount} between 2 and 4`),
         check('scrims_reserve_capacity_range', sql`${table.reserveCapacity} between 0 and 10`),
         check('scrims_revision_nonnegative', sql`${table.revision} >= 0`),
+        check(
+            'scrims_cancellation_restore_state',
+            sql`(${table.cancelledFromStatus} is null and ${table.cancelledAuctionStatus} is null) or (${table.status} = 'cancelled' and ${table.cancelledFromStatus} is not null and ${table.cancelledFromStatus} in ('recruit', 'preparing', 'ready'))`
+        ),
+        check(
+            'scrims_early_end_restore_state',
+            sql`${table.endedEarlyFromStatus} is null or (${table.status} = 'ended_early' and ${table.endedEarlyFromStatus} in ('preparing', 'ready', 'in_progress'))`
+        ),
         check('scrims_title_length', sql`length(btrim(${table.title})) between 1 and 50`),
         check(
             'scrims_bracket_confirmer_requires_time',
@@ -301,13 +316,10 @@ export const scrims = pgTable(
         ),
         check(
             'scrims_formation_method_required',
-            sql`${table.status} in ('recruit', 'preparing', 'cancelled') or ${table.formationMethod} is not null`
+            sql`${table.status} in ('recruit', 'preparing', 'cancelled') or ${table.formationMethod} is not null or (${table.status} = 'ended_early' and ${table.endedEarlyFromStatus} is not null and ${table.endedEarlyFromStatus} = 'preparing')`
         )
     ]
 );
-
-// 경매는 시작 전후에 취소할 수 있으며, 내전 경기의 중도 종료와는 구분한다.
-export const auctionStatus = pgEnum('auction_status', ['setup', 'in_progress', 'completed', 'cancelled']);
 
 // 내전 하나에 경매 하나를 연결한다. 준비 단계로 되돌려도 같은 경매와 이력을 유지한다.
 // 편성 방식을 경매가 아닌 것으로 바꾸면 cancelled로 두고, 다시 경매를 고르면 같은 행을 setup으로 되돌린다.
@@ -630,6 +642,67 @@ export const auctionAcquisitions = pgTable(
     ]
 );
 
+export const auctionActionKind = pgEnum('auction_action_kind', [
+    'draw',
+    'pass',
+    'award',
+    'assign_current',
+    'assign_unsold',
+    'restore',
+    'revert'
+]);
+
+// 추첨·처리·유찰 복귀를 같은 순서 원장에 남긴다. 영입·금액은 기존 원장 참조로 보존한다.
+// 변경 전 행위는 추정해 채우지 않으며 초기화·방식 변경은 무효화 경계만 남긴다.
+export const auctionActions = pgTable(
+    'auction_actions',
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        scrimId: uuid('scrim_id').notNull(),
+        auctionId: uuid('auction_id').notNull(),
+        sequenceNumber: integer('sequence_number').notNull(),
+        kind: auctionActionKind('kind').notNull(),
+        scrimParticipantId: uuid('scrim_participant_id').notNull(),
+        lotId: uuid('lot_id').notNull(),
+        acquisitionId: uuid('acquisition_id'),
+        reversesId: uuid('reverses_id'),
+        recordedByUserId: text('recorded_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+        recordedAt: timestamp('recorded_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        invalidatedAt: timestamp('invalidated_at', { withTimezone: true, precision: 3 })
+    },
+    (table) => [
+        unique('auction_actions_auction_id_unique').on(table.auctionId, table.id),
+        unique('auction_actions_sequence_unique').on(table.auctionId, table.sequenceNumber),
+        unique('auction_actions_reversal_unique').on(table.reversesId),
+        foreignKey({
+            name: 'auction_actions_auction_fk',
+            columns: [table.scrimId, table.auctionId],
+            foreignColumns: [auctions.scrimId, auctions.id]
+        }).onDelete('restrict'),
+        foreignKey({
+            name: 'auction_actions_lot_fk',
+            columns: [table.auctionId, table.scrimParticipantId, table.lotId],
+            foreignColumns: [auctionLots.auctionId, auctionLots.scrimParticipantId, auctionLots.id]
+        }).onDelete('restrict'),
+        foreignKey({
+            name: 'auction_actions_acquisition_fk',
+            columns: [table.auctionId, table.acquisitionId],
+            foreignColumns: [auctionAcquisitions.auctionId, auctionAcquisitions.id]
+        }).onDelete('restrict'),
+        foreignKey({
+            name: 'auction_actions_reversal_fk',
+            columns: [table.auctionId, table.reversesId],
+            foreignColumns: [table.auctionId, table.id]
+        }).onDelete('restrict'),
+        check('auction_actions_sequence_positive', sql`${table.sequenceNumber} > 0`),
+        check(
+            'auction_actions_payload',
+            sql`(${table.kind} = 'revert' and ${table.reversesId} is not null and ${table.reversesId} <> ${table.id} and ${table.acquisitionId} is null) or (${table.kind} <> 'revert' and ${table.reversesId} is null and ((${table.kind} in ('award', 'assign_current', 'assign_unsold') and ${table.acquisitionId} is not null) or (${table.kind} in ('draw', 'pass', 'restore') and ${table.acquisitionId} is null)))`
+        ),
+        check('auction_actions_invalidation_time', sql`${table.invalidatedAt} >= ${table.recordedAt}`)
+    ]
+);
+
 export const matchStatus = pgEnum('match_status', [
     'pending',
     'in_progress',
@@ -826,7 +899,7 @@ export const matches = pgTable(
         isHardFearless: boolean('is_hard_fearless').notNull(),
         revision: integer('revision').default(0).notNull(),
         status: matchStatus('status').default('pending').notNull(),
-        // 정상 종료에만 시리즈 승자를 기록한다. 1:0·1:1 중도 종료에는 승자를 만들지 않는다.
+        // 정상 종료는 BO 승자, 중도 종료는 현재 점수 우세 팀이다. 중도 종료 동점은 null이다.
         winnerTeamId: uuid('winner_team_id'),
         startedAt: timestamp('started_at', { withTimezone: true, precision: 3 }),
         endedAt: timestamp('ended_at', { withTimezone: true, precision: 3 }),
@@ -864,12 +937,12 @@ export const matches = pgTable(
         ),
         check(
             'matches_winner_requires_completion',
-            sql`(${table.status} = 'completed' and ${table.winnerTeamId} is not null) or (${table.status} <> 'completed' and ${table.winnerTeamId} is null)`
+            sql`(${table.status} = 'completed' and ${table.winnerTeamId} is not null) or ${table.status} = 'ended_early' or (${table.status} not in ('completed', 'ended_early') and ${table.winnerTeamId} is null)`
         ),
         check('matches_time_order', sql`${table.endedAt} >= ${table.startedAt}`),
         check(
             'matches_scrim_end_restore_state',
-            sql`(${table.statusBeforeScrimEnd} is null and ${table.endedAtBeforeScrimEnd} is null and ${table.endReasonBeforeScrimEnd} is null) or (${table.statusBeforeScrimEnd} is not null and ((${table.statusBeforeScrimEnd} = 'pending' and ${table.status} = 'cancelled') or (${table.statusBeforeScrimEnd} = 'in_progress' and ${table.status} = 'ended_early')))`
+            sql`(${table.statusBeforeScrimEnd} is null and ${table.endedAtBeforeScrimEnd} is null and ${table.endReasonBeforeScrimEnd} is null) or (${table.statusBeforeScrimEnd} is not null and ((${table.statusBeforeScrimEnd} = 'pending' and ${table.status} in ('cancelled', 'ended_early')) or (${table.statusBeforeScrimEnd} = 'in_progress' and ${table.status} = 'ended_early')))`
         )
     ]
 );

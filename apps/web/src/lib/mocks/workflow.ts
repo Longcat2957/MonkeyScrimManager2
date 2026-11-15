@@ -5,7 +5,13 @@ import type {
     ScrimStatus
 } from '#lib/features/scrims/types.ts';
 import { dropMockBracket, getMockBracketProgress, setMockBracketEnded } from './bracket.ts';
-import { counts, findMockScrimRecord, type MockFailure, type MockScrim } from './scrims.ts';
+import {
+    counts,
+    findMockScrimRecord,
+    mockCancellationRestoreBlock,
+    type MockFailure,
+    type MockScrim
+} from './scrims.ts';
 import { dropMockFormation, reopenMockFormation } from './teams.ts';
 
 // 내전 단계 진행·되돌리기·중도 종료의 개발용 규칙이다. 편성·대진 목을 함께 고치므로 내전 목과 나눠 둔다.
@@ -80,6 +86,18 @@ async function revertAction(scrim: MockScrim): Promise<ScrimRevertAction | null>
         }
         case 'completed':
         case 'ended_early':
+            if (scrim.endedEarlyFromStatus === 'preparing')
+                return {
+                    label: '팀 편성으로 되돌리기',
+                    message: '중도 종료 전 팀 편성 단계로 돌아가요. 기존 배정과 경매 기록은 유지돼요.',
+                    blockedReason: null
+                };
+            if (scrim.endedEarlyFromStatus === 'ready')
+                return {
+                    label: '대진 준비로 되돌리기',
+                    message: '중도 종료 전 대진 준비 단계로 돌아가요. 기존 배치와 확정 상태는 유지돼요.',
+                    blockedReason: null
+                };
             return {
                 label: '진행 중으로 되돌리기',
                 message: '끝낸 내전을 다시 열어요. 중도 종료로 멈춘 경기도 다시 진행 중이 돼요.',
@@ -93,11 +111,19 @@ async function revertAction(scrim: MockScrim): Promise<ScrimRevertAction | null>
 /** 요약 화면의 운영 작업. 운영 권한이 없으면 모두 null·false다. */
 export async function getMockScrimOperations(guildId: string, scrimId: string) {
     const scrim = findMockScrimRecord(guildId, scrimId);
-    if (!scrim?.canManage) return { nextAction: null, revert: null, endEarly: false };
+    if (!scrim?.canManage) return { nextAction: null, revert: null, restore: null, endEarly: false };
     return {
         nextAction: await nextAction(scrim),
         revert: await revertAction(scrim),
-        endEarly: scrim.status === 'in_progress'
+        restore:
+            scrim.status === 'cancelled'
+                ? {
+                      label: '내전 취소 복구',
+                      message: '취소 전 단계로 돌아가요. 참가자와 팀 편성·경매 포인트는 그대로 유지돼요.',
+                      blockedReason: mockCancellationRestoreBlock(scrim)
+                  }
+                : null,
+        endEarly: ['preparing', 'ready', 'in_progress'].includes(scrim.status)
     };
 }
 
@@ -147,7 +173,8 @@ export async function revertMockScrim(guildId: string, scrimId: string): Promise
             break;
         case 'ended_early':
             await setMockBracketEnded(guildId, scrimId, false);
-            scrim.status = 'in_progress';
+            scrim.status = scrim.endedEarlyFromStatus ?? 'in_progress';
+            scrim.endedEarlyFromStatus = null;
             break;
         case 'completed':
             scrim.status = 'in_progress';
@@ -194,9 +221,10 @@ export async function endMockScrimEarly(guildId: string, scrimId: string): Promi
     await wait();
     const scrim = target(guildId, scrimId);
     if ('message' in scrim) return scrim;
-    if (scrim.status !== 'in_progress')
-        return { status: 409, message: '진행 중인 내전만 중도 종료할 수 있어요' };
+    if (!['preparing', 'ready', 'in_progress'].includes(scrim.status))
+        return { status: 409, message: '편성 중·대진 준비·진행 중인 내전만 중도 종료할 수 있어요' };
     await setMockBracketEnded(guildId, scrimId, true);
+    scrim.endedEarlyFromStatus = scrim.status;
     scrim.status = 'ended_early';
     return null;
 }

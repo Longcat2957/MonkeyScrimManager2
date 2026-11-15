@@ -15,4 +15,7 @@
     bracket={data.bracket}
     guildId={page.params.guildId!}
     title={data.scrim.status === 'ended_early' ? '중도 종료 결과' : '대진 결과'}
+    emptyMessage={data.scrim.status === 'ended_early'
+        ? '대진을 만들기 전에 내전이 중도 종료됐어요.'
+        : undefined}
 />

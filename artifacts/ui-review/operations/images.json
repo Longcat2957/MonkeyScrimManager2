@@ -1,0 +1,287 @@
+{
+    "count": 47,
+    "images": [
+        {
+            "path": "artifacts/ui-review/operations/before/auction-primary-desktop.png",
+            "sha256": "8361606cd1ce0e3e9de00e04aea62b8b9e22efc5b417c5fc9bdeb88fa4363ea8",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/auction-primary-mobile.png",
+            "sha256": "967c074bb73fd3219875500df80193ba25bd557218f1154ed45e2bd972d0e938",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/auction-dark-desktop.png",
+            "sha256": "c9962c34b3baa6a4aab21a09fb720488a66eae2242cbaee0c92534d24278b780",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/auction-dark-mobile.png",
+            "sha256": "7cb266d889c2ee5584c2a01599d08865964b4100a61fe5d25b5ccdab109ff814",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/recruit-primary-desktop.png",
+            "sha256": "217db21626c53832eac062e30b3a799684ac94c97bfbf5a445947731e6bc3a27",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/recruit-primary-mobile.png",
+            "sha256": "e6a1d06f48ba26e03587e701af58f84a1f6d20f798089b4f1a8dd8e7566c92ed",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/recruit-dark-desktop.png",
+            "sha256": "47cc8091f1a9aef935e40545d30121961861bca45315b184002e000b3da31fd9",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/recruit-dark-mobile.png",
+            "sha256": "fa664f10daa8f6cce129523858009bb0eee9b4435d3c142761a343bdf2d99dea",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/playing-primary-desktop.png",
+            "sha256": "38caaa4bcbb6098c434e7ad2a7e4c51fb823da559ee5879c8a379978a8e7b527",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/playing-primary-mobile.png",
+            "sha256": "02656aee118581217db5b500c6ad42954bfda16d6e161945596bf5b0d1a5fe35",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/playing-dark-desktop.png",
+            "sha256": "1ba133e46421a3d2a8edb398517ca5597f57d05afa10d6d7a18f5b816e954f28",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/before/playing-dark-mobile.png",
+            "sha256": "f196e2c4463bd341cc6894ee6ce6ce11c6d8f9547bcd04d3cc9c661233c1a117",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/auction-primary-desktop.png",
+            "sha256": "8361606cd1ce0e3e9de00e04aea62b8b9e22efc5b417c5fc9bdeb88fa4363ea8",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/auction-primary-mobile.png",
+            "sha256": "967c074bb73fd3219875500df80193ba25bd557218f1154ed45e2bd972d0e938",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/auction-dark-desktop.png",
+            "sha256": "c9962c34b3baa6a4aab21a09fb720488a66eae2242cbaee0c92534d24278b780",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/auction-dark-mobile.png",
+            "sha256": "7cb266d889c2ee5584c2a01599d08865964b4100a61fe5d25b5ccdab109ff814",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/recruit-primary-desktop.png",
+            "sha256": "79691310a540ec0c36b86ebc710afb4d8eaa3400468ddfa890bec3a04526b74b",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/recruit-primary-mobile.png",
+            "sha256": "702a6acec09cb99672126b8aa4b7239897c9e1167139db731b940698596822e8",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/recruit-dark-desktop.png",
+            "sha256": "e2320e9e1c9108b9ed4403c1daecc6106ee3636b1efdc7ba03406ffec36f9454",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/recruit-dark-mobile.png",
+            "sha256": "9b3b8025384f56208af16267be12d1527048bbc5dd6af4f40b975a57c9e719ce",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/playing-primary-desktop.png",
+            "sha256": "b11d14c334577859e29c2636efeb89ebf2ea208984d12aa4eefb03404e561fb3",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/playing-primary-mobile.png",
+            "sha256": "94924a3e664b41b8c57d17705e54ed9c29150f4388bf20f07baea4805b33289c",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/playing-dark-desktop.png",
+            "sha256": "ae421dcff9947ddee0aff26c6101acb444d89451eea276ca52abd79f603d46de",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/playing-dark-mobile.png",
+            "sha256": "5474089379aecce45b5ffd56f7b0d396b1b4ea5f50e2a1beb50bbc473356504e",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/static-visual.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-primary-cancel-confirm.png",
+            "sha256": "294b17bab8df05e0966fdf1883f9afa923a809b4e0e41dd3cd6cbd15e18e1b10",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-primary-cancelled-restore-menu.png",
+            "sha256": "263d492ce96ddd15b8ef24c9934c3838b9092660dc44ec8c442db62062bf7714",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-primary-preparing-ended-result.png",
+            "sha256": "32b2f083bb458d25fa35dc6c7a53e8191362b235f89dae734b1414f251714297",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-primary-leading-ended-result.png",
+            "sha256": "700ee9957a52184540c45544acf877e3aa8a048dac9c286d0e26fd967e5d1d2a",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-dark-cancel-confirm.png",
+            "sha256": "b1be85211c9f45d16ba4d1f111caad49dab55c9162ef6aa2870006f87fdd281a",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-dark-cancelled-restore-menu.png",
+            "sha256": "d9e10acedd5ef277df2d2c08d0f56724875d93cd3622fc3c2105a19e8a65f11e",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-dark-preparing-ended-result.png",
+            "sha256": "4dcb150277d9bad9405d8e20a1eb9f7ec497360520a9e2621ab0c96b9036fbfa",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/1440-dark-leading-ended-result.png",
+            "sha256": "6df83c2f3642dab84f2ff69a8d4264f224b46a7242d2eb1133167fb65fec446a",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-primary-cancel-confirm.png",
+            "sha256": "e63cf37fb3a75935bf184a797a6e76e0c595203193702db67cc683cb948611e2",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-primary-cancelled-restore-menu.png",
+            "sha256": "c8236433c361f1e7af90f7f4bfea1d66c7b8e532b9955e4aca1a395fe262d6c3",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-primary-preparing-ended-result.png",
+            "sha256": "94a80b251e38baebb3c826faf94d9a920815c82892b443dbf2ab74a2e0e11d4a",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-primary-leading-ended-result.png",
+            "sha256": "17cd1a2388ad81c849890f7c37b42677b55ff494d55774342e2dd3089472989b",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-dark-cancel-confirm.png",
+            "sha256": "eb51865dbe52e1a76ab0a888704bff6125575d2e6b63f7aadbf3a1346c4ec1b7",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-dark-cancelled-restore-menu.png",
+            "sha256": "842cbbc8f87f7e9e073cf9998e2112c8dc440bed016b0ca8f51ce38fc12a4bed",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-dark-preparing-ended-result.png",
+            "sha256": "a9bbe0bd6c5ef4dde7ebffa598b7c4f7f5c498e07e4e08662ac2d50bf67d77e1",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/lifecycle/390-dark-leading-ended-result.png",
+            "sha256": "d4bf68d44fe656631dda53432cf5cd7c02efc9f5fa445810df920feb58d9242f",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/lifecycle.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/manager-draw-desktop-primary.png",
+            "sha256": "3277b75b934c940a5d6d22dd18715eeaad3ce6ca00fecfa586e138a561cda98a",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/manager-confirm-desktop-primary.png",
+            "sha256": "bf20f10b842086c221f3b0abdbc3bc92db8924dd935119e96599efaf656e485c",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/manager-undo-desktop-primary.png",
+            "sha256": "46ccb2f8a2bcfbb2478b0e12d9713968213cfb8d8e75f24bd493107ba39f53ae",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/manager-award-preserved-undo-desktop-primary.png",
+            "sha256": "3b8eb174824164c3ae05d751c2ffb2f0bd1b3dec7015578cbe81ac0efab2339c",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/guest-snapshot-mobile-primary.png",
+            "sha256": "6be08f8df410ba86a603be5d216f88f0b10dab49ce7521b493c01362a4275014",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/guest-error-mobile-primary.png",
+            "sha256": "086b86b6fb31bcfd6585068fd772c6761d3d67efacfdb3a93350ad3adc7751ec",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/guest-snapshot-mobile-dark.png",
+            "sha256": "4016e394578f728c38957ffb89b2c02834bd7bf49e84975faf21feea35a06d5b",
+            "actuallyRead": true,
+            "reviewManifest": "artifacts/ui-review/operations/auction.json"
+        }
+    ]
+}

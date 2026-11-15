@@ -167,7 +167,7 @@ for (const manual of [false, true])
         assertPartition(restored);
     });
 
-test('유찰 복귀 후 이전 기록 되돌리기는 후보를 한 상태에만 복원한다', async (t) => {
+test('유찰 복귀를 되돌리면 원래 유찰 목록으로 복원한다', async (t) => {
     const f = await fixture(t);
     await f.start();
     const lotId = await f.draw();
@@ -183,12 +183,13 @@ test('유찰 복귀 후 이전 기록 되돌리기는 후보를 한 상태에만
         f.access
     );
     await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
-    assert.equal((await f.view()).openLot?.participantId, participantId);
-    assert.notEqual((await f.view()).openLotId, lotId);
+    assert.equal((await f.view()).openLot, null);
+    assert.equal((await f.view()).unsold[0]?.participantId, participantId);
+    assert.equal((await f.view()).canRevert, false);
     assertPartition(await f.view());
 });
 
-test('다음 후보를 추첨한 뒤 낙찰을 되돌리면 새 후보를 대기열에 보존한다', async (t) => {
+test('낙찰 후 다음 추첨을 되돌리면 낙찰과 포인트를 유지한다', async (t) => {
     const f = await fixture(t);
     await f.start();
     const lotId = await f.draw();
@@ -205,9 +206,10 @@ test('다음 후보를 추첨한 뒤 낙찰을 되돌리면 새 후보를 대기
     const next = (await f.view()).openLot!.participantId;
     await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     const state = await f.view();
-    assert.equal(state.openLot?.participantId, previous);
+    assert.equal(state.openLot, null);
     assert.equal(state.queue[0]?.participantId, next);
-    assert.equal(state.teams[0]?.remainingPoints, 100);
+    assert.equal(state.teams[0]?.remainingPoints, 90);
+    assert.ok(state.teams[0]!.members.some((entry) => entry.player.participantId === previous));
     assertPartition(state);
 });
 
@@ -278,6 +280,11 @@ test('모든 팀이 다섯 명이면 편성을 완료하고 복귀·방식 변�
         );
     }
     assert.equal((await f.view()).status, 'completed');
+    assert.equal((await f.view()).canRevert, false);
+    await assert.rejects(
+        revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
+        errorCode('CONFLICT')
+    );
     assert.equal((await f.row()).status, 'ready');
     assert.deepEqual(
         (await f.view()).teams.map((team) => team.remainingPoints),
@@ -293,6 +300,7 @@ test('모든 팀이 다섯 명이면 편성을 완료하고 복귀·방식 변�
         errorCode('CONFLICT')
     );
     await revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.view()).canRevert, true);
     await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 0);
     await chooseFormationMethod(
@@ -324,6 +332,7 @@ test('모든 팀이 다섯 명이면 편성을 완료하고 복귀·방식 변�
     );
     assert.equal((await f.view()).status, 'setup');
     assert.ok((await f.view()).history.length > 0);
+    assert.ok((await f.db.select().from(schema.auctionActions)).every((action) => action.invalidatedAt));
 });
 
 test('동일 후보 동시 낙찰은 한 영입과 한 번의 포인트 차감만 남긴다', async (t) => {
@@ -372,5 +381,164 @@ test('동일 후보 동시 낙찰은 한 영입과 한 번의 포인트 차감�
         drawAuctionLot(f.db, f.manager, f.guildId, f.scrimId, revision, f.access),
         errorCode('CONFLICT')
     );
+    assertPartition(await f.view());
+});
+
+function operationalState(view: AuctionView) {
+    return {
+        open: view.openLot?.participantId ?? null,
+        queue: view.queue.map((player) => player.participantId),
+        unsold: view.unsold.map((player) => player.participantId).sort(),
+        teams: view.teams.map((team) => ({
+            id: team.id,
+            points: team.remainingPoints,
+            members: team.members.map((entry) => ({
+                id: entry.player.participantId,
+                via: entry.via,
+                price: entry.price
+            }))
+        }))
+    };
+}
+
+for (const kind of ['draw', 'pass', 'award', 'assign_current', 'assign_unsold', 'restore'] as const)
+    test(`직전 ${kind} 작업만 한 번 취소하고 기존 원장·분할을 보존한다`, async (t) => {
+        const f = await fixture(t);
+        await f.start();
+        assert.equal((await f.view()).canRevert, false);
+        let lotId: string | undefined;
+        let participantId: string | undefined;
+        if (kind !== 'draw') {
+            lotId = await f.draw();
+            participantId = (await f.view()).openLot!.participantId;
+            if (kind === 'assign_unsold' || kind === 'restore')
+                await passAuctionLot(
+                    f.db,
+                    f.manager,
+                    f.guildId,
+                    f.scrimId,
+                    { ...(await f.revision()), lotId },
+                    f.access
+                );
+        }
+        const before = operationalState(await f.view());
+        const input = {
+            ...(await f.revision()),
+            lotId: lotId!,
+            participantId: participantId!,
+            teamId: f.teams[0]!.id
+        };
+        switch (kind) {
+            case 'draw':
+                await f.draw();
+                break;
+            case 'pass':
+                await passAuctionLot(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
+                break;
+            case 'award':
+                await awardAuctionLot(
+                    f.db,
+                    f.manager,
+                    f.guildId,
+                    f.scrimId,
+                    { ...input, price: 35 },
+                    f.access
+                );
+                break;
+            case 'assign_current':
+                await assignAuctionCurrent(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
+                break;
+            case 'assign_unsold':
+                await assignAuctionUnsold(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
+                break;
+            case 'restore':
+                await restoreAuctionUnsold(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
+                break;
+        }
+        assert.equal((await f.view()).canRevert, true);
+        const originals = await f.db.select().from(schema.auctionActions);
+        const original = originals.at(-1)!;
+        assert.equal(original.kind, kind);
+        await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+        const after = await f.view();
+        assert.deepEqual(operationalState(after), before);
+        assertPartition(after);
+        assert.equal(after.canRevert, false);
+        const actions = await f.db.select().from(schema.auctionActions);
+        assert.equal(actions.length, originals.length + 1);
+        assert.equal(actions.at(-1)!.kind, 'revert');
+        assert.equal(actions.at(-1)!.reversesId, original.id);
+        await assert.rejects(
+            revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
+            errorCode('CONFLICT')
+        );
+        assert.equal((await f.db.select().from(schema.auctionActions)).length, actions.length);
+        if (kind === 'draw') {
+            await f.draw();
+            assert.equal((await f.view()).canRevert, true);
+        }
+    });
+
+test('행위 원장이 없는 기존 경매는 과거 추첨을 추정해 취소하지 않는다', async (t) => {
+    const f = await fixture(t);
+    await f.start();
+    const lotId = await f.draw();
+    await awardAuctionLot(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), lotId, teamId: f.teams[0]!.id, price: 30 },
+        f.access
+    );
+    // migration 이전의 lot·영입만 있는 경매를 재현한다.
+    await f.db.delete(schema.auctionActions);
+    const before = await f.view();
+    assert.equal(before.canRevert, false);
+    await assert.rejects(
+        revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
+        errorCode('CONFLICT')
+    );
+    assert.deepEqual(await f.view(), before);
+    await f.draw();
+    await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.view()).teams[0]!.remainingPoints, 70);
+    assert.equal((await f.view()).history.filter((entry) => !entry.voided).length, 1);
+});
+
+test('초기화·준비 복귀는 행위 경계를 끊고 이전 작업을 복원하지 않는다', async (t) => {
+    const f = await fixture(t);
+    await f.start();
+    await f.draw();
+    await resetAuction(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.view()).canRevert, false);
+    assert.ok((await f.db.select().from(schema.auctionActions)).every((action) => action.invalidatedAt));
+    await assert.rejects(
+        revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
+        errorCode('CONFLICT')
+    );
+    await f.draw();
+    await reopenAuctionSetup(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    await startAuction(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.view()).canRevert, false);
+    await f.draw();
+    assert.equal((await f.view()).canRevert, true);
+});
+
+test('같은 revision의 되돌리기는 한 번만 커밋하고 역기록 하나를 남긴다', async (t) => {
+    const f = await fixture(t);
+    await f.start();
+    await f.draw();
+    const input = await f.revision();
+    const results = await concurrently([
+        () => revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, input, f.access),
+        () => revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, input, f.access)
+    ]);
+    assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
+    assert.equal(
+        (await f.db.select().from(schema.auctionActions)).filter((action) => action.kind === 'revert').length,
+        1
+    );
+    assert.equal((await f.view()).queue.length, 8);
     assertPartition(await f.view());
 });

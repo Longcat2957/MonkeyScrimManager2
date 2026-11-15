@@ -16,6 +16,7 @@ import type { RegistrationAccount } from '#lib/features/scrims/types.ts';
 import { getMockMe } from '#lib/mocks/me.ts';
 import {
     cancelMockScrim,
+    restoreMockCancelledScrim,
     findMockScrim,
     getMockScrimDetail,
     getMockScrimSettings,
@@ -48,7 +49,8 @@ import {
     withdrawRegistration,
     setParticipantStatus,
     updateScrimSettings,
-    cancelScrim
+    cancelScrim,
+    restoreCancelledScrim
 } from '#lib/server/scrims/service.ts';
 import { parseScrimSettings } from '#lib/server/scrims/validation.ts';
 import {
@@ -278,6 +280,13 @@ const previewActions: Actions = {
         return failWith(await revertMockScrim(params.guildId, params.scrimId));
     },
 
+    restore: async ({ params }) => {
+        requireDev();
+        const denied = requireManager(params.guildId, params.scrimId);
+        if (denied) return denied;
+        return failWith(await restoreMockCancelledScrim(params.guildId, params.scrimId));
+    },
+
     endEarly: async ({ params }) => {
         requireDev();
         const denied = requireManager(params.guildId, params.scrimId);
@@ -362,6 +371,7 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
         else if (name === 'revert') await revertScrim(db, actor, guildId, scrimId, revision);
         else if (name === 'endEarly') await endScrimEarly(db, actor, guildId, scrimId, revision);
         else if (name === 'cancel') await cancelScrim(db, actor, guildId, scrimId, revision);
+        else if (name === 'restore') await restoreCancelledScrim(db, actor, guildId, scrimId, revision);
         return { saved: true };
     } catch (cause) {
         return actionFailure(cause, setHeaders);

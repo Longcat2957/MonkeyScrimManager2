@@ -78,6 +78,7 @@
 - `/api/riot/account/v1/accounts/by-riot-id/[gameName]/[tagLine]`, `/api/riot/account/v1/accounts/by-puuid/[puuid]`, `/api/riot/account/v1/region/by-game/lol/by-puuid/[puuid]`.
 - `/api/lol/summoner/v4/summoners/by-puuid/[puuid]`, `/api/lol/league/v4/entries/by-puuid/[puuid]`.
 - `/g/[guildId]/ranking`: `RankingBoard`의 무한 스크롤이 소비하는 서버 순위 다음 쪽.
+- `/g/[guildId]/scrims/[scrimId]/auction/live`: 경매 열람자의 자동/수동 갱신이 소비하는 현재 경매·내전 snapshot. 기존 공개 읽기 권한, `private, no-store`. 별도 사용자 페이지나 서버 입찰 endpoint가 아니다.
 
 Riot API 핸들러의 `region`·`platform` 등은 서버 클라이언트 설정과 검증을 따른다. 기존 프로필·티어 HTTP 조회는 공개이며, 서버 관리의 계정 조회·연결은 관리자 guard를 거친 서버 내부 호출이다.
 
@@ -147,4 +148,4 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 | `/g/[guildId]`와 일반 하위 화면 | 활성 DB 서버·대상을 공개 조회. 없음·비활성은 404. `/admin`은 현재 관리자 검사 |
 | `/`, `/docs`, `/terms`, `/privacy` | 정적 서비스 소개·이용 안내·정책 준비 중 화면 |
 
-기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 과거 시즌 선택·편성 참고 전적 등 현재 연결되지 않은 영역은 해당 페이지의 한계에 명시한다.
+기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 시즌 전환은 봇 운영 명령을 사용하고, 과거 시즌을 전적에서 선택하는 UI는 해당 페이지의 후속 범위로 남긴다.

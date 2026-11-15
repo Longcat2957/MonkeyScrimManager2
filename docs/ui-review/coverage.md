@@ -1,10 +1,22 @@
 # 전체 화면 검토 범위
 
-최신 범위는 [남은 과업 완료 기록](remaining.md)과 아래 추가 표를 따른다. 최초20페이지 검토·후속6페이지 DQ-01~13과 [당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 약관·개인정보2페이지는 본문 미확정으로 사용자 요청에 따라 보류했다.
+최신 범위는 [운영 과업 실행 기록](operations.md)과 아래 추가 표를 따른다. [앞선 남은 과업 기록](remaining.md)·최초20페이지 검토·후속6페이지 DQ-01~13·[당시 부분 충족 판정](recheck.md)은 이력으로 보존한다. 약관·개인정보2페이지는 본문 미확정으로 사용자 요청에 따라 보류했다.
 
 2026-11-14. 기준 주소: `http://127.0.0.1:5173`. 운영 18개 + 개발 전용 2개 = 전체 20개 화면. HTTP API·OAuth 핸들러는 별도 페이지로 세지 않는다.
 
-## 남은 과업의 추가 확인 범위
+## 운영 후속의 추가 확인 범위
+
+2026-11-15에는 요약·경매·결과의 3종 화면을 직접 수정·재검증했다. 기존 공통 대진의 빈 안내는 결과에서만 변형을 전달한다. 전체20페이지를 다시 촬영한 것으로 합산하지 않는다. 경로가 같은 내전의 단계·fixture UUID·테마는 새 페이지로 중복 계산하지 않는다.
+
+| 실제 대상·역할 | 상태·범위 | 진행·증거 |
+| --- | --- | --- |
+| `/g/devGuild001/scrims/devScrim001`, `devScrim004`, `devScrim002/auction` | 개발 관리자 기본 화면, 1440×1000·390×844·양 테마. root UI 전후24장 | OP-01~04 공통 회귀. [전후 독립 읽기](../../artifacts/ui-review/operations/static-visual.md)·[촬영 목록/해시](../../artifacts/ui-review/operations/static-visual.json) |
+| 격리 실제 관리자 `/g/{guild}/scrims/{id}`와 `/result` | 취소 확인/Escape·취소 후 복구·편성 전 중도 종료/원단계·실ROFL1:0 우세/재개. 1440×1000·390×844·양 테마16장 | OP-02·03 완료. [동적 실제 URL/해시](../../artifacts/ui-review/operations/after/lifecycle/captures.json)·[행동·보존 검증](../../artifacts/ui-review/operations/lifecycle.md) |
+| 격리 실제 관리자/공개 관전자 `/g/{guild}/scrims/{id}/auction` | 키보드 추첨/직전 취소·영입과85P 보존/초기화, 준비→진행·503·15초 timeout·재시도·pause/manual/resume·hidden/offline/SPA 종료·POST0 | OP-01·04 완료. 1440 관리자·390 관전자, 다크 포함7장. [실제 URL/해시·실독](../../artifacts/ui-review/operations/auction.json)·[전체 과업](../../artifacts/ui-review/operations/auction.md) |
+
+새 이미지47장(기본 전후24+실세션 lifecycle16+경매7)은 모두 직접 읽고 해시를 기록했다. 기본 before는 이번 UI 전 단계로, 동시에 진행한 백엔드 변경까지 제외한 `521e763`의 순수 golden이라고 주장하지 않는다. 실제 세션 fixture는 외부 이미지·폰트를 차단하므로 CDN·브랜드 글꼴 품질 판정과 분리한다. 실제 URL의 테스트 schema·세션은 실행 후 정리됐으며 재접근 가능한 운영 자료가 아니다. 시즌 명령·배포 검사는 사용자 페이지 수에 더하지 않는다. 전체 검증과 남은 운영 범위는 [현재 보고서](operations.md)를 따른다.
+
+## 앞선 남은 과업의 추가 확인 범위
 
 이번 직접 UI 수정·재검증은 요약·통계·수동 편성·경매4페이지다. 아래5개 내전 단계는 요약의 상태 변형이며 별도 페이지로 더하지 않는다. 격리 DB URL의 UUID와 실제 역할·상태는 [통합 시각 증거](../../artifacts/ui-review/remaining/feature-visual.json)에 실행 당시 값으로 기록했다. 이 fixture는 실행 후 정리되므로 같은 경로가 계속 접근 가능하다는 뜻은 아니다.
 

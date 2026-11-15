@@ -6,7 +6,9 @@ import type {
     BotRegistrationContext,
     BotRegistrationInput,
     BotFailedPublication,
-    BotPublicationRetryInput
+    BotPublicationRetryInput,
+    BotSeasonSnapshot,
+    BotRotateSeasonInput
 } from '../../../../shared/bot-api.js';
 
 export class BotApiError extends Error {
@@ -102,6 +104,17 @@ export function createApiClient(options: {
                 guildPath(guildId) + '/initialization',
                 { actorId, interactionId }
             );
+        },
+        seasons(guildId: string, actorId: string, autocomplete = false) {
+            return request<BotSeasonSnapshot>(
+                'GET',
+                guildPath(guildId) + '/seasons?' + new URLSearchParams({ actorId }),
+                undefined,
+                autocomplete ? 2000 : undefined
+            );
+        },
+        rotateSeason(guildId: string, input: BotRotateSeasonInput) {
+            return request<BotSeasonSnapshot>('POST', guildPath(guildId) + '/seasons', input);
         },
         createScrim(guildId: string, input: BotCreateScrimInput) {
             return request<{ scrimId: string }>('POST', guildPath(guildId) + '/scrims', input);

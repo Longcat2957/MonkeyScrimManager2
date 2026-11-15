@@ -1,0 +1,701 @@
+{
+    "date": "2026-11-15",
+    "scope": "기본 3개 URL × 2개 폭 × 2개 테마의 전후 24장 직접 읽기·경매 live 읽기 전용 코드 검토",
+    "provenance": {
+        "before": "이번 root UI 변경 이전이나 백엔드 동시 개발 중 촬영; HEAD 521e763의 순수 golden으로 단정하지 않음",
+        "after": "root 최종 재촬영 완료 신호 후 12장 재독; fresh context·초기 테마·제목 표시·fonts.ready·600ms·2RAF",
+        "screenshotMatricesAdded": 0,
+        "sourceEdits": 0,
+        "captureMetadataEdits": 0,
+        "dynamicLifecycleImagesDuplicated": 0
+    },
+    "captureManifests": [
+        {
+            "path": "artifacts/ui-review/operations/before/captures.json",
+            "sha256": "892b0cd41f49c1e1f730cf876521eb6b52d1db36990c8421b5f48b31089e36c5"
+        },
+        {
+            "path": "artifacts/ui-review/operations/after/captures.json",
+            "sha256": "0afced6d006014ef95f7f51eb82b7ee1d2d560604fbd49691b9b04f4c2c2d7ce"
+        }
+    ],
+    "images": [
+        {
+            "stage": "before",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/before/auction-primary-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 1440,
+                "height": 1077
+            },
+            "sha256": "8361606cd1ce0e3e9de00e04aea62b8b9e22efc5b417c5fc9bdeb88fa4363ea8",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/before/auction-primary-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 390,
+                "height": 1366
+            },
+            "sha256": "967c074bb73fd3219875500df80193ba25bd557218f1154ed45e2bd972d0e938",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/before/auction-dark-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 1440,
+                "height": 1077
+            },
+            "sha256": "c9962c34b3baa6a4aab21a09fb720488a66eae2242cbaee0c92534d24278b780",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/before/auction-dark-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 390,
+                "height": 1366
+            },
+            "sha256": "7cb266d889c2ee5584c2a01599d08865964b4100a61fe5d25b5ccdab109ff814",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/before/recruit-primary-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 1440,
+                "height": 1831
+            },
+            "sha256": "217db21626c53832eac062e30b3a799684ac94c97bfbf5a445947731e6bc3a27",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/before/recruit-primary-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 390,
+                "height": 2006
+            },
+            "sha256": "e6a1d06f48ba26e03587e701af58f84a1f6d20f798089b4f1a8dd8e7566c92ed",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/before/recruit-dark-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 1440,
+                "height": 1831
+            },
+            "sha256": "47cc8091f1a9aef935e40545d30121961861bca45315b184002e000b3da31fd9",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/before/recruit-dark-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 390,
+                "height": 2006
+            },
+            "sha256": "fa664f10daa8f6cce129523858009bb0eee9b4435d3c142761a343bdf2d99dea",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/before/playing-primary-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 1440,
+                "height": 1606
+            },
+            "sha256": "38caaa4bcbb6098c434e7ad2a7e4c51fb823da559ee5879c8a379978a8e7b527",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/before/playing-primary-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 390,
+                "height": 1618
+            },
+            "sha256": "02656aee118581217db5b500c6ad42954bfda16d6e161945596bf5b0d1a5fe35",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/before/playing-dark-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 1440,
+                "height": 1606
+            },
+            "sha256": "1ba133e46421a3d2a8edb398517ca5597f57d05afa10d6d7a18f5b816e954f28",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "before",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/before/playing-dark-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 390,
+                "height": 1618
+            },
+            "sha256": "f196e2c4463bd341cc6894ee6ce6ce11c6d8f9547bcd04d3cc9c661233c1a117",
+            "readByAssistant": true,
+            "reader": "view_image"
+        },
+        {
+            "stage": "after",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/after/auction-primary-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 1440,
+                "height": 1077
+            },
+            "sha256": "8361606cd1ce0e3e9de00e04aea62b8b9e22efc5b417c5fc9bdeb88fa4363ea8",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "primary",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/after/auction-primary-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 390,
+                "height": 1366
+            },
+            "sha256": "967c074bb73fd3219875500df80193ba25bd557218f1154ed45e2bd972d0e938",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "primary",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/after/auction-dark-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 1440,
+                "height": 1077
+            },
+            "sha256": "c9962c34b3baa6a4aab21a09fb720488a66eae2242cbaee0c92534d24278b780",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "dark",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "auction",
+            "path": "artifacts/ui-review/operations/after/auction-dark-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim002/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 390,
+                "height": 1366
+            },
+            "sha256": "7cb266d889c2ee5584c2a01599d08865964b4100a61fe5d25b5ccdab109ff814",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "dark",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/after/recruit-primary-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 1440,
+                "height": 1831
+            },
+            "sha256": "79691310a540ec0c36b86ebc710afb4d8eaa3400468ddfa890bec3a04526b74b",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "primary",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/after/recruit-primary-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 390,
+                "height": 2006
+            },
+            "sha256": "702a6acec09cb99672126b8aa4b7239897c9e1167139db731b940698596822e8",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "primary",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/after/recruit-dark-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 1440,
+                "height": 1831
+            },
+            "sha256": "e2320e9e1c9108b9ed4403c1daecc6106ee3636b1efdc7ba03406ffec36f9454",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "dark",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "recruit",
+            "path": "artifacts/ui-review/operations/after/recruit-dark-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim001",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 390,
+                "height": 2006
+            },
+            "sha256": "9b3b8025384f56208af16267be12d1527048bbc5dd6af4f40b975a57c9e719ce",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "dark",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/after/playing-primary-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 1440,
+                "height": 1606
+            },
+            "sha256": "b11d14c334577859e29c2636efeb89ebf2ea208984d12aa4eefb03404e561fb3",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "primary",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/after/playing-primary-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "pngSize": {
+                "width": 390,
+                "height": 1618
+            },
+            "sha256": "94924a3e664b41b8c57d17705e54ed9c29150f4388bf20f07baea4805b33289c",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "primary",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/after/playing-dark-desktop.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 1440,
+                "height": 1606
+            },
+            "sha256": "ae421dcff9947ddee0aff26c6101acb444d89451eea276ca52abd79f603d46de",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "dark",
+                "horizontalOverflow": false
+            }
+        },
+        {
+            "stage": "after",
+            "page": "playing",
+            "path": "artifacts/ui-review/operations/after/playing-dark-mobile.png",
+            "url": "/g/devGuild001/scrims/devScrim004",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "pngSize": {
+                "width": 390,
+                "height": 1618
+            },
+            "sha256": "5474089379aecce45b5ffd56f7b0d396b1b4ea5f50e2a1beb50bbc473356504e",
+            "readByAssistant": true,
+            "reader": "view_image",
+            "rootCaptureChecks": {
+                "pageErrors": 0,
+                "actualTheme": "dark",
+                "horizontalOverflow": false
+            }
+        }
+    ],
+    "comparisons": [
+        {
+            "page": "auction",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "before": "artifacts/ui-review/operations/before/auction-primary-desktop.png",
+            "after": "artifacts/ui-review/operations/after/auction-primary-desktop.png",
+            "rawPixelDifferenceBounds": null,
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "auction",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "before": "artifacts/ui-review/operations/before/auction-primary-mobile.png",
+            "after": "artifacts/ui-review/operations/after/auction-primary-mobile.png",
+            "rawPixelDifferenceBounds": null,
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "auction",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "before": "artifacts/ui-review/operations/before/auction-dark-desktop.png",
+            "after": "artifacts/ui-review/operations/after/auction-dark-desktop.png",
+            "rawPixelDifferenceBounds": null,
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "auction",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "before": "artifacts/ui-review/operations/before/auction-dark-mobile.png",
+            "after": "artifacts/ui-review/operations/after/auction-dark-mobile.png",
+            "rawPixelDifferenceBounds": null,
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "recruit",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "before": "artifacts/ui-review/operations/before/recruit-primary-desktop.png",
+            "after": "artifacts/ui-review/operations/after/recruit-primary-desktop.png",
+            "rawPixelDifferenceBounds": [89, 113, 1351, 289],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "recruit",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "before": "artifacts/ui-review/operations/before/recruit-primary-mobile.png",
+            "after": "artifacts/ui-review/operations/after/recruit-primary-mobile.png",
+            "rawPixelDifferenceBounds": [25, 97, 365, 273],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "recruit",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "before": "artifacts/ui-review/operations/before/recruit-dark-desktop.png",
+            "after": "artifacts/ui-review/operations/after/recruit-dark-desktop.png",
+            "rawPixelDifferenceBounds": [89, 113, 1351, 336],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "recruit",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "before": "artifacts/ui-review/operations/before/recruit-dark-mobile.png",
+            "after": "artifacts/ui-review/operations/after/recruit-dark-mobile.png",
+            "rawPixelDifferenceBounds": [25, 97, 365, 273],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "playing",
+            "theme": "primary",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "before": "artifacts/ui-review/operations/before/playing-primary-desktop.png",
+            "after": "artifacts/ui-review/operations/after/playing-primary-desktop.png",
+            "rawPixelDifferenceBounds": [89, 113, 1351, 325],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "playing",
+            "theme": "primary",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "before": "artifacts/ui-review/operations/before/playing-primary-mobile.png",
+            "after": "artifacts/ui-review/operations/after/playing-primary-mobile.png",
+            "rawPixelDifferenceBounds": [25, 97, 365, 285],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "playing",
+            "theme": "dark",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "before": "artifacts/ui-review/operations/before/playing-dark-desktop.png",
+            "after": "artifacts/ui-review/operations/after/playing-dark-desktop.png",
+            "rawPixelDifferenceBounds": [89, 113, 1351, 325],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        },
+        {
+            "page": "playing",
+            "theme": "dark",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "before": "artifacts/ui-review/operations/before/playing-dark-mobile.png",
+            "after": "artifacts/ui-review/operations/after/playing-dark-mobile.png",
+            "rawPixelDifferenceBounds": [25, 97, 365, 660],
+            "visualLayoutRegressionConfirmed": false,
+            "duplicateControlsAddedConfirmed": false
+        }
+    ],
+    "reviewedSources": [
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte",
+            "sha256": "bb4b5527bd02d10c8b435f0e01e17dfafb62cf6dbdaa4b47a7e9ec2f3467f2f8"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/live/+server.ts",
+            "sha256": "6faf101b6c5b6facf479918295f2434d8c95c3059887ebb2531e04f62096858a"
+        },
+        {
+            "path": "apps/web/src/lib/features/scrims/auction-live.ts",
+            "sha256": "9d200e5c10deba6f50432c8c48b1009f35e961f653c06f220316fd8f41d399a1"
+        }
+    ],
+    "sourceReview": {
+        "cleanup": "timer·요청·event listener 정리 확인",
+        "permissions": "기존 공개 조회·GET 권한 갱신·private no-store·문맥 변경 재조회 확인",
+        "lateResponse": "중단·이탈·pathname·AbortSignal·중복 요청 guard 확인",
+        "failurePreservation": "snapshot 보존·15초 제한·backoff·수동/자동 재개 확인",
+        "confirmedNewDefects": [],
+        "runtimeBoundaryNotInjected": ["문맥 변경 직후 invalidateAll 자체의 라우터/상위 load 실패"]
+    },
+    "limitations": [
+        "정적 사진은 열린 메뉴·실제 클릭·키보드·모든 후보 도달·터치·스크린리더 검증을 대체하지 않음",
+        "새 대비 수치·성능 수치는 측정하지 않음",
+        "최종 production build·전체 회귀 완료는 root gate 별도 기록 참조"
+    ]
+}

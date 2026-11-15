@@ -1,4 +1,5 @@
 import type { LolPosition } from '#lib/features/guild/types.ts';
+import type { AuctionStatus } from '#lib/features/scrims/formation.ts';
 import { playCapacity } from '#lib/features/scrims/settings.ts';
 import type {
     FormationMethod,
@@ -14,6 +15,7 @@ import type {
     ScrimStatusFilter
 } from '#lib/features/scrims/types.ts';
 import { mockMainChampion, mockUser } from './session.ts';
+import { getMockAuction, getMockAuctionStatus, setMockAuctionStatus } from './teams.ts';
 
 // 개발 서버가 살아 있는 동안 유지되는 내전 목 저장소다. 실제 DB 연결 전까지 사용한다.
 
@@ -39,6 +41,9 @@ export type MockScrim = ScrimSettings & {
     guildId: string;
     id: string;
     status: ScrimStatus;
+    cancelledFromStatus?: ScrimStatus | null;
+    cancelledAuctionStatus?: AuctionStatus | null;
+    endedEarlyFromStatus?: ScrimStatus | null;
     canManage: boolean;
     createdAt: string;
     participants: MockParticipant[];
@@ -328,7 +333,17 @@ function myParticipant(scrim: MockScrim, userId: string | null) {
 
 function toContext(scrim: MockScrim): ScrimContext {
     const { id, title, status, scheduledAt, teamCount, formationMethod, hardFearless, canManage } = scrim;
-    return { id, title, status, scheduledAt, teamCount, formationMethod, hardFearless, canManage };
+    return {
+        id,
+        title,
+        status,
+        scheduledAt,
+        teamCount,
+        formationMethod,
+        hardFearless,
+        canManage,
+        endedEarlyFromStatus: scrim.endedEarlyFromStatus ?? null
+    };
 }
 
 export function findMockScrim(guildId: string, scrimId: string): ScrimContext | null {
@@ -648,7 +663,43 @@ export async function cancelMockScrim(guildId: string, scrimId: string): Promise
     await wait();
     const scrim = find(guildId, scrimId);
     if (!scrim) return { status: 404, message: '내전을 찾을 수 없어요' };
-    if (DONE.includes(scrim.status)) return { status: 409, message: '이미 끝난 내전이에요' };
+    if (!scrim.canManage) return { status: 403, message: '내전을 운영할 권한이 없어요' };
+    if (!['recruit', 'preparing', 'ready'].includes(scrim.status))
+        return { status: 409, message: '경기 시작 전 내전만 취소할 수 있어요' };
+    if (scrim.formationMethod === 'auction') await getMockAuction(guildId, scrimId);
+    scrim.cancelledFromStatus = scrim.status;
+    scrim.cancelledAuctionStatus = getMockAuctionStatus(scrimId);
+    if (scrim.cancelledAuctionStatus !== null) setMockAuctionStatus(scrimId, 'cancelled');
     scrim.status = 'cancelled';
+    return null;
+}
+
+export function mockCancellationRestoreBlock(scrim: MockScrim): string | null {
+    if (scrim.status !== 'cancelled') return '취소된 내전만 복구할 수 있어요';
+    if (!scrim.cancelledFromStatus || !['recruit', 'preparing', 'ready'].includes(scrim.cancelledFromStatus))
+        return '취소 전 단계가 남아 있지 않아 복구할 수 없어요';
+    const auction = getMockAuctionStatus(scrim.id);
+    if (
+        (scrim.cancelledAuctionStatus == null && auction !== null) ||
+        (scrim.cancelledAuctionStatus != null && auction !== 'cancelled')
+    )
+        return '취소 전 경매 상태를 확인할 수 없어 복구할 수 없어요';
+    return null;
+}
+
+export async function restoreMockCancelledScrim(
+    guildId: string,
+    scrimId: string
+): Promise<MockFailure | null> {
+    await wait();
+    const scrim = find(guildId, scrimId);
+    if (!scrim) return { status: 404, message: '내전을 찾을 수 없어요' };
+    if (!scrim.canManage) return { status: 403, message: '내전을 운영할 권한이 없어요' };
+    const blocked = mockCancellationRestoreBlock(scrim);
+    if (blocked) return { status: 409, message: blocked };
+    if (scrim.cancelledAuctionStatus != null) setMockAuctionStatus(scrimId, scrim.cancelledAuctionStatus);
+    scrim.status = scrim.cancelledFromStatus!;
+    scrim.cancelledFromStatus = null;
+    scrim.cancelledAuctionStatus = null;
     return null;
 }

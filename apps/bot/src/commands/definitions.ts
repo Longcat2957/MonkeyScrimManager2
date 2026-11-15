@@ -11,6 +11,19 @@ function command(name: string, description: string) {
 // Discord 기본 권한만으로 운영자 역할 사용자를 숨기지 않는다. 모든 쓰기는 웹에서 실효 권한을 다시 검사한다.
 export const commands = [
     command('초기설정', 'Monkeybot의 첫 시즌을 준비하고 서버 설정을 엽니다.'),
+    command('시즌', '현재·지난 시즌을 확인하거나 새 시즌을 시작합니다.')
+        .addStringOption((option) =>
+            option.setName('이름').setDescription('새 시즌 이름').setMinLength(1).setMaxLength(100)
+        )
+        .addStringOption((option) =>
+            option
+                .setName('현재시즌')
+                .setDescription('종료할 현재 시즌을 자동완성에서 선택해 주세요.')
+                .setAutocomplete(true)
+        )
+        .addBooleanOption((option) =>
+            option.setName('전환확인').setDescription('선택한 현재 시즌을 종료하고 새 시즌을 시작합니다.')
+        ),
     command('내전모집', '새 내전을 만들고 설정한 모집 채널에 게시합니다.')
         .addStringOption((option) =>
             option.setName('제목').setDescription('내전 제목').setRequired(true).setMaxLength(50)

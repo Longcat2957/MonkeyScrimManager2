@@ -1,9 +1,13 @@
 import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
 import { MessageFlags } from 'discord.js';
 import type { BotApi } from '../api/client.js';
-import type { BotFailedPublication, BotPublicationKind } from '../../../../shared/bot-api.js';
+import type {
+    BotFailedPublication,
+    BotPublicationKind,
+    BotSeasonSnapshot
+} from '../../../../shared/bot-api.js';
 import { BotApiError } from '../api/client.js';
-import { card, linkRow, notice, scrimUrl, webUrl } from '../messages/shared.js';
+import { card, label, linkRow, notice, scrimUrl, webUrl } from '../messages/shared.js';
 
 const PUBLICATION_LABELS: Record<BotPublicationKind, string> = {
     recruitment: '모집',
@@ -29,6 +33,85 @@ export function scheduleFromKst(value: string | null): string | null {
     return date.toISOString();
 }
 
+function seasonDate(value: string) {
+    return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium' }).format(
+        new Date(value)
+    );
+}
+
+function seasonReply(snapshot: BotSeasonSnapshot) {
+    if (!snapshot.current && !snapshot.completed.length)
+        return notice('아직 시즌이 없어요. /초기설정으로 첫 시즌을 준비해 주세요.');
+    const current = snapshot.current
+        ? `현재 시즌: **${label(snapshot.current.name, 100)}** · ${seasonDate(snapshot.current.startedAt)} 시작`
+        : '진행 중인 시즌이 없어요.';
+    const history = snapshot.completed.map(
+        (season) =>
+            `${label(season.name, 100)} · ${seasonDate(season.startedAt)} ~ ${seasonDate(season.endedAt!)}`
+    );
+    const text = current + '\n\n종료한 시즌' + (history.length ? '\n' + history.join('\n') : ': 없음');
+    if (text.length <= 3500) return notice(text);
+    // 긴 과거 목록도 모두 읽을 수 있게 하되 Discord 본문 제한과 여러 알림을 피한다.
+    const completeHistory = snapshot.completed
+        .map(
+            (season) =>
+                `${season.name.replace(/\s+/g, ' ').trim()} · ${seasonDate(season.startedAt)} ~ ${seasonDate(season.endedAt!)}`
+        )
+        .join('\n');
+    return {
+        ...notice(current + `\n\n종료한 시즌 ${history.length}개는 첨부파일에서 확인해 주세요.`),
+        files: [{ attachment: Buffer.from(completeHistory, 'utf8'), name: 'monkeybot-seasons.txt' }]
+    };
+}
+
+async function handleSeasonCommand(
+    interaction: ChatInputCommandInteraction,
+    api: BotApi,
+    guildId: string,
+    actorId: string
+) {
+    const rawName = interaction.options.getString('이름');
+    const expected = interaction.options.getString('현재시즌');
+    const confirmation = interaction.options.getBoolean('전환확인');
+    if (rawName === null && expected === null && confirmation === null) {
+        await interaction.editReply(seasonReply(await api.seasons(guildId, actorId)));
+        return;
+    }
+    const name = rawName?.trim() ?? '';
+    if (!name || name.length > 100) {
+        await interaction.editReply(notice('새 시즌 이름은 1~100자로 입력해 주세요.'));
+        return;
+    }
+    if (!expected || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(expected)) {
+        await interaction.editReply(notice('종료할 현재 시즌을 자동완성에서 선택해 주세요.'));
+        return;
+    }
+    if (confirmation !== true) {
+        await interaction.editReply(
+            notice('현재 시즌을 종료하고 새 시즌을 시작하려면 전환확인을 참으로 선택해 주세요.')
+        );
+        return;
+    }
+    const snapshot = await api.rotateSeason(guildId, {
+        actorId,
+        interactionId: interaction.id,
+        expectedCurrentSeasonId: expected,
+        name,
+        confirm: true
+    });
+    if (!snapshot.current)
+        throw new BotApiError(
+            502,
+            'INVALID_RESPONSE',
+            '시즌 전환 결과를 확인할 수 없어요. 다시 조회해 주세요.'
+        );
+    await interaction.editReply(
+        notice(
+            `**${label(snapshot.current.name, 100)}** 시즌을 시작했어요.\n기존 내전과 전적의 시즌은 바뀌지 않아요.`
+        )
+    );
+}
+
 export async function handleCommand(interaction: ChatInputCommandInteraction, api: BotApi, origin: URL) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     if (!interaction.guildId) {
@@ -37,7 +120,9 @@ export async function handleCommand(interaction: ChatInputCommandInteraction, ap
     }
     const guildId = interaction.guildId;
     const actorId = interaction.user.id;
-    if (interaction.commandName === '내전목록') {
+    if (interaction.commandName === '시즌') {
+        await handleSeasonCommand(interaction, api, guildId, actorId);
+    } else if (interaction.commandName === '내전목록') {
         await interaction.editReply({
             ...notice('이 서버의 내전 목록을 확인하세요.'),
             components: [linkRow('내전 목록 열기', webUrl(origin, `/g/${guildId}/scrims`))]
@@ -97,12 +182,27 @@ export async function handleCommand(interaction: ChatInputCommandInteraction, ap
 }
 
 export async function handleAutocomplete(interaction: AutocompleteInteraction, api: BotApi) {
-    if (!interaction.guildId || interaction.commandName !== '게시복구') {
+    if (!interaction.guildId || !['게시복구', '시즌'].includes(interaction.commandName)) {
         await interaction.respond([]);
         return;
     }
-    const query = interaction.options.getFocused();
     try {
+        if (interaction.commandName === '시즌') {
+            const focused = interaction.options.getFocused(true);
+            if (focused.name !== '현재시즌') {
+                await interaction.respond([]);
+                return;
+            }
+            const query = String(focused.value).trim().toLocaleLowerCase();
+            const { current } = await api.seasons(interaction.guildId, interaction.user.id, true);
+            await interaction.respond(
+                current && current.name.toLocaleLowerCase().includes(query)
+                    ? [{ value: current.id, name: shorten(current.name.replace(/\s+/g, ' ').trim(), 100) }]
+                    : []
+            );
+            return;
+        }
+        const query = interaction.options.getFocused();
         const { publications } = await api.failedPublications(
             interaction.guildId,
             interaction.user.id,

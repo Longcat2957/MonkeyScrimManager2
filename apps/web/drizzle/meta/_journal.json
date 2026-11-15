@@ -36,6 +36,27 @@
       "when": 1793868970891,
       "tag": "0004_rofl_result_restoration",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794732371910,
+      "tag": "0005_auction_actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794732530866,
+      "tag": "0006_scrim_cancellation_restore",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794732719656,
+      "tag": "0007_scrim_early_end",
+      "breakpoints": true
     }
   ]
 }

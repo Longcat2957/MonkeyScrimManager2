@@ -1,0 +1,30 @@
+[Unit]
+Description=Monkeybot Discord bot
+Wants=network-online.target
+After=network-online.target monkeybot-web.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# 사용자·경로·Node 실행 파일은 설치 환경에 맞춰 바꾼다.
+User=monkeybot
+Group=monkeybot
+WorkingDirectory=/srv/monkeybot/current/apps/bot
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/monkeybot/bot.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=35
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

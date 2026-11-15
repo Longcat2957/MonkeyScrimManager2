@@ -53,7 +53,10 @@ export async function readGuild<T>(
     );
 }
 
-export function toContext(row: ScrimRow, canManage: boolean): ScrimContext & { revision: number } {
+export function toContext(
+    row: ScrimRow,
+    canManage: boolean
+): ScrimContext & { revision: number; endedEarlyFromStatus: ScrimStatus | null } {
     return {
         id: row.id,
         title: row.title,
@@ -63,7 +66,8 @@ export function toContext(row: ScrimRow, canManage: boolean): ScrimContext & { r
         formationMethod: row.formationMethod,
         hardFearless: row.isHardFearless,
         canManage,
-        revision: row.revision
+        revision: row.revision,
+        endedEarlyFromStatus: row.endedEarlyFromStatus
     };
 }
 

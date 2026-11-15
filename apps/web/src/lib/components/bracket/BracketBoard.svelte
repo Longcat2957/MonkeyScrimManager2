@@ -19,8 +19,9 @@
     let {
         bracket,
         guildId,
-        title = '대진'
-    }: { bracket: BracketView | null; guildId: string; title?: string } = $props();
+        title = '대진',
+        emptyMessage = '팀 편성이 끝나면 대진을 만들 수 있어요'
+    }: { bracket: BracketView | null; guildId: string; title?: string; emptyMessage?: string } = $props();
 
     let selectedId = $state<string | null>(null);
     let busy = $state(false);
@@ -99,7 +100,7 @@
 {#if !bracket}
     <section aria-labelledby="bracket-board" class="flex flex-col gap-4">
         <h2 id="bracket-board" class="text-xl font-semibold">{title}</h2>
-        <SectionState state="empty" message="팀 편성이 끝나면 대진을 만들 수 있어요" />
+        <SectionState state="empty" message={emptyMessage} />
     </section>
 {:else}
     <!-- 대진 작업판: 도구 줄 → [팀 풀 | 라운드 열]. 영역은 1px 경계로 붙는다. -->

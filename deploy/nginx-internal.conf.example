@@ -8,11 +8,27 @@ location ^~ /internal/ {
 }
 
 # 웹 앱은 HOST=127.0.0.1로 실행하고 봇은 같은 호스트의 내부 주소로 호출한다.
-location / {
-    # 파일 본문은 앱에서 64MiB로 검사하며 multipart 형식의 여유를 둔다.
-    client_max_body_size 70m;
+# 파일 본문은 앱에서 64MiB로 검사하며 multipart 형식의 여유를 둔다.
+client_max_body_size 70m;
+client_body_timeout 60s;
+# 업로드 본문을 프록시의 임시 파일로 남기지 않고 앱으로 전달한다.
+proxy_request_buffering off;
+proxy_http_version 1.1;
+proxy_connect_timeout 5s;
+proxy_send_timeout 60s;
+proxy_read_timeout 60s;
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header Connection "";
+
+location = /auth/discord/callback {
+    # upstream 장애의 오류 로그도 callback의 code/state 쿼리를 보관하지 않게 한다.
+    access_log off;
+    error_log /dev/null;
     proxy_pass http://127.0.0.1:3000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+
+location / {
+    proxy_pass http://127.0.0.1:3000;
 }

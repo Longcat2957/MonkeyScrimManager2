@@ -17,6 +17,8 @@ export type ScrimContext = {
     canManage: boolean;
     // 실제 DB 변경 요청의 충돌 검사에 사용한다. 개발 샘플에는 없을 수 있다.
     revision?: number;
+    // 새 중도 종료는 원래 운영 단계를 보존하며, 이전 기록에는 없을 수 있다.
+    endedEarlyFromStatus?: ScrimStatus | null;
 };
 
 // 목록 행에 얼굴로 보여 줄 참가자다. iconUrl은 주 챔피언 아이콘이고 없으면 이름 첫 글자로 대신한다.

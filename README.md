@@ -14,7 +14,7 @@ MSM1의 운영 로직을 최대한 준용하고 최종 결과 입력만 ROFL로 
 - 봇: discord.js 14, TypeScript 6, tsx
 - 디자인 프레임워크: [STDF 3](https://stdf.dev/), Tailwind CSS 4
 - 운영 서버: VPS에서 `@sveltejs/adapter-node`로 실행
-- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 40개 테이블·88개 외래키와 전체 초기 마이그레이션을 관리한다.
+- 데이터베이스: PostgreSQL, Drizzle ORM + `pg`, Drizzle Kit. 41개 테이블·93개 외래키와 마이그레이션을 관리한다.
 
 프로젝트 루트에서 실행한다.
 
@@ -30,7 +30,7 @@ pnpm dev
 
 ## 현재 구현 범위
 
-2026-11-14 코드 기준이다. 화면의 서비스 소개와 향후 저장 모델을 현재 운영 연동과 구분한다.
+2026-11-15 코드 기준이다. 화면의 서비스 소개와 향후 저장 모델을 현재 운영 연동과 구분한다.
 
 | 영역 | 현재 동작 |
 | --- | --- |
@@ -46,7 +46,7 @@ pnpm dev
 | Discord 봇 | 초기 시즌 준비·모집 생성·본인 신청/수정/철회, 모집/팀 구성 게시·갱신, Gateway 동기화와 게시 실패 복구를 구현했다. 내부 HTTP API로 기존 업무 서비스를 사용하며 실제 Discord 발송 검증은 별도로 진행한다 |
 
 수동 편성의 확정 엔트리는 경기에 자동 적용하고 경매는 경기별 라인업을 한 번 확정한다. 모든 세트가 같은 라인업을 재사용한다. ROFL의 계정·팀·포지션·중복·등록 순서를 검증한 뒤 결과·MMR·승자 진출·게시 예약을 함께 저장하며, 마지막 결과의 안전한 취소·동일 파일 복구와 운영자 요청 참가 안내 DM도 제공한다.
-남은 기능은 시즌 전환·경매 마지막 행위 되돌리기·내전 취소 복구다. 상세 상태는 [백엔드 계획](docs/backend-plan.md#1-현재-연결-상태)과 [웹 문서](docs/web/README.md)를 따른다.
+시즌 전환은 관리자용 `/시즌` 봇 명령, 경매 직전 작업 취소는 6종 행위원장, 새 취소 복구는 이전 단계 근거로 연결했다. 준비·진행 중도 종료와 원래 단계 재개, 공개 경매의 제한적 자동 갱신도 제공한다. 진행 중 전체 내전의 Game/MMR 일괄 역분개 취소·과거 시즌 전적 선택 UI·실제 운영 적용은 후속으로 남긴다. 상세 상태는 [백엔드 계획](docs/backend-plan.md#1-현재-연결-상태)과 [운영 후속 기록](docs/ui-review/operations.md)을 따른다.
 
 현재 프론트엔드를 실제 인증·DB·봇에 연결하는 구조, CRUD 대응, 구현 순서와 검증 기준은
 [백엔드 구현 계획](docs/backend-plan.md)에 정리한다. 봇의 역할·구현 순서는 [봇 계획](docs/bot-plan.md), 설정·실행·복구 절차는 [봇 문서](docs/bot.md)를 따른다.
@@ -197,7 +197,7 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 | 위치 | 역할 |
 | --- | --- |
 | `apps/web/src/lib/server/db/index.ts` | 서버 전용 `getDb()`, 프로세스별 연결 풀과 개발 HMR 재사용 |
-| `apps/web/src/lib/server/db/schema.ts` | 40개 테이블·88개 외래키, 조회·삽입 타입 정의 |
+| `apps/web/src/lib/server/db/schema.ts` | 41개 테이블·93개 외래키, 조회·삽입 타입 정의 |
 | `apps/web/drizzle.config.ts` | PostgreSQL 스키마·마이그레이션 출력 경로 설정 |
 | `apps/web/drizzle/` | SQL 마이그레이션과 메타데이터의 보관 경로 |
 
@@ -337,6 +337,7 @@ pnpm check:tests
 최초 실행 전 `pnpm --filter @msm2/web exec playwright install chromium`으로 브라우저를 설치한다.
 2026-11-05 전체 코드 검토에서 확인한 6건을 수정한 뒤 기본 테스트 웹 415개·봇 65개, DB·HTTP hard 322개, 브라우저 회귀 7개가 모두 통과했다. 타입·브랜딩·포맷 검사와 웹·봇 빌드도 통과했다.
 2026-11-14 추가 개선 후 웹 415개·봇 65개, hard DB 224개, 브라우저 10개가 통과했다. 브라우저 범위에는 정상 ROFL 등록·취소·복구·시리즈 완료와 실제 편성/경매 참고 전적 표시를 추가했다. 이때 HTTP hard 전체를 다시 실행한 것으로 합산하지 않는다. [UI 후속 기록](docs/ui-review/remaining.md)에 엔진·접근성·성능 표본과 미검증 범위를 구분했다.
+2026-11-15 운영 후속 작업의 최종 전체 검사는 [실행 기록](artifacts/ui-review/operations/checks.json)을 따른다. CI·VPS 예제·HTTPS 프록시·DB 백업/격리 복원은 [배포 문서](docs/deployment.md)에 정리했으며, 실제 VPS 배포·Discord 명령 등록/발송은 실행하지 않았다.
 구조·검증 범위·실행 조건과 기록은 [API 테스트 문서](docs/testing.md)를 따른다.
 
 운영 서버의 기본 포트는 `3000`이다. VPS의 서비스 관리자에서 환경 변수를

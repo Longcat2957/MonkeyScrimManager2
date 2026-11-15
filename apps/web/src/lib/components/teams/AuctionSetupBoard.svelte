@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { untrack } from 'svelte';
+    import { untrack, type Snippet } from 'svelte';
     import { Button, Input, toast } from 'stdf';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
@@ -20,9 +20,10 @@
         teams: AuctionTeamView[];
         players: FormationPlayer[];
         editable: boolean;
+        refreshAction?: Snippet;
     };
 
-    let { contextKey, teams, players, editable }: Props = $props();
+    let { contextKey, teams, players, editable, refreshAction }: Props = $props();
     const id = $props.id();
 
     // 같은 내전을 다시 조회해도 저장하지 않은 팀장·포인트 입력은 유지한다.
@@ -140,7 +141,7 @@
     class="flex w-full min-w-0 flex-col overflow-hidden rounded-(--radius-box) border border-border bg-border"
 >
     <div
-        class="flex items-start justify-between gap-3 border-b border-border bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
+        class="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
     >
         <div class="min-w-0">
             <h2 id="auction-setup" class="text-lg font-semibold">경매 준비</h2>
@@ -152,6 +153,7 @@
             {/if}
         </div>
         {#if editable}<ChangeMethodButton disabled={busy} />{/if}
+        {@render refreshAction?.()}
     </div>
     {#if editable}
         <div class="grid gap-2 bg-bg-surface px-3 pb-3 sm:grid-cols-2 dark:bg-bg-surface-dark">

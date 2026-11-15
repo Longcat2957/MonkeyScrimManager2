@@ -1,0 +1,3 @@
+ALTER TABLE "scrims" ADD COLUMN "cancelled_from_status" "scrim_status";--> statement-breakpoint
+ALTER TABLE "scrims" ADD COLUMN "cancelled_auction_status" "auction_status";--> statement-breakpoint
+ALTER TABLE "scrims" ADD CONSTRAINT "scrims_cancellation_restore_state" CHECK (("scrims"."cancelled_from_status" is null and "scrims"."cancelled_auction_status" is null) or ("scrims"."status" = 'cancelled' and "scrims"."cancelled_from_status" is not null and "scrims"."cancelled_from_status" in ('recruit', 'preparing', 'ready')));

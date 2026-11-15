@@ -15,6 +15,13 @@ import {
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { auctionTargetProfile, type AuctionChampionResolver } from './auction-profile.ts';
+import {
+    canRevertAuctionAction,
+    invalidateAuctionActions,
+    latestAuctionAction,
+    recordAuctionAction,
+    type AuctionOperationKind
+} from './auction-actions.ts';
 import { createBracketDraft } from './bracket.ts';
 import { formationPlayers, selectedParticipants } from './manual.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
@@ -121,7 +128,21 @@ async function auctionState(tx: Transaction, row: ScrimRow) {
                 lastAttempts.get(participant.id)?.status === 'unsold'
         )
         .map(({ participant }) => participant.id);
-    return { auction, teams, allTeams, lots, acquisitions, active, queue, selected, occupied, open, unsold };
+    const action = auction ? await latestAuctionAction(tx, auction.id) : null;
+    return {
+        auction,
+        teams,
+        allTeams,
+        lots,
+        acquisitions,
+        active,
+        queue,
+        selected,
+        occupied,
+        open,
+        unsold,
+        action
+    };
 }
 
 type State = Awaited<ReturnType<typeof auctionState>>;
@@ -156,6 +177,10 @@ export async function getAuction(
             const openLot = state.open ? (pick(state.open.scrimParticipantId) ?? null) : null;
             return {
                 status: state.auction?.status ?? 'setup',
+                canRevert:
+                    row.status === 'preparing' &&
+                    state.auction?.status === 'in_progress' &&
+                    canRevertAuctionAction(state.action),
                 players,
                 teams: state.teams.map((team) => ({
                     id: team.id,
@@ -382,6 +407,7 @@ export async function startAuction(
                 )
             )
                 throw new DomainError('CONFLICT', '모든 팀의 팀장을 정해야 해요');
+            await invalidateAuctionActions(tx, state.auction.id);
             await replaceQueue(
                 tx,
                 state,
@@ -415,7 +441,7 @@ export async function drawAuctionLot(
         scrimId,
         input,
         'in_progress',
-        async (tx, _row, _user, state) => {
+        async (tx, _row, user, state) => {
             if (state.open) throw new DomainError('CONFLICT', '진행 중인 후보를 먼저 처리해 주세요');
             const next = state.queue[0];
             if (!next) throw new DomainError('CONFLICT', '대기 중인 후보가 없어요');
@@ -427,7 +453,12 @@ export async function drawAuctionLot(
                         eq(auctionQueueEntries.scrimParticipantId, next.scrimParticipantId)
                     )
                 );
-            await openLot(tx, state, next.scrimParticipantId);
+            const lot = await openLot(tx, state, next.scrimParticipantId);
+            await recordAuctionAction(tx, state.auction, user.userId, {
+                kind: 'draw',
+                participantId: next.scrimParticipantId,
+                lotId: lot.id
+            });
         },
         access
     );
@@ -440,7 +471,8 @@ async function acquire(
     state: MutableState,
     lot: typeof auctionLots.$inferSelect,
     teamId: string,
-    price: number | null
+    price: number | null,
+    kind: Extract<AuctionOperationKind, 'award' | 'assign_current' | 'assign_unsold'>
 ) {
     const team = state.teams.find((entry) => entry.id === teamId);
     if (!team) throw new DomainError('NOT_FOUND', '이 내전의 팀을 찾을 수 없어요');
@@ -452,17 +484,20 @@ async function acquire(
     if (price !== null && price > remainingPoints(state, team.id))
         throw new DomainError('CONFLICT', '남은 포인트보다 높게 낙찰할 수 없어요');
     if (!team.captainId) throw new DomainError('CONFLICT', '팀장이 없는 팀에는 배정할 수 없어요');
-    await tx.insert(auctionAcquisitions).values({
-        scrimId: row.id,
-        auctionId: state.auction.id,
-        scrimParticipantId: lot.scrimParticipantId,
-        teamId,
-        buyerParticipantId: price === null ? null : team.captainId,
-        method: price === null ? 'manual' : 'auction',
-        price,
-        lotId: lot.id,
-        recordedByUserId: user.userId
-    });
+    const [acquisition] = await tx
+        .insert(auctionAcquisitions)
+        .values({
+            scrimId: row.id,
+            auctionId: state.auction.id,
+            scrimParticipantId: lot.scrimParticipantId,
+            teamId,
+            buyerParticipantId: price === null ? null : team.captainId,
+            method: price === null ? 'manual' : 'auction',
+            price,
+            lotId: lot.id,
+            recordedByUserId: user.userId
+        })
+        .returning();
     await tx
         .update(auctionLots)
         .set({ status: 'sold', closedAt: new Date() })
@@ -472,6 +507,12 @@ async function acquire(
         .update(scrimParticipants)
         .set({ teamId, position: null })
         .where(eq(scrimParticipants.id, lot.scrimParticipantId));
+    await recordAuctionAction(tx, state.auction, user.userId, {
+        kind,
+        participantId: lot.scrimParticipantId,
+        lotId: lot.id,
+        acquisitionId: acquisition!.id
+    });
     const complete = state.teams.every(
         (entry) =>
             (entry.captainId ? 1 : 0) +
@@ -507,7 +548,7 @@ export async function awardAuctionLot(
         input,
         'in_progress',
         (tx, row, user, state) =>
-            acquire(tx, row, user, state, currentLot(state, input.lotId), input.teamId, price),
+            acquire(tx, row, user, state, currentLot(state, input.lotId), input.teamId, price, 'award'),
         access
     );
 }
@@ -527,11 +568,17 @@ export async function passAuctionLot(
         scrimId,
         input,
         'in_progress',
-        async (tx, _row, _user, state) => {
+        async (tx, _row, user, state) => {
+            const lot = currentLot(state, input.lotId);
             await tx
                 .update(auctionLots)
                 .set({ status: 'unsold', closedAt: new Date() })
-                .where(eq(auctionLots.id, currentLot(state, input.lotId).id));
+                .where(eq(auctionLots.id, lot.id));
+            await recordAuctionAction(tx, state.auction, user.userId, {
+                kind: 'pass',
+                participantId: lot.scrimParticipantId,
+                lotId: lot.id
+            });
         },
         access
     );
@@ -554,7 +601,16 @@ export async function assignAuctionCurrent(
         input,
         'in_progress',
         (tx, row, user, state) =>
-            acquire(tx, row, user, state, currentLot(state, input.lotId), input.teamId, null),
+            acquire(
+                tx,
+                row,
+                user,
+                state,
+                currentLot(state, input.lotId),
+                input.teamId,
+                null,
+                'assign_current'
+            ),
         access
     );
 }
@@ -591,7 +647,8 @@ export async function assignAuctionUnsold(
                 state,
                 await openLot(tx, state, input.participantId),
                 input.teamId,
-                null
+                null,
+                'assign_unsold'
             );
         },
         access
@@ -614,9 +671,14 @@ export async function restoreAuctionUnsold(
         scrimId,
         input,
         'in_progress',
-        async (tx, _row, _user, state) => {
+        async (tx, _row, user, state) => {
             requireUnsold(state, input.participantId);
-            await openLot(tx, state, input.participantId);
+            const lot = await openLot(tx, state, input.participantId);
+            await recordAuctionAction(tx, state.auction, user.userId, {
+                kind: 'restore',
+                participantId: input.participantId,
+                lotId: lot.id
+            });
         },
         access
     );
@@ -660,38 +722,75 @@ export async function revertAuctionLot(
         input,
         'in_progress',
         async (tx, _row, user, state) => {
-            const last = state.lots.findLast(
-                (lot) => !lot.voidedAt && (lot.status === 'sold' || lot.status === 'unsold')
-            );
-            if (!last) throw new DomainError('CONFLICT', '되돌릴 기록이 없어요');
+            const action = state.action;
+            if (!action || !canRevertAuctionAction(action))
+                throw new DomainError('CONFLICT', '되돌릴 작업이 없어요');
+            const lot = state.lots.find((entry) => entry.id === action.lotId && !entry.voidedAt);
+            if (!lot || lot.scrimParticipantId !== action.scrimParticipantId)
+                throw new DomainError('CONFLICT', '후보 상태가 바뀌었어요. 새로고침해 주세요');
+            const opening = action.kind === 'draw' || action.kind === 'restore';
+            const acquisition = state.active.find((entry) => entry.id === action.acquisitionId);
+            if (opening) {
+                if (state.open?.id !== lot.id || state.occupied.has(lot.scrimParticipantId))
+                    throw new DomainError('CONFLICT', '현재 후보가 바뀌었어요. 새로고침해 주세요');
+            } else if (
+                state.open ||
+                (action.kind === 'pass'
+                    ? lot.status !== 'unsold' || !state.unsold.includes(lot.scrimParticipantId)
+                    : lot.status !== 'sold' ||
+                      !acquisition ||
+                      acquisition.scrimParticipantId !== lot.scrimParticipantId ||
+                      acquisition.lotId !== lot.id ||
+                      acquisition.method !== (action.kind === 'award' ? 'auction' : 'manual'))
+            ) {
+                throw new DomainError('CONFLICT', '마지막 작업 상태가 바뀌었어요. 새로고침해 주세요');
+            }
+            if (
+                (action.kind === 'restore' || action.kind === 'assign_unsold') &&
+                !state.lots.some(
+                    (entry) =>
+                        entry.scrimParticipantId === lot.scrimParticipantId &&
+                        entry.id !== lot.id &&
+                        !entry.voidedAt &&
+                        entry.status === 'unsold'
+                )
+            )
+                throw new DomainError('CONFLICT', '복원할 유찰 기록을 확인할 수 없어요');
             const now = new Date();
-            const voided = { voidedAt: now, voidedByUserId: user.userId, voidReason: '마지막 기록 되돌리기' };
-            await tx.update(auctionLots).set(voided).where(eq(auctionLots.id, last.id));
+            const voided = { voidedAt: now, voidedByUserId: user.userId, voidReason: '마지막 작업 되돌리기' };
             await tx
-                .update(auctionAcquisitions)
-                .set(voided)
-                .where(and(eq(auctionAcquisitions.lotId, last.id), isNull(auctionAcquisitions.voidedAt)));
-            await tx
-                .update(scrimParticipants)
-                .set({ teamId: null, position: null })
-                .where(eq(scrimParticipants.id, last.scrimParticipantId));
-            if (state.open)
+                .update(auctionLots)
+                .set({
+                    ...voided,
+                    ...(opening ? { status: 'cancelled' as const, closedAt: now } : {})
+                })
+                .where(eq(auctionLots.id, lot.id));
+            if (acquisition) {
                 await tx
-                    .update(auctionLots)
-                    .set({ status: 'cancelled', closedAt: now, ...voided })
-                    .where(eq(auctionLots.id, state.open.id));
-            // 같은 유찰 후보를 다시 올린 뒤 되돌려도 대기열과 현재 후보에 중복되지 않는다.
-            const queued = [
-                ...(state.open && state.open.scrimParticipantId !== last.scrimParticipantId
-                    ? [state.open.scrimParticipantId]
-                    : []),
-                ...state.queue
-                    .map((entry) => entry.scrimParticipantId)
-                    .filter((id) => id !== last.scrimParticipantId)
-            ];
-            await replaceQueue(tx, state, queued);
-            state.occupied.delete(last.scrimParticipantId);
-            await openLot(tx, state, last.scrimParticipantId);
+                    .update(auctionAcquisitions)
+                    .set(voided)
+                    .where(eq(auctionAcquisitions.id, acquisition.id));
+                await tx
+                    .update(scrimParticipants)
+                    .set({ teamId: null, position: null })
+                    .where(eq(scrimParticipants.id, lot.scrimParticipantId));
+            }
+            if (action.kind === 'draw') {
+                await replaceQueue(tx, state, [
+                    lot.scrimParticipantId,
+                    ...state.queue.map((entry) => entry.scrimParticipantId)
+                ]);
+            } else if (!opening && action.kind !== 'assign_unsold') {
+                state.occupied.delete(lot.scrimParticipantId);
+                await openLot(tx, state, lot.scrimParticipantId);
+            }
+            // 역기록도 최신 행위다. 새 행위 전의 연속 스택 되감기는 제공하지 않는다.
+            await recordAuctionAction(tx, state.auction, user.userId, {
+                kind: 'revert',
+                participantId: lot.scrimParticipantId,
+                lotId: lot.id,
+                reversesId: action.id
+            });
         },
         access
     );
@@ -704,6 +803,7 @@ async function clearAuction(
     state: MutableState,
     setup: boolean
 ) {
+    await invalidateAuctionActions(tx, state.auction.id);
     const now = new Date();
     const voided = {
         voidedAt: now,

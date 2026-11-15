@@ -1,0 +1,25 @@
+# http 블록의 sites-enabled에 포함하는 예시다. 도메인과 인증서 경로를 실제 값으로 바꾼다.
+server {
+    listen 80;
+    server_name monkeybot.example;
+    access_log off;
+    return 308 https://monkeybot.example$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name monkeybot.example;
+
+    ssl_certificate /etc/letsencrypt/live/monkeybot.example/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/monkeybot.example/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:MonkeybotTLS:10m;
+    ssl_session_timeout 1d;
+
+    # OAuth callback의 code/state와 쿼리 문자열을 접근 로그에 남기지 않는다.
+    # 요청 단위 관측은 토큰을 제외한 앱 계층의 별도 후속 작업이다.
+    access_log off;
+    error_log /var/log/nginx/monkeybot-error.log warn;
+
+    include /etc/nginx/snippets/monkeybot-internal.conf;
+}

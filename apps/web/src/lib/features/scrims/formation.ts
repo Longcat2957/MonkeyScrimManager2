@@ -113,6 +113,8 @@ export type AuctionHistoryEntry = {
 
 export type AuctionView = {
     status: AuctionStatus;
+    // 실제 행위 원장이 있는 경우에만 서버가 직전 작업의 되돌리기 가능 여부를 제공한다.
+    canRevert?: boolean;
     teams: AuctionTeamView[];
     // 준비 단계에서 팀장 후보로 고를 선발 참가자 전체다.
     players: FormationPlayer[];

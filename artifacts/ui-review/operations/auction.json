@@ -1,0 +1,301 @@
+{
+    "baselineCommit": "521e7638d5bcee3148d6d898f92e091bed989a34",
+    "createdAt": "2026-11-15T09:07:05.624521+00:00",
+    "status": "complete within recorded scope",
+    "sourceFrozen": true,
+    "reference": {
+        "repository": "Longcat2957/MonkeyScrimManager",
+        "commit": "d60df685e48c180b236342eae81b389ae87e38bf",
+        "tool": "GitHub plugin fetch_file at exact ref",
+        "files": [
+            "apps/api-python/src/monkeybot_api/services/auctions/bidding.py",
+            "apps/api-python/src/monkeybot_api/repositories/auctions/tournament_queries.py",
+            "apps/api-python/src/monkeybot_api/db/alembic/sql/0006_auction_core_bracket_matches.sql",
+            "apps/api-python/tests/integration/auctions/test_bidding.py"
+        ]
+    },
+    "source": [
+        {
+            "path": "apps/web/src/lib/server/scrims/auction.ts",
+            "sha256": "d32e4d4a9f0b63ec09eb3628238378dd2372dfb1fa838b18ba3b300344167528"
+        },
+        {
+            "path": "apps/web/src/lib/server/scrims/auction-actions.ts",
+            "sha256": "4bfb80ed366c044ba9a78dc4bd4b76860b0b62b8c68cc09716c6acbc124838fb"
+        },
+        {
+            "path": "apps/web/src/lib/features/scrims/formation.ts",
+            "sha256": "c36c15f544a68c7bba7ec3d6f59fcc98954d898ad170276d2dfff2edb4e103fb"
+        },
+        {
+            "path": "apps/web/src/lib/mocks/teams.ts",
+            "sha256": "fa607c55859404f15927ac36195226223d25a14f01b0f2b30e3b1394da60ca4d"
+        },
+        {
+            "path": "apps/web/drizzle/0005_auction_actions.sql",
+            "sha256": "08588ccf0291e37782d7c5a030e3dee2b69eee15ac95e12a0a66e4dc88e2fbea"
+        },
+        {
+            "path": "apps/web/drizzle/meta/0005_snapshot.json",
+            "sha256": "4342fbc6908a235f9943651268c743c2b5f184c8cf53f4ee7e3d7a4d36073e1b"
+        },
+        {
+            "path": "apps/web/tests/api/hard/db/auction.test.ts",
+            "sha256": "6e472f7f231dc8517c5af7733481e5aad84bc9717f84b7b0f7d407d00177fd92"
+        },
+        {
+            "path": "apps/web/tests/auction-undo.test.ts",
+            "sha256": "aab93b6ca46b3019a181416932ce05b4b7d3a509cf32ccdbec02937bfcbc4f6c"
+        },
+        {
+            "path": "apps/web/tests/api/hard/http/auction-undo.test.ts",
+            "sha256": "65530d423ca73b23a925e276f87eceb738e543aee2fddfbf8481c7e85d056c8c"
+        },
+        {
+            "path": "apps/web/tests/api/support/http-auction-fixtures.ts",
+            "sha256": "8cc7e39e3189f5967fedb070e8fbfd698e123a387c470be5ea0ccc27c7adfe02"
+        },
+        {
+            "path": "apps/web/tests/browser/auction-operations.test.ts",
+            "sha256": "33f6674fc2df9816d3be01a831d16f2e78bd4e45af920bc50bf646e01938158b"
+        },
+        {
+            "path": "apps/web/src/lib/components/teams/AuctionDraftBoard.svelte",
+            "sha256": "29e4692f74f9fae0665f4c54fd7fed68a47e63e8c470d65704a21dd8b7b2eb3d"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte",
+            "sha256": "bb4b5527bd02d10c8b435f0e01e17dfafb62cf6dbdaa4b47a7e9ec2f3467f2f8"
+        },
+        {
+            "path": "apps/web/src/routes/g/[guildId]/scrims/[scrimId]/auction/live/+server.ts",
+            "sha256": "6faf101b6c5b6facf479918295f2434d8c95c3059887ebb2531e04f62096858a"
+        }
+    ],
+    "rules": {
+        "revertibleKinds": ["draw", "pass", "award", "assign_current", "assign_unsold", "restore"],
+        "oneUndoPerNewAction": true,
+        "shuffleAndResetAreRevertible": false,
+        "lotAndAcquisitionHistoryDeleted": false,
+        "legacyHistoryBackfilled": false,
+        "completedRequiresExistingReopenWorkflow": true,
+        "newSchema": "0005 auction_actions; lifecycle and season schema changes are separate owners"
+    },
+    "commands": [
+        {
+            "command": "node /tmp/msm2-run-auction-undo.mjs tests/api/hard/db/auction.test.ts tests/api/hard/db/auction-profile.test.ts",
+            "cwd": "apps/web",
+            "exitCode": 0,
+            "tests": 27,
+            "passed": 27,
+            "failed": 0,
+            "durationMs": 6780.382009,
+            "scope": "existing auction10 + profile8 + undo9; isolated per-test schemas"
+        },
+        {
+            "command": "node /tmp/msm2-run-auction-undo.mjs tests/auction-undo.test.ts",
+            "cwd": "apps/web",
+            "exitCode": 0,
+            "tests": 6,
+            "passed": 6,
+            "failed": 0,
+            "durationMs": 13622.740115
+        },
+        {
+            "command": "MSM2_AUCTION_CAPTURE_DIR=<operations/after> node /tmp/msm2-run-auction-undo.mjs tests/api/hard/http/auction-undo.test.ts tests/browser/auction-operations.test.ts",
+            "cwd": "apps/web",
+            "exitCode": 0,
+            "tests": 3,
+            "passed": 3,
+            "failed": 0,
+            "durationMs": 5943.061787,
+            "build": "root final successful production build; canReset, readonly copy and 15s timeout included"
+        },
+        {
+            "command": "pnpm check:tests",
+            "cwd": "apps/web",
+            "exitCode": 0
+        },
+        {
+            "command": "pnpm exec prettier --check <owned source, tests and report>",
+            "cwd": "apps/web",
+            "exitCode": 0
+        },
+        {
+            "command": "git diff --check -- <owned files>",
+            "exitCode": 0
+        }
+    ],
+    "runnerIsolation": "loads .env.test then clears application DB address, Discord and Riot credentials in child env; only TEST_DATABASE_URL and local fixture HTTP allowed; no build performed by runner",
+    "preliminaryEvidence": {
+        "build": "root build2 before canReset and timeout additions",
+        "httpPassed": 1,
+        "browserPassed": 2,
+        "supersededByFinalRun": true,
+        "images": "overwritten by the final seven captures; not final source proof"
+    },
+    "browser": {
+        "engine": "Playwright Chromium",
+        "managerViewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "guestViewport": {
+            "width": 390,
+            "height": 844
+        },
+        "guestPosts": 0,
+        "javascriptAndUnexpectedConsoleErrors": 0,
+        "documentHorizontalOverflow": false,
+        "checks": [
+            "keyboard draw and confirmation undo",
+            "paid A acquisition persists after B draw undo and reset stays enabled",
+            "public setup becomes progress then reflects another manager award",
+            "503 keeps last 85 points and retries after 10s",
+            "manual request times out after 15s, unlocks buttons, preserves last snapshot and retries successfully",
+            "pending request never overlaps another before timeout",
+            "automatic pause aborts pending read; manual refresh works while paused; resume reads immediately",
+            "simulated hidden and actual emulated offline suspend reads; resume reads",
+            "SPA unmount aborts pending read and schedules no more polls"
+        ],
+        "horizontalOverflowMeasurementScope": "manager auction and final guest docs route; guest auction additionally reviewed in full-page 390px PNGs"
+    },
+    "captures": [
+        {
+            "file": "after/manager-draw-desktop-primary.png",
+            "url": "/g/970000000000000001/scrims/b69cdfe3-6680-4c41-aa65-7bbaa8b1d7cf/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "sha256": "3277b75b934c940a5d6d22dd18715eeaad3ce6ca00fecfa586e138a561cda98a",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1234
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/manager-confirm-desktop-primary.png",
+            "url": "/g/970000000000000001/scrims/b69cdfe3-6680-4c41-aa65-7bbaa8b1d7cf/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "sha256": "bf20f10b842086c221f3b0abdbc3bc92db8924dd935119e96599efaf656e485c",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1234
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/manager-undo-desktop-primary.png",
+            "url": "/g/970000000000000001/scrims/b69cdfe3-6680-4c41-aa65-7bbaa8b1d7cf/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "sha256": "46ccb2f8a2bcfbb2478b0e12d9713968213cfb8d8e75f24bd493107ba39f53ae",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1198
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/manager-award-preserved-undo-desktop-primary.png",
+            "url": "/g/970000000000000001/scrims/b69cdfe3-6680-4c41-aa65-7bbaa8b1d7cf/auction",
+            "viewport": {
+                "width": 1440,
+                "height": 1000
+            },
+            "theme": "primary",
+            "sha256": "3b8eb174824164c3ae05d751c2ffb2f0bd1b3dec7015578cbe81ac0efab2339c",
+            "imageDimensions": {
+                "width": 1440,
+                "height": 1256
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/guest-snapshot-mobile-primary.png",
+            "url": "/g/970000000000000001/scrims/c531eafb-e337-4da9-9d8b-a36234aff75d/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "sha256": "6be08f8df410ba86a603be5d216f88f0b10dab49ce7521b493c01362a4275014",
+            "imageDimensions": {
+                "width": 390,
+                "height": 1395
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/guest-error-mobile-primary.png",
+            "url": "/g/970000000000000001/scrims/c531eafb-e337-4da9-9d8b-a36234aff75d/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "primary",
+            "sha256": "086b86b6fb31bcfd6585068fd772c6761d3d67efacfdb3a93350ad3adc7751ec",
+            "imageDimensions": {
+                "width": 390,
+                "height": 1447
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        },
+        {
+            "file": "after/guest-snapshot-mobile-dark.png",
+            "url": "/g/970000000000000001/scrims/c531eafb-e337-4da9-9d8b-a36234aff75d/auction",
+            "viewport": {
+                "width": 390,
+                "height": 844
+            },
+            "theme": "dark",
+            "sha256": "4016e394578f728c38957ffb89b2c02834bd7bf49e84975faf21feea35a06d5b",
+            "imageDimensions": {
+                "width": 390,
+                "height": 1395
+            },
+            "readWith": "view_image",
+            "visuallyReviewed": true
+        }
+    ],
+    "visualReview": {
+        "readCount": 7,
+        "newLayoutDefectsObserved": 0,
+        "observations": [
+            "manager has one undo control after first draw, confirmation panel and visible focus",
+            "first draw undo returns eight queued candidates and unchanged team points",
+            "later draw undo preserves A acquisition, 85 points and enabled reset",
+            "guest has one automatic toggle and one manual refresh, no operator bid actions",
+            "guest normal/error snapshots preserve roster, 85 points and readable wrapping at 390px",
+            "readonly waiting copy and primary/dark surfaces render correctly"
+        ]
+    },
+    "limits": [
+        "external fonts and decorative images are blocked by the existing isolated browser fixture; font/CDN availability is untested",
+        "full-page PNGs include content below viewport; confirmation mask covers the actual 1000px viewport",
+        "hidden is a visibilityState/visibilitychange simulation, offline is Playwright network emulation, not physical devices",
+        "specific browser tests cover first failure backoff and timeout recovery, not every 20/30s failure sequence or all metadata/permission transitions",
+        "no Safari, screen-reader, real OAuth, production writes or performance improvement claim",
+        "root owns final full hard/browser regression gates and all UI sources"
+    ],
+    "productionWrites": 0,
+    "credentialsRecorded": false,
+    "ignoreRulesAdded": 0,
+    "fixtureProcessesRemaining": 0
+}

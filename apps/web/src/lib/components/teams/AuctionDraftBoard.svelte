@@ -1,7 +1,6 @@
 <script lang="ts">
-    import { onMount, untrack } from 'svelte';
+    import { onMount, untrack, type Snippet } from 'svelte';
     import { Button, Loading, NoticeBar, toast } from 'stdf';
-    import { invalidate } from '$app/navigation';
     import AccessibleAccordion from '#lib/components/common/AccessibleAccordion.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
@@ -23,14 +22,18 @@
     import ChangeMethodButton from './ChangeMethodButton.svelte';
     import { DragState } from './drag.svelte.ts';
 
-    let { auction, manager }: { auction: AuctionView; manager: boolean } = $props();
+    let {
+        auction,
+        manager,
+        refreshAction,
+        refreshing = false
+    }: { auction: AuctionView; manager: boolean; refreshAction?: Snippet; refreshing?: boolean } = $props();
 
     // 입찰가를 조정할 때마다 다시 차는 진행자용 타이머다. 결과를 강제하지 않는 안내용이다.
     const TIMER_MS = 10_000;
 
     let bids = $state<Record<string, string>>({});
     let busy = $state(false);
-    let refreshing = $state(false);
     let timerStart = $state(Date.now());
     let now = $state(Date.now());
     let details = $state(false);
@@ -45,7 +48,8 @@
     const lotKey = $derived(auction.openLotId ?? open?.participantId ?? null);
     const profile = $derived(auction.openProfile);
     const stories = $derived(auctionStories(auction));
-    const canRevert = $derived(auction.history.some((entry) => !entry.voided));
+    const canRevert = $derived(auction.canRevert ?? auction.history.some((entry) => !entry.voided));
+    const canReset = $derived(auction.history.some((entry) => !entry.voided));
     const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
     const mainLane = $derived(open?.positions[0] ?? profile?.mainLane ?? null);
     const recentWins = $derived(profile?.recentGames.filter((game) => game.win).length ?? 0);
@@ -142,8 +146,8 @@
     async function revert() {
         if (
             await confirm(
-                '마지막 기록을 되돌리고 그 후보를 다시 진행할까요? 기록은 되돌림으로 남아요.',
-                '마지막 기록 되돌리기'
+                '마지막 경매 작업을 되돌릴까요? 추첨·유찰·배치 전 상태로 돌아가며 되돌린 이력은 남아요.',
+                '마지막 작업 되돌리기'
             )
         )
             await run('revert');
@@ -168,18 +172,6 @@
         )
             await run('reopenSetup');
     }
-
-    async function refresh() {
-        if (busy || refreshing) return;
-        refreshing = true;
-        try {
-            await invalidate('app:auction');
-        } catch {
-            toast.error('경매를 새로 불러오지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.');
-        } finally {
-            refreshing = false;
-        }
-    }
 </script>
 
 <section
@@ -193,18 +185,7 @@
             <StatusTag text={STATUS[auction.status].text} state={STATUS[auction.status].state} />
             {#if busy || refreshing}<Loading type="1_0" height="6" width="6" />{/if}
         </div>
-        {#if live && !manager}
-            <!-- 실시간 갱신 방식이 정해지기 전까지 열람자는 직접 새로 불러온다. -->
-            <Button
-                fill="text"
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="min-h-11 px-2 text-sm"
-                disabled={refreshing}
-                onclick={refresh}>새로고침</Button
-            >
-        {/if}
+        {@render refreshAction?.()}
         {#if controls}
             <!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 기존 경매 기록은 무효화해 보존한다. -->
             <div class="-mr-3 flex flex-wrap justify-end">
@@ -391,11 +372,15 @@
                             <div
                                 class="flex min-h-80 flex-1 flex-col items-center justify-center gap-1 border border-dashed border-border px-4 text-center"
                             >
-                                <p class="font-semibold opacity-70">후보 대기</p>
-                                <p class="text-sm opacity-60">
+                                <p class="font-semibold text-text-muted">후보 대기</p>
+                                <p class="text-sm text-text-muted">
                                     {auction.queue.length
-                                        ? '다음 후보를 뽑아 입찰을 시작해요'
-                                        : '대기 후보가 없어요. 후보 목록에서 유찰 후보를 배치하거나 다시 올려 주세요'}
+                                        ? controls
+                                            ? '다음 후보를 뽑아 입찰을 시작해요'
+                                            : '다음 후보를 기다리고 있어요'
+                                        : controls
+                                          ? '대기 후보가 없어요. 후보 목록에서 유찰 후보를 배치하거나 다시 올려 주세요'
+                                          : '대기 중인 후보가 없어요'}
                                 </p>
                             </div>
                         {/if}
@@ -454,7 +439,7 @@
                                 heightOut="0"
                                 heightIn="2"
                                 injClass="min-h-11 text-sm"
-                                disabled={busy || !canRevert}
+                                disabled={busy || !canReset}
                                 onclick={reset}>초기화</Button
                             >
                         {/if}
