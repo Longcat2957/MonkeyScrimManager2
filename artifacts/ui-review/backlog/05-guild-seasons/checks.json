@@ -1,0 +1,36 @@
+{
+    "date": "2026-11-15",
+    "status": "verified",
+    "reviewedPageKinds": 1,
+    "directUiChangedPageKinds": 1,
+    "screenshots": 20,
+    "before": 4,
+    "after": 16,
+    "checks": {
+        "dbNew": 8,
+        "dbExistingBotAndRecord": 10,
+        "httpNew": 7,
+        "httpExistingBot": 2,
+        "browserNew": 4,
+        "browserExistingAdmin": 4,
+        "mcp": 4,
+        "webDefault": 446,
+        "botDefault": 80,
+        "svelteErrors": 0,
+        "svelteWarnings": 0,
+        "types": "pass",
+        "build": "pass"
+    },
+    "preserved": [
+        "과거내전/ROFL/Game/MMR전체행",
+        "기존Bot receipt payload/result/replay",
+        "길드관리권한과서비스운영권한의분리"
+    ],
+    "noNewMigrationOrExternalEndpoint": true,
+    "fixtureCleanup": true,
+    "limits": [
+        "사용자 DB·실제 Discord·배포 미변경",
+        "외부 이미지/폰트 차단",
+        "Safari/물리 기기/음성/CWV/운영 규모 미검증"
+    ]
+}

@@ -30,7 +30,7 @@ Discord OAuth·DB 세션·공개 조회/관리 guard, 서버별 Riot 계정 연�
 
 | 업무 | MSM1 규칙·근거 | MSM2 반영 상태와 남은 차이 |
 | --- | --- | --- |
-| 모집 시즌 | 활성 시즌 필수·생성 시 고정 (`services/recruitments/creation.py`), 활성 시즌 종료와 새 시즌 원자 생성 (`services/guilds/seasons.py`) | 최초 준비·봇 `/시즌` 조회/전환 구현. 기존 진행 내전의 시즌·MMR은 유지하고 새 모집부터 새 시즌 사용. MMR 복제 없음 |
+| 모집 시즌 | 활성 시즌 필수·생성 시 고정 (`services/recruitments/creation.py`), 활성 시즌 종료와 새 시즌 원자 생성 (`services/guilds/seasons.py`) | 최초 준비·봇 `/시즌`/웹 관리자 시즌 탭 조회·전환 구현. 기존 진행 내전의 시즌·MMR은 유지하고 새 모집부터 새 시즌 사용. MMR 복제 없음 |
 | 편성·경매 | 팀당 5명, 잔액·정원·팀장 중복 검사, 0점 낙찰과 수동 영입 구분 | 구현. 희망 포지션을 경기 출전 포지션으로 간주하지 않음 |
 | 경기 라인업 | 팀마다 5포지션·10명 유일성을 확정 (`services/auctions/lineups.py`, `services/series/creation.py`) | 수동 확정 엔트리는 경기 생성 시 자동 적용. 경매는 경기(BO 전체)별 한 번 확정하고 모든 세트에서 재사용. 결과 이력이 생긴 뒤 해제는 금지 |
 | 결과 입력 슬롯 | 다음 세트는 확정 Game 수+1, 요청 세트·revision 검증 (`services/series/commands.py`, `services/auctions/games.py`) | ROFL 내부 경기 ID나 절대시각을 서비스 세트 번호의 필수 근거로 두던 전제 폐기 |
@@ -379,7 +379,7 @@ SHA-256은 동일 바이트 중복의 근거이고 서로 다른 파일의 동�
 내부 인터페이스는 실제 소비 기능에 필요한 `/internal/bot/` 경로만 제공한다. 웹은 봇의 상태 확인처럼 보호된 내부 주소를 사용하며,
 봇은 웹의 내부 HTTP 어댑터를 통해 같은 업무 함수를 호출한다. 봇에 DB 직접 수정 권한을 주지 않는다.
 
-시즌은 [bot-seasons.ts](../apps/web/src/lib/server/discord/bot-seasons.ts)의 `getBotSeasons`·`rotateBotSeason`과 `/internal/bot/guilds/[guildId]/seasons`에 연결했다. MSM1 pin의 [services/guilds/seasons.py](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)를 대조했다. 이름은 trim 후 1~100자이고, 현재 실효 관리자 권한·`confirm=true`·`expectedCurrentSeasonId`·interaction receipt를 검사한다. 이전 활성 시즌 종료와 새 시즌 생성이 함께 커밋되며 기존 진행 내전·Game·MMR 원장의 시즌은 바꾸거나 복제하지 않는다. 전환 후 새 모집부터 새 활성 시즌을 고정한다. 명령 표현과 과거 시즌 조회는 [봇 문서](bot.md#시즌-조회와-전환), 과거 시즌의 웹 전적·통계·홈 순위도 같은 서버의 `?season=` 선택으로 연결했다. 시즌 변경은 관련 필터를 보존하고 page/offset만 초기화한다. [최종 통합검증](ui-review/next.md)을 완료했다.
+시즌 snapshot/전환은 [공통 서비스](../apps/web/src/lib/server/guild/seasons.ts)로 모았고 웹 서버 관리의 seasons 탭/rotateSeason action과 봇이 재사용한다. 웹은 현재 시즌 CAS를 쓰며 Discord interaction receipt를 만들지 않는다. 봇은 [bot-seasons.ts](../apps/web/src/lib/server/discord/bot-seasons.ts)의 `getBotSeasons`·`rotateBotSeason`과 `/internal/bot/guilds/[guildId]/seasons`에 연결했다. MSM1 pin의 [services/guilds/seasons.py](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)를 대조했다. 이름은 trim 후 1~100자이고, 현재 실효 관리자 권한·`confirm=true`·`expectedCurrentSeasonId`·interaction receipt를 검사한다. 이전 활성 시즌 종료와 새 시즌 생성이 함께 커밋되며 기존 진행 내전·Game·MMR 원장의 시즌은 바꾸거나 복제하지 않는다. 전환 후 새 모집부터 새 활성 시즌을 고정한다. 명령 표현과 과거 시즌 조회는 [봇 문서](bot.md#시즌-조회와-전환), 과거 시즌의 웹 전적·통계·홈 순위도 같은 서버의 `?season=` 선택으로 연결했다. 시즌 변경은 관련 필터를 보존하고 page/offset만 초기화한다. [최종 통합검증](ui-review/next.md)을 완료했다.
 
 내전 저장과 Discord 전송 성공을 묶지 않는다. 필요한 게시 작업을 업무 트랜잭션에 기록하고 봇이 처리한다.
 PostgreSQL의 작은 작업 기록에 대상·종류·상태·재시도 시각·점유 만료를 두어 재시작 후 복구한다.

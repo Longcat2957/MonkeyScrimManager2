@@ -168,7 +168,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 대진 | `BracketBoard`, `BracketMatchBox`, `BracketTeamContent`, `BracketFormatControl` |
 | 경기 | `MatchListRow`, `MatchTable`, `MatchLineupBoard`, `GameHero`, `GameTeamTable`, `GamePlayerDialog`, `RoflUploadDialog`, `LoadoutIcon` |
 | 사용자 전적·통계 | `DuoList`, `RadarChart`, `LeaderboardTable`(PageNav 사용), `AchievementCarousel`, `AchievementRankingDialog` |
-| 내 정보·서버 관리 | `RiotAccountList`, `MemberRiotAccountsDialog`, `DiscordSettingRow` |
+| 내 정보·서버 관리 | `RiotAccountList`, `MemberRiotAccountsDialog`, `DiscordSettingRow`, `GuildAuditHistory`, `GuildSeasonManagement` |
 
 공통 `ChampionIcon` 컴포넌트는 없다. 챔피언 이미지는 각 기능의 `<img>`와 서버에서 준비한 이미지 URL로 표시한다.
 

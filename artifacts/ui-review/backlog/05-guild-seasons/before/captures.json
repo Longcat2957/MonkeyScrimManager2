@@ -1,0 +1,130 @@
+[
+    {
+        "file": "1440-primary-admin-members.png",
+        "sha256": "3bf6f38fa2bda8d2ad37b462c2070ea4ffc47885302158af9df6308c8744a60d",
+        "url": "http://127.0.0.1:39029/g/970000000000000001/admin",
+        "path": "/g/970000000000000001/admin",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "before-guild-season-management",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "acccbfe5-6c78-4e64-bccd-ac4c29eb5032",
+            "adcaf313-abce-490a-be26-e77192699556",
+            "a9c9f068-8df2-4066-a01f-84e30fe9c4c2"
+        ],
+        "currentSeason": {
+            "id": "966ee818-e417-40bd-afe5-13ac41c0ea81",
+            "name": "현재 조회 시즌 · 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인"
+        },
+        "previousSeason": {
+            "id": "0c46ad0c-b11a-46fe-b488-abe416c50bd1",
+            "name": "HTTP 테스트 시즌"
+        },
+        "source": "실제 SSR·manager세션·기존 멤버 기본탭. 실제 ROFL3세트와 종료1/활성1시즌은 fixture에 있으나 변경 전 UI에는 시즌 정보를 추가하지 않았다.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T13:17:25.261Z",
+        "imageReview": "PNG 실제 판독: 기존 관리자 멤버 기본 화면의 공유 헤더·3개 보기 버튼·멤버 검색·실제 연결 목록·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 탐색·잘린 내용 없음."
+    },
+    {
+        "file": "1440-dark-admin-members.png",
+        "sha256": "fbf4c553c24bcafe7ae26fb10c4504e7778c2dfb3df24642f4e9a21edd926c05",
+        "url": "http://127.0.0.1:39029/g/970000000000000001/admin",
+        "path": "/g/970000000000000001/admin",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "before-guild-season-management",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "acccbfe5-6c78-4e64-bccd-ac4c29eb5032",
+            "adcaf313-abce-490a-be26-e77192699556",
+            "a9c9f068-8df2-4066-a01f-84e30fe9c4c2"
+        ],
+        "currentSeason": {
+            "id": "966ee818-e417-40bd-afe5-13ac41c0ea81",
+            "name": "현재 조회 시즌 · 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인"
+        },
+        "previousSeason": {
+            "id": "0c46ad0c-b11a-46fe-b488-abe416c50bd1",
+            "name": "HTTP 테스트 시즌"
+        },
+        "source": "실제 SSR·manager세션·기존 멤버 기본탭. 실제 ROFL3세트와 종료1/활성1시즌은 fixture에 있으나 변경 전 UI에는 시즌 정보를 추가하지 않았다.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T13:17:25.261Z",
+        "imageReview": "PNG 실제 판독: 기존 관리자 멤버 기본 화면의 공유 헤더·3개 보기 버튼·멤버 검색·실제 연결 목록·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 탐색·잘린 내용 없음."
+    },
+    {
+        "file": "390-primary-admin-members.png",
+        "sha256": "ed26ed4c08085c920d56b5973db83ed75f85ae970b811ed6af30c74525f91cf6",
+        "url": "http://127.0.0.1:39029/g/970000000000000001/admin",
+        "path": "/g/970000000000000001/admin",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "before-guild-season-management",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "acccbfe5-6c78-4e64-bccd-ac4c29eb5032",
+            "adcaf313-abce-490a-be26-e77192699556",
+            "a9c9f068-8df2-4066-a01f-84e30fe9c4c2"
+        ],
+        "currentSeason": {
+            "id": "966ee818-e417-40bd-afe5-13ac41c0ea81",
+            "name": "현재 조회 시즌 · 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인"
+        },
+        "previousSeason": {
+            "id": "0c46ad0c-b11a-46fe-b488-abe416c50bd1",
+            "name": "HTTP 테스트 시즌"
+        },
+        "source": "실제 SSR·manager세션·기존 멤버 기본탭. 실제 ROFL3세트와 종료1/활성1시즌은 fixture에 있으나 변경 전 UI에는 시즌 정보를 추가하지 않았다.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T13:17:25.261Z",
+        "imageReview": "PNG 실제 판독: 기존 관리자 멤버 기본 화면의 공유 헤더·3개 보기 버튼·멤버 검색·실제 연결 목록·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 탐색·잘린 내용 없음."
+    },
+    {
+        "file": "390-dark-admin-members.png",
+        "sha256": "4314569740ac199baa57ebec8547c615d573123d5036d2c7ad4ae6f5e8f5a976",
+        "url": "http://127.0.0.1:39029/g/970000000000000001/admin",
+        "path": "/g/970000000000000001/admin",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "before-guild-season-management",
+        "overflow": false,
+        "errors": [],
+        "gameIds": [
+            "acccbfe5-6c78-4e64-bccd-ac4c29eb5032",
+            "adcaf313-abce-490a-be26-e77192699556",
+            "a9c9f068-8df2-4066-a01f-84e30fe9c4c2"
+        ],
+        "currentSeason": {
+            "id": "966ee818-e417-40bd-afe5-13ac41c0ea81",
+            "name": "현재 조회 시즌 · 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인 긴 시즌 이름 확인"
+        },
+        "previousSeason": {
+            "id": "0c46ad0c-b11a-46fe-b488-abe416c50bd1",
+            "name": "HTTP 테스트 시즌"
+        },
+        "source": "실제 SSR·manager세션·기존 멤버 기본탭. 실제 ROFL3세트와 종료1/활성1시즌은 fixture에 있으나 변경 전 UI에는 시즌 정보를 추가하지 않았다.",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T13:17:25.261Z",
+        "imageReview": "PNG 실제 판독: 기존 관리자 멤버 기본 화면의 공유 헤더·3개 보기 버튼·멤버 검색·실제 연결 목록·푸터를 확인했다. 390/1440 양테마에 가로 넘침·중복 탐색·잘린 내용 없음."
+    }
+]

@@ -73,7 +73,7 @@ pnpm bot:register
 
 봇은 선택한 `expectedCurrentSeasonId`와 실행자·interaction ID를 `/internal/bot/guilds/[guildId]/seasons`의 POST로 보낸다. 같은 경로의 GET은 관리자 조회와 자동완성이 소비한다. 자동완성 요청은 2초, 일반 조회·전환은 기존 10초 제한을 사용한다. 권한 회수와 오래된 선택은 서버 오류를 안내하고, 새로운 현재 시즌으로 바꾸어 자동 재전송하지 않는다.
 
-서버는 MSM1 pin의 [시즌 전환](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)처럼 이전 활성 시즌 종료·새 시즌 생성을 원자적으로 처리하고 receipt로 재전송의 중복 효과를 막는다. 진행 중인 내전은 원래 시즌과 MMR을 유지하고 새 모집부터 새 시즌을 사용한다. 이전 점수·원장을 복제하거나 기존 내전을 새 시즌으로 옮기지 않는다. 자세한 계약은 [MMR 시즌 전환](mmr.md#시즌-전환)을 따른다. 웹 전적·순위의 과거 시즌 선택 UI는 후속이다.
+서버는 MSM1 pin의 [시즌 전환](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)처럼 이전 활성 시즌 종료·새 시즌 생성을 원자적으로 처리하고 receipt로 재전송의 중복 효과를 막는다. 진행 중인 내전은 원래 시즌과 MMR을 유지하고 새 모집부터 새 시즌을 사용한다. 이전 점수·원장을 복제하거나 기존 내전을 새 시즌으로 옮기지 않는다. 자세한 계약은 [MMR 시즌 전환](mmr.md#시즌-전환)을 따른다. 웹 전적·순위의 과거 시즌 선택과 서버 관리의 시즌 전환 UI도 제공한다. 웹과 봇은 같은 전환 서비스를 사용하며 웹은 현재 시즌 CAS로, 봇은 기존 interaction receipt까지 함께 적용한다.
 
 ## 게시와 복구
 

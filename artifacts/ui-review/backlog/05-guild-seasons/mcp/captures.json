@@ -1,0 +1,138 @@
+[
+    {
+        "file": "1440-primary-new-current-season.png",
+        "url": "http://127.0.0.1:38773/g/970000000000000001/admin?tab=seasons",
+        "path": "/g/970000000000000001/admin?tab=seasons",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "primary",
+        "state": "fresh-new-current-season-after-cancel",
+        "posts": 1,
+        "cancelPosts": 0,
+        "keyboardTabsAndCancel": true,
+        "overflow": false,
+        "errors": [],
+        "currentSeasonId": "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b",
+        "seasonIds": [
+            "10938cde-5709-4bc7-bade-528fa271b83d",
+            "131d4dac-e069-4a4d-95e0-2d50fa1b719a",
+            "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b"
+        ],
+        "gameIds": [
+            "4e7cb46d-f6af-4ca3-ae6e-d922834c9c46",
+            "1a1be7d7-5cf0-42a4-a190-61026d93f717",
+            "3feaa242-38ef-4e71-a4ea-9c67c2218209"
+        ],
+        "retainedBeforeSha256": "e159182acd55a0d34b21f9a989b7df36bb0d6b79ae8410bad67ac201efeee8c5",
+        "source": "Playwright MCP 0.0.85·manager 실제 세션·첫1440 primary에서 웹 시즌 전환1회·3ROFL/30MMR 기록 유지·나머지조건 같은 새현재 freshSSR",
+        "sha256": "2c2d2acfa560ce9563def3dd5346fe88b77ddf0de6ed1192d5267708699af9c8",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:04:57.979Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·모바일4개 관리 보기·현재/지난 시즌·100자 연속 이름 줄바꿈·확인창·입력 유지 오류·저장 피드백을 해당 상태에서 확인했다. 390/1440 양테마에 가로 넘침·중복 조작·잘린 확인 본문 없음."
+    },
+    {
+        "file": "1440-dark-new-current-season.png",
+        "url": "http://127.0.0.1:38773/g/970000000000000001/admin?tab=seasons",
+        "path": "/g/970000000000000001/admin?tab=seasons",
+        "viewport": {
+            "width": 1440,
+            "height": 1000
+        },
+        "theme": "dark",
+        "state": "fresh-new-current-season-after-cancel",
+        "posts": 0,
+        "cancelPosts": 0,
+        "keyboardTabsAndCancel": true,
+        "overflow": false,
+        "errors": [],
+        "currentSeasonId": "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b",
+        "seasonIds": [
+            "10938cde-5709-4bc7-bade-528fa271b83d",
+            "131d4dac-e069-4a4d-95e0-2d50fa1b719a",
+            "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b"
+        ],
+        "gameIds": [
+            "4e7cb46d-f6af-4ca3-ae6e-d922834c9c46",
+            "1a1be7d7-5cf0-42a4-a190-61026d93f717",
+            "3feaa242-38ef-4e71-a4ea-9c67c2218209"
+        ],
+        "retainedBeforeSha256": "e159182acd55a0d34b21f9a989b7df36bb0d6b79ae8410bad67ac201efeee8c5",
+        "source": "Playwright MCP 0.0.85·manager 실제 세션·첫1440 primary에서 웹 시즌 전환1회·3ROFL/30MMR 기록 유지·나머지조건 같은 새현재 freshSSR",
+        "sha256": "4e462a68895cfc57956c6d6ba80cb2cffb37adb1d7b120a7cdef22fadccb071b",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:04:57.979Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·모바일4개 관리 보기·현재/지난 시즌·100자 연속 이름 줄바꿈·확인창·입력 유지 오류·저장 피드백을 해당 상태에서 확인했다. 390/1440 양테마에 가로 넘침·중복 조작·잘린 확인 본문 없음."
+    },
+    {
+        "file": "390-primary-new-current-season.png",
+        "url": "http://127.0.0.1:38773/g/970000000000000001/admin?tab=seasons",
+        "path": "/g/970000000000000001/admin?tab=seasons",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "primary",
+        "state": "fresh-new-current-season-after-cancel",
+        "posts": 0,
+        "cancelPosts": 0,
+        "keyboardTabsAndCancel": true,
+        "overflow": false,
+        "errors": [],
+        "currentSeasonId": "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b",
+        "seasonIds": [
+            "10938cde-5709-4bc7-bade-528fa271b83d",
+            "131d4dac-e069-4a4d-95e0-2d50fa1b719a",
+            "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b"
+        ],
+        "gameIds": [
+            "4e7cb46d-f6af-4ca3-ae6e-d922834c9c46",
+            "1a1be7d7-5cf0-42a4-a190-61026d93f717",
+            "3feaa242-38ef-4e71-a4ea-9c67c2218209"
+        ],
+        "retainedBeforeSha256": "e159182acd55a0d34b21f9a989b7df36bb0d6b79ae8410bad67ac201efeee8c5",
+        "source": "Playwright MCP 0.0.85·manager 실제 세션·첫1440 primary에서 웹 시즌 전환1회·3ROFL/30MMR 기록 유지·나머지조건 같은 새현재 freshSSR",
+        "sha256": "ea3765aed1e75b42240cf272a8b20ee9e898c1016a3d0485a8aea5b1106ada9f",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:04:57.979Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·모바일4개 관리 보기·현재/지난 시즌·100자 연속 이름 줄바꿈·확인창·입력 유지 오류·저장 피드백을 해당 상태에서 확인했다. 390/1440 양테마에 가로 넘침·중복 조작·잘린 확인 본문 없음."
+    },
+    {
+        "file": "390-dark-new-current-season.png",
+        "url": "http://127.0.0.1:38773/g/970000000000000001/admin?tab=seasons",
+        "path": "/g/970000000000000001/admin?tab=seasons",
+        "viewport": {
+            "width": 390,
+            "height": 844
+        },
+        "theme": "dark",
+        "state": "fresh-new-current-season-after-cancel",
+        "posts": 0,
+        "cancelPosts": 0,
+        "keyboardTabsAndCancel": true,
+        "overflow": false,
+        "errors": [],
+        "currentSeasonId": "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b",
+        "seasonIds": [
+            "10938cde-5709-4bc7-bade-528fa271b83d",
+            "131d4dac-e069-4a4d-95e0-2d50fa1b719a",
+            "fda37505-6ef7-4f3e-8ab6-b9dc805b3e3b"
+        ],
+        "gameIds": [
+            "4e7cb46d-f6af-4ca3-ae6e-d922834c9c46",
+            "1a1be7d7-5cf0-42a4-a190-61026d93f717",
+            "3feaa242-38ef-4e71-a4ea-9c67c2218209"
+        ],
+        "retainedBeforeSha256": "e159182acd55a0d34b21f9a989b7df36bb0d6b79ae8410bad67ac201efeee8c5",
+        "source": "Playwright MCP 0.0.85·manager 실제 세션·첫1440 primary에서 웹 시즌 전환1회·3ROFL/30MMR 기록 유지·나머지조건 같은 새현재 freshSSR",
+        "sha256": "c9c326129aad54b702429ffd8bad0a0747843f8237487161f24fd704e99ccd2f",
+        "imageRead": true,
+        "reviewer": "/root/guidance_readthrough",
+        "reviewedAt": "2026-11-15T14:04:57.979Z",
+        "imageReview": "PNG 실제 판독: 공유 헤더·모바일4개 관리 보기·현재/지난 시즌·100자 연속 이름 줄바꿈·확인창·입력 유지 오류·저장 피드백을 해당 상태에서 확인했다. 390/1440 양테마에 가로 넘침·중복 조작·잘린 확인 본문 없음."
+    }
+]

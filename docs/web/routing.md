@@ -63,7 +63,7 @@
 | 경기 상세 | `game=<gameId>` | 결과가 있는 마지막 세트. 일치하는 세트가 없으면 기본 선택 |
 | 사용자 전적 | `season=<uuid>`, `position=all\|top\|jungle\|mid\|bot\|support`, `page` | 활성 시즌, `all`, `1` |
 | 서버 통계 | `season=<uuid>`, `position`, `recent=1`, `min` | 활성 시즌, 전체 포지션, 최근 기록 끔, 최소 5게임(`1..50`). `recent`는 개발 샘플 업적의 사용자별 최근 10게임 집계에만 적용; 임의 기간 `range`는 미구현 |
-| 서버 관리 | `tab=members\|discord\|audit`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지. 변경 이력은 별도20개 쪽 조회 |
+| 서버 관리 | `tab=members\|discord\|audit\|seasons`, `q`, `page` | `members`, 빈 검색어, `1`; 검색어는 50자까지. 변경 이력은 별도20개 쪽 조회 |
 
 페이지 필터 변경은 `goto(url, { reset: false })`로 이동하고 `load`가 다시 읽는다. 검색은 폼 제출 시 반영한다. 목록 조건이 바뀌면 페이지를 초기화하며, 서버 관리 탭 변경은 해당 경로의 새 URL에서 시작한다.
 
@@ -151,4 +151,4 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 | `/g/[guildId]`와 일반 하위 화면 | 활성 DB 서버·대상을 공개 조회. 없음·비활성은 404. `/admin`은 현재 관리자 검사 |
 | `/`, `/docs`, `/terms`, `/privacy` | 정적 서비스 소개·이용 안내·정책 준비 중 화면 |
 
-기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 시즌 전환은 봇 운영 명령을 사용하고, 과거 시즌 열람은 서버 홈의 순위·개인 전적·서버 통계에서 제공한다.
+기능별 DB 연결·개발 미리보기·ROFL 등록과 MMR 반영의 범위는 [페이지별 문서](README.md)를 따른다. 시즌 전환은 봇 `/시즌` 또는 서버 관리의 시즌 탭에서 같은 서비스로 처리하고, 과거 시즌 열람은 서버 홈의 순위·개인 전적·서버 통계에서 제공한다.

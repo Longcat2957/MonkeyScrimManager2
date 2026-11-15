@@ -6,6 +6,7 @@
     import { SERVICE_NAME } from '#lib/branding.ts';
     import DiscordSettingRow from '#lib/components/admin/DiscordSettingRow.svelte';
     import GuildAuditHistory from '#lib/components/admin/GuildAuditHistory.svelte';
+    import GuildSeasonManagement from '#lib/components/admin/GuildSeasonManagement.svelte';
     import MemberRiotAccountsDialog from '#lib/components/admin/MemberRiotAccountsDialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
@@ -17,7 +18,7 @@
     import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
     import type { PageProps } from './$types';
 
-    let { data }: PageProps = $props();
+    let { data, form }: PageProps = $props();
 
     let query = $state('');
     // Riot 계정을 관리 중인 멤버. 저장 후 다시 불러온 목록에서 같은 멤버를 찾아 최신 계정을 보여 준다.
@@ -31,7 +32,8 @@
     const TABS = [
         { key: 'members', text: '멤버' },
         { key: 'discord', text: 'Discord 연동' },
-        { key: 'audit', text: '변경 이력' }
+        { key: 'audit', text: '변경 이력' },
+        { key: 'seasons', text: '시즌' }
     ] as const;
     const active = $derived(TABS.findIndex((tab) => tab.key === data.tab));
 
@@ -168,7 +170,13 @@
         <SelectionTabs labels={TABS.map(({ text }) => ({ text }))} {active} onclickTab={selectTab} />
     </div>
 
-    {#if data.tab === 'audit' && data.audit}
+    {#if data.tab === 'seasons' && data.seasons}
+        <GuildSeasonManagement
+            overview={data.seasons}
+            initialName={form && 'values' in form ? (form.values?.name ?? '') : ''}
+            initialError={form && 'action' in form && form.action === 'rotateSeason' ? form.message : ''}
+        />
+    {:else if data.tab === 'audit' && data.audit}
         <section aria-labelledby="audit" class="flex flex-col gap-3" aria-busy={Boolean(navigating.to)}>
             <h2 id="audit" class="sr-only">변경 이력</h2>
             <GuildAuditHistory entries={data.audit.entries} total={data.audit.total} />

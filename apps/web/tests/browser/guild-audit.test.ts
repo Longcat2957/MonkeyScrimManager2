@@ -181,6 +181,11 @@ for (const width of [1440, 390])
                     .getByRole('button', { name: '해제 SecondPlayer#KR1', exact: true })
                     .press('Enter');
                 const unlink = page.getByRole('dialog', { name: '연결 해제', exact: true });
+                // 확인창의 안전한 초기 포커스가 잡힌 뒤 의도한 확인 조작을 보낸다.
+                await page.waitForFunction(
+                    (button) => document.activeElement === button,
+                    await unlink.getByRole('button', { name: '취소', exact: true }).elementHandle()
+                );
                 await actionResponse(page, 'unlink', () =>
                     unlink.getByRole('button', { name: '확인', exact: true }).press('Enter')
                 );

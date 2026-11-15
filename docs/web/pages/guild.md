@@ -76,13 +76,13 @@ lg: 2열 같은 폭
 
 개발 모드 확인: `devGuild002`는 빈 서버, `?preview=error`는 최근 경기 조회 실패.
 
-**현재 한계·미결정** hero는 내전 요약 링크이며 바로 신청하지 않는다. `ranking` GET은 활성 서버를 공개 조회하고 잘못된 포지션·범위 밖 offset·잘못된 시즌 UUID는 400, 다른 서버 또는 없는 시즌은 404다. 시즌을 생략했는데 활성 시즌이 없으면 404이며 명시한 빈 시즌은 빈 `RankingPage`다. 순위는 현재 활성 멤버이면서 선택 시즌·포지션 유효 반영이 1게임 이상인 사용자만 포함하고 실제 최다 사용 챔피언을 표시하며 새 ROFL 결과의 MMR을 자동 반영한다. 시즌 전환은 기존 봇 운영 명령을 사용한다. 웹 시즌 운영 UI·홈 업적 연결은 후속 작업이다.
+**현재 한계·미결정** hero는 내전 요약 링크이며 바로 신청하지 않는다. `ranking` GET은 활성 서버를 공개 조회하고 잘못된 포지션·범위 밖 offset·잘못된 시즌 UUID는 400, 다른 서버 또는 없는 시즌은 404다. 시즌을 생략했는데 활성 시즌이 없으면 404이며 명시한 빈 시즌은 빈 `RankingPage`다. 순위는 현재 활성 멤버이면서 선택 시즌·포지션 유효 반영이 1게임 이상인 사용자만 포함하고 실제 최다 사용 챔피언을 표시하며 새 ROFL 결과의 MMR을 자동 반영한다. 시즌 전환은 봇 `/시즌` 또는 서버 관리의 시즌 탭을 사용하며 같은 전환 서비스를 공유한다. 홈 업적은 기준 확정 전 보류다.
 
 순위는 요청 시점의 값을 읽으며 여러 쪽의 동일 시점 스냅샷은 제공하지 않는다. 중복 없이 발생한 순위 변동은 다음 전체 조회 때 반영한다. 서버·선택 시즌 또는 첫 쪽 데이터가 바뀌거나 화면을 떠나면 진행 중 요청을 취소하고 이전 응답은 적용하지 않는다.
 
 ## `/g/[guildId]/admin` — 서버 관리
 
-**목적** 서버 관리자가 멤버의 Riot 계정 연결과 Discord 연동(운영자 역할, 모집·엔트리·결과 채널)을 관리하고 변경 이력을 확인한다. Riot 계정 연결은 사용자가 직접 하지 않고 여기서 운영자가 지정한다.
+**목적** 서버 관리자가 멤버의 Riot 계정 연결과 Discord 연동(운영자 역할, 모집·엔트리·결과 채널)을 관리하고 변경 이력을 확인하고 시즌을 전환한다. Riot 계정 연결은 사용자가 직접 하지 않고 여기서 운영자가 지정한다.
 
 **권한** 실제 세션의 현재 Discord 관리자 권한을 `load`와 모든 action에서 확인한다. 헤더 `관리` 메뉴도 관리자에게만 렌더링한다. 비로그인은 401, 소속이 없거나 대상이 사라지면 404, 소속은 있으나 권한이 없으면 403이다.
 
@@ -94,7 +94,7 @@ lg: 2열 같은 폭
 
 ```ts
 {
-  tab: 'members' | 'discord' | 'audit',                         // ?tab=, 기본 members
+  tab: 'members' | 'discord' | 'audit' | 'seasons',                         // ?tab=, 기본 members
   members: { userId, displayName, isAdmin, riotAccounts: RiotAccount[] }[],   // 서비스에 연결된 멤버만. 계정은 대표 먼저
   adminCount: number,
   discord: {                                                    // 멤버 탭에서는 불러오지 않아 null
@@ -103,15 +103,16 @@ lg: 2열 같은 폭
     settings: { operatorRoleId, recruitmentChannelId, entryChannelId, resultChannelId },   // 각각 null 가능
     actorRoleIds: string[] | null                               // 내 역할. 서버 관리 권한이 있으면 null(제한 없음)
   } | null,
-  audit: { entries: GuildAuditEntry[], total: number } | null  // 변경 이력 탭에서만 조회
+  audit: { entries: GuildAuditEntry[], total: number } | null, // 변경 이력 탭에서만 조회
+  seasons: GuildSeasonOverview | null // 시즌 탭만 현재/지난 시즌 조회
 }
 ```
 
-**화면** (한 열, `max-w-3xl`, 탭 세 개)
+**화면** (한 열, `max-w-3xl`, 탭 네 개)
 
 ```text
 [h1] 서버 관리
-[SelectionTabs] 멤버 | Discord 연동 | 변경 이력
+[SelectionTabs] 멤버 | Discord 연동 | 변경 이력 | 시즌
 
 ── 멤버 ──────────────────────────────────────────────
                                               관리자 2명
@@ -132,7 +133,7 @@ lg: 2열 같은 폭
 
 | 영역 | 사용 | 동작 |
 | --- | --- | --- |
-| 탭 | `SelectionTabs` (`role="group"` 래퍼, 선택 버튼 `aria-pressed`, 영역 제목은 `sr-only` `h2`) | `?tab=discord` 또는 `audit`. 기본은 멤버이며 탭을 바꾸면 기존 쿼리를 모두 지운다 |
+| 탭 | `SelectionTabs` (`role="group"` 래퍼, 선택 버튼 `aria-pressed`, 영역 제목은 `sr-only` `h2`) | `?tab=discord`, `audit`, `seasons`. 기본은 멤버이며 탭을 바꾸면 기존 쿼리를 모두 지운다 |
 | 멤버 검색 | `<form role="search">` + `Input type="search"` | Enter·지우기로 `?q=` 갱신, 50자 제한. 이름 부분 일치, 대소문자 무시. 검색 변경 시 page 초기화. 폼에 `nonSubmitButtons`·`inputLabel`, 이동 중 `aria-busy` |
 | 멤버 행 | `<li>`: 사진·이름·`관리자` `StatusTag`·대표 Riot ID(`외 n`) + `Riot 계정` 버튼 | 관리자 여부는 표시만 한다. 긴 이름·Riot ID는 줄바꿈하고 계정 버튼은 최소 44px 높이를 유지한다 |
 | Riot 계정 | `Button fill="lineLight"` → `MemberRiotAccountsDialog`(`Popup`) | 연결된 계정 목록(대표 `Tag`, `대표로`·`해제`(→ `confirm`)) + `Input title="연결할 Riot ID"` → `조회` → 찾은 계정 확인 → `연결`. 첫 계정은 대표가 된다. 진행 중 내전에 쓰인 계정은 `해제` 비활성 + 이유. action: `lookup`·`link`·`primary`·`unlink`(대상 `userId`는 이 서버 멤버만) |
@@ -168,4 +169,8 @@ lg: 2열 같은 폭
 
 모집·엔트리·경기 라인업·ROFL 결과 게시, 운영자 요청 참가 안내 DM·개인 신청 interaction·Gateway 동기화는 [봇](../../bot.md)에 연결했다. 채널 미설정이나 게시 실패가 웹 저장을 취소하지 않으며 이후 채널 설정·게시 복구로 처리한다. 현재 멤버 목록은 서비스에 연결된 사용자만 포함한다. 실제 Discord 등록·발송 검증 완료를 뜻하지 않는다.
 
-**현재 미제공** 최초 시즌 이후 MMR 시즌 전환 운영 UI. 별도 계정 소유권 인증은 현재 범위에 없으며 관리자 지정 방식과 구분한다.
+**시즌** `GuildSeasonManagement`는 현재 이름/시작 시각 → 시즌 전환 폼 → 종료된 시즌 목록 순서다. 이름은 trim 후1~100자이고 같은 이름 재사용을 막지 않는다. 확인창에서 실제 현재/새 이름을 확인하며 취소는0POST, 처리 중 중복을 막고 실패 때 입력을 보존한다.409는 `app:guild-seasons`만 다시 읽어 바뀐 현재를 확인한 뒤 재동의하게 한다. 결과 불명/성공 뒤 갱신 실패는 추가 전송을 막고 새로고침으로 현재를 확인한다. 정상 성공은 새현재/지난목록 갱신·한 번의 status·이름 입력 포커스로 마친다.
+
+`rotateSeason` action은 `{name,expectedCurrentSeasonId,confirm:true}`를 받고 웹에 가짜 Discord receipt를 만들지 않는다. 서버/현재 시즌 잠금·CAS·기존 내전/MMR 보존은 봇과 같은 서비스다. 과거 결과는 이전 시즌에 남고 새 모집부터 신규 시즌이며 기본 MMR1500이다. GET은 초기 시즌/점수를 만들지 않고 활성 없으면 기존 초기 설정 안내/전환 비활성·409를 유지한다. 개발 목도 실제 시즌 자료가 없어 current:null/completed:[]다. 변경 코드·검증은 [후속 기록](../../ui-review/backlog.md#5-웹-시즌-관리)을 따른다.
+
+별도 계정 소유권 인증은 현재 범위에 없으며 관리자 지정 방식과 구분한다.

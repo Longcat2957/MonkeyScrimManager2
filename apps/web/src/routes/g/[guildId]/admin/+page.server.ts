@@ -17,6 +17,9 @@ import {
     unlinkMockRiotAccount
 } from '#lib/mocks/me.ts';
 import { findMockGuild, mockUser } from '#lib/mocks/session.ts';
+import { getMockGuildSeasons, rotateMockGuildSeason } from '#lib/mocks/guild-seasons.ts';
+import { actionFailure } from '#lib/server/actions.ts';
+import { requireUser } from '#lib/server/auth/guards.ts';
 import { listGuildMembers, lookupRiotAccount } from '#lib/server/accounts/queries.ts';
 import { linkRiotAccount, setPrimaryRiotAccount, unlinkRiotAccount } from '#lib/server/accounts/service.ts';
 import { getDb } from '#lib/server/db/index.ts';
@@ -24,6 +27,7 @@ import { DiscordError } from '#lib/server/discord/client.ts';
 import { DomainError } from '#lib/server/errors.ts';
 import { listGuildAudit } from '#lib/server/guild/audit.ts';
 import { getGuildDiscordSettings, setGuildDiscordSetting } from '#lib/server/guild/settings.ts';
+import { getGuildSeasons, rotateGuildSeason } from '#lib/server/guild/seasons.ts';
 import { RiotError } from '#lib/server/riot/errors.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -74,9 +78,12 @@ async function runAction<T>(
     }
 }
 
-export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) => {
+export const load: PageServerLoad = async ({ params, url, locals, request, depends, setHeaders }) => {
     const requestedTab = url.searchParams.get('tab');
-    const tab = requestedTab === 'discord' || requestedTab === 'audit' ? requestedTab : 'members';
+    const tab =
+        requestedTab === 'discord' || requestedTab === 'audit' || requestedTab === 'seasons'
+            ? requestedTab
+            : 'members';
     const q = (url.searchParams.get('q') ?? '').slice(0, 50);
     const requestedPage = Number(url.searchParams.get('page'));
     const page =
@@ -85,12 +92,29 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
             : 1;
     const pagination = { tab, q, page, pageSize: PAGE_SIZE };
     try {
+        if (tab === 'seasons') {
+            depends('app:guild-seasons');
+            if (request.method === 'GET') setHeaders({ 'Cache-Control': 'no-store' });
+            if (isMockGuild(params.guildId)) requireMockAdmin(params.guildId);
+            return {
+                ...pagination,
+                members: [],
+                total: 0,
+                adminCount: 0,
+                discord: null,
+                audit: null,
+                seasons: isMockGuild(params.guildId)
+                    ? getMockGuildSeasons(params.guildId)
+                    : await getGuildSeasons(getDb(), locals.actor, params.guildId)
+            };
+        }
         if (isMockGuild(params.guildId)) {
             requireMockAdmin(params.guildId);
             return {
                 ...listMockMembers(params.guildId, { q, page, pageSize: PAGE_SIZE }),
                 discord: getMockDiscord(params.guildId, mockUser.userId),
                 audit: tab === 'audit' ? listMockGuildAudit(params.guildId, page, PAGE_SIZE) : null,
+                seasons: null,
                 ...pagination
             };
         }
@@ -104,6 +128,7 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
                     page,
                     pageSize: PAGE_SIZE
                 }),
+                seasons: null,
                 ...pagination
             };
         }
@@ -114,6 +139,7 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
                 adminCount: 0,
                 discord: await getGuildDiscordSettings(getDb(), locals.actor, params.guildId),
                 audit: null,
+                seasons: null,
                 ...pagination
             };
         }
@@ -125,6 +151,7 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
             })),
             discord: null,
             audit: null,
+            seasons: null,
             ...pagination
         };
     } catch (error) {
@@ -138,6 +165,28 @@ function requireMockMember(guildId: string, userId: string) {
 }
 
 export const actions: Actions = {
+    rotateSeason: async ({ request, params, locals, setHeaders }) => {
+        setHeaders({ 'Cache-Control': 'no-store' });
+        let name = '';
+        try {
+            const preview = isMockGuild(params.guildId);
+            if (preview) requireMockAdmin(params.guildId);
+            else requireUser(locals.actor);
+            const data = await request.formData();
+            name = field(data, 'name');
+            const input = {
+                name,
+                expectedCurrentSeasonId: field(data, 'expectedCurrentSeasonId'),
+                confirm: field(data, 'confirm') === 'true'
+            };
+            if (preview) rotateMockGuildSeason(params.guildId, input);
+            else await rotateGuildSeason(getDb(), locals.actor, params.guildId, input);
+            return { rotated: true };
+        } catch (cause) {
+            const failure = actionFailure(cause, setHeaders);
+            return fail(failure.status, { ...failure.data, action: 'rotateSeason', values: { name } });
+        }
+    },
     discord: async ({ request, params, locals, setHeaders }) =>
         runAction(setHeaders, async () => {
             const data = await request.formData();

@@ -110,3 +110,32 @@ Impeccable layout·clarify는 검색/날짜/시즌을 한 조회 과업으로 �
 최저/최고 유효 연도의 실제 PostgreSQL 바인딩도 별도 격리 진단으로 정상 확인했으며 기존15개 검사 수에 더하지 않는다. 성능 개선율·CWV를 측정했다고 보고하지 않는다. 원본 화면의 생성 시각 정렬을 표시 시각으로 일치시킨 의미 변경은 위 BK-04a 근거와 테스트로 검증했다.
 
 사용자 DB·실제 Discord·배포를 변경하지 않았다. 모든 fixture/세션/임시 자료는 정리했고5173 개발 서버는 유지했다. 외부 이미지/폰트 차단·Chromium viewport/키보드 검증이며 물리 기기·Safari·스크린리더 음성·운영 데이터 규모는 미검증이다.
+
+
+## 5. 웹 시즌 관리
+
+| ID | 근거·우선순위 | 변경·완료 조건 | 상태 |
+| --- | --- | --- | --- |
+| BK-05 | 기존 시즌 운영은 봇 명령만 있고 웹 경로 없음. before4/실제 소스 확인 | 관리자 시즌 탭·현재/과거 조회·확인 후 전환, 기존 봇 서비스와 receipt·내전/MMR 보존 | 구현·DB18·HTTP9·browser8 완료 |
+| BK-05a | 새 관리 폼의 이름·확인·실패·경합·권한 변경. P1 | 100자/긴 영문, 확인 취소0POST, 단일 저장,409 새현재 재조회/입력 보존/재확인,503 보존, 성공 피드백 | HTTP9·browser4·MCP4 완료 |
+| BK-05b | 네 번째 관리 항목의 좁은 화면과 무활성/빈 과거 상태 | 기존 헤더/본문 중복 이동 없음,4항목 키보드·포커스, 활성없음 조작 비활성/초기 설정 안내·임의 초기화 금지 | 양 폭/테마·새4/기존4 회귀 완료 |
+
+봇/웹에 실제 중복될 시즌 전환은 공통 서비스로 추출했다. Impeccable clarify·harden은 전환 대상/기록 보존·CAS·실패 복구에, adapt·typeset·polish는4탭과 긴 이름·현재/과거·버튼/포커스에 적용하고 document로 실제 규칙을 병합했다. [before4](../../artifacts/ui-review/backlog/05-guild-seasons/before/captures.json)은 실제 관리자 멤버 화면이며 아직 존재하지 않던 시즌 탭의 before라고 주장하지 않는다. 실제 ROFL/현재·과거 시즌은 metadata에서 확인한다.
+
+
+**5단계 코드·검증:** `features/seasons.ts`, `server/guild/seasons.ts`, 기존 `discord/bot-seasons.ts`, 관리자 load/actions·`GuildSeasonManagement.svelte`·4탭 조립·무활성 목, DB/HTTP/browser test다. 기존 봇 receipt를 tx 안에 유지하고 웹은 현재 시즌 CAS로 중복/동시 전환을 거절한다. 새 migration/범용 API는 없다.
+
+| 검사 | 결과 |
+| --- | --- |
+| 신규 DB8·기존 bot6/record4 | 18/18. 현재/빈 상태·fresh 권한·100자/같은 이름·현재UUID/미래시각·web/web/web-bot CAS·저장 실패 rollback·이전 결과/새 내전 귀속·receipt 재사용 |
+| 신규 HTTP7·기존 bot HTTP2 | 9/9. 비로그인/멤버/서비스운영자/위조 거절·CSRF·부분자료 비공개·no-store·현재 변경·native POST tab/입력 보존·503 upstream의 기존502 계약 |
+| 신규 browser4 | 4/4.1440×1000/390×844 primary/dark. 취소0POST·409 뒤 새현재 자동조회·입력100자 보존·503 보존·단일 POST·성공/빈 입력 포커스·무활성 비활성·기존30MMR/ROFL/내전 동일 |
+| 기존 admin browser4 | 4/4. 네 항목이 추가된 상태의 기존 멤버·Discord·이력·계정 관리 경로. 빠른 확인의 초기 포커스 검사를 보강한 뒤 재검증 |
+| 실제 MCP | 4/4. 실제 전환1회·나머지 확인취소·100자 영문 textRange bounds·4탭44px/한 선택·JS0/가로넘침0. [행 전체 불변 해시](../../artifacts/ui-review/backlog/05-guild-seasons/mcp/fixture-checks.json) retainedEqual=true |
+| 프로젝트 | 웹446/봇80·check·check:tests·웹/봇 build 통과. Svelte 오류0·경고0 |
+
+[before4](../../artifacts/ui-review/backlog/05-guild-seasons/before/captures.json)·[after12](../../artifacts/ui-review/backlog/05-guild-seasons/after/captures.json)·[MCP4](../../artifacts/ui-review/backlog/05-guild-seasons/mcp/captures.json)의20장 모두 실제 판독·SHA·역할·URL·담당을 기록했다. 공통 확인창의 긴 이름 위험은 실제100자 영문으로 가시 범위·키보드를 확인해 CSS를 추가하지 않았다. 현재·과거·전환은 한 열의 별개 책임으로 배치하고 보존/1500 안내를 확인창에서 반복하지 않는다.
+
+초기 HTTP 검증의 Kit3 node.error/status·Accept·기존 Discord upstream 상태 변환 가정을 정정했고 생산 결함으로 집계하지 않는다. 기존 계정 해제 회귀에서 한 조건의 빠른 확인 응답 대기 timeout이 있었으며 안전한 ‘취소’ 초기 포커스 완료를 검사한 뒤 확인하도록 자동화를 보강해4조건 통과했다. 이 때문에 제품 코드를 바꾸지는 않았다.
+
+실제 Discord/사용자 DB/배포는 변경하지 않았고 모든 fixture·세션·schema·private args/config를 정리했다. 외부 이미지/폰트 차단·Chromium 키보드/viewport이며 Safari·물리 기기·음성 청취·CWV·운영 규모는 미검증이다.
