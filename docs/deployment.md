@@ -116,7 +116,7 @@ Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱
 
 실행 순서는 의존성/Chromium 설치 → `pnpm check` → `pnpm check:tests` → `pnpm test` → `pnpm test:hard` → `pnpm test:browser` → 환경 분리 검사 → 공통 이미지 빌드·실행 검사 → GHCR 발행이다. 검사 중 하나라도 실패하면 `dev` 이미지 태그를 갱신하지 않는다.
 
-CI의 PostgreSQL은 VPS와 같은 18.4 이미지의 일회용 서비스다. trust 인증은 그 테스트 서비스에 한정한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키를 workflow에 전달하지 않는다. hard/browser 실행기는 기존처럼 실제 키를 비우고 테스트마다 schema를 생성·정리한다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다.
+CI의 PostgreSQL은 VPS와 같은 18.4 이미지의 일회용 서비스이며 데이터는 tmpfs에 둔다. trust 인증은 그 테스트 서비스에 한정한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키를 workflow에 전달하지 않는다. hard/browser 실행기는 기존처럼 실제 키를 비우고 테스트마다 schema를 생성·정리한다. PostgreSQL 18의 RESTRICT 오류 코드 변경에 맞춰 해당 제약 테스트는 서버 버전별 정확한 SQLSTATE와 제약 이름을 검사하며 17·18 양쪽에서 확인했다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다. [PostgreSQL 18 호환성 변경](https://www.postgresql.org/docs/18/release-18.html#RELEASE-18-MIGRATION)
 
 ### 공통 앱 이미지
 

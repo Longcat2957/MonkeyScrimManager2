@@ -76,8 +76,10 @@ test('0008은 배치의 내전 귀속·취소 상태·1회 활성·사유·수�
             f.pool.query(`UPDATE scrim_cancellations SET ${assignment} WHERE id=$1`, [batch!.id]),
             { code: '23514', constraint }
         );
+    const version = await f.pool.query<{ server_version_num: string }>('SHOW server_version_num');
+    // PostgreSQL 18부터 RESTRICT 위반은 전용 SQLSTATE를 반환한다. 제약 이름도 함께 검사한다.
     await assert.rejects(f.pool.query('DELETE FROM scrim_cancellations WHERE id=$1', [batch!.id]), {
-        code: '23503',
+        code: Number(version.rows[0]!.server_version_num) >= 180000 ? '23001' : '23503',
         constraint: 'matches_cancellation_batch_fk'
     });
 });

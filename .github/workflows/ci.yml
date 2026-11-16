@@ -29,6 +29,7 @@ jobs:
                 ports:
                     - 127.0.0.1:5432:5432
                 options: >-
+                    --tmpfs /var/lib/postgresql:rw,mode=1777
                     --health-cmd "pg_isready -U msm2_test -d msm2_test"
                     --health-interval 5s
                     --health-timeout 3s
