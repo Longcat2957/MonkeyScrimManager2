@@ -242,6 +242,32 @@ export async function getScrimSettings(
     );
 }
 
+// 신청 이력은 보존하되 목록과 인원 집계에는 참가자별 현재 신청 또는 마지막 종료 신청만 사용한다.
+function latestRegistrations(tx: Transaction, scrimId: string) {
+    return tx
+        .selectDistinctOn([scrimParticipantRegistrations.scrimParticipantId], {
+            registrationId: scrimParticipantRegistrations.id,
+            participantId: scrimParticipantRegistrations.scrimParticipantId,
+            status: scrimParticipantRegistrations.status,
+            joinedAt: scrimParticipantRegistrations.joinedAt,
+            withdrawnAt: scrimParticipantRegistrations.withdrawnAt
+        })
+        .from(scrimParticipantRegistrations)
+        .innerJoin(
+            scrimParticipants,
+            eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
+        )
+        .where(eq(scrimParticipants.scrimId, scrimId))
+        .orderBy(
+            asc(scrimParticipantRegistrations.scrimParticipantId),
+            sql`case when ${scrimParticipantRegistrations.withdrawnAt} is null then 0 else 1 end`,
+            desc(scrimParticipantRegistrations.joinedAt),
+            desc(scrimParticipantRegistrations.withdrawnAt),
+            desc(scrimParticipantRegistrations.id)
+        )
+        .as('latest_registrations');
+}
+
 async function registrationCounts(tx: Transaction, row: ScrimRow): Promise<ScrimRegistrationCounts> {
     const counts: ScrimRegistrationCounts = {
         selected: 0,
@@ -251,15 +277,11 @@ async function registrationCounts(tx: Transaction, row: ScrimRow): Promise<Scrim
         playCapacity: playCapacity(row.teamCount),
         activeCapacity: playCapacity(row.teamCount) + row.reserveCapacity
     };
+    const latest = latestRegistrations(tx, row.id);
     const totals = await tx
-        .select({ status: scrimParticipantRegistrations.status, value: count() })
-        .from(scrimParticipantRegistrations)
-        .innerJoin(
-            scrimParticipants,
-            eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
-        )
-        .where(eq(scrimParticipants.scrimId, row.id))
-        .groupBy(scrimParticipantRegistrations.status);
+        .select({ status: latest.status, value: count() })
+        .from(latest)
+        .groupBy(latest.status);
     for (const total of totals) counts[total.status] = total.value;
     return counts;
 }
@@ -279,29 +301,27 @@ export async function getScrimDetail(
         async (tx, user, guild) => {
             const row = await findScrim(tx, guildId, scrimId);
             if (!row) return null;
+            const latest = latestRegistrations(tx, row.id);
             const entries = await tx
                 .select({
-                    registrationId: scrimParticipantRegistrations.id,
+                    registrationId: latest.registrationId,
                     participantId: scrimParticipants.id,
                     userId: scrimParticipants.userId,
                     displayName: scrimParticipants.displayName,
-                    status: scrimParticipantRegistrations.status,
-                    joinedAt: scrimParticipantRegistrations.joinedAt,
+                    status: latest.status,
+                    joinedAt: latest.joinedAt,
                     riotAccountId: scrimParticipants.riotAccountId,
                     gameName: riotAccounts.gameName,
                     tagLine: riotAccounts.tagLine
                 })
-                .from(scrimParticipantRegistrations)
-                .innerJoin(
-                    scrimParticipants,
-                    eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
-                )
+                .from(latest)
+                .innerJoin(scrimParticipants, eq(scrimParticipants.id, latest.participantId))
                 .leftJoin(riotAccounts, eq(riotAccounts.id, scrimParticipants.riotAccountId))
                 .where(eq(scrimParticipants.scrimId, row.id))
                 .orderBy(
-                    sql`case when ${scrimParticipantRegistrations.withdrawnAt} is null then 0 else 1 end`,
-                    desc(scrimParticipantRegistrations.joinedAt),
-                    asc(scrimParticipantRegistrations.id)
+                    sql`case when ${latest.withdrawnAt} is null then 0 else 1 end`,
+                    desc(latest.joinedAt),
+                    asc(latest.registrationId)
                 )
                 .limit(1_000);
             const participantIds = [...new Set(entries.map((entry) => entry.participantId))];

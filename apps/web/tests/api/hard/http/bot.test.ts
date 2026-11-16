@@ -227,7 +227,7 @@ test('HTTP 봇: 쿠키 없이 본인 계정으로 신청·수정·철회하고 �
     );
     assert.deepEqual(edited.registration?.positions, ['top']);
     for (const action of ['standby', 'select']) {
-        const changed = await success<BotRegistrationContext>(
+        const changed: BotRegistrationContext = await success<BotRegistrationContext>(
             await requestBot(f, base + '/registrations', 'PATCH', {
                 actorId: HTTP_IDS.member,
                 interactionId: interactionId(),

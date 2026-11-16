@@ -328,8 +328,30 @@ function find(guildId: string, scrimId: string) {
     return scrims.find((scrim) => scrim.guildId === guildId && scrim.id === scrimId) ?? null;
 }
 
+// 원본 신청 이력은 보존하고, 화면과 인원 계산에는 사람마다 활성 신청 또는 마지막 이력만 사용한다.
+function latestRegistrations(scrim: MockScrim): MockParticipant[] {
+    const latest = new Map<string, MockParticipant>();
+    for (const participant of scrim.participants) {
+        const key = participant.userId ?? participant.registrationId;
+        const previous = latest.get(key);
+        const active = ACTIVE_REGISTRATION.includes(participant.status);
+        const previousActive = previous && ACTIVE_REGISTRATION.includes(previous.status);
+        if (
+            !previous ||
+            (active && !previousActive) ||
+            (active === previousActive &&
+                (participant.registeredAt > previous.registeredAt ||
+                    (participant.registeredAt === previous.registeredAt &&
+                        participant.registrationId > previous.registrationId)))
+        ) {
+            latest.set(key, participant);
+        }
+    }
+    return [...latest.values()];
+}
+
 const activeRegistrations = (scrim: MockScrim) =>
-    scrim.participants.filter((participant) => ACTIVE_REGISTRATION.includes(participant.status));
+    latestRegistrations(scrim).filter((participant) => ACTIVE_REGISTRATION.includes(participant.status));
 
 const capacity = (scrim: MockScrim) => playCapacity(scrim.teamCount) + scrim.reserveCapacity;
 
@@ -479,8 +501,9 @@ export function getMockScrimSettings(guildId: string, scrimId: string): ScrimSet
 }
 
 export function counts(scrim: MockScrim): ScrimRegistrationCounts {
+    const latest = latestRegistrations(scrim);
     const count = (status: RegistrationStatus) =>
-        scrim.participants.filter((participant) => participant.status === status).length;
+        latest.filter((participant) => participant.status === status).length;
     return {
         selected: count('selected'),
         standby: count('standby'),
@@ -522,7 +545,7 @@ export async function getMockScrimDetail(
           }
         : null;
     return {
-        participants: scrim.participants.map(
+        participants: latestRegistrations(scrim).map(
             ({ riotAccountId: _, championId, mmr: __, ...participant }): ScrimParticipant => ({
                 ...participant,
                 iconUrl: icon(championId)

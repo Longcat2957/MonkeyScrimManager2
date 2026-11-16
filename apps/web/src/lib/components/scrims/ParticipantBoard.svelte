@@ -30,13 +30,13 @@
 
     let { guildId, participants, counts, manager, canSelect }: Props = $props();
 
-    const FILTERS: { text: string; statuses: RegistrationStatus[] | null }[] = [
-        { text: '전체', statuses: null },
+    const ACTIVE: RegistrationStatus[] = ['selected', 'standby'];
+    const FILTERS: { text: string; statuses: RegistrationStatus[] }[] = [
+        { text: '전체', statuses: ACTIVE },
         { text: '선발', statuses: ['selected'] },
         { text: '대기', statuses: ['standby'] },
         { text: '철회·제외', statuses: ['withdrawn', 'excluded'] }
     ];
-    const ACTIVE: RegistrationStatus[] = ['selected', 'standby'];
 
     let filter = $state(0);
     let managing = $state(false);
@@ -50,15 +50,13 @@
     const labels = $derived(
         FILTERS.map(({ text, statuses }) => ({
             text: desktop.current
-                ? `${text} ${statuses ? statuses.reduce((sum, status) => sum + counts[status], 0) : participants.length}`
+                ? `${text} ${statuses.reduce((sum, status) => sum + counts[status], 0)}`
                 : text
         }))
     );
     const shown = $derived.by(() => {
         const statuses = FILTERS[filter]!.statuses;
-        return statuses
-            ? participants.filter((participant) => statuses.includes(participant.status))
-            : participants;
+        return participants.filter((participant) => statuses.includes(participant.status));
     });
     // 선발 관리에서는 상태를 바꿀 수 있는 활성 신청만 다룬다.
     const selectable = $derived(participants.filter((participant) => ACTIVE.includes(participant.status)));

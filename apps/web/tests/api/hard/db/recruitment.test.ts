@@ -250,6 +250,72 @@ test('철회는 대기자를 승급시키고 재신청은 이전 이력을 덮�
     );
 });
 
+test('반복 철회·재신청·제외 뒤에도 참가자와 인원은 최신 신청 한 건이며 원본 이력은 보존한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    const actor = f.actors[2]!;
+    let participantId: string | undefined;
+    const check = async (
+        status: 'selected' | 'withdrawn' | 'excluded',
+        registrationId: string,
+        historyCount: number
+    ) => {
+        const detail = (await getScrimDetail(f.db, actor, f.guildId, f.scrimId, f.access))!;
+        assert.equal(detail.participants.length, 1);
+        const participant = detail.participants[0]!;
+        assert.equal(participant.userId, actor.userId);
+        assert.equal(participant.registrationId, registrationId);
+        assert.equal(participant.status, status);
+        participantId ??= participant.participantId;
+        assert.equal(participant.participantId, participantId);
+        assert.deepEqual(
+            [detail.counts.selected, detail.counts.standby, detail.counts.withdrawn, detail.counts.excluded],
+            [Number(status === 'selected'), 0, Number(status === 'withdrawn'), Number(status === 'excluded')]
+        );
+        assert.equal(detail.myRegistration?.id ?? null, status === 'selected' ? registrationId : null);
+        const history = await f.db
+            .select()
+            .from(schema.scrimParticipantRegistrations)
+            .where(eq(schema.scrimParticipantRegistrations.scrimParticipantId, participantId));
+        assert.equal(history.length, historyCount);
+        assert.equal(new Set(history.map((entry) => entry.scrimParticipantId)).size, 1);
+    };
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        await join(f, 2);
+        const registrationId = (await registrations(f))[0]!.id;
+        await check('selected', registrationId, attempt);
+        await withdrawRegistration(f.db, actor, f.guildId, f.scrimId, f.access);
+        await check('withdrawn', registrationId, attempt);
+    }
+    await join(f, 2);
+    const registrationId = (await registrations(f))[0]!.id;
+    await check('selected', registrationId, 3);
+    await setParticipantStatus(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        {
+            ...(await f.revision()),
+            registrationIds: [registrationId],
+            status: 'excluded'
+        },
+        f.access
+    );
+    await check('excluded', registrationId, 3);
+    await createManualRegistration(f.db, f.manager, f.guildId, f.scrimId, { userId: actor.userId }, f.access);
+    const restoredId = (await registrations(f))[0]!.id;
+    await check('selected', restoredId, 4);
+    const history = await f.db
+        .select()
+        .from(schema.scrimParticipantRegistrations)
+        .where(eq(schema.scrimParticipantRegistrations.scrimParticipantId, participantId!));
+    assert.deepEqual(
+        history.map((entry) => entry.status).sort(),
+        ['withdrawn', 'withdrawn', 'excluded', 'selected'].sort()
+    );
+});
+
 test('정원 초과와 정원 축소 실패는 신청·설정·revision을 바꾸지 않는다', async (t) => {
     const f = await createRecruitmentFixture(t);
     await fill(f, 12);
