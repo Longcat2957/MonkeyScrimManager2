@@ -35,8 +35,25 @@ for (const width of [1440, 360]) {
             await route.fallback();
         });
         await page.goto(fixture.url + '/g/' + HTTP_IDS.guild + '/admin');
-        await page.getByRole('button', { name: 'Riot 계정 관리, HTTP 사용자' }).first().click();
+        // 같은 표시 이름을 가진 멤버도 목록과 연결 확인에서 실제 사용자 ID로 구별한다.
+        for (const userId of [HTTP_IDS.member, HTTP_IDS.serviceAdmin]) {
+            assert.equal(await page.getByText(userId, { exact: true }).isVisible(), true);
+            assert.equal(
+                await page
+                    .getByRole('button', { name: `Riot 계정 관리, HTTP 사용자 (${userId})`, exact: true })
+                    .count(),
+                1
+            );
+        }
+        await page
+            .getByRole('button', {
+                name: `Riot 계정 관리, HTTP 사용자 (${HTTP_IDS.member})`,
+                exact: true
+            })
+            .click();
         const accounts = page.getByRole('dialog', { name: 'Riot 계정 관리' });
+        await accounts.getByText(HTTP_IDS.member, { exact: true }).waitFor();
+        assert.equal(await accounts.getByText(HTTP_IDS.member, { exact: true }).isVisible(), true);
         const input = accounts.getByPlaceholder('이름#태그');
         await input.fill('HttpPlayer#KR1');
         await accounts.getByRole('button', { name: '조회', exact: true }).click();
@@ -52,6 +69,8 @@ for (const width of [1440, 360]) {
         await accounts.getByRole('button', { name: '연결', exact: true }).waitFor();
         assert.match(await accounts.innerText(), /HttpPlayer/);
         assert.doesNotMatch(await accounts.innerText(), /SecondPlayer/);
+        assert.equal(await accounts.getByText(HTTP_IDS.member, { exact: true }).isVisible(), true);
+        assert.equal(await accounts.getByText(HTTP_IDS.serviceAdmin, { exact: true }).count(), 0);
         await accounts.getByRole('button', { name: '연결', exact: true }).click();
         await accounts.getByRole('button', { name: '조회', exact: true }).waitFor();
         const identities = await fixture.db.select().from(schema.riotAccounts);
@@ -63,6 +82,7 @@ for (const width of [1440, 360]) {
         assert.equal(links.length, 1);
         assert.equal(links[0]!.riotAccountId, identities[0]!.id);
         assert.equal(links[0]!.guildId, HTTP_IDS.guild);
+        assert.equal(links[0]!.userId, HTTP_IDS.member);
         assert.equal(lookupCount, 1);
         assert.equal(linkCount, 1);
         assert.deepEqual(errors, []);

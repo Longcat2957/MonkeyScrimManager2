@@ -81,12 +81,15 @@
             <section>
                 <h2 class="mt-0! text-2xl!">참가·기록</h2>
                 <h3 id="recruit" tabindex="-1" class="text-lg!">모집 참여</h3>
+                <p>
+                    Discord 모집 글의 <strong>참가</strong> 버튼으로 바로 신청할 수 있어요. 웹 사전 가입이나 Riot
+                    계정 연결은 필요하지 않아요.
+                </p>
                 <ol>
-                    <li>서버의 <strong>내전</strong> 메뉴에서 참가할 내전을 열어요.</li>
+                    <li>웹에서는 로그인한 뒤 서버의 <strong>내전</strong> 메뉴에서 참가할 내전을 열어요.</li>
                     <li>
-                        <strong>신청하기</strong>를 눌러 참가에 쓸 Riot 계정과 희망 포지션을 고르고 신청해요.
-                        Riot 계정은 서버 운영자가 연결해 줘요. 연결된 계정은 <strong>내 정보</strong>에서 볼
-                        수 있어요.
+                        <strong>신청하기</strong>에서 희망 포지션을 고르고 신청해요. 연결된 Riot 계정이 있으면
+                        함께 선택할 수 있어요.
                     </li>
                     <li>
                         모집이 끝나기 전까지는 <strong>내 신청</strong>에서 계정·포지션을 바꾸거나 신청을
@@ -116,6 +119,10 @@
                 <p>
                     정상 파일은 승인 없이 바로 기록되고, 한 팀이 과반을 이기면 경기가 끝나요. 원본 파일은
                     보관하지 않아요.
+                </p>
+                <p>
+                    첫 ROFL 결과를 기록할 때 확정 출전 정보와 선택한 블루 팀을 기준으로 Riot 계정이 연결돼요.
+                    서버별 연결 계정은 <strong>내 정보</strong>에서 확인할 수 있어요.
                 </p>
             </section>
             <section class="mt-12 border-t border-border pt-8">

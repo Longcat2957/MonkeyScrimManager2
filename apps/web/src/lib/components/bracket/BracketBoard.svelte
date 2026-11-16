@@ -24,6 +24,7 @@
     }: { bracket: BracketView | null; guildId: string; title?: string; emptyMessage?: string } = $props();
 
     let selectedId = $state<string | null>(null);
+    let selectionHeight = $state(0);
     let busy = $state(false);
 
     const editing = $derived(Boolean(bracket?.can.edit));
@@ -107,7 +108,8 @@
     <section
         aria-labelledby="bracket-board"
         aria-busy={busy}
-        class="w-full min-w-0 overflow-hidden rounded-(--radius-box) border border-border bg-border"
+        class="bracket-board w-full min-w-0 overflow-clip rounded-(--radius-box) border border-border bg-border"
+        style:--selection-height={`${selectedId ? selectionHeight : 0}px`}
     >
         <div
             class="flex flex-col gap-2 bg-bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between dark:bg-bg-surface-dark"
@@ -161,16 +163,20 @@
 
         {#if editing && selectedId}
             <p
-                class="flex min-h-10 flex-wrap items-center gap-2 bg-bg-surface px-4 text-sm dark:bg-bg-surface-dark"
+                bind:clientHeight={selectionHeight}
+                class="sticky top-(--app-header-height) z-20 flex min-h-10 items-center gap-2 border-b border-border bg-bg-surface px-4 py-1 text-sm dark:bg-bg-surface-dark"
                 aria-live="polite"
             >
-                <span><strong>{selectedName}</strong> 선택됨 · 놓을 자리를 누르거나 끌어 놓으세요</span>
+                <span class="min-w-0 flex-1">
+                    <strong>{selectedName}</strong> 선택됨
+                    <span class="block text-xs text-text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
+                </span>
                 <Button
                     fill="text"
                     size="auto"
                     heightOut="0"
                     heightIn="2"
-                    injClass="px-2 text-sm"
+                    injClass="min-h-11 shrink-0 px-2 text-sm"
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >
             </p>
@@ -273,3 +279,9 @@
         </div>
     </section>
 {/if}
+
+<style>
+    .bracket-board :global(button) {
+        scroll-margin-block-start: var(--selection-height);
+    }
+</style>

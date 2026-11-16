@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import type { Page } from 'playwright';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../src/lib/server/db/schema.ts';
+import { createBracketDraft } from '../../src/lib/server/scrims/bracket.ts';
 import { HTTP_IDS, assertAction } from '../api/support/http.ts';
 import { prepareHttpAuctionFixture } from '../api/support/http-auction-fixtures.ts';
 import { createBrowserFixture } from './support/browser.ts';
@@ -30,6 +31,116 @@ async function capture(page: Page, name: string) {
     });
     await writeFile(resolve(directory, 'auction-images.json'), JSON.stringify(captures, null, 4) + '\n');
 }
+
+test(
+    '390px 경매는 마지막 팀 입찰 중에도 현재 후보를 유지하고 조정 종료를 구분한다',
+    { timeout: 60_000 },
+    async (t) => {
+        const f = await createBrowserFixture(t, { width: 390, userId: HTTP_IDS.manager });
+        await f.page.setViewportSize({ width: 390, height: 844 });
+        const a = await prepareHttpAuctionFixture(f);
+        assertAction(await a.setup(), 200);
+        assertAction(await a.action('start'), 200);
+        assertAction(await a.action('draw'), 200);
+        await f.page.clock.install();
+        await f.page.goto(f.url + a.path);
+        const candidate = f.page.getByRole('group', { name: /^현재 매물 / });
+        const bid = f.page.getByRole('textbox', { name: '2팀 입찰가', exact: true });
+        await candidate.waitFor();
+        await bid.evaluate((node) => node.scrollIntoView({ block: 'start', behavior: 'instant' }));
+        await bid.focus();
+        const candidateBox = await candidate.boundingBox();
+        const bidBox = await bid.boundingBox();
+        assert.ok(candidateBox && bidBox);
+        assert.ok(candidateBox.y >= 63 && candidateBox.y <= 65);
+        assert.ok(bidBox.y >= candidateBox.y + candidateBox.height);
+        const bidTitle = await f.page.getByText('2팀 입찰가', { exact: true }).boundingBox();
+        assert.ok(bidTitle && bidTitle.y >= candidateBox.y + candidateBox.height);
+        assert.equal(await candidate.count(), 1);
+        const candidates = f.page.getByRole('button', { name: '후보 목록', exact: true });
+        assert.equal(await candidates.count(), 1);
+        assert.ok((await candidates.boundingBox())!.y > bidBox.y);
+        await f.page.clock.fastForward(10_200);
+        const timer = candidate.getByText('조정 시간 종료', { exact: true });
+        await timer.waitFor();
+        const timerBox = await timer.boundingBox();
+        assert.ok(timerBox && timerBox.y >= candidateBox.y);
+        assert.ok(timerBox.y + timerBox.height <= candidateBox.y + candidateBox.height);
+        assert.equal(await f.page.getByText('조정 시간 종료', { exact: true }).count(), 1);
+        assert.equal(await candidate.count(), 1);
+        await bid.fill('15');
+        await f.page
+            .getByRole('button', { name: '+10 2팀 입찰가 10포인트 올리기', exact: true })
+            .press('Enter');
+        assert.equal(await bid.inputValue(), '25');
+        assert.equal(await f.page.getByRole('button', { name: '낙찰 2팀', exact: true }).isEnabled(), true);
+        await capture(f.page, 'manager-candidate-mobile-primary');
+
+        // 넓은 화면에서는 기존 후보 왼쪽·팀 오른쪽 구성을 유지한다.
+        await f.page.setViewportSize({ width: 1440, height: 1000 });
+        await f.page.evaluate(() => window.scrollTo(0, 0));
+        const desktopCandidate = await candidate.boundingBox();
+        const desktopBid = await bid.boundingBox();
+        assert.ok(desktopCandidate && desktopBid);
+        assert.ok(desktopCandidate.x + desktopCandidate.width < desktopBid.x);
+        assert.equal(await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        assert.deepEqual(f.errors, []);
+    }
+);
+
+test(
+    '390px 대진의 선택 팀 안내는 아래 배치 자리에서도 보이고 Escape로 해제된다',
+    { timeout: 60_000 },
+    async (t) => {
+        const f = await createBrowserFixture(t, { width: 390, userId: HTTP_IDS.manager });
+        await f.page.setViewportSize({ width: 390, height: 844 });
+        const [scrim] = await f.db
+            .insert(schema.scrims)
+            .values({
+                guildId: HTTP_IDS.guild,
+                title: '대진 선택 안내',
+                status: 'ready',
+                formationMethod: 'manual',
+                teamCount: 4,
+                mmrSeasonId: f.season.id
+            })
+            .returning();
+        await f.db.insert(schema.scrimTeams).values(
+            [1, 2, 3, 4].map((ordinal) => ({
+                scrimId: scrim!.id,
+                ordinal,
+                name: `${ordinal}팀`
+            }))
+        );
+        await f.db.transaction((tx) => createBracketDraft(tx, scrim!));
+        await f.page.goto(`${f.url}/g/${HTTP_IDS.guild}/scrims/${scrim!.id}/bracket`);
+        // 경기 방식의 클라이언트 선택 상태가 붙은 뒤 입력해 SSR과 초기화 사이의 경합을 피한다.
+        await f.page
+            .getByRole('group', { name: '준결승 경기 방식', exact: true })
+            .getByRole('button', { name: '3전 2선승', exact: true, pressed: true })
+            .waitFor();
+        await f.page.getByRole('button', { name: '1팀', exact: true }).press('Enter');
+        await f.page.getByRole('button', { name: '1팀', exact: true, pressed: true }).waitFor();
+        const target = f.page
+            .getByRole('article', { name: '준결승 B', exact: true })
+            .getByRole('button', { name: /1팀 배치 위치 준결승 B 오른쪽/ });
+        await target.evaluate((node) => node.scrollIntoView({ block: 'start', behavior: 'instant' }));
+        await target.focus();
+        const reminder = f.page.locator('p[aria-live="polite"]').filter({ hasText: '1팀 선택됨' });
+        const reminderBox = await reminder.boundingBox();
+        const targetBox = await target.boundingBox();
+        assert.ok(reminderBox && targetBox);
+        assert.ok(reminderBox.y >= 63 && reminderBox.y <= 65);
+        assert.ok(targetBox.y >= reminderBox.y + reminderBox.height);
+        assert.equal(await f.page.getByRole('button', { name: '선택 취소', exact: true }).count(), 1);
+        await capture(f.page, 'bracket-selection-mobile-primary');
+        await target.press('Escape');
+        assert.equal(await reminder.count(), 0);
+        assert.equal(await f.page.getByRole('button', { name: /1팀 배치 위치/ }).count(), 0);
+        assert.equal(await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        assert.deepEqual(f.errors, []);
+    }
+);
 
 test('관리자는 첫 후보 추첨과 직전 작업 취소를 키보드로 실행한다: 1440px', { timeout: 60_000 }, async (t) => {
     const f = await createBrowserFixture(t, { width: 1440, userId: HTTP_IDS.manager });

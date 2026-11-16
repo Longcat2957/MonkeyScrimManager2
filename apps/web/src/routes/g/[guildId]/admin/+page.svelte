@@ -262,6 +262,9 @@
                                         >
                                         {#if member.isAdmin}<StatusTag text="관리자" state="theme" />{/if}
                                     </span>
+                                    <span class="text-sm text-text-muted tabular-nums wrap-anywhere"
+                                        >{member.userId}</span
+                                    >
                                     <span class="text-xs opacity-60 wrap-anywhere">
                                         {primary
                                             ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
@@ -277,7 +280,9 @@
                                 injClass="ml-auto min-h-11 px-3 text-sm"
                                 onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
                             >
-                                Riot 계정<span class="sr-only"> 관리, {member.displayName}</span>
+                                Riot 계정<span class="sr-only">
+                                    관리, {member.displayName} ({member.userId})</span
+                                >
                             </Button>
                         </li>
                     {/each}

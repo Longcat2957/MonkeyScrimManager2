@@ -41,13 +41,45 @@ async function sessionContext(context: BrowserContext, fixture: Fixture, cookie:
 async function prepareUpload(page: Page, file: File) {
     await page.getByRole('button', { name: 'ROFL 업로드', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'ROFL 업로드', exact: true });
+    const blueTeam = dialog.getByRole('group', { name: '이 세트의 블루 팀', exact: true });
+    const firstTeam = blueTeam.getByRole('button', { name: '1팀', exact: true });
+    const secondTeam = blueTeam.getByRole('button', { name: '2팀', exact: true });
+    await blueTeam.getByRole('button', { name: '1팀', pressed: false, exact: true }).waitFor();
+    assert.equal(await blueTeam.getByRole('button', { pressed: true }).count(), 0);
     assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
     await dialog.locator('input[type="file"]').setInputFiles({
         name: file.name,
         mimeType: 'application/octet-stream',
         buffer: Buffer.from(await file.arrayBuffer())
     });
-    await dialog.getByRole('button', { name: '1팀', exact: true }).click();
+    assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
+    // 팝업의 초기 포커스가 끝난 뒤 실제 Tab 순서로 선택 버튼을 조작한다.
+    await page.waitForFunction(
+        (button) => button === document.activeElement,
+        await firstTeam.elementHandle()
+    );
+    await page.keyboard.press('Tab');
+    assert.equal(await secondTeam.evaluate((button) => button === document.activeElement), true);
+    await page.keyboard.press('Space');
+    await blueTeam.getByRole('button', { name: '2팀', pressed: true, exact: true }).waitFor();
+    assert.equal(await firstTeam.getAttribute('aria-pressed'), 'false');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await firstTeam.evaluate((button) => button === document.activeElement), true);
+    await page.keyboard.press('Enter');
+    await blueTeam.getByRole('button', { name: '1팀', pressed: true, exact: true }).waitFor();
+    assert.equal(await secondTeam.getAttribute('aria-pressed'), 'false');
+    await page.waitForFunction(
+        (group) =>
+            [...group.querySelectorAll('button')].every((button) => {
+                const bounds = button.getBoundingClientRect();
+                return bounds.width >= 44 && bounds.height >= 44;
+            }),
+        await blueTeam.elementHandle()
+    );
+    for (const choice of [firstTeam, secondTeam]) {
+        const bounds = await choice.boundingBox();
+        assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44);
+    }
     return dialog;
 }
 

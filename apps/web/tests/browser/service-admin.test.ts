@@ -206,6 +206,13 @@ for (const width of [1440, 390])
                 page.on('request', (request) => {
                     if (request.method() === 'POST' && request.url().endsWith('?/setServiceAdmin')) posts++;
                 });
+                await grant(page, input, HTTP_IDS.member);
+                await page.keyboard.press('Escape');
+                await page.waitForFunction(
+                    (node) => node === document.activeElement,
+                    await page.getByRole('button', { name: '운영자 지정', exact: true }).elementHandle()
+                );
+                assert.equal(posts, 0);
                 let arrivedGrant!: () => void;
                 const arrived = new Promise<void>((done) => {
                     arrivedGrant = done;
@@ -272,6 +279,11 @@ for (const width of [1440, 390])
                 await confirmationTextFits(page, cancelled.dialog, width, theme);
                 await cancelled.dialog.getByRole('button', { name: '취소', exact: true }).press('Enter');
                 await revokeTarget.waitFor();
+                await page.waitForFunction(
+                    (node) => node === document.activeElement,
+                    await revokeTarget.elementHandle()
+                );
+                assert.equal(posts, 1);
                 assert.equal((await f.db.select().from(schema.serviceAdminEvents)).length, 1);
                 const removing = await confirmation(page, '서비스 운영자 권한 해제', () =>
                     revokeTarget.press('Enter')

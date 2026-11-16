@@ -12,8 +12,7 @@
         <h2 id="riot-accounts" class="text-lg font-semibold">Riot 계정</h2>
         {#if groups.length}
             <p class="text-sm opacity-70">
-                연결과 대표 계정 지정은 서버별로 운영자가 관리해요. 해당 서버의 내전에 신청할 때 계정을
-                골라요.
+                서버별로 연결된 계정이에요. 계정 수정이나 대표 계정 변경은 해당 서버 운영자에게 요청해 주세요.
             </p>
         {/if}
     </div>
@@ -43,7 +42,7 @@
     {:else}
         <SectionState
             state="empty"
-            message="연결된 Riot 계정이 없어요. 참가할 서버의 운영자에게 계정 연결을 요청해 주세요."
+            message="연결된 Riot 계정이 없어요. 계정 연결 없이도 내전에 신청할 수 있어요."
         />
     {/if}
 </section>

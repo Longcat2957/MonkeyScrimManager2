@@ -243,7 +243,7 @@
                                     <span
                                         class={[
                                             'text-xs font-semibold',
-                                            order >= 0 ? 'text-warning' : 'opacity-50'
+                                            order >= 0 ? 'text-warning' : 'text-text-muted'
                                         ]}
                                     >
                                         {order >= 0 ? `${teams[order]?.name} 팀장` : '후보'}

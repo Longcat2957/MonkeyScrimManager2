@@ -10,7 +10,7 @@
 
     // 진행 상태가 아니라 흐름 설명이다. 회색 '예정' 모양은 읽기 어려워 모든 단계를 완료 모양(테마색)으로 그린다.
     const FLOW: StepsItemProps[] = [
-        ['모집', 'Riot 계정과 희망 포지션으로 참가 인원을 모아요'],
+        ['모집', 'Discord 모집 글에서 참가 신청을 받아요'],
         ['팀 편성', '운영자가 직접 나누거나 경매로 팀을 꾸려요'],
         ['대진', '팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요'],
         ['ROFL 기록', '리플레이 파일을 올리면 결과와 전적이 바로 쌓여요']
@@ -155,7 +155,7 @@
                                 >
                                     <span class="underline underline-offset-4">{shortcut.label}</span>
                                     <code class="max-w-full text-xs leading-5 wrap-anywhere text-text-muted"
-                                        >{#each shortcut.href.split('/') as segment, index}{#if index > 0}/<wbr
+                                        >{#each shortcut.href.split('/') as segment, index (index)}{#if index > 0}/<wbr
                                                 />{/if}{segment}{/each}</code
                                     >
                                 </a>

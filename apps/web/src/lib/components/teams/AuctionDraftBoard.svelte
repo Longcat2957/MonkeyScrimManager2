@@ -38,6 +38,7 @@
     let now = $state(Date.now());
     let details = $state(false);
     let listOpen = $state(false);
+    let candidateHeight = $state(0);
     // 낙찰·수동 배치가 끝난 팀 패널에 잠깐 보여 줄 축하 효과다.
     let celebration = $state<Celebration | null>(null);
     let celebrationTimer: ReturnType<typeof setTimeout> | undefined;
@@ -177,7 +178,8 @@
 <section
     aria-labelledby="auction-board"
     aria-busy={busy || refreshing}
-    class="flex w-full min-w-0 flex-col gap-2"
+    class="auction-board flex w-full min-w-0 flex-col gap-2"
+    style:--candidate-height={`${open ? candidateHeight : 0}px`}
 >
     <div class="flex min-h-8 flex-wrap items-center justify-between gap-x-3">
         <div class="flex shrink-0 items-center gap-2">
@@ -204,45 +206,27 @@
     </div>
 
     {#if controls && open}
-        <!-- 진행자용 조정 타이머. 화면 맨 위에 크게 두고, 남은 시간에 따라 색을 바꾼다. -->
-        {@const seconds = Math.ceil(remainingMs / 1000)}
-        <!-- 남은 초 기준: 10~7초 녹색, 6~3초 주황, 3초 미만 빨간색 -->
-        {@const tone = seconds >= 7 ? 'success' : seconds >= 3 ? 'warning' : 'error'}
-        <div
-            aria-hidden="true"
-            class="relative h-7 w-full overflow-hidden rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark"
-        >
-            <div
-                class={[
-                    'h-full transition-[width,background-color] duration-200 ease-linear',
-                    { success: 'bg-success', warning: 'bg-warning', error: 'bg-error' }[tone]
-                ]}
-                style:width="{(remainingMs / TIMER_MS) * 100}%"
-            ></div>
-            <span
-                class={[
-                    'absolute inset-y-0 right-3 flex items-center text-sm font-bold tabular-nums',
-                    tone === 'error' && 'text-error'
-                ]}>{seconds}초</span
-            >
-        </div>
+        <p class="text-sm text-text-muted">입찰가를 바꾸면 10초를 다시 세며, 낙찰·유찰은 직접 결정해요.</p>
     {/if}
 
     <!-- 작업판: 왼쪽 현재 매물·후보 현황, 오른쪽 팀 패널. 1px 경계로 붙는다. -->
     <div
         class={[
-            'overflow-hidden rounded-(--radius-box) border border-border bg-border',
-            live && 'grid gap-px xl:h-[52rem] xl:grid-cols-[minmax(22rem,30rem)_minmax(0,1fr)]'
+            'overflow-clip rounded-(--radius-box) border border-border bg-border',
+            live &&
+                'grid gap-px xl:h-[52rem] xl:grid-cols-[minmax(22rem,30rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto]'
         ]}
     >
         {#if live}
-            <div class="grid min-h-0 gap-px xl:grid-rows-[minmax(0,1fr)_auto]">
+            <div class="contents xl:col-start-1 xl:row-start-1 xl:block xl:min-h-0">
                 <!-- 현재 매물 -->
                 <section
                     aria-labelledby="open-lot"
-                    class="flex min-h-0 flex-col bg-bg-surface dark:bg-bg-surface-dark"
+                    class="contents xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:bg-bg-surface xl:dark:bg-bg-surface-dark"
                 >
-                    <div class="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+                    <div
+                        class="flex items-center justify-between gap-2 border-b border-border bg-bg-surface px-3 py-2 dark:bg-bg-surface-dark"
+                    >
                         <div class="flex items-center gap-2">
                             <h3 id="open-lot" class="text-base font-semibold">현재 매물</h3>
                             {#if open}<span class="size-2 rounded-full bg-success" aria-hidden="true"
@@ -285,20 +269,23 @@
                         </div>
                     </div>
 
-                    <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+                    <div
+                        class="contents xl:flex xl:min-h-0 xl:flex-1 xl:flex-col xl:gap-3 xl:overflow-y-auto xl:p-3"
+                    >
                         {#if open}
                             <!-- 운영자는 이 카드를 팀 패널로 끌어 가격 없이 배치할 수 있다. -->
                             <div
+                                bind:clientHeight={candidateHeight}
                                 role="group"
                                 aria-label={`현재 매물 ${open.displayName}`}
                                 draggable={controls}
                                 class={[
-                                    'relative isolate flex shrink-0 flex-col overflow-hidden border px-4 py-5',
+                                    'sticky top-(--app-header-height) z-20 isolate mx-3 flex shrink-0 flex-col overflow-hidden border px-4 py-3 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:py-5',
                                     details ? 'gap-3' : 'justify-between gap-4 xl:min-h-[24rem] xl:gap-5',
                                     controls && 'cursor-grab active:cursor-grabbing',
                                     drag.id === open.participantId
-                                        ? 'border-primary/60 bg-primary/10 opacity-70'
-                                        : 'border-primary/30 bg-bg-highlight/30 dark:border-dark/30 dark:bg-bg-highlight-dark/30'
+                                        ? 'border-primary/60 bg-bg-highlight opacity-70 xl:bg-primary/10 dark:bg-bg-highlight-dark'
+                                        : 'border-primary/30 bg-bg-surface xl:bg-bg-highlight/30 dark:border-dark/30 dark:bg-bg-surface-dark xl:dark:bg-bg-highlight-dark/30'
                                 ]}
                                 ondragstart={(event) => drag.start(event, open.participantId)}
                                 ondragend={() => drag.end()}
@@ -334,15 +321,15 @@
                                 <div
                                     class={[
                                         'flex items-center gap-3',
-                                        details ? 'flex-row' : 'flex-col text-center'
+                                        details ? 'flex-row' : 'xl:flex-col xl:text-center'
                                     ]}
                                 >
                                     <PlayerFace name={open.displayName} imageUrl={open.iconUrl} size="lg" />
                                     <div class="min-w-0">
                                         <p
                                             class={[
-                                                'truncate font-semibold',
-                                                details ? 'text-2xl' : 'text-3xl'
+                                                'text-xl wrap-anywhere font-semibold',
+                                                details ? 'xl:text-2xl' : 'xl:text-3xl'
                                             ]}
                                         >
                                             {open.displayName}
@@ -364,13 +351,43 @@
                                         {/each}
                                     </div>
                                 {/if}
+                                {#if controls}
+                                    {@const seconds = Math.ceil(remainingMs / 1000)}
+                                    <!-- 남은 초 기준: 10~7초 녹색, 6~3초 주황, 3초 미만 빨간색 -->
+                                    {@const tone =
+                                        seconds >= 7 ? 'success' : seconds >= 3 ? 'warning' : 'error'}
+                                    <div
+                                        aria-hidden="true"
+                                        class="relative h-7 w-full overflow-hidden rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark"
+                                    >
+                                        <div
+                                            class={[
+                                                'h-full transition-[width,background-color] duration-200 ease-linear',
+                                                {
+                                                    success: 'bg-success',
+                                                    warning: 'bg-warning',
+                                                    error: 'bg-error'
+                                                }[tone]
+                                            ]}
+                                            style:width="{(remainingMs / TIMER_MS) * 100}%"
+                                        ></div>
+                                        <span
+                                            class={[
+                                                'absolute inset-y-0 right-0 flex items-center bg-bg-highlight px-3 text-sm font-bold tabular-nums dark:bg-bg-highlight-dark',
+                                                seconds > 0 && tone === 'error' && 'text-error'
+                                            ]}>{seconds > 0 ? `${seconds}초` : '조정 시간 종료'}</span
+                                        >
+                                    </div>
+                                {/if}
                             </div>
                             {#if details && profile}
-                                <AuctionTargetProfile player={open} {profile} />
+                                <div class="bg-bg-surface p-3 xl:contents dark:bg-bg-surface-dark">
+                                    <AuctionTargetProfile player={open} {profile} />
+                                </div>
                             {/if}
                         {:else}
                             <div
-                                class="flex min-h-80 flex-1 flex-col items-center justify-center gap-1 border border-dashed border-border px-4 text-center"
+                                class="flex min-h-80 flex-1 flex-col items-center justify-center gap-1 border border-dashed border-border bg-bg-surface px-4 text-center dark:bg-bg-surface-dark"
                             >
                                 <p class="font-semibold text-text-muted">후보 대기</p>
                                 <p class="text-sm text-text-muted">
@@ -387,7 +404,7 @@
                     </div>
                     {#if controls && open}
                         <!-- 유찰은 현재 매물 칸 하단에 고정해 카드 길이와 상관없이 같은 자리에 둔다. -->
-                        <div class="flex justify-end px-3 pb-3">
+                        <div class="flex justify-end bg-bg-surface px-3 pb-3 dark:bg-bg-surface-dark">
                             <Button
                                 fill="textState"
                                 state="warning"
@@ -401,63 +418,17 @@
                         </div>
                     {/if}
                 </section>
-
-                <!-- 후보 현황 -->
-                <section
-                    aria-labelledby="candidates"
-                    class="flex flex-col gap-3 bg-bg-surface p-3 dark:bg-bg-surface-dark"
-                >
-                    <div class="flex items-center justify-between">
-                        <h3 id="candidates" class="text-base font-semibold">후보 현황</h3>
-                        <span class="text-xs opacity-60 tabular-nums"
-                            >{(open ? 1 : 0) + auction.queue.length + auction.unsold.length}명</span
-                        >
-                    </div>
-                    <div class={['grid gap-1.5', controls ? 'sm:grid-cols-3' : 'grid-cols-1']}>
-                        <Button
-                            fill="lineLight"
-                            size="full"
-                            heightOut="0"
-                            heightIn="2"
-                            injClass="min-h-11 text-sm"
-                            onclick={() => (listOpen = true)}>후보 목록</Button
-                        >
-                        {#if controls}
-                            <Button
-                                fill="lineLight"
-                                size="full"
-                                heightOut="0"
-                                heightIn="2"
-                                injClass="min-h-11 text-sm"
-                                disabled={busy || auction.queue.length < 2}
-                                onclick={() => run('shuffle')}>순서 섞기</Button
-                            >
-                            <Button
-                                fill="lineLight"
-                                state="error"
-                                size="full"
-                                heightOut="0"
-                                heightIn="2"
-                                injClass="min-h-11 text-sm"
-                                disabled={busy || !canReset}
-                                onclick={reset}>초기화</Button
-                            >
-                        {/if}
-                    </div>
-                    <div class="grid grid-cols-3 gap-px bg-border text-center">
-                        {#each [['현재', open ? 1 : 0, 'text-primary dark:text-dark'], ['대기', auction.queue.length, ''], ['유찰 후보', auction.unsold.length, 'text-warning']] as [label, value, tone] (label)}
-                            <div class="bg-bg-surface p-2 dark:bg-bg-surface-dark">
-                                <p class="text-[0.6875rem] opacity-60">{label}</p>
-                                <p class={['mt-1 text-sm font-semibold tabular-nums', tone]}>{value}</p>
-                            </div>
-                        {/each}
-                    </div>
-                </section>
             </div>
         {/if}
 
         <!-- 팀 패널 -->
-        <div class={['grid min-h-0 gap-px md:grid-cols-2', auction.teams.length > 2 && 'md:grid-rows-2']}>
+        <div
+            class={[
+                'grid min-h-0 gap-px md:grid-cols-2',
+                auction.teams.length > 2 && 'md:grid-rows-2',
+                live && 'xl:col-start-2 xl:row-span-2 xl:row-start-1'
+            ]}
+        >
             {#each auction.teams as team (team.id)}
                 <AuctionTeamCard
                     {team}
@@ -470,6 +441,59 @@
                 />
             {/each}
         </div>
+        {#if live}
+            <!-- 후보 현황 -->
+            <section
+                aria-labelledby="candidates"
+                class="flex flex-col gap-3 bg-bg-surface p-3 xl:col-start-1 xl:row-start-2 dark:bg-bg-surface-dark"
+            >
+                <div class="flex items-center justify-between">
+                    <h3 id="candidates" class="text-base font-semibold">후보 현황</h3>
+                    <span class="text-xs opacity-60 tabular-nums"
+                        >{(open ? 1 : 0) + auction.queue.length + auction.unsold.length}명</span
+                    >
+                </div>
+                <div class={['grid gap-1.5', controls ? 'sm:grid-cols-3' : 'grid-cols-1']}>
+                    <Button
+                        fill="lineLight"
+                        size="full"
+                        heightOut="0"
+                        heightIn="2"
+                        injClass="min-h-11 text-sm"
+                        onclick={() => (listOpen = true)}>후보 목록</Button
+                    >
+                    {#if controls}
+                        <Button
+                            fill="lineLight"
+                            size="full"
+                            heightOut="0"
+                            heightIn="2"
+                            injClass="min-h-11 text-sm"
+                            disabled={busy || auction.queue.length < 2}
+                            onclick={() => run('shuffle')}>순서 섞기</Button
+                        >
+                        <Button
+                            fill="lineLight"
+                            state="error"
+                            size="full"
+                            heightOut="0"
+                            heightIn="2"
+                            injClass="min-h-11 text-sm"
+                            disabled={busy || !canReset}
+                            onclick={reset}>초기화</Button
+                        >
+                    {/if}
+                </div>
+                <div class="grid grid-cols-3 gap-px bg-border text-center">
+                    {#each [['현재', open ? 1 : 0, 'text-primary dark:text-dark'], ['대기', auction.queue.length, ''], ['유찰 후보', auction.unsold.length, 'text-warning']] as [label, value, tone] (label)}
+                        <div class="bg-bg-surface p-2 dark:bg-bg-surface-dark">
+                            <p class="text-[0.6875rem] opacity-60">{label}</p>
+                            <p class={['mt-1 text-sm font-semibold tabular-nums', tone]}>{value}</p>
+                        </div>
+                    {/each}
+                </div>
+            </section>
+        {/if}
     </div>
 
     <!--
@@ -537,3 +561,16 @@
         onrestore={(participantId) => run('restore', { participantId })}
     />
 {/if}
+
+<style>
+    @media (width < 80rem) {
+        .auction-board :global(button) {
+            scroll-margin-block-start: var(--candidate-height);
+        }
+
+        /* 입찰 입력으로 이동할 때 팀 이름이 포함된 제목도 고정 후보 아래에 남긴다. */
+        .auction-board :global(input) {
+            scroll-margin-block-start: calc(var(--candidate-height) + 2rem);
+        }
+    }
+</style>

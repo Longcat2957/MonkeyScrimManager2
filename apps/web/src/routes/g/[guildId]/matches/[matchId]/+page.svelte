@@ -107,7 +107,7 @@
     <span
         class={[
             'min-w-0 text-base font-semibold break-words md:text-2xl',
-            winner && winner !== side && 'opacity-50'
+            winner && winner !== side && 'text-text-muted'
         ]}
     >
         {name}{#if winner === side}<span class="sr-only"> 승리</span>{/if}

@@ -166,7 +166,10 @@ for (const width of [1440, 390])
 
                 await selectView(page, '멤버', 'Space');
                 await page
-                    .getByRole('button', { name: 'Riot 계정 관리, ' + memberName, exact: true })
+                    .getByRole('button', {
+                        name: `Riot 계정 관리, ${memberName} (${HTTP_IDS.member})`,
+                        exact: true
+                    })
                     .press('Enter');
                 const accounts = page.getByRole('dialog', { name: 'Riot 계정 관리', exact: true });
                 await linkAccount(page, accounts, 'HttpPlayer#KR1');

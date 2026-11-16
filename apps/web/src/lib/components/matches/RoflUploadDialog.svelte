@@ -33,6 +33,14 @@
     // 실제 등록은 한 파일을 전체 폭으로 표시하고, 개발 샘플의 다중 선택만 3열로 표시한다.
     const empty = $derived(files.length === 0);
 
+    function exposeSelection(fieldset: HTMLFieldSetElement) {
+        // STDF 3의 실제 선택 버튼에 현재 블루 팀을 알린다.
+        fieldset.querySelectorAll('button').forEach((button, index) => {
+            button.type = 'button';
+            button.setAttribute('aria-pressed', String(teams[index]?.slot === blueTeamSlot));
+        });
+    }
+
     $effect(() => {
         // 열린 상태에서 전환 종류를 바꾸면 STDF가 이전·새 입력을 동시에 렌더링하므로 위치를 유지한다.
         if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
@@ -136,7 +144,11 @@
             <div class="flex flex-col gap-3 overflow-y-auto p-5">
                 {#if uploadContext}<p class="text-sm">{uploadContext.expectedGameNumber}세트 결과</p>{/if}
                 {#if uploadContext}
-                    <fieldset disabled={uploading}>
+                    <fieldset
+                        disabled={uploading}
+                        class="[&_button]:min-h-11 [&_button]:min-w-11"
+                        {@attach exposeSelection}
+                    >
                         <legend class="mb-2 text-sm font-semibold">이 세트의 블루 팀</legend>
                         <Radio
                             data={teams.map((team) => ({ name: team.slot, label: team.name }))}

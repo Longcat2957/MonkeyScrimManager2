@@ -139,7 +139,10 @@
             class="mx-auto flex max-h-[90dvh] w-full max-w-md flex-col gap-5 overflow-y-auto overscroll-contain rounded-t-(--radius-box) bg-bg-surface p-6 lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
         >
             <div class="flex items-start justify-between gap-3">
-                <h2 class="pt-2 text-lg font-semibold wrap-anywhere">{member?.displayName}의 Riot 계정</h2>
+                <div class="min-w-0 pt-2">
+                    <h2 class="text-lg font-semibold wrap-anywhere">{member?.displayName}의 Riot 계정</h2>
+                    <p class="mt-1 text-sm text-text-muted tabular-nums wrap-anywhere">{member?.userId}</p>
+                </div>
                 <Button
                     type="button"
                     fill="text"
@@ -269,7 +272,7 @@
                     {#if error}
                         <p role="alert" class="text-sm text-error">{error}</p>
                     {:else}
-                        <p class="text-sm opacity-80">이 계정을 {member?.displayName}에게 연결할까요?</p>
+                        <p class="text-sm opacity-80">이 Riot 계정을 연결할까요?</p>
                     {/if}
                     <div class="flex justify-end gap-2">
                         <Button

@@ -11,5 +11,12 @@
                 "reason": "Codex (/root; 독립 최종 A/B 검토): GameHero의 경계는 winner.side에 따라 info/error로 바뀌며 블루·레드 팀 승리 문구와 함께 실제 승리 진영을 표시한다. artifacts/ui-review/final-assessment-b.md에 확인된 도메인 의미를 보존하는 파일 한정 예외다."
             }
         ]
+    },
+    "hook": {
+        "enabled": true,
+        "limits": {
+            "maxFindings": 5,
+            "maxChars": 8000
+        }
     }
 }

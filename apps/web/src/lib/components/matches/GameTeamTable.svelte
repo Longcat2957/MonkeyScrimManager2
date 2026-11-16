@@ -90,7 +90,7 @@
                                 {/if}
                                 {#if player.level !== null}
                                     <span
-                                        class="absolute -right-1 -bottom-1 rounded-full bg-bg-base-dark px-1 text-[0.625rem] font-bold text-text-dark tabular-nums"
+                                        class="absolute -right-1 -bottom-1 rounded-full bg-bg-base-dark px-1 text-xs font-bold text-text-dark tabular-nums"
                                         >{player.level}</span
                                     >
                                 {/if}
@@ -118,7 +118,7 @@
                                     {#if player.badge}
                                         <span
                                             class={[
-                                                'shrink-0 rounded-(--radius-small) px-1.5 text-[0.625rem] font-bold',
+                                                'shrink-0 rounded-(--radius-small) px-1.5 text-xs font-bold',
                                                 player.badge === 'mvp'
                                                     ? 'bg-warning/15 text-warning'
                                                     : 'bg-primary/10 text-primary dark:bg-dark/15 dark:text-dark'

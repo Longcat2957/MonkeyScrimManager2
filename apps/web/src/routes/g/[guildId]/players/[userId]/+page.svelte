@@ -178,7 +178,7 @@
                         <li>
                             <span
                                 class={[
-                                    'block rounded-(--radius-form) ring-2',
+                                    'flex flex-col items-center gap-1 rounded-(--radius-form) bg-bg-surface pb-1 ring-2 dark:bg-bg-surface-dark',
                                     game.win ? 'ring-success' : 'ring-error'
                                 ]}
                                 title={`${game.champion.name} ${game.win ? '승' : '패'}`}
@@ -194,6 +194,13 @@
                                         >{game.champion.name.slice(0, 2)}</span
                                     >
                                 {/if}
+                                <span
+                                    aria-hidden="true"
+                                    class={[
+                                        'text-xs font-semibold',
+                                        game.win ? 'text-success' : 'text-error'
+                                    ]}>{game.win ? '승' : '패'}</span
+                                >
                                 <span class="sr-only">{game.champion.name} {game.win ? '승리' : '패배'}</span>
                             </span>
                         </li>

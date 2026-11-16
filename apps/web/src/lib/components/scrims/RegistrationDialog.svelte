@@ -149,7 +149,7 @@
             {#if accounts.length > 0}
                 <fieldset
                     disabled={pending || refreshRequired}
-                    class="flex flex-col gap-2"
+                    class="flex flex-col gap-2 [&_button]:min-h-11 [&_button]:min-w-11"
                     {@attach selectedOptions(accountItems.map((account) => account.name === accountId))}
                 >
                     <legend class="mb-2 text-sm font-medium">Riot 계정 (선택)</legend>
@@ -161,7 +161,7 @@
                 disabled={pending || refreshRequired}
                 aria-describedby={positionsError ? `${id}-positions-error` : undefined}
                 data-positions
-                class="flex flex-col gap-2"
+                class="flex flex-col gap-2 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:items-center"
                 {@attach selectedOptions(
                     POSITIONS.map((position) => positions.includes(position.key)),
                     positionsError ? `${id}-positions-error` : undefined

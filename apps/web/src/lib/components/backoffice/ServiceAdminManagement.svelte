@@ -44,7 +44,7 @@
         grantForm?.querySelector<HTMLInputElement>('input:not([type="hidden"])')?.focus();
     }
 
-    const submit: SubmitFunction = async ({ formData, cancel }) => {
+    const submit: SubmitFunction = async ({ formData, submitter, cancel }) => {
         if (locked) {
             cancel();
             return;
@@ -76,6 +76,8 @@
                 cancel();
                 busy = false;
                 busyTarget = '';
+                await tick();
+                submitter?.focus({ preventScroll: true });
                 return;
             }
         } catch {
@@ -83,6 +85,8 @@
             busy = false;
             busyTarget = '';
             error = '확인창을 열지 못했어요. 다시 시도해 주세요.';
+            await tick();
+            submitter?.focus({ preventScroll: true });
             return;
         }
         formData.set('userId', userId);
