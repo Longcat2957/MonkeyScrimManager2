@@ -1,0 +1,47 @@
+# 운영 환경·보관본·인증 자료는 빌드 컨텍스트에 전달하지 않는다.
+**/.env
+**/.env.*
+**/*.env
+**/*.env.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/id_ed25519
+**/id_rsa
+**/.ssh
+**/.aws
+**/secrets
+**/secrets.*
+**/credentials
+**/credentials.*
+
+# DB 백업·로컬 로그·ROFL 원본을 이미지에 넣지 않는다.
+**/*.dump
+**/*.backup
+**/*.bak
+**/*.bak-*
+**/*.sql.gz
+**/*.log
+samples
+
+# 의존성과 빌드 산출물은 이미지 빌드에서 새로 준비한다.
+**/node_modules
+**/.svelte-kit
+**/build
+**/dist
+**/.pnpm-store
+**/coverage
+
+# 개발 도구·버전 관리·검토 자료는 운영 이미지에 필요하지 않다.
+.git
+.github
+.agents
+.codex
+.scratch
+.tmp
+.vscode
+**/.vscode
+**/.impeccable
+artifacts
+docs

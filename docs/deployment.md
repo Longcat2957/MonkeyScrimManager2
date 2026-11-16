@@ -1,13 +1,105 @@
 # VPS 배포 준비와 격리 검증
 
-웹은 SvelteKit adapter-node, 봇은 별도 Node.js 프로세스, DB는 PostgreSQL 17을 사용한다. 이 문서는 Linux VPS의 systemd·nginx 예제와 저장소 CI·백업 도구를 설명한다. 실제 서버 주소·사용자·SSH 설정·인증서·운영 비밀 값은 포함하지 않는다. 현재 실제 Discord 로그인·명령 등록·게시/DM 발송과 운영 배포는 검증하지 않았다. 약관·개인정보 본문은 기존 사용자 보류를 유지한다.
+웹은 SvelteKit adapter-node, 봇은 별도 Node.js 프로세스, DB는 PostgreSQL 17 이상을 사용한다. 신규 VPS 운영은 아래 Docker Compose 구성을 기준으로 준비한다. 기존 systemd·nginx 단독 실행 예제와 CI·백업 도구는 별도 검증 경로로 유지한다. 실제 인증서·운영 비밀 값은 저장소에 포함하지 않는다. 실제 Discord 로그인·명령 등록·게시/DM 발송과 앱 운영 배포는 아직 검증하지 않았다. 약관·개인정보 본문은 기존 사용자 보류를 유지한다.
 
 최신 기능과 migration의 전체 CI·브라우저·격리 배포 결과는 [릴리스 통합 검증](release-validation.md)을 따른다. 과거 격리 실행이나 부분 테스트 통과를 새 커밋의 전체 성공으로 대체하지 않는다.
+
+## Docker Compose 운영: 인프라 통합
+
+2026-11-16 기준 기존 nginx·PostgreSQL을 `monkeybot` Compose 프로젝트로 이관하고 MSM2 전용 빈 DB와 서비스별 운영 환경을 준비했다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. dev CI가 공통 앱 이미지를 만들며, main CD 연결과 앱의 최초 공개는 다음 단계다.
+
+| 위치 | 역할 |
+| --- | --- |
+| [compose.yml](../deploy/compose.yml) | 기본 인프라: nginx·PostgreSQL, 상태 확인, 로그 회전, 네트워크, 기존 외부 볼륨 |
+| [compose.app.yml](../deploy/compose.app.yml) | 같은 프로젝트에 웹·봇·일회성 migration을 합치는 앱 구성. 이미지 설정이 없으면 실패 |
+| [Compose 환경 예제](../deploy/.env.example) | 경로·볼륨·포트와 후속 릴리스 이미지 설정. 서비스 비밀 값과 분리 |
+| [nginx/](../deploy/nginx/) | 공통 프록시 설정, 현재 중단 안내, 후속 앱 연결 설정 |
+| [provision.sql](../deploy/postgres/provision.sql) | MSM2 전용 DB·비특권 계정·미래 migration 객체의 런타임 권한 준비 |
+
+서버의 활성 배포 경로는 `/opt/monkeybot`이다. `deploy/`의 위 파일 구조를 그대로 배치하며 `/opt/monkeybot/.env`는 Compose 환경 예제를 기준으로 작성한다. 기본 `COMPOSE_FILE=compose.yml`은 인프라 두 서비스만 선택한다.
+
+```sh
+cd /opt/monkeybot
+docker compose config --quiet
+docker compose up -d --wait
+docker compose ps
+docker compose logs --tail=100 nginx postgres
+```
+
+서비스 환경과 인증서는 서버의 `/etc/monkeybot`에 보관한다. 디렉터리는 0700, 환경 파일·인증서 키는 0600이다. `postgres.env`는 기존 PostgreSQL 프로세스의 실제 설정을 유지하며, 웹과 migration은 서로 다른 DB 계정으로 연결한다. 서비스별 값은 아래 2단계의 환경 파일을 따른다. 인증서와 nginx 설정은 읽기 전용 bind mount이며 Rocky Linux의 SELinux를 고려해 전용 경로에 `Z` 라벨을 적용한다.
+
+### DB와 기존 데이터 보존
+
+현재 운영 인프라는 PostgreSQL 18.4의 기존 이미지 digest와 `/var/lib/postgresql` 마운트를 그대로 사용한다. `monkeybot-postgres-data`는 `external: true`다. 볼륨이 없으면 자동으로 새 빈 클러스터를 만드는 대신 실패한다. 기존 `monkeybot_main`·`monkeybot_dev`는 각각 SQLx 기반 65개 테이블을 가진 별도 서비스 DB이므로 MSM2 Drizzle migration을 적용하지 않는다.
+
+MSM2 전용 DB는 `msm2_main`이다. `msm2_migrator`는 이 DB의 소유자로서 DDL을 실행하고, `msm2_runtime`은 업무용 테이블의 SELECT·INSERT·UPDATE·DELETE와 sequence 사용 권한만 받는다. 두 계정 모두 superuser·역할 생성·DB 생성 권한이 없다. `provision.sql`은 기존 비밀번호를 변경하지 않으며 서버 환경의 `MSM2_RUNTIME_PASSWORD`·`MSM2_MIGRATOR_PASSWORD`를 읽는다. bootstrap 계정으로 `postgres` DB에 연결해 실행한다. 새 DB의 업무 테이블은 실제 앱 릴리스의 migration 단계에서 생성한다.
+
+DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunnel` 네트워크는 유지한다. 앱용 `data` 네트워크는 Compose가 만드는 내부 네트워크이며 nginx·웹·봇은 `edge` 네트워크로 통신한다. nginx의 80·443은 기존처럼 IPv4·IPv6에 공개하고 앱 구성의 웹·봇·migration에는 호스트 공개 포트가 없다.
+
+최초 이관 전에는 `/var/backups/monkeybot/infra-<UTC시각>/`에 기존 컨테이너 설정·nginx·인증서, DB별 custom dump와 globals SQL, SHA256 목록을 보관한다. dump의 archive 목록을 검사하고 기존 DB의 테이블별 행 수·행 해시·sequence 상태·DB 소유자와 기존 역할의 권한·비밀번호 해시를 이관 전후에 비교한다. 해당 자료에는 비밀 값과 사용자 자료가 포함되므로 서버에서만 제한된 권한으로 보관한다.
+
+활성 컨테이너는 `monkeybot-nginx-1`·`monkeybot-postgres-1`이다. 이전 컨테이너의 설정·로그는 아래 정리 보관본에 남기고 중지된 컨테이너는 제거했다. 복구 때는 보관한 설정으로 컨테이너를 다시 만들며, 같은 PostgreSQL 볼륨을 사용하는 두 컨테이너를 동시에 시작하지 않는다.
+
+2026-11-16 이관에서는 기존 DB 130개 테이블의 행 수·데이터 해시와 sequence 상태, DB 소유자 및 기존 계정의 권한·비밀번호 해시가 모두 일치했다. MSM2 전용 DB는 업무 테이블 0개이며 실행·migration 계정의 실제 TCP 접속과 스키마 생성 권한 구분을 확인했다. 격리 Compose에서도 계정 준비 재실행, migration 계정의 DDL, 런타임의 DML·DDL 거부, Compose 재생성 후 기존 볼륨의 자료 보존을 검증했다. 서버의 `/opt/monkeybot/.infra-backup-path`가 이번 이관의 백업·검증 보고서 경로를 가리킨다.
+
+### 후속 앱 구성의 연결점
+
+이미지와 `web.env`·`bot.env`·`migration.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 순서다. nginx는 이때 중단 안내 대신 `application.conf`를 읽고 웹을 연결한다.
+
+기본 nginx의 `/healthz` 200은 nginx 생존 확인이며 앱·DB 준비 상태를 의미하지 않는다. 앱 구성의 현재 웹 검사는 `/docs`의 HTTP 응답이고, DB 준비 상태 검사와 봇 상태 서버의 컨테이너 간 바인딩은 CD 단계에서 보완한다. 운영 봇 기동과 슬래시 명령 등록은 이번 단계에 포함하지 않는다.
+
+## 운영 환경과 이미지 분리
+
+서버의 서비스 환경은 아래 파일로 나눈다. Compose의 `.env`에는 경로·이미지 참조 등 배포 설정만 저장하며, 애플리케이션의 비밀 값은 넣지 않는다.
+
+| 서버 파일 | 내용 | 저장소 예제 |
+| --- | --- | --- |
+| `/etc/monkeybot/postgres.env` | 기존 PostgreSQL bootstrap·데이터 경로 | 최초 인프라 이관에서 실제 컨테이너 설정 보존 |
+| `/etc/monkeybot/web.env` | 런타임 DB URL, Discord OAuth·봇 조회 토큰, Riot 키, 공유 내부 키 | [웹 환경](../deploy/env/web.env.example) |
+| `/etc/monkeybot/bot.env` | Discord 봇 토큰·앱 ID·선택 길드, 공유 내부 키 | [봇 환경](../deploy/env/bot.env.example) |
+| `/etc/monkeybot/migration.env` | migration 소유자의 DB URL만 | [migration 환경](../deploy/env/migration.env.example) |
+
+앱 구성의 `env_file`은 `format: raw`다. `KEY=value`의 값을 셸 식으로 확장하지 않으며 따옴표도 값의 일부로 전달하므로 감싸는 따옴표를 추가하지 않는다. Docker Compose 2.30 이상이 필요하며 VPS의 5.1.1에서 구성을 확인한다. 봇에는 DB URL·Riot 키·OAuth client secret을 전달하지 않는다. 컨테이너의 내부 주소·실행 옵션은 Compose의 `environment`가 제공한다. 봇 설정 검증은 내부 API의 `http://web:3000`을 허용하되 공개 `WEB_ORIGIN`의 HTTPS 조건은 유지한다. [Compose env_file 문서](https://docs.docker.com/reference/compose-file/services/#env_file)
+
+`.dockerignore`는 루트·하위 디렉터리의 `.env*`와 `*.env*`, 인증서·키, DB 백업, 로컬 로그·ROFL, 설치된 의존성·빌드 산출물 등을 빌드 컨텍스트에서 제외한다. `.env.old`도 포함된다. `.gitignore`도 `web.env` 같은 역할별 실환경 파일과 보관본을 제외하고 예제만 허용한다. 운영 환경 파일을 CI artifact·빌드 인자로 전달하지 않는다. [Docker 빌드 컨텍스트 문서](https://docs.docker.com/build/concepts/context/#dockerignore-files)
+
+아래 검사는 가짜 자료와 임시 Docker 자원만 사용한다. 실제 환경 파일·VPS·외부 API에는 접근하지 않는다. Docker의 실제 빌드 결과에서 필수 소스·migration 12개는 포함하고 보호 대상 32개는 제외하는지 검사한다. 이어 실행하지 않는 scratch 컨테이너를 Compose로 생성해 달러·따옴표를 포함한 raw 값이 실제 환경에 그대로 전달되는지와 서비스별 비밀 값 분리를 확인한다. 직접 생성한 컨테이너·네트워크·볼륨·이미지와 임시 파일은 끝나면 정리한다.
+
+```sh
+node scripts/verify_env_separation.mjs
+```
+
+### GitHub 배포 접속
+
+`Longcat2957/MonkeyScrimManager2`의 `production` Environment는 `main` 브랜치만 허용한다. 수동 승인·대기 시간은 추가하지 않는다. 서비스 운영 키는 VPS에만 두고 Actions에는 다음 배포 접속 값만 등록한다.
+
+| 구분 | 이름 | 내용 |
+| --- | --- | --- |
+| Environment Secret | `VPS_SSH_PRIVATE_KEY` | 배포 전용 Ed25519 키 |
+| Environment Variable | `VPS_HOST`, `VPS_USER`, `VPS_PORT` | VPS 주소·root·22 |
+| Environment Variable | `VPS_DEPLOY_PATH` | `/opt/monkeybot` |
+| Environment Variable | `VPS_SSH_KNOWN_HOSTS` | 기존 신뢰 SSH 연결에서 확인한 서버 공개 host key |
+
+서버 `authorized_keys`에는 `restrict` 옵션을 붙인 배포 공개 키를 추가한다. 기존 로그인 키는 유지하고 새 키와 고정 host key로 실제 SSH 접속을 검증한다. 개인 키는 GitHub Secret 등록 후 로컬 임시 파일을 정리한다. 후속 CD job은 `environment: production`으로 이 값에 접근하며, dev CI에는 배포 접속 정보를 전달하지 않는다. [GitHub Environment 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+
+### 2026-11-16 환경 준비 결과
+
+이관 당시 Monkeybot 설정 `/root/monkeybot-infra/main/`을 기준으로 Discord 앱 `1525847677542207548`의 OAuth·봇 설정을 같은 앱으로 맞췄다. 원본 경로는 아래 정리 보관본으로 옮겼으며 활성 환경은 `/etc/monkeybot`이다. 별도로 보관한 `.env.old`는 과거 앱 설정이다. 기존 런타임 DB URL·migration·PostgreSQL 설정을 보존하고 MSM2 전용 내부 키를 새로 만들어 웹·봇에 동일하게 저장했다. 새 운영 callback은 `https://monkeybot.lol/auth/discord/callback`이며 사용자가 Discord 개발자 포털의 Redirects 등록 완료를 확인했다.
+
+Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱 ID 일치를 확인했다. KR 플랫폼 상태 조회의 HTTP 403은 당시 요청의 진단 기록으로 보존한다. 이후 사용자가 Riot 키의 유효성을 확인했으므로 키 교체를 요구하거나 CI 진행을 막지 않는다. 키 유효성 확인과 해당 요청 경로의 접근 결과는 구분하며 같은 요청을 반복하지 않는다. 이 단계는 Gateway 로그인·OAuth 로그인 완료·명령 등록·게시/DM 발송을 검증하지 않는다. [Riot 응답 코드 문서](https://developer.riotgames.com/docs/portal#response-codes)
+
+환경 파일·SSH 설정의 변경 전 보관본과 비밀 값을 제외한 검증 보고서는 `/var/backups/monkeybot/environment-<UTC시각>/`에 저장한다. `/opt/monkeybot/.env-backup-path`로 이번 경로를 확인한다. 현재 기본 Compose의 nginx·PostgreSQL만 계속 실행한다.
+
+### 구 프로젝트 정리 결과
+
+사용자 요청에 따라 구 프로젝트 7개 디렉터리(`/root/deploy`, `monkeybot-main`, `monkeybot-dev`, `monkeybot-releases`, `monkeybot-infra`, `cleanup-backup-20261116T065411Z`, `monkeybot-backups`)의 전체 내용과 구 로그를 `/var/backups/monkeybot/legacy-cleanup-20261116T085522Z`에 보관했다. 원본 1,745개 파일의 내용·해시를 확인하고 구 디렉터리, 중지 컨테이너 2개, 미사용 네트워크 3개와 별도로 보관한 `deploy_valkey-data` 볼륨을 제거했다.
+
+보관본은 약 253 MiB이며 디렉터리 0700·파일 0600이다. `cleanup-report.json`, `final-checksums.json`, `legacy-files-manifest.json`에 정리·복구 근거가 있다. 활성 nginx·PostgreSQL의 컨테이너·이미지·볼륨·네트워크와 `/opt/monkeybot`, `/etc/monkeybot`, 이전 DB 백업은 유지했다. 4개 DB와 모든 역할, 기존 130개 테이블의 행 수·데이터 해시가 전후 일치했고 공개 포트·DB loopback 포트·도메인 응답도 동일하다. 보관본을 포함한 순확보 용량은 약 215 MiB다.
 
 ## 실행 전제
 
 - `package.json`의 Node 엔진은 `^22.17.0 || >=24.0.0`, pnpm은 `10.20.0`이다. 새 CI와 격리 배포 검사는 실제 확인한 Node 24 계열을 사용한다.
-- VPS 예제는 systemd와 nginx를 설치한 Linux, 같은 호스트의 웹·봇을 전제로 한다. DB는 별도 관리한 PostgreSQL 17이다. 기존 DB·컨테이너·볼륨을 초기화하는 설치 스크립트는 제공하지 않는다.
+- 아래 단독 실행 예제는 systemd와 nginx를 설치한 Linux, 같은 호스트의 웹·봇을 전제로 한다. DB는 별도 관리한 PostgreSQL 17 이상이다. 신규 Compose 운영의 경로·네트워크는 위 절차를 따른다.
 - 예시 설치 경로 `/srv/monkeybot/current`, 실행 사용자/그룹 `monkeybot`, Node 경로 `/usr/bin/node`, 도메인 `monkeybot.example`을 실제 환경에 맞춰 바꾼다. `.example`은 운영 주소가 아니다.
 - 애플리케이션의 `node_modules`와 각 빌드 결과가 필요하다. 빌드 디렉터리만 복사해 Node 의존성이 모두 포함됐다고 가정하지 않는다.
 - 실제 인증서 발급·갱신 방식, 방화벽·DNS, DB 접속 계정과 TLS, 백업 저장 위치·암호화·보존 기간·복구 목표는 운영 환경에서 정한다. 예제 검증에는 이 값들이 필요하지 않다.
@@ -20,11 +112,26 @@
 
 ## 저장소 CI
 
-[ci.yml](../.github/workflows/ci.yml)은 push와 pull request에서 Ubuntu 24.04·Node 24·pnpm 10.20.0을 준비한다. Actions는 확인한 공식 릴리스 commit으로 고정하고 저장소 읽기 권한만 부여한다. 배포·명령 등록·봇 기동은 하지 않는다.
+[ci.yml](../.github/workflows/ci.yml)은 **dev push**에서 Ubuntu 24.04·Node 24·pnpm 10.20.0으로 검사하고 GHCR에 이미지를 발행한다. main은 다음 CD 단계의 배포 트리거다. CI에는 저장소 읽기와 GHCR 발행에 필요한 `packages: write`만 부여한다. 운영 서버 접속·명령 등록·실제 봇 기동은 하지 않는다.
 
-실행 순서는 의존성/Chromium 설치 → `pnpm check` → `pnpm check:tests` → `pnpm test` → `pnpm build:bot` → `pnpm test:hard` → `pnpm test:browser` → 아래 격리 배포 검사다. hard와 browser는 기존 실행기가 각자 새 웹 build를 만드는 계약을 유지한다. 세 번째 독립 웹 build는 추가하지 않는다.
+실행 순서는 의존성/Chromium 설치 → `pnpm check` → `pnpm check:tests` → `pnpm test` → `pnpm test:hard` → `pnpm test:browser` → 환경 분리 검사 → 공통 이미지 빌드·실행 검사 → GHCR 발행이다. 검사 중 하나라도 실패하면 `dev` 이미지 태그를 갱신하지 않는다.
 
-CI의 PostgreSQL은 전용 사용자·DB와 로컬 포트만 사용하는 일회용 서비스다. trust 인증은 그 테스트 서비스에 한정한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키를 workflow에 전달하지 않는다. hard/browser 실행기는 기존처럼 실제 키를 비우고 테스트마다 schema를 생성·정리한다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다.
+CI의 PostgreSQL은 VPS와 같은 18.4 이미지의 일회용 서비스다. trust 인증은 그 테스트 서비스에 한정한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키를 workflow에 전달하지 않는다. hard/browser 실행기는 기존처럼 실제 키를 비우고 테스트마다 schema를 생성·정리한다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다.
+
+### 공통 앱 이미지
+
+[Dockerfile](../Dockerfile)은 잠금 파일로 의존성을 설치하고 웹·봇을 함께 빌드한다. Node 24의 고정 digest를 사용하고 최종 컨테이너는 `node` 사용자로 실행한다. 웹·봇·migration은 같은 이미지에서 서로 다른 명령과 환경으로 실행한다. Drizzle Kit와 pnpm workspace 의존성 구조를 유지하므로 별도 이미지 3개나 릴리스 manifest를 관리하지 않는다.
+
+발행 주소는 `ghcr.io/longcat2957/monkeyscrimmanager2:dev`와 같은 경로의 `:<dev 커밋 SHA>`다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. 이미지를 한 번 빌드해 실행 검사한 뒤 SHA 태그와 이동하는 `dev` 태그로 발행하며 다시 빌드하지 않는다. 후속 main CD는 마지막으로 검사를 통과한 `dev` 이미지를 가져오는 방식으로 연결한다. 이때 main은 배포 요청이며 실제 앱 소스 revision은 이미지의 dev 커밋이다. 특정 버전으로 돌아갈 때는 보관된 SHA 태그를 선택한다.
+
+Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비밀 값은 이미지·GitHub에 넣지 않고 기존 VPS 환경 파일에서 읽는다. 아래 검사는 내부 전용 Docker 네트워크·tmpfs PostgreSQL·가짜 값만 사용하며, 운영 컨테이너나 외부 API를 사용하지 않는다. 현재 migration 14개 적용, 웹 200, 봇 패키지·Docker DNS 설정, 내부 API 인증, 런타임 DB 권한, ROFL의 zstd 런타임과 SIGTERM 종료를 확인한다. label로 자신이 만든 자원을 확인한 뒤 정리한다.
+
+```sh
+docker buildx build --platform linux/amd64 --load -t msm2-ci:check .
+node scripts/verify_image.mjs msm2-ci:check
+```
+
+기존 systemd·백업 복원·로컬 TLS의 전체 격리 검사는 문서 아래의 `verify_deployment.mjs`로 별도 유지한다.
 
 ## 웹·봇 프로세스
 

@@ -71,7 +71,7 @@ pnpm dev
 | `apps/bot/src/index.ts` | Discord 봇 진입점 |
 | `apps/bot/dist/index.js` | `pnpm build:bot`으로 생성되는 봇 운영 진입점 |
 
-`deploy/nginx-internal.conf.example`은 봇 내부 API의 외부 접근을 막는 프록시 설정 예제다. 실제 도메인·TLS·프로세스 배포 설정은 운영 환경에 맞춰 준비한다.
+신규 VPS 운영은 `deploy/compose.yml`의 nginx·PostgreSQL과 앱용 `deploy/compose.app.yml`을 같은 Compose 프로젝트로 관리한다. dev push의 CI가 검사와 공통 이미지 빌드·GHCR 발행을 담당하고, main의 CD는 그 이미지를 VPS에 배포하는 방식으로 연결한다. 현재 인프라·환경 준비와 단계별 적용 범위는 [배포 문서](docs/deployment.md#docker-compose-운영-인프라-통합)를 따른다. 기존 `deploy/nginx-internal.conf.example`과 systemd 파일은 단독 실행·격리 검증용 예제로 유지한다.
 
 ## 웹 공통 구조
 

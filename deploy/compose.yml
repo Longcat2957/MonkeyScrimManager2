@@ -1,0 +1,93 @@
+name: monkeybot
+
+x-logging: &logging
+    driver: json-file
+    options:
+        max-size: 10m
+        max-file: '3'
+
+services:
+    postgres:
+        # 최초 이관에서는 기존 VPS와 같은 이미지·데이터 디렉터리를 사용한다.
+        image: postgres:18.4-alpine3.23@sha256:996d0920e4ff9df1fc19dacb904492f3c1ec0ec1cc338f0ad7123be7731c5f5e
+        restart: unless-stopped
+        env_file:
+            - ${MSM2_ENV_DIR:-/etc/monkeybot}/postgres.env
+        ports:
+            - 127.0.0.1:${MSM2_POSTGRES_PORT:-10010}:5432
+        volumes:
+            - type: volume
+              source: postgres-data
+              target: /var/lib/postgresql
+        networks:
+            data:
+            # 기존 DB 이용자와 SSH 터널의 접속 경로를 보존한다.
+            legacy-data:
+                aliases:
+                    - postgres
+            tunnel:
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 5
+        shm_size: 128mb
+        stop_grace_period: 60s
+        logging: *logging
+
+    nginx:
+        image: nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+        restart: unless-stopped
+        ports:
+            # 호스트 IP를 생략하면 기존 VPS처럼 IPv4·IPv6 모두에 게시한다.
+            - ${MSM2_HTTP_PUBLISH:-80:80}
+            - ${MSM2_HTTPS_PUBLISH:-443:443}
+        volumes:
+            - type: bind
+              source: ./nginx/common
+              target: /etc/nginx/monkeybot-common
+              read_only: true
+              bind:
+                  create_host_path: false
+                  selinux: Z
+            - type: bind
+              source: ./nginx/maintenance.conf
+              target: /etc/nginx/conf.d/default.conf
+              read_only: true
+              bind:
+                  create_host_path: false
+                  selinux: Z
+            - type: bind
+              source: ${MSM2_CERT_DIR:-/etc/monkeybot/certs}
+              target: /etc/nginx/certs
+              read_only: true
+              bind:
+                  create_host_path: false
+                  selinux: Z
+        networks:
+            - edge
+        healthcheck:
+            test: ['CMD', 'wget', '-qO-', '--header', 'Host: monkeybot.lol', 'http://127.0.0.1/healthz']
+            interval: 10s
+            timeout: 5s
+            retries: 3
+        stop_grace_period: 15s
+        logging: *logging
+
+networks:
+    edge:
+    data:
+        internal: true
+    legacy-data:
+        external: true
+        name: ${MSM2_LEGACY_DATA_NETWORK:-deploy_data}
+    tunnel:
+        external: true
+        name: ${MSM2_TUNNEL_NETWORK:-monkeybot_tunnel}
+
+volumes:
+    # 기존 볼륨이 없으면 새 빈 DB를 만들지 않고 실패한다.
+    postgres-data:
+        external: true
+        name: ${MSM2_POSTGRES_VOLUME:-monkeybot-postgres-data}

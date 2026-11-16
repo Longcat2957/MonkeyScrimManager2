@@ -21,7 +21,10 @@ function url(value: string, key: string): URL {
     } catch {
         throw new Error(`${key} 주소를 확인해 주세요.`);
     }
-    const local = ['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname);
+    // Compose의 웹 서비스 DNS는 내부 API에만 HTTP로 허용한다.
+    const local =
+        ['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname) ||
+        (key === 'BOT_API_URL' && parsed.hostname === 'web');
     if (
         (!local && parsed.protocol !== 'https:') ||
         !['http:', 'https:'].includes(parsed.protocol) ||
@@ -31,7 +34,9 @@ function url(value: string, key: string): URL {
         parsed.hash ||
         parsed.pathname !== '/'
     ) {
-        throw new Error(`${key}에는 인증 정보·경로 없는 HTTPS origin 또는 로컬 HTTP 주소가 필요합니다.`);
+        throw new Error(
+            `${key}에는 인증 정보·경로 없는 HTTPS origin 또는 허용된 내부 HTTP 주소가 필요합니다.`
+        );
     }
     return parsed;
 }

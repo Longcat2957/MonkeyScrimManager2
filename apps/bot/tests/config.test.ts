@@ -18,6 +18,13 @@ test('설정은 로컬 내부 API와 명시한 공개 origin을 분리한다', (
     assert.equal(config.testGuildId, null);
 });
 
+test('Compose 내부 API는 웹 서비스 DNS로 연결하고 공개 origin은 HTTPS를 유지한다', () => {
+    const config = readConfig({ ...environment, BOT_API_URL: 'http://web:3000' });
+    assert.equal(config.apiUrl.origin, 'http://web:3000');
+    assert.equal(config.webOrigin.origin, environment.WEB_ORIGIN);
+    assert.throws(() => readConfig({ ...environment, WEB_ORIGIN: 'http://web:3000' }), Error);
+});
+
 for (const [key, value] of [
     ['BOT_INTERNAL_TOKEN', 'short'],
     ['DISCORD_TOKEN', 'bad token'],
