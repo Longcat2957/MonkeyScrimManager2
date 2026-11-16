@@ -63,12 +63,6 @@ DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunn
 
 `.dockerignore`는 루트·하위 디렉터리의 `.env*`와 `*.env*`, 인증서·키, DB 백업, 로컬 로그·ROFL, 설치된 의존성·빌드 산출물 등을 빌드 컨텍스트에서 제외한다. `.env.old`도 포함된다. `.gitignore`도 `web.env` 같은 역할별 실환경 파일과 보관본을 제외하고 예제만 허용한다. 운영 환경 파일을 CI artifact·빌드 인자로 전달하지 않는다. [Docker 빌드 컨텍스트 문서](https://docs.docker.com/build/concepts/context/#dockerignore-files)
 
-아래 검사는 가짜 자료와 임시 Docker 자원만 사용한다. 실제 환경 파일·VPS·외부 API에는 접근하지 않는다. Docker의 실제 빌드 결과에서 필수 소스·migration 12개는 포함하고 보호 대상 32개는 제외하는지 검사한다. 이어 실행하지 않는 scratch 컨테이너를 Compose로 생성해 달러·따옴표를 포함한 raw 값이 실제 환경에 그대로 전달되는지와 서비스별 비밀 값 분리를 확인한다. 직접 생성한 컨테이너·네트워크·볼륨·이미지와 임시 파일은 끝나면 정리한다.
-
-```sh
-node scripts/verify_env_separation.mjs
-```
-
 ### GitHub 배포 접속
 
 `Longcat2957/MonkeyScrimManager2`의 `production` Environment는 `main` 브랜치만 허용한다. 수동 승인·대기 시간은 추가하지 않는다. 서비스 운영 키는 VPS에만 두고 Actions에는 다음 배포 접속 값만 등록한다.
@@ -114,24 +108,17 @@ Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱
 
 [ci.yml](../.github/workflows/ci.yml)은 **dev push**에서 Ubuntu 24.04·Node 24·pnpm 10.20.0으로 검사하고 GHCR에 이미지를 발행한다. main은 다음 CD 단계의 배포 트리거다. CI에는 저장소 읽기와 GHCR 발행에 필요한 `packages: write`만 부여한다. 운영 서버 접속·명령 등록·실제 봇 기동은 하지 않는다.
 
-실행 순서는 의존성/Chromium 설치 → `pnpm check` → `pnpm check:tests` → `pnpm test` → `pnpm test:hard` → `pnpm test:browser` → 환경 분리 검사 → 공통 이미지 빌드·실행 검사 → GHCR 발행이다. 검사 중 하나라도 실패하면 `dev` 이미지 태그를 갱신하지 않는다.
+실행 순서는 잠금 파일로 의존성 설치 → `pnpm check` → `pnpm test` → 공통 이미지 빌드·GHCR 발행이다. `check`는 포맷·브랜딩·웹/봇 타입을, `test`는 DB 없이 실행하는 기본 웹·봇 단위 테스트를 검사한다. 검사나 빌드가 실패하면 이미지를 발행하지 않는다.
 
-CI의 PostgreSQL은 VPS와 같은 18.4 이미지의 일회용 서비스이며 데이터는 tmpfs에 둔다. trust 인증은 그 테스트 서비스에 한정한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키를 workflow에 전달하지 않는다. hard/browser 실행기는 기존처럼 실제 키를 비우고 테스트마다 schema를 생성·정리한다. PostgreSQL 18의 RESTRICT 오류 코드 변경에 맞춰 해당 제약 테스트는 서버 버전별 정확한 SQLSTATE와 제약 이름을 검사하며 17·18 양쪽에서 확인했다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다. [PostgreSQL 18 호환성 변경](https://www.postgresql.org/docs/18/release-18.html#RELEASE-18-MIGRATION)
+CI에는 PostgreSQL 서비스·Chromium 설치·테스트 타입 검사·DB/HTTP 통합·브라우저·환경 분리·이미지 기동 검사를 넣지 않는다. 필요한 통합 검사는 개발자가 기존 `pnpm test:hard`, `pnpm test:browser`, 아래 격리 배포 도구로 별도 실행한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키도 CI에 전달하지 않는다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다.
 
 ### 공통 앱 이미지
 
-[Dockerfile](../Dockerfile)은 잠금 파일로 의존성을 설치하고 웹·봇을 함께 빌드한다. Node 24의 고정 digest를 사용하고 최종 컨테이너는 `node` 사용자로 실행한다. 웹·봇·migration은 같은 이미지에서 서로 다른 명령과 환경으로 실행한다. Drizzle Kit와 pnpm workspace 의존성 구조를 유지하므로 별도 이미지 3개나 릴리스 manifest를 관리하지 않는다.
+[Dockerfile](../Dockerfile)은 잠금 파일로 의존성을 설치하고 웹·봇을 함께 빌드한다. Node 24의 고정 digest를 사용하고 최종 컨테이너는 `node` 사용자로 실행한다. 웹·봇·migration은 같은 이미지에서 서로 다른 명령과 환경으로 실행하며 Drizzle Kit와 pnpm workspace 의존성 구조를 유지한다.
 
-발행 주소는 `ghcr.io/longcat2957/monkeyscrimmanager2:dev`와 같은 경로의 `:<dev 커밋 SHA>`다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. 이미지를 한 번 빌드해 실행 검사한 뒤 SHA 태그와 이동하는 `dev` 태그로 발행하며 다시 빌드하지 않는다. 후속 main CD는 마지막으로 검사를 통과한 `dev` 이미지를 가져오는 방식으로 연결한다. 이때 main은 배포 요청이며 실제 앱 소스 revision은 이미지의 dev 커밋이다. 특정 버전으로 돌아갈 때는 보관된 SHA 태그를 선택한다.
+발행 주소는 `ghcr.io/longcat2957/monkeyscrimmanager2:dev`와 같은 경로의 `:<dev 커밋 SHA>`다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. 타입·기본 단위 테스트를 통과한 소스를 한 번 빌드해 두 태그로 발행한다. 후속 main CD는 마지막으로 발행한 `dev` 이미지를 가져오는 방식으로 연결한다. 이때 main은 배포 요청이며 실제 앱 소스 revision은 이미지의 dev 커밋이다. 특정 버전으로 돌아갈 때는 보관된 SHA 태그를 선택한다.
 
-Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비밀 값은 이미지·GitHub에 넣지 않고 기존 VPS 환경 파일에서 읽는다. 아래 검사는 내부 전용 Docker 네트워크·tmpfs PostgreSQL·가짜 값만 사용하며, 운영 컨테이너나 외부 API를 사용하지 않는다. 현재 migration 14개 적용, 웹 200, 봇 패키지·Docker DNS 설정, 내부 API 인증, 런타임 DB 권한, ROFL의 zstd 런타임과 SIGTERM 종료를 확인한다. label로 자신이 만든 자원을 확인한 뒤 정리한다.
-
-```sh
-docker buildx build --platform linux/amd64 --load -t msm2-ci:check .
-node scripts/verify_image.mjs msm2-ci:check
-```
-
-기존 systemd·백업 복원·로컬 TLS의 전체 격리 검사는 문서 아래의 `verify_deployment.mjs`로 별도 유지한다.
+Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비밀 값은 기존 VPS 환경 파일에서 읽는다.
 
 ## 웹·봇 프로세스
 

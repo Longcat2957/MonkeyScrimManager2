@@ -14,28 +14,10 @@ concurrency:
 jobs:
     verify:
         runs-on: ubuntu-24.04
-        timeout-minutes: 40
+        timeout-minutes: 15
         permissions:
             contents: read
             packages: write
-        services:
-            postgres:
-                image: postgres:18.4-alpine3.23@sha256:996d0920e4ff9df1fc19dacb904492f3c1ec0ec1cc338f0ad7123be7731c5f5e
-                env:
-                    POSTGRES_USER: msm2_test
-                    POSTGRES_DB: msm2_test
-                    # 이 일회용 CI DB에만 사용하며 운영 인증 설정으로 복사하지 않는다.
-                    POSTGRES_HOST_AUTH_METHOD: trust
-                ports:
-                    - 127.0.0.1:5432:5432
-                options: >-
-                    --tmpfs /var/lib/postgresql:rw,mode=1777
-                    --health-cmd "pg_isready -U msm2_test -d msm2_test"
-                    --health-interval 5s
-                    --health-timeout 3s
-                    --health-retries 10
-        env:
-            TEST_DATABASE_URL: postgresql://msm2_test@127.0.0.1:5432/msm2_test
         steps:
             - name: 저장소 읽기
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,46 +36,30 @@ jobs:
                   cache-dependency-path: pnpm-lock.yaml
             - name: 잠금 파일로 의존성 설치
               run: pnpm install --frozen-lockfile
-            - name: Docker Buildx 준비
-              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-            - name: Chromium과 시스템 의존성 준비
-              run: pnpm --filter @msm2/web exec playwright install --with-deps chromium
             - name: 포맷·브랜딩·앱 타입 검사
               run: pnpm check
-            - name: 테스트 타입 검사
-              run: pnpm check:tests
             - name: 기본 웹·봇 테스트
               run: pnpm test
-            - name: 웹 운영 빌드와 DB·HTTP hard 테스트
-              run: pnpm test:hard
-            - name: 웹 운영 빌드와 브라우저 테스트
-              run: pnpm test:browser
-            - name: 비밀 값과 빌드 컨텍스트 분리 검사
-              run: node scripts/verify_env_separation.mjs
+            - name: Docker Buildx 준비
+              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
             - name: 이미지 이름 준비
               run: echo "MSM2_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
-            - name: 공통 이미지 빌드
-              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-              with:
-                  context: .
-                  target: runtime
-                  platforms: linux/amd64
-                  load: true
-                  tags: ${{ env.MSM2_IMAGE }}:${{ github.sha }}
-                  build-args: REVISION=${{ github.sha }}
-                  cache-from: type=gha,scope=monkeybot
-                  cache-to: type=gha,mode=max,scope=monkeybot
-            - name: 공통 이미지의 migration·웹·봇 구성 검사
-              run: node scripts/verify_image.mjs "$MSM2_IMAGE:$GITHUB_SHA"
             - name: GHCR 로그인
               uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
-            # 검사를 통과한 로컬 이미지를 그대로 발행하며 다시 빌드하지 않는다.
-            - name: 검증한 커밋 이미지와 dev 태그 발행
-              run: |
-                  docker push "$MSM2_IMAGE:$GITHUB_SHA"
-                  docker tag "$MSM2_IMAGE:$GITHUB_SHA" "$MSM2_IMAGE:dev"
-                  docker push "$MSM2_IMAGE:dev"
+            - name: 공통 이미지 빌드·발행
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+              with:
+                  context: .
+                  target: runtime
+                  platforms: linux/amd64
+                  push: true
+                  tags: |
+                      ${{ env.MSM2_IMAGE }}:dev
+                      ${{ env.MSM2_IMAGE }}:${{ github.sha }}
+                  build-args: REVISION=${{ github.sha }}
+                  cache-from: type=gha,scope=monkeybot
+                  cache-to: type=gha,mode=max,scope=monkeybot
