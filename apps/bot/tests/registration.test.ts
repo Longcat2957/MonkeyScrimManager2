@@ -121,6 +121,7 @@ test('봇 재시작으로 개인 폼이 없어져도 공개 내 신청 버튼에
     const expired = interaction('form:' + '0'.repeat(24) + ':submit');
     await handleRegistration(expired.value, api, forms);
     assert.match(JSON.stringify(expired.replies), /만료/);
+    assert.match(JSON.stringify(expired.replies), /참가하기를 다시 눌러/);
     assert.equal(calls.length, 1);
 });
 
@@ -158,6 +159,7 @@ test('계정 없는 참가자도 버튼 한 번으로 신청하고 이후 상세
     assert.equal(calls[0]!.riotAccountId, null);
     assert.equal(calls[0]!.positions?.length, 5);
     assert.match(JSON.stringify(opened.replies), /수정하기/);
+    assert.doesNotMatch(JSON.stringify(opened.replies), /https?:|auth\/discord/);
     await handleRegistration(interaction(`registration:${SCRIM}`).value, api, forms);
     assert.equal(calls.length, 1);
 });

@@ -1,9 +1,15 @@
 import { resolve } from '$app/paths';
 import type { GuildContext } from '#lib/features/guild/types.ts';
-import { bracketPath, formationPath, hasResult } from '#lib/features/scrims/paths.ts';
+import { formationPath, hasResult } from '#lib/features/scrims/paths.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
 
-export type NavItem = { label: string; href: string; current: boolean; static?: boolean };
+export type NavItem = {
+    label: string;
+    href: string;
+    current: boolean;
+    static?: boolean;
+    disabled?: boolean;
+};
 
 // 하위 경로까지 현재 항목으로 표시한다. exact는 홈·요약처럼 하위 메뉴가 따로 있는 항목에 쓴다.
 function isCurrent(pathname: string, href: string, exact = false) {
@@ -30,17 +36,30 @@ export function guildNavItems(guild: GuildContext, pathname: string): NavItem[] 
 
 export function scrimNavItems(guildId: string, scrim: ScrimContext, pathname: string): NavItem[] {
     const params = { guildId, scrimId: scrim.id };
-    // 팀 편성은 방식을 고른 뒤에만 그 방식의 작업판을 가리킨다. 방식은 요약에서 고른다.
+    const overview = resolve('/g/[guildId]/scrims/[scrimId]', params);
     const teams = formationPath(params, scrim.formationMethod);
+    const finished = hasResult(scrim.status);
+    const matchPage = pathname.startsWith(`${resolve('/g/[guildId]/matches', { guildId })}/`);
     const items = [
-        { label: '요약', href: resolve('/g/[guildId]/scrims/[scrimId]', params), exact: true },
-        ...(teams ? [{ label: '팀 편성', href: teams }] : []),
-        // 끝난 내전은 대진 대신 결과 화면을 가리킨다.
-        { label: hasResult(scrim.status) ? '결과' : '대진', href: bracketPath(params, scrim.status) }
+        { label: '모집·참가자', href: overview },
+        { label: '팀 편성', href: teams ?? overview, disabled: !teams },
+        {
+            label: '대진·경기',
+            href: resolve('/g/[guildId]/scrims/[scrimId]/bracket', params),
+            disabled: finished,
+            current: matchPage && !finished
+        },
+        {
+            label: '결과',
+            href: resolve('/g/[guildId]/scrims/[scrimId]/result', params),
+            disabled: !finished,
+            current: matchPage && finished
+        }
     ];
-    return items.map(({ label, href, exact }) => ({
+    return items.map(({ label, href, disabled, current }) => ({
         label,
         href,
-        current: isCurrent(pathname, href, exact)
+        disabled,
+        current: !disabled && (current || isCurrent(pathname, href, true))
     }));
 }

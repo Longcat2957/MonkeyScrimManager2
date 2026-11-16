@@ -51,7 +51,8 @@
 | `/manual`인데 방식이 `auction` 또는 그 반대 | 저장된 방식 경로로 `redirect(307)` |
 | `/manual`·`/auction`인데 방식 미정 | 내전 요약으로 `redirect(307)` |
 | `/bracket` + `completed`·`ended_early` | `/result`로 `redirect(307)` |
-| `/result` + 그 외 상태 | `/bracket`으로 `redirect(307)` |
+| `/result` + 정상 종료·현재 대진이 완료된 한 경기 | 해당 `/matches/[matchId]`로 `redirect(307)` |
+| `/result` + 그 외 미종료 상태 | `/bracket`으로 `redirect(307)` |
 
 경로 생성은 `lib/features/scrims/paths.ts`의 `formationPath`, `hasResult`, `bracketPath`가 담당한다. URL로 편성 방식을 바꾸지 않는다. 요약의 방식 선택과 작업판의 `방식 다시 고르기`가 form action으로 변경한다. 10인·20인 전용 경로는 없다.
 
@@ -97,15 +98,14 @@ routes/+layout.server.ts                  user·guilds (세션 사용자·본인
 routes/+layout.svelte                     ConfigProvider(ko_KR)
                                          본문 바로가기 · AppHeader · main · AppFooter · Feedback · ConfirmDialog
 └── g/[guildId]/+layout.server.ts         guild (공개 DB 조회)
-    └── scrims/[scrimId]/+layout.server.ts  scrim·artUrl (공개 DB 조회)
-        └── +layout.svelte                ScrimSummary + 하위 페이지
+    └── scrims/[scrimId]/+layout.server.ts  scrim (공개 DB 조회)
+        └── +layout.svelte                ScrimSummary·내전 메뉴 + 하위 페이지
 ```
 
-- 헤더·푸터·`Feedback`·`ConfirmDialog`는 루트에 한 번만 둔다. `AppHeader`는 `page.data`의 `scrim` → `guild` → 전역 순으로 범위를 정한다.
+- 헤더·푸터·`Feedback`·`ConfirmDialog`는 루트에 한 번만 둔다. `AppHeader`는 서버 안에서 항상 같은 서버 메뉴를 유지한다.
 - 본문은 `id="main-content"`, `tabindex="-1"`인 `<main>`이다. `app-frame`을 본문·푸터가 공유하고 헤더에는 별도 최대 폭을 적용한다.
-- 내전 레이아웃은 `scrim`이 있을 때 `ScrimSummary`를 한 번 렌더링한다. 요약·수동 편성은 배경 아트·상태·설정·단계가 있는 전체 머리, 경매·대진·결과는 제목·일정·하드 피어리스만 남기는 `compact` 머리다.
-- 배경 아트는 서버에서 Data Dragon으로 준비한다. 확보하지 못하면 배경색을 사용한다.
-- 경기 상세는 내전 레이아웃 밖에 있으며 서버 범위 헤더와 본문의 소속 내전 링크를 사용한다.
+- 내전 레이아웃은 `ScrimSummary`로 제목·상태·일정·팀 수·설정과 내전 메뉴를 같은 위치에 표시한다. 작업판마다 머리 크기를 바꾸거나 배경 아트를 조회하지 않는다.
+- 경기 상세도 소속 내전의 `ScrimContext`를 조회해 같은 머리·메뉴를 표시한다. 본문의 별도 소속 내전 링크는 중복하지 않는다.
 
 ## 3. 헤더
 
@@ -114,9 +114,10 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 `AppHeader`가 STDF `NavBar`의 세 snippet을 채운다. 화면 폭 분기는 `lib/ui/viewport.svelte.ts`의 `desktop.current`(1024px)로 하나의 변형만 렌더링한다.
 
 ```text
-데스크톱: [로고 Monkeybot] [범위 메뉴 · 내전 범위의 서버 메뉴] [서버 선택] [화면 모드] [계정]
+데스크톱: [로고 Monkeybot] [서버 메뉴] [서버 선택] [화면 모드] [계정]
 모바일:   [로고]                           [서버 선택] [비로그인일 때 로그인] [메뉴]
-모바일 메뉴: 범위 링크 → 내전 범위면 서버 링크 → 계정 링크 → 다크 모드
+모바일 메뉴: 서버 링크 → 계정 링크 → 다크 모드
+내전·경기 본문: 제목·상태·설정 → 모집·참가자 / 팀 편성 / 대진·경기 / 결과
 ```
 
 모바일 메뉴는 `Popup position="right" size={80}`이다. SSR은 모바일 구조로 그리며 루트 `onMount(markHydrated)` 이후 실제 폭을 반영한다. 헤더 높이는 4rem으로 고정한다.
@@ -125,13 +126,13 @@ routes/+layout.svelte                     ConfigProvider(ko_KR)
 | --- | --- |
 | 전역 | 없음 |
 | 서버 | 서버 홈 · 내전 · 경기 기록 · 통계 · 관리(`guild.isAdmin`일 때만) |
-| 내전 | 요약 · 팀 편성(방식 선택 후) · 대진 또는 결과 |
+| 내전·경기 상세 | 서버 메뉴 유지. 본문에 고정 순서의 내전 메뉴 제공 |
 
 ### 3.2 동작
 
 - 로고는 `/` 링크이며 `SERVICE_NAME`으로 접근 가능한 이름을 만든다. 데스크톱에서만 `font-brand` 워드마크를 함께 표시한다.
 - `ContextNav`는 `<nav><ul><a>` 구조와 현재 항목의 `aria-current="page"`를 제공한다. 서버 홈·내전 요약은 경로가 정확히 일치할 때, 다른 항목은 하위 경로까지 현재 메뉴로 본다.
-- 내전 범위의 서버 메뉴는 데스크톱 `MenuButton`, 모바일 패널의 `ContextNav`로 제공한다. 팀 편성은 `formationPath`, 대진·결과는 `bracketPath`를 사용한다.
+- 내전 메뉴의 순서는 `모집·참가자`·`팀 편성`·`대진·경기`·`결과`로 고정한다. 방식 미정의 팀 편성, 결과가 없는 상태의 결과 메뉴는 비활성이다. 종료 뒤에는 결과를 활성화하고 같은 목적지로 이어지는 대진 메뉴를 비활성으로 둔다. 경기 상세에서도 진행 중은 대진·경기, 종료된 내전은 결과를 현재 위치로 표시한다.
 - `MenuButton`은 `ActionMenu`를 연다. 데스크톱은 `ActionPopover`, 모바일은 `ActionSheet`이며 메뉴 항목 선택은 `goto`로 이동한다. 이 메뉴 항목은 `ContextNav`의 `<a>`와 다른 구조다.
 - 서버 선택기는 `user`가 있을 때만 표시한다. 현재 서버는 `현재 서버` 설명과 비활성 표시만 제공하고, 다른 서버는 해당 서버 홈으로 이동한다. 서버가 없으면 비활성 안내 항목 하나를 표시한다.
 - 계정 메뉴는 `내 정보`와 서비스 운영자 전용 `백오피스`다. 비로그인 상태에는 Discord 로그인 링크, 로그인 상태에는 POST 로그아웃이 있다. 모바일 비로그인의 로그인은 헤더에 한 번 표시하고 열린 메뉴에서 반복하지 않는다. 실제 비로그인 상태에는 계정 메뉴·서버 선택기가 표시되지 않지만 서버 URL로 공개 화면에 접근할 수 있다. 개발 목 미리보기는 실제 인증 세션과 별개다.

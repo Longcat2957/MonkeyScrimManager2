@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { bracketSeats, bracketTemplate, resolveWinners } from '../src/lib/features/scrims/bracket.ts';
+import {
+    bracketSeats,
+    bracketTemplate,
+    resolveWinners,
+    singleCompletedMatchId
+} from '../src/lib/features/scrims/bracket.ts';
 import {
     confirmMockBracket,
     getMockBracket,
@@ -12,6 +17,22 @@ import {
 import { createMockScrim, findMockScrimRecord } from '../src/lib/mocks/scrims.ts';
 
 const guildId = 'devGuild001';
+
+test('완료된 단일 실제 경기만 결과 상세로 보내고 여러 경기·미완료·중도 종료는 대진을 유지한다', () => {
+    const single = { matches: bracketTemplate(2) };
+    const match = single.matches[0]!;
+    assert.equal(singleCompletedMatchId('completed', single), null);
+    match.status = 'completed';
+    assert.equal(singleCompletedMatchId('completed', single), null);
+    match.matchId = 'actual-final';
+    assert.equal(singleCompletedMatchId('completed', single), 'actual-final');
+    assert.equal(singleCompletedMatchId('ended_early', single), null);
+    assert.equal(singleCompletedMatchId('in_progress', single), null);
+    const multiple = { matches: bracketTemplate(4) };
+    Object.assign(multiple.matches[0]!, { status: 'completed', matchId: 'only-completed-semi' });
+    assert.equal(singleCompletedMatchId('completed', multiple), null);
+    assert.equal(singleCompletedMatchId('completed', null), null);
+});
 
 // 팀 편성이 끝난(대진 준비) 내전을 만든다. 참가자는 devScrim008에서 빌린다.
 async function readyScrim(teamCount: number) {

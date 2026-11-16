@@ -2,6 +2,8 @@ import { dev } from '$app/env';
 import { error, fail } from '@sveltejs/kit';
 import { getMockMatch, recordMockGame, type RawGame } from '#lib/mocks/matches.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
+import { findMockScrim } from '#lib/mocks/scrims.ts';
+import { getScrim } from '#lib/server/scrims/queries.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { getMatch } from '#lib/server/matches/queries.ts';
 import { getMatchOperationContext } from '#lib/server/matches/operation-context.ts';
@@ -52,14 +54,19 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
                       resolvers
                   );
         if (!result) error(404, '경기를 찾을 수 없습니다.');
-        if (dev && findMockGuild(params.guildId)) return { ...result, operation: null };
+        const scrim =
+            dev && findMockGuild(params.guildId)
+                ? findMockScrim(params.guildId, result.match.scrim.id)
+                : await getScrim(getDb(), locals.actor, params.guildId, result.match.scrim.id);
+        if (!scrim) error(404, '내전을 찾을 수 없습니다.');
+        if (dev && findMockGuild(params.guildId)) return { ...result, scrim, operation: null };
         const operation = await getMatchOperationContext(
             getDb(),
             locals.actor,
             params.guildId,
             params.matchId
         );
-        return { ...result, operation, can: { upload: operation.can.upload } };
+        return { ...result, scrim, operation, can: { upload: operation.can.upload } };
     } catch (cause) {
         routeError(cause);
     }
@@ -173,6 +180,7 @@ export const actions: Actions = {
                     nextGameNumber: integer(data, 'expectedGameNumber'),
                     lineupId: String(data.get('lineupId') ?? ''),
                     blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
+                    blueTeamConfirmed: data.get('blueTeamConfirmed') === 'true',
                     bytes
                 },
                 {

@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { LANES, slotKey, type Assignments, type FormationPlayer } from '../../features/scrims/formation.ts';
 import type { LolPosition } from '../../features/guild/types.ts';
+import { isBestOf } from '../../features/scrims/bracket.ts';
 import type { Actor } from '../auth/types.ts';
 import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -8,13 +9,15 @@ import {
     scrimParticipantPreferences,
     scrimParticipantRegistrations,
     scrimParticipants,
+    scrimBracketSlots,
+    scrimRounds,
     scrims,
     scrimTeams,
     userPositionMmr
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { INITIAL_MMR } from '../mmr/rules.ts';
-import { createBracketDraft } from './bracket.ts';
+import { createBracketDraft, startPreparedScrim } from './bracket.ts';
 import { formationPairRecords } from './formation-records.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
 import { findScrim, readGuild } from './queries.ts';
@@ -257,7 +260,7 @@ export async function confirmManualFormation(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput,
+    input: RevisionInput & { bestOf?: number },
     access?: ScrimAccessDependencies
 ) {
     return mutateScrim(
@@ -266,13 +269,16 @@ export async function confirmManualFormation(
         guildId,
         scrimId,
         input,
-        async (tx, row) => {
+        async (tx, row, user) => {
             requireManual(row);
+            if (input.bestOf !== undefined && (row.teamCount !== 2 || !isBestOf(input.bestOf)))
+                throw new DomainError('INVALID_INPUT', '2팀 경기의 방식을 골라 주세요');
             const selected = (await selectedParticipants(tx, row.id)).map((entry) => entry.participant);
             const teams = await tx
                 .select()
                 .from(scrimTeams)
-                .where(and(eq(scrimTeams.scrimId, row.id), eq(scrimTeams.isActive, true)));
+                .where(and(eq(scrimTeams.scrimId, row.id), eq(scrimTeams.isActive, true)))
+                .orderBy(asc(scrimTeams.ordinal));
             if (
                 teams.length !== row.teamCount ||
                 selected.length !== row.teamCount * 5 ||
@@ -287,7 +293,25 @@ export async function confirmManualFormation(
                 throw new DomainError('CONFLICT', '모든 팀의 다섯 포지션에 선발 참가자를 배치해 주세요');
             }
             await createBracketDraft(tx, row);
-            await tx.update(scrims).set({ status: 'ready' }).where(eq(scrims.id, row.id));
+            const confirmation =
+                input.bestOf === undefined
+                    ? {}
+                    : { bracketConfirmedAt: new Date(), bracketConfirmedByUserId: user.userId };
+            const [prepared] = await tx
+                .update(scrims)
+                .set({ status: 'ready', ...confirmation })
+                .where(eq(scrims.id, row.id))
+                .returning();
+            if (input.bestOf === undefined) return null;
+            // 2팀은 별도 시드 선택 없이 확정한 팀 순서와 실제 포지션으로 한 경기를 시작한다.
+            await tx.update(scrimRounds).set({ bestOf: input.bestOf }).where(eq(scrimRounds.scrimId, row.id));
+            for (const [index, slot] of (['a', 'b'] as const).entries())
+                await tx
+                    .update(scrimBracketSlots)
+                    .set({ teamId: teams[index]!.id })
+                    .where(and(eq(scrimBracketSlots.scrimId, row.id), eq(scrimBracketSlots.slot, slot)));
+            const [matchId] = await startPreparedScrim(tx, prepared!);
+            return matchId!;
         },
         access
     );

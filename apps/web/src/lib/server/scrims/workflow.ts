@@ -19,7 +19,7 @@ import { invalidateAuctionActions } from './auction-actions.ts';
 import { activeScrimCancellation } from './cancellation.ts';
 import {
     assertNoGames,
-    createResolvedMatches,
+    startPreparedScrim,
     deleteDraftBracket,
     getBracketInTransaction,
     removeUnplayedMatches
@@ -125,12 +125,7 @@ export async function advanceScrim(
         input,
         async (tx, row) => {
             if (input.key === 'start') {
-                if (row.status !== 'ready' || !row.bracketConfirmedAt)
-                    throw new DomainError('CONFLICT', '대진을 확정한 뒤 내전을 시작해 주세요');
-                await assertNoGames(tx, row.id);
-                const created = await createResolvedMatches(tx, row);
-                if (!created) throw new DomainError('CONFLICT', '시작할 경기가 없어요');
-                await tx.update(scrims).set({ status: 'in_progress' }).where(eq(scrims.id, row.id));
+                return startPreparedScrim(tx, row);
             } else if (input.key === 'complete') {
                 if (row.status !== 'in_progress')
                     throw new DomainError('CONFLICT', '진행 중인 내전만 종료할 수 있어요');

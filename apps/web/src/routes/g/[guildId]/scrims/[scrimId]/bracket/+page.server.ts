@@ -1,13 +1,16 @@
 import { dev } from '$app/env';
 import { error, fail, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
 import { bracketPath, hasResult } from '#lib/features/scrims/paths.ts';
+import type { BracketView } from '#lib/features/scrims/bracket.ts';
 import {
     confirmMockBracket,
     getMockBracket,
     placeMockBracketTeam,
     resetMockBracket,
     setMockBracketBestOf,
-    unlockMockBracket
+    unlockMockBracket,
+    startMockBracket
 } from '#lib/mocks/bracket.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
@@ -16,6 +19,7 @@ import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { actionFailure } from '#lib/server/actions.ts';
 import { routeError } from '#lib/server/http.ts';
+import { advanceScrim } from '#lib/server/scrims/workflow.ts';
 import {
     getBracket,
     placeBracketTeam,
@@ -56,6 +60,22 @@ function failWith(failure: MockFailure | null) {
 }
 
 const field = (data: FormData, name: string) => String(data.get(name) ?? '');
+
+function destination(params: { guildId: string; scrimId: string }, bracket: BracketView | null) {
+    const matchId = bracket?.matches.length === 1 ? bracket.matches[0]!.matchId : null;
+    return {
+        nextHref: matchId
+            ? resolve('/g/[guildId]/matches/[matchId]', { guildId: params.guildId, matchId })
+            : resolve('/g/[guildId]/scrims/[scrimId]/bracket', params)
+    };
+}
+
+async function startDemo(params: { guildId: string; scrimId: string }) {
+    const failure = await startMockBracket(params.guildId, params.scrimId);
+    if (failure) return failWith(failure);
+    const bracket = await getMockBracket(params.guildId, params.scrimId);
+    return destination(params, bracket);
+}
 
 export const actions: Actions = {
     place: async ({ request, params, locals, setHeaders }) => {
@@ -111,11 +131,38 @@ export const actions: Actions = {
         }
     },
     confirm: async ({ params, locals, request, setHeaders }) => {
-        if (isDemo(params.guildId)) return failWith(await confirmMockBracket(params.guildId, params.scrimId));
+        const data = await request.formData();
+        const start = data.get('start') === '1';
+        if (isDemo(params.guildId)) {
+            const failure = await confirmMockBracket(params.guildId, params.scrimId);
+            if (failure) return failWith(failure);
+            return start ? startDemo(params) : undefined;
+        }
         try {
             await confirmBracket(getDb(), locals.actor, params.guildId, params.scrimId, {
-                expectedRevision: Number((await request.formData()).get('expectedRevision') ?? NaN)
+                expectedRevision: Number(data.get('expectedRevision') ?? NaN),
+                start
             });
+            if (start)
+                return destination(
+                    params,
+                    await getBracket(getDb(), locals.actor, params.guildId, params.scrimId)
+                );
+        } catch (cause) {
+            return actionFailure(cause, setHeaders);
+        }
+    },
+    start: async ({ params, locals, request, setHeaders }) => {
+        if (isDemo(params.guildId)) return startDemo(params);
+        try {
+            await advanceScrim(getDb(), locals.actor, params.guildId, params.scrimId, {
+                expectedRevision: Number((await request.formData()).get('expectedRevision') ?? NaN),
+                key: 'start'
+            });
+            return destination(
+                params,
+                await getBracket(getDb(), locals.actor, params.guildId, params.scrimId)
+            );
         } catch (cause) {
             return actionFailure(cause, setHeaders);
         }

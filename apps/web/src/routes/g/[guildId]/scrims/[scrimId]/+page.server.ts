@@ -9,10 +9,11 @@ import {
     RESERVE_CAPACITY,
     TEAM_COUNT,
     readFormationMethod,
+    playCapacity,
     toScrimSettings,
     validateScrimSettings
 } from '#lib/features/scrims/settings.ts';
-import type { RegistrationAccount } from '#lib/features/scrims/types.ts';
+import type { ManualRegistrationResult, RegistrationAccount } from '#lib/features/scrims/types.ts';
 import { getMockMe } from '#lib/mocks/me.ts';
 import {
     cancelMockScrim,
@@ -47,7 +48,7 @@ import { routeError } from '#lib/server/http.ts';
 import { getScrimDetail, listRegistrationAccounts } from '#lib/server/scrims/queries.ts';
 import {
     createRegistration,
-    createManualRegistration,
+    createManualRegistrations,
     updateRegistration,
     withdrawRegistration,
     setParticipantStatus,
@@ -229,21 +230,41 @@ const previewActions: Actions = {
         requireDev();
         const denied = requireManager(params.guildId, params.scrimId);
         if (denied) return denied;
-        const userId = String((await request.formData()).get('userId') ?? '');
-        const target = listMockMembers(params.guildId, { q: '', page: 1, pageSize: 1000 }).members.find(
-            (member) => member.userId === userId
-        );
-        if (!target) return fail(404, { message: '서버 멤버를 찾을 수 없어요' });
-        const primary = target.riotAccounts.find((account) => account.isPrimary) ?? target.riotAccounts[0];
-        return failWith(
-            await registerMock(params.guildId, params.scrimId, {
+        const userIds = (await request.formData()).getAll('userId').map(String);
+        const maximum = playCapacity(TEAM_COUNT.max) + RESERVE_CAPACITY.max;
+        if (!userIds.length || userIds.length > maximum)
+            return fail(400, { message: `추가할 서버 멤버를 1~${maximum}명 골라 주세요` });
+        const members = listMockMembers(params.guildId, { q: '', page: 1, pageSize: 1000 }).members;
+        const registrationResults: ManualRegistrationResult[] = [];
+        for (const userId of new Set(userIds)) {
+            const target = members.find((member) => member.userId === userId);
+            if (!target) {
+                registrationResults.push({ userId, status: 'failed', message: '서버 멤버를 찾을 수 없어요' });
+                continue;
+            }
+            const primary =
+                target.riotAccounts.find((account) => account.isPrimary) ?? target.riotAccounts[0];
+            const failure = await registerMock(params.guildId, params.scrimId, {
                 userId: target.userId,
                 displayName: target.displayName,
                 riotAccountId: primary?.id ?? null,
                 riotId: primary ? `${primary.gameName}#${primary.tagLine}` : null,
                 positions: POSITIONS.map((position) => position.key)
-            })
-        );
+            });
+            if (failure) registrationResults.push({ userId, status: 'failed', message: failure.message });
+            else {
+                const participant = (await getMockScrimDetail(
+                    params.guildId,
+                    params.scrimId,
+                    null
+                ))!.participants.find((player) => player.userId === userId)!;
+                registrationResults.push({
+                    userId,
+                    status: participant.status === 'selected' ? 'selected' : 'standby'
+                });
+            }
+        }
+        return { registrationResults };
     },
 
     register: async ({ request, params }) => {
@@ -362,9 +383,15 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
         const expectedRevision = data.has('expectedRevision') ? Number(data.get('expectedRevision')) : NaN;
         const revision = { expectedRevision };
         if (name === 'addParticipant') {
-            await createManualRegistration(db, actor, guildId, scrimId, {
-                userId: String(data.get('userId') ?? '')
-            });
+            return {
+                registrationResults: await createManualRegistrations(
+                    db,
+                    actor,
+                    guildId,
+                    scrimId,
+                    data.getAll('userId').map(String)
+                )
+            };
         } else if (name === 'register' || name === 'registration') {
             const input = {
                 riotAccountId: String(data.get('riotAccountId') ?? '').trim() || null,

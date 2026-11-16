@@ -198,7 +198,7 @@ function createdReply(form: ScrimCreationForm, origin: URL) {
         ...notice(`**${label(form.draft.title, 50)}** 내전을 만들었어요.`),
         components: [
             card(`**${label(form.draft.title, 50)}** 내전을 만들었어요.`),
-            linkRow('내전 열기', scrimUrl(origin, form.guildId, form.scrimId!))
+            linkRow('웹에서 내전 보기', scrimUrl(origin, form.guildId, form.scrimId!))
         ]
     };
 }

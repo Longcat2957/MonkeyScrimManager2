@@ -10,6 +10,82 @@ import {
 } from '../../../../src/lib/server/scrims/manual.ts';
 import { createFormationFixture, concurrently, errorCode } from '../../support/domain-fixtures.ts';
 
+test('2팀 편성 확정·경기 시작은 선택한 BO와 확정 라인업을 한 번에 저장한다', async (t) => {
+    const f = await createFormationFixture(t);
+    await f.fill();
+    const revision = await f.revision();
+    const matchId = await confirmManualFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...revision, bestOf: 5 },
+        f.access
+    );
+    const row = await f.row();
+    assert.equal(row.status, 'in_progress');
+    assert.equal(row.revision, revision.expectedRevision + 1);
+    assert.ok(row.bracketConfirmedAt);
+    const [match] = await f.db.select().from(schema.matches);
+    assert.equal(match?.id, matchId);
+    assert.equal(match?.bestOf, 5);
+    assert.equal(match?.teamAId, f.teams[0]!.id);
+    assert.equal(match?.teamBId, f.teams[1]!.id);
+    const [lineup] = await f.db.select().from(schema.matchLineups);
+    assert.ok(lineup?.confirmedAt);
+    assert.equal(lineup?.matchId, matchId);
+    assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 10);
+    await assert.rejects(
+        confirmManualFormation(f.db, f.manager, f.guildId, f.scrimId, { ...revision, bestOf: 5 }, f.access)
+    );
+    assert.equal((await f.db.select().from(schema.matches)).length, 1);
+});
+
+test('2팀 시작의 라인업 검증 실패는 편성 상태·대진·경기를 모두 되돌린다', async (t) => {
+    const f = await createFormationFixture(t);
+    await f.fill();
+    await f.db
+        .update(schema.scrimParticipants)
+        .set({ userId: null })
+        .where(eq(schema.scrimParticipants.id, f.participants[0]!.id));
+    const revision = await f.revision();
+    await assert.rejects(
+        confirmManualFormation(f.db, f.manager, f.guildId, f.scrimId, { ...revision, bestOf: 3 }, f.access),
+        errorCode('CONFLICT')
+    );
+    const row = await f.row();
+    assert.equal(row.status, 'preparing');
+    assert.equal(row.revision, revision.expectedRevision);
+    assert.equal(row.bracketConfirmedAt, null);
+    assert.equal((await f.db.select().from(schema.scrimRounds)).length, 0);
+    assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 0);
+    assert.equal((await f.db.select().from(schema.matches)).length, 0);
+    assert.equal((await f.db.select().from(schema.matchLineups)).length, 0);
+});
+
+test('잘못된 BO나 4팀의 단일 경기 시작 요청은 편성을 변경하지 않는다', async (t) => {
+    for (const [teamCount, bestOf] of [
+        [2, 2],
+        [4, 3]
+    ]) {
+        const f = await createFormationFixture(t, teamCount);
+        await f.fill();
+        await assert.rejects(
+            confirmManualFormation(
+                f.db,
+                f.manager,
+                f.guildId,
+                f.scrimId,
+                { ...(await f.revision()), bestOf },
+                f.access
+            ),
+            errorCode('INVALID_INPUT')
+        );
+        assert.equal((await f.row()).status, 'preparing');
+        assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 0);
+    }
+});
+
 test('수동 편성 조회는 참가자 ID를 사용하고 초기 MMR을 조회만으로 생성하지 않는다', async (t) => {
     const f = await createFormationFixture(t);
     const view = await getManualFormation(f.db, null, f.guildId, f.scrimId);

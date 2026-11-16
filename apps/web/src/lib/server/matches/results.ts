@@ -52,6 +52,7 @@ import { downstreamMatches, resultReversalBlock } from './reversal.ts';
 export type MatchRoflInput = MatchSlotInput & {
     lineupId: string;
     blueTeamSlot: 'a' | 'b';
+    blueTeamConfirmed: boolean;
     bytes: Uint8Array;
 };
 export type MatchResult = { order: number; gameId: string };
@@ -541,6 +542,8 @@ async function restoreGameResult(
     source: StoredImport,
     players: Awaited<ReturnType<typeof validateLineupRoster>>
 ) {
+    if (source.game.blueTeamSlot !== input.blueTeamSlot)
+        conflict('취소한 ROFL은 등록 당시의 블루 팀으로만 복구할 수 있어요');
     const [result] = await tx
         .select()
         .from(roflGameDataV1)
@@ -642,6 +645,8 @@ export async function importMatchRofl(
     requireUuid(input.lineupId, '라인업');
     if (!['a', 'b'].includes(input.blueTeamSlot))
         throw new DomainError('INVALID_INPUT', '이번 게임의 블루 팀을 선택해 주세요');
+    if (input.blueTeamConfirmed !== true)
+        throw new DomainError('INVALID_INPUT', '블루·레드 팀이 실제 진영과 맞는지 확인해 주세요');
     if (!(input.bytes instanceof Uint8Array))
         throw new DomainError('INVALID_INPUT', 'ROFL 파일을 선택해 주세요');
     const guild = await requireGuildMember(user, guildId, { db, discord: dependencies.discord });

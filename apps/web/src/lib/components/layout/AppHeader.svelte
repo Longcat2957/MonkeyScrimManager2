@@ -12,7 +12,7 @@
     import SwitchCell from '#lib/components/common/SwitchCell.svelte';
     import ContextNav from './ContextNav.svelte';
     import MenuButton from './MenuButton.svelte';
-    import { guildNavItems, scrimNavItems, type NavItem } from './navigation.ts';
+    import { guildNavItems, type NavItem } from './navigation.ts';
 
     let mode: ThemeMode = $state('primary');
     let menuOpen = $state(false);
@@ -24,13 +24,9 @@
     const user = $derived(page.data.user ?? null);
     const guilds = $derived(page.data.guilds ?? []);
     const guild = $derived(page.data.guild ?? null);
-    const scrim = $derived(page.data.scrim ?? null);
     const pathname = $derived(page.url.pathname);
 
     const guildItems = $derived(guild ? guildNavItems(guild, pathname) : []);
-    const scrimItems = $derived(guild && scrim ? scrimNavItems(guild.id, scrim, pathname) : []);
-    // 내전 범위에서는 내전 메뉴가 주 메뉴이고 서버 메뉴는 보조 메뉴로 내려간다.
-    const primaryItems = $derived(scrim ? scrimItems : guildItems);
 
     const accountItems = $derived<NavItem[]>(
         user
@@ -148,18 +144,8 @@
 
 {#snippet desktopMenu()}
     <div class="flex items-center gap-1 pl-4">
-        {#if primaryItems.length}
-            <ContextNav items={primaryItems} label={scrim ? '내전 메뉴' : '서버 메뉴'} />
-        {/if}
-        {#if scrim}
-            <MenuButton
-                label="서버 메뉴"
-                actions={toActions(guildItems)}
-                onselect={(i) => goto(guildItems[i].href)}
-            >
-                <span class="text-sm font-semibold opacity-70">서버</span>
-                <span aria-hidden="true">▾</span>
-            </MenuButton>
+        {#if guildItems.length}
+            <ContextNav items={guildItems} label="서버 메뉴" />
         {/if}
     </div>
 {/snippet}
@@ -245,24 +231,13 @@
     <div {@attach overlay({ open: menuOpen, label: '메뉴', onclose: () => (menuOpen = false) })}>
         <Popup bind:visible={menuOpen} position="right" size={80}>
             <div class="flex h-full flex-col gap-6 overflow-y-auto p-4">
-                {#if primaryItems.length}
+                {#if guildItems.length}
                     <ContextNav
-                        items={primaryItems}
-                        label={scrim ? '내전 메뉴' : '서버 메뉴'}
+                        items={guildItems}
+                        label="서버 메뉴"
                         vertical
                         onnavigate={() => (menuOpen = false)}
                     />
-                {/if}
-                {#if scrim}
-                    <section class="flex flex-col gap-1">
-                        <h2 class="px-3 text-xs font-semibold opacity-60">서버</h2>
-                        <ContextNav
-                            items={guildItems}
-                            label="서버 메뉴"
-                            vertical
-                            onnavigate={() => (menuOpen = false)}
-                        />
-                    </section>
                 {/if}
                 {#if user}
                     <section class="flex flex-col gap-1">

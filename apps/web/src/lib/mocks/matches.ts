@@ -52,6 +52,13 @@ type StoredMatch = Omit<MatchListItem, 'scoreA' | 'scoreB'> & {
     games: StoredGame[];
 };
 
+/** 편성·대진에서 막 시작한 개발 경기도 고유한 상세 화면을 갖는다. */
+export function createMockMatch(input: Omit<StoredMatch, 'id' | 'games'>): string {
+    const id = `devMatch-${crypto.randomUUID()}`;
+    matches.push({ ...input, id, games: [] });
+    return id;
+}
+
 export type GameResolvers = {
     champion: (id: string) => { id: string; name: string; iconUrl: string | null };
     item: (id: number | null) => LoadoutIcon | null;

@@ -1,7 +1,6 @@
 <script lang="ts">
     import { Button } from 'stdf';
     import { goto, invalidateAll } from '$app/navigation';
-    import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import SectionState from '#lib/components/common/SectionState.svelte';
@@ -12,6 +11,8 @@
     import GameTeamTable from '#lib/components/matches/GameTeamTable.svelte';
     import RoflUploadDialog from '#lib/components/matches/RoflUploadDialog.svelte';
     import MatchLineupBoard from '#lib/components/matches/MatchLineupBoard.svelte';
+    import ScrimSummary from '#lib/components/scrims/ScrimSummary.svelte';
+    import { scrimNavItems } from '#lib/components/layout/navigation.ts';
     import { MATCH_STATUS } from '#lib/features/labels.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { postAction } from '#lib/ui/actions.ts';
@@ -22,6 +23,7 @@
     const guildId = $derived(page.params.guildId!);
     const changing = $derived(navigating.to?.route.id === page.route.id);
     const match = $derived(data.match);
+    const navigation = $derived(scrimNavItems(guildId, data.scrim, page.url.pathname));
     const status = $derived(MATCH_STATUS[match.status]);
     // 정상 종료한 시리즈만 승자를 표시한다.
     const winner = $derived(
@@ -114,10 +116,12 @@
     </span>
 {/snippet}
 
+<ScrimSummary scrim={data.scrim} {navigation} />
+
 <div class="flex flex-col gap-6">
     <!-- 시리즈 머리 -->
     <header class="flex flex-col gap-4">
-        <h1
+        <h2
             class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-(--radius-box) border border-border bg-bg-surface px-5 py-4 dark:bg-bg-surface-dark"
         >
             <span class="flex min-w-0 justify-end">{@render team(match.teamA, 'a')}</span>
@@ -128,16 +132,11 @@
                 {match.scoreB}</span
             >
             <span class="flex min-w-0">{@render team(match.teamB, 'b')}</span>
-        </h1>
+        </h2>
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="flex min-w-0 flex-col gap-1">
                 <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                    <a
-                        href={resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: match.scrim.id })}
-                        class="text-text-muted underline-offset-4 hover:underline">{match.scrim.title}</a
-                    >
-                    <span aria-hidden="true">·</span><span>BO{match.bestOf}</span>
-                    {#if match.hardFearless}<span aria-hidden="true">·</span><span>하드 피어리스</span>{/if}
+                    <span>BO{match.bestOf}</span>
                     <StatusTag text={status.text} state={status.state} />
                 </p>
             </div>

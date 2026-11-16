@@ -59,11 +59,11 @@ export function renderMatch(publication: BotPublication, origin: URL) {
             new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
                     .setStyle(ButtonStyle.Link)
-                    .setLabel('경기 열기')
+                    .setLabel('웹에서 경기 보기')
                     .setURL(webUrl(origin, `/g/${publication.guildId}/matches/${match.id}`)),
                 new ButtonBuilder()
                     .setStyle(ButtonStyle.Link)
-                    .setLabel('내전 열기')
+                    .setLabel('웹에서 내전 보기')
                     .setURL(publicationUrl(origin, publication))
             )
         ],

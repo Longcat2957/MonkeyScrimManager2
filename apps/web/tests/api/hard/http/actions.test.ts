@@ -15,7 +15,7 @@ const settings = {
 };
 const guildPath = '/g/' + HTTP_IDS.guild;
 
-test('HTTP: 기존 39개 form action은 유효한 입력이어도 비로그인 조작을 거절한다', async (t) => {
+test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거절한다', async (t) => {
     const f = await createHttpFixture(t);
     const id = randomUUID();
     const scrimPath = guildPath + '/scrims/' + id;
@@ -53,7 +53,7 @@ test('HTTP: 기존 39개 form action은 유효한 입력이어도 비로그인 �
             name: 'bestOf',
             fields: { ...revision, stage: 'final', bestOf: '3' }
         },
-        ...['reset', 'confirm', 'unlock'].map((name) => ({
+        ...['reset', 'confirm', 'start', 'unlock'].map((name) => ({
             path: scrimPath + '/bracket',
             name,
             fields: revision
@@ -109,7 +109,7 @@ test('HTTP: 기존 39개 form action은 유효한 입력이어도 비로그인 �
         })),
         { path: guildPath + '/matches/' + id, name: 'upload', fields: {} }
     ];
-    assert.equal(entries.length, 40);
+    assert.equal(entries.length, 41);
     for (const entry of entries)
         await t.test(entry.path + '?/' + entry.name, async () => {
             assertAction(await f.action(entry.path, entry.name, entry.fields), 401);
@@ -344,7 +344,7 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
         );
     assertAction(
         await f.action(path + '/manual', 'confirm', { expectedRevision: await revision() }, admin.cookie),
-        204
+        200
     );
     assert.equal((await f.db.select().from(schema.scrims))[0]!.status, 'ready');
     for (const [index, team] of teams.entries())

@@ -9,6 +9,7 @@ import {
     closeRecruitment,
     createRegistration,
     createManualRegistration,
+    createManualRegistrations,
     createScrim,
     reopenRecruitment,
     setParticipantStatus,
@@ -119,6 +120,77 @@ test('수동 추가도 운영 권한·실제 소속·대표 계정·중복·선�
     await f.db.update(schema.scrims).set({ status: 'preparing' }).where(eq(schema.scrims.id, f.scrimId));
     await assert.rejects(add(12), errorCode('CONFLICT'));
     assert.equal((await registrations(f)).length, 12);
+});
+
+test('일괄 수동 추가는 순서대로 선발·대기를 채우고 사람별 실패와 실제 추가자를 보존한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    await fill(f, 9);
+    const target = f.actors[9]!;
+    await f.db.delete(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.userId, target.userId));
+    const ids = [
+        f.actors[0]!.userId,
+        '999000000000000001',
+        ...f.actors.slice(9, 13).map((actor) => actor.userId)
+    ];
+    const results = await createManualRegistrations(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        [...ids, target.userId],
+        f.access
+    );
+    assert.deepEqual(
+        results.map((result) => [result.userId, result.status]),
+        ids.map((id, index) => [id, ['failed', 'failed', 'selected', 'standby', 'standby', 'failed'][index]])
+    );
+    assert.match(results[0]!.status === 'failed' ? results[0]!.message : '', /이미 신청/);
+    assert.match(results[5]!.status === 'failed' ? results[5]!.message : '', /정원/);
+    const added = await f.db
+        .select()
+        .from(schema.scrimParticipants)
+        .where(eq(schema.scrimParticipants.userId, target.userId));
+    assert.equal(added[0]!.riotAccountId, null);
+    const saved = await f.db
+        .select()
+        .from(schema.scrimParticipantRegistrations)
+        .where(eq(schema.scrimParticipantRegistrations.scrimParticipantId, added[0]!.id));
+    assert.equal(saved[0]!.joinedByUserId, f.manager.userId);
+    assert.equal((await registrations(f)).length, 12);
+    await f.db.update(schema.scrims).set({ reserveCapacity: 3 }).where(eq(schema.scrims.id, f.scrimId));
+    assert.deepEqual(
+        await createManualRegistrations(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            [f.actors[12]!.userId],
+            f.access
+        ),
+        [{ userId: f.actors[12]!.userId, status: 'standby' }]
+    );
+});
+
+test('일괄 수동 추가는 권한·전체 입력을 먼저 검사하고 동시 요청에도 정원을 넘지 않는다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    const ids = f.actors.slice(2, 18).map((actor) => actor.userId);
+    await assert.rejects(
+        createManualRegistrations(f.db, f.viewer, f.guildId, f.scrimId, ids, f.access),
+        errorCode('FORBIDDEN')
+    );
+    await assert.rejects(
+        createManualRegistrations(f.db, f.manager, f.guildId, f.scrimId, [ids[0]!, 'invalid'], f.access),
+        errorCode('INVALID_INPUT')
+    );
+    assert.equal((await registrations(f)).length, 0);
+    const batches = await Promise.all([
+        createManualRegistrations(f.db, f.manager, f.guildId, f.scrimId, ids.slice(0, 8), f.access),
+        createManualRegistrations(f.db, f.manager, f.guildId, f.scrimId, ids.slice(8), f.access)
+    ]);
+    assert.equal(batches.flat().filter((result) => result.status === 'failed').length, 4);
+    const active = await registrations(f);
+    assert.equal(active.filter((row) => row.status === 'selected').length, 10);
+    assert.equal(active.filter((row) => row.status === 'standby').length, 2);
 });
 
 test('Riot 계정 없이 신청·조회·수정·철회하고 기존 희망 포지션을 재사용한다', async (t) => {

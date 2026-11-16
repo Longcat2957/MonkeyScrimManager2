@@ -2,8 +2,11 @@ import { dev } from '$app/env';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
 import type { SlotKey } from '#lib/features/scrims/formation.ts';
+import { isBestOf } from '#lib/features/scrims/bracket.ts';
 import { formationPath } from '#lib/features/scrims/paths.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
+import { findMockScrimRecord } from '#lib/mocks/scrims.ts';
+import { getMockBracket, startMockManualMatch } from '#lib/mocks/bracket.ts';
 import {
     confirmMockManual,
     getMockManualFormation,
@@ -98,11 +101,38 @@ export const actions: Actions = {
     },
 
     confirm: async ({ params, locals, request, setHeaders }) => {
-        if (isDemo(params.guildId)) return failWith(await confirmMockManual(params.guildId, params.scrimId));
+        const data = await request.formData();
+        const bestOf = data.has('bestOf') ? Number(data.get('bestOf')) : undefined;
+        let matchId: string | null = null;
+        if (isDemo(params.guildId)) {
+            if (
+                bestOf !== undefined &&
+                (!isBestOf(bestOf) || findMockScrimRecord(params.guildId, params.scrimId)?.teamCount !== 2)
+            )
+                return fail(400, { message: '2팀 경기의 방식을 골라 주세요' });
+            const failure = await confirmMockManual(params.guildId, params.scrimId);
+            if (failure) return failWith(failure);
+            if (bestOf !== undefined && isBestOf(bestOf)) {
+                const failure = await startMockManualMatch(params.guildId, params.scrimId, bestOf);
+                if (failure) return failWith(failure);
+                matchId = (await getMockBracket(params.guildId, params.scrimId))?.matches[0]?.matchId ?? null;
+            }
+            return {
+                nextHref: matchId
+                    ? resolve('/g/[guildId]/matches/[matchId]', { guildId: params.guildId, matchId })
+                    : resolve('/g/[guildId]/scrims/[scrimId]/bracket', params)
+            };
+        }
         try {
-            await confirmManualFormation(getDb(), locals.actor, params.guildId, params.scrimId, {
-                expectedRevision: Number((await request.formData()).get('expectedRevision') ?? NaN)
+            matchId = await confirmManualFormation(getDb(), locals.actor, params.guildId, params.scrimId, {
+                expectedRevision: Number(data.get('expectedRevision') ?? NaN),
+                bestOf
             });
+            return {
+                nextHref: matchId
+                    ? resolve('/g/[guildId]/matches/[matchId]', { guildId: params.guildId, matchId })
+                    : resolve('/g/[guildId]/scrims/[scrimId]/bracket', params)
+            };
         } catch (cause) {
             return actionFailure(cause, setHeaders);
         }

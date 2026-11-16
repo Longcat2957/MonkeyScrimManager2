@@ -2,6 +2,8 @@
     import { tick } from 'svelte';
     import { Button, Loading, toast } from 'stdf';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
+    import BracketFormatControl from '#lib/components/bracket/BracketFormatControl.svelte';
+    import { bestOfLabel, type BestOf } from '#lib/features/scrims/bracket.ts';
     import {
         moveAssignment,
         type Assignments,
@@ -37,6 +39,7 @@
     let pending = $state(0);
     let busy = $state(false);
     let details = $state(false);
+    let bestOf = $state<BestOf>(3);
     let selectionHeight = $state(0);
     let queue: { participantId: string; slot: SlotKey | null }[] = [];
     let processing = false;
@@ -55,6 +58,7 @@
         players.find((player) => player.participantId === selectedId)?.displayName ?? ''
     );
     const confirmBlocked = $derived(unassigned.length ? '모든 참가자를 배치해야 확정할 수 있어요' : null);
+    const startsMatch = $derived(teams.length === 2);
 
     function select(participantId: string) {
         if (!editable || busy) return;
@@ -102,7 +106,10 @@
         if (busy || pending) return;
         busy = true;
         try {
-            const message = await postAction(name, {});
+            const message = await postAction(
+                name,
+                name === 'confirm' && startsMatch ? { bestOf: String(bestOf) } : {}
+            );
             if (message) toast.error(message);
         } finally {
             busy = false;
@@ -114,7 +121,15 @@
     }
 
     async function confirmFormation() {
-        if (await confirm('확정하면 대진 준비로 넘어가요. 확정할까요?', '편성 확정')) await run('confirm');
+        if (
+            await confirm(
+                startsMatch
+                    ? `${bestOfLabel(bestOf)} 경기를 시작해요. 지금 배치한 선수와 포지션을 경기 전체에 적용할까요?`
+                    : '확정하면 대진 배치로 이동해요. 확정할까요?',
+                startsMatch ? '편성 확정·경기 시작' : '편성 확정'
+            )
+        )
+            await run('confirm');
     }
 
     function onkeydown(event: KeyboardEvent) {
@@ -167,6 +182,16 @@
                 {details ? '상세 닫기' : '상세'}
             </Button>
             {#if editable}
+                {#if startsMatch}
+                    <BracketFormatControl
+                        label="시리즈"
+                        {bestOf}
+                        disabled={busy || pending > 0}
+                        onchange={async (value) => {
+                            bestOf = value;
+                        }}
+                    />
+                {/if}
                 <ChangeMethodButton disabled={busy || pending > 0} />
                 <Button
                     fill="text"
@@ -185,7 +210,7 @@
                     disabled={Boolean(confirmBlocked) || busy || pending > 0}
                     onclick={confirmFormation}
                 >
-                    편성 확정
+                    {startsMatch ? '편성 확정·경기 시작' : '편성 확정'}
                 </Button>
             {/if}
         </div>

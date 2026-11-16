@@ -17,7 +17,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction, ap
     if (interaction.commandName === '내전목록') {
         await interaction.editReply({
             ...notice('이 서버의 내전 목록을 확인하세요.'),
-            components: [linkRow('내전 목록 열기', webUrl(origin, `/g/${guildId}/scrims`))]
+            components: [linkRow('웹에서 내전 목록 보기', webUrl(origin, `/g/${guildId}/scrims`))]
         });
     } else if (interaction.commandName === '초기설정') {
         const result = await api.initialize(guildId, actorId, interaction.id);
@@ -35,7 +35,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction, ap
                         .setLabel('내전 만들기')
                         .setStyle(ButtonStyle.Primary),
                     new ButtonBuilder()
-                        .setLabel('서버 관리')
+                        .setLabel('웹에서 서버 관리')
                         .setURL(webUrl(origin, `/g/${guildId}/admin`))
                         .setStyle(ButtonStyle.Link)
                 )

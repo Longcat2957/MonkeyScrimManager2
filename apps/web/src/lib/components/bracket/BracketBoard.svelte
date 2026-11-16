@@ -82,13 +82,12 @@
     }
 
     async function confirmBracket() {
-        if (
-            await confirm(
-                '확정하면 배치를 잠가요. 경기가 시작되기 전까지는 다시 편성할 수 있어요.',
-                '대진 확정'
-            )
-        )
-            await run('confirm');
+        if (await confirm('현재 대진과 경기 방식으로 내전을 시작할까요?', '대진 확정·내전 시작'))
+            await run('confirm', { start: '1' });
+    }
+
+    async function start() {
+        if (await confirm('확정된 대진으로 내전을 시작할까요?', '내전 시작')) await run('start');
     }
 
     function onkeydown(event: KeyboardEvent) {
@@ -123,10 +122,9 @@
                         />{/if}
                     {#if busy}<Loading type="1_0" height="6" width="6" />{/if}
                 </div>
-                <p class="text-sm opacity-70 tabular-nums">
-                    {bracket.teams.length}팀{#if editing}
-                        · {placed}/{seats.length} 배치{/if}
-                </p>
+                {#if editing}
+                    <p class="text-sm text-text-muted tabular-nums">{placed}/{seats.length} 배치</p>
+                {/if}
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
                 {#if editing}
@@ -145,9 +143,17 @@
                         heightIn="2"
                         injClass="px-4 text-sm"
                         disabled={busy || pool.length > 0}
-                        onclick={confirmBracket}>대진 확정</Button
+                        onclick={confirmBracket}>대진 확정·내전 시작</Button
                     >
                 {:else if bracket.can.unlock}
+                    <Button
+                        size="auto"
+                        heightOut="0"
+                        heightIn="2"
+                        injClass="min-h-11 px-4 text-sm"
+                        disabled={busy}
+                        onclick={start}>내전 시작</Button
+                    >
                     <Button
                         fill="lineLight"
                         size="auto"

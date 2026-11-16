@@ -11,7 +11,7 @@ import {
 } from '#lib/features/scrims/bracket.ts';
 import { parseSlot } from '#lib/features/scrims/formation.ts';
 import { findMockScrimRecord, type IconResolver, type MockFailure, type MockScrim } from './scrims.ts';
-import { cancelMockMatchResults, setMockMatchStatus } from './matches.ts';
+import { cancelMockMatchResults, createMockMatch, setMockMatchStatus } from './matches.ts';
 import { getMockAuction, getMockManualFormation } from './teams.ts';
 
 type BracketState = {
@@ -208,6 +208,47 @@ export function unlockMockBracket(guildId: string, scrimId: string) {
 // 팀 편성을 다시 하면 팀이 달라질 수 있으므로 대진을 지운다. 다시 확정하면 빈 틀부터 시작한다.
 export function dropMockBracket(guildId: string, scrimId: string) {
     states.delete(`${guildId}/${scrimId}`);
+}
+
+export async function startMockBracket(guildId: string, scrimId: string): Promise<MockFailure | null> {
+    const target = await load(guildId, scrimId, noIcon);
+    if (!target?.state) return { status: 409, message: '대진을 먼저 확정해 주세요' };
+    if (!target.scrim.canManage) return { status: 403, message: '내전을 시작할 권한이 없어요' };
+    if (target.scrim.status !== 'ready' || !target.state.confirmed)
+        return { status: 409, message: '확정된 대진만 시작할 수 있어요' };
+    for (const match of target.state.matches) {
+        if (match.matchId || !match.a.teamId || !match.b.teamId) continue;
+        match.matchId = createMockMatch({
+            guildId,
+            scrimId,
+            scrimTitle: target.scrim.title,
+            teamA: target.teams.find((team) => team.id === match.a.teamId)!.name,
+            teamB: target.teams.find((team) => team.id === match.b.teamId)!.name,
+            bestOf: target.state.bestOf[match.stage]!,
+            hardFearless: target.scrim.hardFearless,
+            status: 'in_progress',
+            playedAt: null
+        });
+        match.status = 'in_progress';
+    }
+    target.scrim.status = 'in_progress';
+    return null;
+}
+
+export async function startMockManualMatch(
+    guildId: string,
+    scrimId: string,
+    bestOf: BestOf
+): Promise<MockFailure | null> {
+    const target = await load(guildId, scrimId, noIcon);
+    if (!target?.state || target.teams.length !== 2)
+        return { status: 409, message: '2팀 수동 편성을 먼저 확정해 주세요' };
+    bracketSeats(target.state.matches).forEach((seat, index) =>
+        placeTeam(target.state!, seat.key, target.teams[index]!.id)
+    );
+    target.state.bestOf.final = bestOf;
+    target.state.confirmed = true;
+    return startMockBracket(guildId, scrimId);
 }
 
 /** 내전 단계 판단에 쓰는 대진 요약. 대진이 없으면 null이다. */

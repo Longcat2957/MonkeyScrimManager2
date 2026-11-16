@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ComponentType } from 'discord.js';
+import { ButtonStyle, ComponentType, type ChatInputCommandInteraction } from 'discord.js';
+import type { BotApi } from '../src/api/client.ts';
+import { handleCommand } from '../src/commands/scrims.ts';
 import { renderRecruitment } from '../src/messages/recruitment.ts';
 import { renderEntry } from '../src/messages/entry.ts';
 import { renderMatch } from '../src/messages/match.ts';
@@ -14,6 +16,10 @@ interface MessageComponent {
     type: number;
     content?: string;
     divider?: boolean;
+    label?: string;
+    style?: number;
+    url?: string;
+    custom_id?: string;
     components?: readonly MessageComponent[];
 }
 
@@ -53,7 +59,7 @@ test('선발 정원이 차도 참가·대기·취소 버튼을 독립적으로 �
     const navigation = value.components[2]!.toJSON();
     assert.ok('components' in navigation);
     assert.equal(navigation.components.length, 2);
-    assert.match(JSON.stringify(navigation), /내전 열기/);
+    assert.match(JSON.stringify(navigation), /웹에서 내전 보기/);
     assert.match(JSON.stringify(navigation), /참가자 추가/);
     for (const action of ['standby', 'withdraw']) {
         assert.ok(
@@ -113,6 +119,68 @@ function matchJob(kind: 'lineup' | 'result') {
     };
     return job;
 }
+
+test('모든 게시·DM 웹 링크는 목적지를 밝히고 참가 버튼은 Discord 안에서 처리한다', () => {
+    const job = publication();
+    const messages = [
+        renderRecruitment(job, origin),
+        renderEntry(publication({ kind: 'entry' }), origin),
+        renderConfirmation(publication({ kind: 'confirmation_dm' }), origin),
+        renderMatch(matchJob('lineup'), origin),
+        renderMatch(matchJob('result'), origin)
+    ];
+    for (const message of messages) {
+        const components = messageComponents(message.components.map((component) => component.toJSON()));
+        const links = components.filter((component) => component.url);
+        assert.ok(links.length);
+        for (const link of links) {
+            assert.equal(link.style, ButtonStyle.Link);
+            assert.match(link.label!, /^웹에서 /);
+            const target = new URL(link.url!);
+            assert.equal(target.origin, origin.origin);
+            assert.ok(target.pathname.startsWith(`/g/${job.guildId}/`));
+            assert.equal(target.pathname.startsWith('/auth/'), false);
+            assert.equal(target.searchParams.has('token'), false);
+        }
+    }
+    const buttons = messageComponents(messages[0]!.components.map((component) => component.toJSON()));
+    const join = buttons.filter((button) => button.label === '참가하기');
+    assert.equal(join.length, 1);
+    assert.equal(join[0]!.style, ButtonStyle.Primary);
+    assert.equal(join[0]!.custom_id, `registration:${job.scrimId}`);
+    assert.equal(join[0]!.url, undefined);
+});
+
+test('목록·초기설정 명령의 웹 버튼도 해당 서버 목적지를 유지한다', async () => {
+    for (const [commandName, label, suffix] of [
+        ['내전목록', '웹에서 내전 목록 보기', 'scrims'],
+        ['초기설정', '웹에서 서버 관리', 'admin']
+    ]) {
+        const replies: { components: { toJSON(): MessageComponent }[] }[] = [];
+        const job = publication();
+        const interaction = {
+            commandName,
+            guildId: job.guildId,
+            user: { id: '970000000000000011' },
+            id: '970000000000000101',
+            deferReply: async () => {},
+            editReply: async (reply: (typeof replies)[number]) => {
+                replies.push(reply);
+            }
+        } as unknown as ChatInputCommandInteraction;
+        await handleCommand(
+            interaction,
+            { initialize: async () => ({ membersSynced: 3 }) } as unknown as BotApi,
+            origin
+        );
+        const links = messageComponents(replies[0]!.components.map((component) => component.toJSON())).filter(
+            (component) => component.url
+        );
+        assert.equal(links.length, 1);
+        assert.equal(links[0]!.label, label);
+        assert.equal(links[0]!.url, `${origin.origin}/g/${job.guildId}/${suffix}`);
+    }
+});
 
 test('확정 라인업은 실제 팀별 출전자만 표시하고 경기 진영·결과를 추정하지 않는다', () => {
     const job = matchJob('lineup');
@@ -187,7 +255,7 @@ test('엔트리는 확정 팀원과 실제 저장된 포지션만 표시한다',
         }
     ];
     const json = JSON.stringify(renderEntry(job, origin));
-    assert.match(json, /대진 열기/);
+    assert.match(json, /웹에서 대진 보기/);
     assert.match(json, /원딜/);
     assert.doesNotMatch(json, /BLUE|RED|픽\/밴/);
 });

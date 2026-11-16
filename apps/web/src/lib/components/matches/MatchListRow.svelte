@@ -34,7 +34,7 @@
 
 <LinkCell {href} {line} subTitle={meta}>
     {#snippet leftChild()}
-        <DateBadge iso={match.playedAt} emptyText="미확인" />
+        <DateBadge iso={match.playedAt} emptyText="날짜 미확인" />
     {/snippet}
     {#snippet titleChild()}
         <!--

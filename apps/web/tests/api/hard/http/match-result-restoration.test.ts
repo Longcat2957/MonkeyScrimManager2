@@ -84,6 +84,15 @@ test('HTTP 복구: 오래된 요청·다른 세트·서버·파일 변형과 권
         await f.action(f.path, 'upload', { ...current, file: f.file(1_800_125, 0x43) }, f.participant.cookie),
         409
     );
+    assertAction(
+        await f.action(
+            f.path,
+            'upload',
+            { ...current, blueTeamSlot: 'b', file: f.file() },
+            f.participant.cookie
+        ),
+        409
+    );
     assert.equal((await f.db.select().from(schema.games)).length, 1);
     assert.equal(
         (await f.db.select().from(schema.games).where(eq(schema.games.id, game.id)))[0]!.status,

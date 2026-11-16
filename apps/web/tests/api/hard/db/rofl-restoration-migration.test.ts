@@ -65,8 +65,7 @@ test('0004는 이전 취소 결과의 근거·역분개 시각을 보존하며 �
         f.match.id,
         {
             ...(await f.slot()),
-            bytes,
-            blueTeamSlot: 'b'
+            bytes
         },
         f.dependencies
     );

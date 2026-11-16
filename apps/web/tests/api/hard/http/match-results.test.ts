@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { assertAction, HTTP_IDS } from '../../support/http.ts';
 import { createHttpMatchResultFixture } from '../../support/http-match-fixtures.ts';
@@ -20,6 +20,30 @@ test('HTTP 경기: 공개 조회와 관리자 라인업 확정·실제 출전자
     assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 10);
     assert.equal((await f.request(f.path + '?game=' + games[0]!.id)).status, 200);
     assert.ok(f.upstreamCalls.some((url) => url.includes('/riot/account/v1/accounts/by-riot-id/')));
+});
+
+test('HTTP 경기: 누락되거나 잘못된 진영 확인값은 파일을 처리하거나 결과를 저장하지 않는다', async (t) => {
+    const f = await createHttpMatchResultFixture(t);
+    const { blueTeamConfirmed: _confirmed, ...slot } = await f.confirm();
+    const before = await f.matchRow();
+    const riotCalls = f.upstreamCalls.filter((url) => url.includes('/riot/account/')).length;
+    for (const value of [undefined, 'false', 'TRUE', '1']) {
+        const confirmation: Record<string, string> = value === undefined ? {} : { blueTeamConfirmed: value };
+        assertAction(
+            await f.action(
+                f.path,
+                'upload',
+                { ...slot, ...confirmation, file: f.file() },
+                f.participant.cookie
+            ),
+            400
+        );
+    }
+    assert.deepEqual(await f.matchRow(), before);
+    assert.equal(f.upstreamCalls.filter((url) => url.includes('/riot/account/')).length, riotCalls);
+    assert.equal((await f.db.select().from(schema.games)).length, 0);
+    assert.equal((await f.db.select().from(schema.roflMetadata)).length, 0);
+    assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 0);
 });
 
 test('HTTP 경기: 인증·서버 소속·경기 참가·다른 서버 ID를 검증하며 거부 요청은 저장하지 않는다', async (t) => {
@@ -172,7 +196,10 @@ test('HTTP 경기: 파일의 팀·포지션으로 미연결 부계정을 당시 
         }
     ]);
     const slot = await f.confirm();
-    const links = await f.db.select().from(schema.guildRiotAccounts);
+    const links = await f.db
+        .select()
+        .from(schema.guildRiotAccounts)
+        .orderBy(asc(schema.guildRiotAccounts.riotAccountId));
     const players = f.identities.map((person, index) =>
         replayPlayer(index === 0 ? 'AlternateTop' : person.gameName, person.tagLine, index)
     );
@@ -189,5 +216,17 @@ test('HTTP 경기: 파일의 팀·포지션으로 미연결 부계정을 당시 
         .where(eq(schema.gameParticipants.scrimParticipantId, f.people[0]!.id));
     assert.equal(played?.riotAccountId, account.id);
     assert.equal(played?.roflParticipantIndex, 9);
-    assert.deepEqual(await f.db.select().from(schema.guildRiotAccounts), links);
+    const nextLinks = await f.db
+        .select()
+        .from(schema.guildRiotAccounts)
+        .orderBy(asc(schema.guildRiotAccounts.riotAccountId));
+    assert.deepEqual(
+        nextLinks.filter((link) => link.riotAccountId !== account.id),
+        links
+    );
+    assert.equal(nextLinks.length, links.length + 1);
+    const alternate = nextLinks.find((link) => link.riotAccountId === account.id);
+    assert.equal(alternate?.userId, f.people[0]!.userId);
+    assert.equal(alternate?.isPrimary, false);
+    assert.equal(alternate?.linkedByUserId, HTTP_IDS.member);
 });

@@ -55,6 +55,8 @@ async function snapshot(f: Fixture) {
         'matches',
         'match_lineups',
         'match_lineup_players',
+        'guild_riot_accounts',
+        'scrim_participants',
         'scrims',
         'scrim_bracket_nodes',
         'discord_publication_jobs'
@@ -153,6 +155,33 @@ test('취소한 동일 ROFL은 새 revision으로 복구해 기존 자료와 귀
         new Set([original.gameId, restored.gameId])
     );
     assert.ok(resultJobs.every((job) => job.status === 'pending'));
+});
+
+test('취소한 동일 파일의 블루 팀을 바꿔 복구하면 기존 귀속과 결과를 변경하지 않는다', async (t) => {
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const bytes = replayBytes(f.players());
+    const original = await importMatchRofl(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.match.id,
+        { ...(await f.slot()), bytes },
+        f.dependencies
+    );
+    await cancel(f, original.gameId);
+    const before = await snapshot(f);
+    await assert.rejects(
+        importMatchRofl(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.match.id,
+            { ...(await f.slot()), blueTeamSlot: 'b', bytes },
+            withoutRiot(f)
+        ),
+        errorCode('CONFLICT')
+    );
+    assert.deepEqual(await snapshot(f), before);
 });
 
 test('복구 요청의 오래된 revision·다른 경기/세트/라인업·출전자 밖 사용자는 기존 기록을 변경하지 못한다', async (t) => {

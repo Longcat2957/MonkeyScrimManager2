@@ -112,7 +112,7 @@ export async function createHttpMatchResultFixture(
             { expectedRevision: await scrimRevision() },
             manager.cookie
         ),
-        204
+        200
     );
     for (const [index, team] of teams.entries())
         assertAction(
@@ -171,7 +171,8 @@ export async function createHttpMatchResultFixture(
             expectedRevision: String((await matchRow()).revision),
             expectedGameNumber: String(gameNumber),
             lineupId: lineup!.id,
-            blueTeamSlot: 'a'
+            blueTeamSlot: 'a',
+            blueTeamConfirmed: 'true'
         };
     };
     const file = (gameLengthMs = 1_800_125, bodyByte = 0x42, bodyBytes = 32) =>

@@ -11,6 +11,7 @@ import {
 import { createMatchResultFixture, replayBytes } from '../../support/match-fixtures.ts';
 import { concurrently, errorCode } from '../../support/domain-fixtures.ts';
 import { MMR_POSITIONS } from '../../../../src/lib/server/mmr/rules.ts';
+import type { MatchRoflInput } from '../../../../src/lib/server/matches/results.ts';
 
 type Fixture = Awaited<ReturnType<typeof createMatchResultFixture>>;
 const replayPositions = { top: 'TOP', jungle: 'JUNGLE', mid: 'MIDDLE', bot: 'BOTTOM', support: 'UTILITY' };
@@ -35,7 +36,7 @@ async function storedCounts(f: Fixture) {
 
 const upload = (
     f: Fixture,
-    slot: { expectedRevision: number; nextGameNumber: number; lineupId: string; blueTeamSlot: 'a' | 'b' },
+    slot: Omit<MatchRoflInput, 'bytes'>,
     bytes = replayBytes(f.players()),
     matchId = f.match.id,
     actor = f.manager
@@ -79,6 +80,27 @@ test('수동으로 확정한 편성은 경기 생성 시 그대로 확정되며 
     assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 10);
     await upload(f, await f.slot());
     assert.equal((await f.db.select().from(schema.games)).length, 1);
+});
+
+test('진영 확인값이 true가 아니면 ROFL·계정 연결·결과·MMR을 변경하지 않는다', async (t) => {
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
+    const before = {
+        counts: await storedCounts(f),
+        match: await f.matchRow(),
+        accounts: await f.db.select().from(schema.guildRiotAccounts),
+        participants: await f.db.select().from(schema.scrimParticipants)
+    };
+    for (const value of [undefined, false, null, 'true', 1]) {
+        await assert.rejects(
+            upload(f, { ...slot, blueTeamConfirmed: value as boolean }),
+            errorCode('INVALID_INPUT')
+        );
+    }
+    assert.deepEqual(await storedCounts(f), before.counts);
+    assert.deepEqual(await f.matchRow(), before.match);
+    assert.deepEqual(await f.db.select().from(schema.guildRiotAccounts), before.accounts);
+    assert.deepEqual(await f.db.select().from(schema.scrimParticipants), before.participants);
 });
 
 test('경매 편성은 희망 포지션을 자동 복사하지 않고 경기 라인업을 한 번 확정한 뒤 사용한다', async (t) => {
@@ -238,7 +260,8 @@ test('파일 진영과 명시적으로 확정한 포지션을 사용하며 팀 �
         expectedRevision: (await f.matchRow()).revision,
         nextGameNumber: 1,
         lineupId: lineup!.id,
-        blueTeamSlot: 'b' as const
+        blueTeamSlot: 'b' as const,
+        blueTeamConfirmed: true
     };
     const players = f.players().map((player, index) => ({
         ...player,

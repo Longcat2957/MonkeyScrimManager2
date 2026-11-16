@@ -132,6 +132,7 @@ test('모달 제출은 KST·선택을 변환하고 최초 명령의 멱등 키�
         }
     ]);
     assert.ok(JSON.stringify(submitted.replies).includes(`/g/${GUILD}/scrims/${SCRIM}`));
+    assert.match(JSON.stringify(submitted.replies), /웹에서 내전 보기/);
     await handler(interaction('modal', customId, values).value);
     assert.equal(calls.length, 1);
 });

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, ImageList, Popup, Radio } from 'stdf';
+    import { Button, Checkbox, ImageList, Popup, Radio } from 'stdf';
     import type { ImageListItemProps } from 'stdf';
     import { deserialize } from '$app/forms';
     import { overlay } from '#lib/ui/overlay.ts';
@@ -25,6 +25,7 @@
     let refreshRequired = $state(false);
     let uploadContext = $state<Props['context']>();
     let blueTeamSlot = $state('');
+    let blueTeamConfirmed = $state(false);
     let popupPosition = $state<'center' | 'bottom'>('bottom');
     let wasOpen = false;
     let lastOrder: number | null = null;
@@ -32,6 +33,8 @@
     const waiting = $derived(files.filter((item) => item.status !== 'success'));
     // 실제 등록은 한 파일을 전체 폭으로 표시하고, 개발 샘플의 다중 선택만 3열로 표시한다.
     const empty = $derived(files.length === 0);
+    const blueTeam = $derived(teams.find((team) => team.slot === blueTeamSlot));
+    const redTeam = $derived(teams.find((team) => team.slot !== blueTeamSlot));
 
     function exposeSelection(fieldset: HTMLFieldSetElement) {
         // STDF 3의 실제 선택 버튼에 현재 블루 팀을 알린다.
@@ -41,6 +44,15 @@
         });
     }
 
+    function exposeConfirmation(fieldset: HTMLFieldSetElement) {
+        // STDF의 실제 체크 버튼에 확인 상태를 연결한다.
+        const button = fieldset.querySelector('button');
+        if (!button) return;
+        button.type = 'button';
+        button.setAttribute('role', 'checkbox');
+        button.setAttribute('aria-checked', String(blueTeamConfirmed));
+    }
+
     $effect(() => {
         // 열린 상태에서 전환 종류를 바꾸면 STDF가 이전·새 입력을 동시에 렌더링하므로 위치를 유지한다.
         if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
@@ -48,7 +60,9 @@
 
     $effect(() => {
         // 입력창을 연 뒤 다른 운영자가 라인업을 바꿔도 원래 확인한 세트와 버전으로만 요청한다.
-        if (open && !wasOpen) uploadContext = context ? { ...context } : undefined;
+        const currentContext = context ? { ...context } : undefined;
+        if (open && !wasOpen) uploadContext = currentContext;
+        blueTeamConfirmed = false;
         wasOpen = open;
     });
 
@@ -61,6 +75,7 @@
         if (uploadContext) {
             for (const [key, value] of Object.entries(uploadContext)) body.set(key, String(value));
             body.set('blueTeamSlot', blueTeamSlot);
+            body.set('blueTeamConfirmed', String(blueTeamConfirmed));
         }
         try {
             const response = await fetch('?/upload', {
@@ -92,7 +107,13 @@
     }
 
     async function upload() {
-        if (uploading || refreshRequired || !waiting.length || (uploadContext && !blueTeamSlot)) return;
+        if (
+            uploading ||
+            refreshRequired ||
+            !waiting.length ||
+            (uploadContext && (!blueTeamSlot || !blueTeamConfirmed))
+        )
+            return;
         uploading = true;
         try {
             // 세트 순서가 섞이지 않도록 파일마다 차례로 보낸다.
@@ -110,6 +131,7 @@
         files = files.filter((file) => file.id !== item.id);
         selectionError = '';
         blueTeamSlot = '';
+        blueTeamConfirmed = false;
     }
 
     function close() {
@@ -123,6 +145,7 @@
         refreshRequired = false;
         selectionError = '';
         blueTeamSlot = '';
+        blueTeamConfirmed = false;
     }
 </script>
 
@@ -153,8 +176,28 @@
                         <Radio
                             data={teams.map((team) => ({ name: team.slot, label: team.name }))}
                             bind:value={blueTeamSlot}
+                            onchange={() => (blueTeamConfirmed = false)}
                         />
                     </fieldset>
+                    {#if blueTeam && redTeam}
+                        <fieldset
+                            disabled={uploading || refreshRequired}
+                            class="[&_button]:min-h-11 [&_button]:min-w-11 [&_button]:items-center [&_button]:text-left"
+                            {@attach exposeConfirmation}
+                        >
+                            <legend class="sr-only">진영 확인</legend>
+                            <Checkbox
+                                data={[
+                                    {
+                                        name: 'confirmed',
+                                        label: `블루 ${blueTeam.name} · 레드 ${redTeam.name}이 실제 진영과 맞아요`
+                                    }
+                                ]}
+                                checkeds={blueTeamConfirmed ? ['confirmed'] : []}
+                                onchange={(selected) => (blueTeamConfirmed = selected.includes('confirmed'))}
+                            />
+                        </fieldset>
+                    {/if}
                 {/if}
                 <ImageList
                     bind:value={files}
@@ -226,6 +269,7 @@
                     hidden
                     onchange={(event) => {
                         selectionError = '';
+                        blueTeamConfirmed = false;
                         list?.addFiles([...(event.currentTarget.files ?? [])]);
                         event.currentTarget.value = '';
                     }}
@@ -250,7 +294,9 @@
                     heightOut="0"
                     heightIn="2"
                     injClass="min-h-11 px-5 text-sm"
-                    disabled={!waiting.length || refreshRequired || Boolean(uploadContext && !blueTeamSlot)}
+                    disabled={!waiting.length ||
+                        refreshRequired ||
+                        Boolean(uploadContext && (!blueTeamSlot || !blueTeamConfirmed))}
                     loading={uploading ? {} : null}
                     onclick={upload}>업로드</Button
                 >

@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
-import { playCapacity, TEAM_NAMES } from '../../features/scrims/settings.ts';
+import { playCapacity, RESERVE_CAPACITY, TEAM_COUNT, TEAM_NAMES } from '../../features/scrims/settings.ts';
 import type { LolPosition } from '../../features/guild/types.ts';
-import type { ScrimSettings } from '../../features/scrims/types.ts';
+import type { ManualRegistrationResult, ScrimSettings } from '../../features/scrims/types.ts';
 import { requireUser } from '../auth/guards.ts';
 import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import type { Actor } from '../auth/types.ts';
@@ -284,7 +284,7 @@ export async function createRegistrationInTransaction(
     scrimId: string,
     next: RegistrationInput,
     options: { joinedBy?: Actor; initialStatus?: 'standby' } = {}
-): Promise<void> {
+): Promise<'selected' | 'standby'> {
     const { joinedBy } = options;
     const { user: profile, participant } = await lockRegistrationAccounts(
         tx,
@@ -331,17 +331,19 @@ export async function createRegistrationInTransaction(
         participantId = created!.id;
     }
     await replacePreferences(tx, participantId, next.positions);
+    const status =
+        options.initialStatus !== 'standby' &&
+        active.filter((registration) => registration.status === 'selected').length <
+            playCapacity(row.teamCount)
+            ? 'selected'
+            : 'standby';
     await tx.insert(scrimParticipantRegistrations).values({
         scrimParticipantId: participantId,
         joinedByUserId: joinedBy?.userId ?? user.userId,
-        status:
-            options.initialStatus !== 'standby' &&
-            active.filter((registration) => registration.status === 'selected').length <
-                playCapacity(row.teamCount)
-                ? 'selected'
-                : 'standby'
+        status
     });
     await bumpRevision(tx, row.id);
+    return status;
 }
 
 /** 운영자가 실제 서버 멤버를 대신 신청한다. 정원·대기·중복 검사는 본인 신청과 공유한다. */
@@ -352,7 +354,7 @@ export async function createManualRegistration(
     scrimId: string,
     input: { userId: string },
     access?: ScrimAccessDependencies
-): Promise<void> {
+): Promise<'selected' | 'standby'> {
     const operator = requireUser(actor);
     requireUuid(scrimId, '내전');
     if (!isDiscordId(input.userId)) throw new DomainError('INVALID_INPUT', '추가할 서버 멤버를 골라 주세요');
@@ -360,9 +362,37 @@ export async function createManualRegistration(
     await requireGuildAdmin(operator, guildId, { ...access, db });
     // 실제 소속과 봇 여부를 확인하면서 사전 웹 가입이 없는 대상도 등록한다.
     await requireGuildMember(target, guildId, { ...access, db });
-    await db.transaction((tx) =>
+    return db.transaction((tx) =>
         createManualRegistrationInTransaction(tx, operator, target, guildId, scrimId)
     );
+}
+
+/** 앞선 성공을 보존하고, 선택 순서대로 기존 단건 검증과 정원 잠금을 적용한다. */
+export async function createManualRegistrations(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    scrimId: string,
+    userIds: string[],
+    access?: ScrimAccessDependencies
+): Promise<ManualRegistrationResult[]> {
+    requireUser(actor);
+    const maximum = playCapacity(TEAM_COUNT.max) + RESERVE_CAPACITY.max;
+    if (!userIds.length || userIds.length > maximum || userIds.some((id) => !isDiscordId(id)))
+        throw new DomainError('INVALID_INPUT', `추가할 서버 멤버를 1~${maximum}명 골라 주세요`);
+    requireUuid(scrimId, '내전');
+    await requireGuildAdmin(actor, guildId, { ...access, db });
+    const results: ManualRegistrationResult[] = [];
+    for (const userId of new Set(userIds)) {
+        try {
+            const status = await createManualRegistration(db, actor, guildId, scrimId, { userId }, access);
+            results.push({ userId, status });
+        } catch (cause) {
+            if (!(cause instanceof DomainError)) throw cause;
+            results.push({ userId, status: 'failed', message: cause.message });
+        }
+    }
+    return results;
 }
 
 export async function createManualRegistrationInTransaction(
@@ -371,7 +401,7 @@ export async function createManualRegistrationInTransaction(
     target: Actor,
     guildId: string,
     scrimId: string
-): Promise<void> {
+): Promise<'selected' | 'standby'> {
     const [primary] = await tx
         .select({ id: guildRiotAccounts.riotAccountId })
         .from(guildRiotAccounts)
@@ -382,7 +412,7 @@ export async function createManualRegistrationInTransaction(
             asc(guildRiotAccounts.riotAccountId)
         )
         .limit(1);
-    await createRegistrationInTransaction(
+    return createRegistrationInTransaction(
         tx,
         target,
         guildId,

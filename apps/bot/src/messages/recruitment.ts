@@ -46,7 +46,7 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
     );
     const navigation = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
-            .setLabel('내전 열기')
+            .setLabel('웹에서 내전 보기')
             .setURL(publicationUrl(origin, publication))
             .setStyle(ButtonStyle.Link),
         new ButtonBuilder()

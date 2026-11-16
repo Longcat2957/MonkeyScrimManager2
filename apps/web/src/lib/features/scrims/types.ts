@@ -5,6 +5,10 @@ export type ScrimStatus = (typeof scrimStatus.enumValues)[number];
 export type FormationMethod = (typeof scrimFormationMethod.enumValues)[number];
 export type RegistrationStatus = (typeof scrimRegistrationStatus.enumValues)[number];
 
+export type ManualRegistrationResult =
+    | { userId: string; status: 'selected' | 'standby' }
+    | { userId: string; status: 'failed'; message: string };
+
 // 내전 하위 레이아웃이 내려주는 요약이다. ScrimSummary와 내전 범위 헤더가 사용한다.
 export type ScrimContext = {
     id: string;

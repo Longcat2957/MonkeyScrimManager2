@@ -15,6 +15,9 @@
         auctionStories
     } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
+    import { goto } from '$app/navigation';
+    import { page } from '$app/state';
+    import { bracketPath } from '#lib/features/scrims/paths.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import AuctionTargetProfile from './AuctionTargetProfile.svelte';
     import AuctionTeamCard from './AuctionTeamCard.svelte';
@@ -111,6 +114,10 @@
                 ...(auction.openLotId ? { lotId: auction.openLotId } : {})
             });
             if (message) toast.error(message);
+            else if (auction.status === 'completed')
+                await goto(
+                    bracketPath({ guildId: page.params.guildId!, scrimId: page.params.scrimId! }, 'ready')
+                );
             return !message;
         } finally {
             busy = false;
@@ -118,6 +125,7 @@
     }
 
     function celebrate(teamId: string, participantId: string, label: string) {
+        if (auction.status === 'completed') return;
         clearTimeout(celebrationTimer);
         celebration = { teamId, participantId, label, key: Date.now() };
         celebrationTimer = setTimeout(() => (celebration = null), 1800);

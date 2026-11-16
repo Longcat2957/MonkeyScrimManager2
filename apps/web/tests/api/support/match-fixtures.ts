@@ -178,7 +178,8 @@ export async function createMatchResultFixture(
             expectedRevision: (await matchRow(matchId)).revision,
             nextGameNumber,
             lineupId: lineup!.id,
-            blueTeamSlot: 'a' as const
+            blueTeamSlot: 'a' as const,
+            blueTeamConfirmed: true
         };
     };
     const confirm = async (matchId = match.id) => {

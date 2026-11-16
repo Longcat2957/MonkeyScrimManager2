@@ -13,17 +13,20 @@
 
 <!-- STDF에는 링크 컴포넌트가 없으므로 라우트 이동은 a 요소로 제공한다. -->
 <nav aria-label={label}>
-    <ul class={['flex', vertical ? 'flex-col' : 'items-center gap-1']}>
-        {#each items as item (item.href)}
+    <ul class={['flex', vertical ? 'flex-col' : 'flex-wrap items-center gap-1']}>
+        {#each items as item (item.label)}
             {@const itemClass = [
                 'flex min-h-11 items-center rounded-(--radius-form) px-3 text-sm font-semibold no-underline',
-                item.current ? 'bg-bg-highlight dark:bg-bg-highlight-dark' : 'opacity-70',
+                item.current ? 'bg-bg-highlight dark:bg-bg-highlight-dark' : 'text-text-muted',
+                item.disabled && 'opacity-50',
                 vertical && 'w-full'
             ]}
             <li>
-                {#if item.static}
-                    <span class={itemClass} aria-current={item.current ? 'page' : undefined}
-                        >{item.label}</span
+                {#if item.static || item.disabled}
+                    <span
+                        class={itemClass}
+                        aria-current={item.current ? 'page' : undefined}
+                        aria-disabled={item.disabled || undefined}>{item.label}</span
                     >
                 {:else}<a
                         href={item.href}

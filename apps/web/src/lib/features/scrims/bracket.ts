@@ -44,6 +44,16 @@ export type BracketView = {
     can: { edit: boolean; unlock: boolean };
 };
 
+/** 현재 대진 전체가 완료된 한 경기일 때만 상세를 결과의 진입점으로 쓴다. */
+export function singleCompletedMatchId(
+    status: string,
+    bracket: Pick<BracketView, 'matches'> | null
+): string | null {
+    if (status !== 'completed' || bracket?.matches.length !== 1) return null;
+    const match = bracket.matches[0]!;
+    return match.status === 'completed' ? match.matchId : null;
+}
+
 /** 팀을 놓을 수 있는 자리 목록. 결승 직행처럼 앞 경기 없이 바로 결승에 놓는 자리도 포함한다. */
 export function bracketSeats(
     matches: BracketMatch[]

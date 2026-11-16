@@ -281,7 +281,7 @@ export async function handleRegistration(
     const form = parsed ? forms.get(parsed.id, interaction.user.id, interaction.guildId) : null;
     if (!parsed || !form) {
         await interaction.reply({
-            ...notice('신청 화면이 만료됐어요. 모집 글의 내 신청을 다시 열어 주세요.'),
+            ...notice('신청 화면이 만료됐어요. 모집 글의 참가하기를 다시 눌러 주세요.'),
             flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
         });
         return;
@@ -323,7 +323,7 @@ export async function handleRegistration(
             form.confirmingWithdrawal = false;
         } else if (parsed.action === 'submit' || parsed.action === 'confirm') {
             if (!form.context.canEdit || (parsed.action === 'confirm' && !form.confirmingWithdrawal)) {
-                throw new BotApiError(409, 'STALE_FORM', '모집 글에서 내 신청을 다시 열어 주세요.');
+                throw new BotApiError(409, 'STALE_FORM', '모집 글의 참가하기를 다시 눌러 주세요.');
             }
             const action =
                 parsed.action === 'confirm'

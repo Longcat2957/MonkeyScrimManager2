@@ -1,5 +1,5 @@
 import { deserialize } from '$app/forms';
-import { invalidateAll } from '$app/navigation';
+import { goto, invalidateAll } from '$app/navigation';
 import { page } from '$app/state';
 
 /**
@@ -22,7 +22,11 @@ export async function postAction(name: string, fields: Record<string, string>): 
         const result = deserialize(await response.text());
         if (result.type === 'success') {
             saved = true;
-            await invalidateAll();
+            if (typeof result.data?.nextHref === 'string') {
+                await goto(result.data.nextHref, { invalidateAll: true });
+            } else {
+                await invalidateAll();
+            }
             return null;
         }
         if (result.type === 'failure') {

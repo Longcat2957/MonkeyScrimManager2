@@ -1,5 +1,7 @@
 import { dev } from '$app/env';
 import { error, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
+import { singleCompletedMatchId, type BracketView } from '#lib/features/scrims/bracket.ts';
 import { bracketPath, hasResult } from '#lib/features/scrims/paths.ts';
 import { getMockBracket } from '#lib/mocks/bracket.ts';
 import { championIconUrl } from '#lib/server/ddragon/assets.ts';
@@ -15,20 +17,21 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
     const { scrim } = await parent();
     if (!scrim) error(404, '내전을 찾을 수 없습니다.');
     if (!hasResult(scrim.status)) redirect(307, bracketPath(params, scrim.status));
+    let bracket: BracketView | null;
     try {
         if (!(dev && findMockGuild(params.guildId)))
-            return {
-                scrim,
-                bracket: await getBracket(getDb(), locals.actor, params.guildId, params.scrimId)
-            };
-        const version = await latestDataDragonVersion();
-        return {
-            scrim,
-            bracket: await getMockBracket(params.guildId, params.scrimId, (id) =>
+            bracket = await getBracket(getDb(), locals.actor, params.guildId, params.scrimId);
+        else {
+            const version = await latestDataDragonVersion();
+            bracket = await getMockBracket(params.guildId, params.scrimId, (id) =>
                 championIconUrl(version, id)
-            )
-        };
+            );
+        }
     } catch (cause) {
         routeError(cause);
     }
+    const matchId = singleCompletedMatchId(scrim.status, bracket);
+    if (matchId)
+        redirect(307, resolve('/g/[guildId]/matches/[matchId]', { guildId: params.guildId, matchId }));
+    return { scrim, bracket };
 };

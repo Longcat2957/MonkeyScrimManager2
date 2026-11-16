@@ -68,6 +68,34 @@ async function prepareUpload(page: Page, file: File) {
     await page.keyboard.press('Enter');
     await blueTeam.getByRole('button', { name: '1팀', pressed: true, exact: true }).waitFor();
     assert.equal(await secondTeam.getAttribute('aria-pressed'), 'false');
+    const confirmation = dialog.getByRole('checkbox', {
+        name: '블루 1팀 · 레드 2팀이 실제 진영과 맞아요',
+        exact: true
+    });
+    await dialog.getByRole('checkbox', { checked: false }).waitFor();
+    assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    assert.equal(await confirmation.evaluate((button) => button === document.activeElement), true);
+    await page.keyboard.press('Space');
+    await dialog.getByRole('checkbox', { checked: true }).waitFor();
+    assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), false);
+    await page.keyboard.press('Space');
+    await dialog.getByRole('checkbox', { checked: false }).waitFor();
+    assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
+    await page.keyboard.press('Space');
+    await secondTeam.click();
+    await dialog
+        .getByRole('checkbox', {
+            name: '블루 2팀 · 레드 1팀이 실제 진영과 맞아요',
+            checked: false,
+            exact: true
+        })
+        .waitFor();
+    assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
+    await firstTeam.click();
+    await confirmation.press('Space');
+    await dialog.getByRole('checkbox', { checked: true }).waitFor();
     await page.waitForFunction(
         (group) =>
             [...group.querySelectorAll('button')].every((button) => {
@@ -76,7 +104,7 @@ async function prepareUpload(page: Page, file: File) {
             }),
         await blueTeam.elementHandle()
     );
-    for (const choice of [firstTeam, secondTeam]) {
+    for (const choice of [firstTeam, secondTeam, confirmation]) {
         const bounds = await choice.boundingBox();
         assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44);
     }
@@ -119,6 +147,25 @@ for (const width of [1440, 390]) {
 
             await page.goto(fixture.url + fixture.path);
             await page.getByText('아직 기록된 세트가 없어요', { exact: true }).waitFor();
+            const draft = await prepareUpload(page, fixture.file());
+            await draft.getByRole('button', { name: 'fixture.rofl 선택 해제', exact: true }).click();
+            assert.equal(await draft.getByRole('checkbox').count(), 0);
+            assert.equal(await draft.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
+            await draft.getByRole('button', { name: '1팀', exact: true }).click();
+            await draft.getByRole('checkbox', { checked: false }).waitFor();
+            await draft.getByRole('checkbox').press('Space');
+            const selectedFile = fixture.file();
+            await draft.locator('input[type="file"]').setInputFiles({
+                name: selectedFile.name,
+                mimeType: 'application/octet-stream',
+                buffer: Buffer.from(await selectedFile.arrayBuffer())
+            });
+            await draft.getByRole('checkbox', { checked: false }).waitFor();
+            assert.equal(await draft.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
+            await draft.getByRole('checkbox').press('Space');
+            await draft.getByRole('button', { name: '닫기', exact: true }).click();
+            await draft.waitFor({ state: 'hidden' });
+            assert.equal((await fixture.db.select().from(schema.games)).length, 0);
             await upload(page, fixture.file(), 1);
             const [first] = await fixture.db.select().from(schema.games);
             assert.equal(first!.status, 'completed');

@@ -1,7 +1,9 @@
 <script lang="ts">
     import { Button, toast } from 'stdf';
     import type { ActionProps } from 'stdf';
-    import { invalidateAll } from '$app/navigation';
+    import { goto, invalidateAll } from '$app/navigation';
+    import { page } from '$app/state';
+    import { formationPath } from '#lib/features/scrims/paths.ts';
     import ActionMenu from '#lib/components/common/ActionMenu.svelte';
     import type {
         ScrimNextAction,
@@ -51,6 +53,10 @@
     let notifying = $state(false);
     let working = $state(false);
     const busy = $derived(working || advancing || notifying);
+    // 대진의 확정·시작은 대진 작업판에서 한 번만 제공한다.
+    const phaseAction = $derived(
+        nextAction?.key === 'start' || nextAction?.key === 'ready' ? null : nextAction
+    );
     let trigger = $state<HTMLElement | null>(null);
 
     // 단계마다 쓸 수 있는 항목만 둔다. 되돌릴 수 없는 단계면 이유를 설명 줄에 쓰고 비활성으로 둔다.
@@ -100,6 +106,13 @@
         try {
             const message = await postAction('advance', { key });
             if (message) toast.error(message);
+            else if (key === 'close' && page.data.scrim?.formationMethod) {
+                const target = formationPath(
+                    { guildId: page.params.guildId!, scrimId: page.params.scrimId! },
+                    page.data.scrim.formationMethod
+                );
+                if (target) await goto(target);
+            }
         } finally {
             advancing = false;
         }
@@ -161,8 +174,8 @@
     <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3">
         <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <h2 id="operations" class="text-sm font-semibold">운영</h2>
-            {#if nextAction?.blockedReason}
-                <span class="text-sm opacity-70">{nextAction.blockedReason}</span>
+            {#if phaseAction?.blockedReason}
+                <span class="text-sm opacity-70">{phaseAction.blockedReason}</span>
             {/if}
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
@@ -192,7 +205,7 @@
                     </Button>
                 </span>
             {/if}
-            {#if nextAction}
+            {#if phaseAction}
                 <!-- 다음 단계는 내전을 앞으로 넘기는 유일한 버튼이라 관리 메뉴와 선으로 나누고 화살표를 붙여 구분한다. -->
                 {#if menu.length}<span aria-hidden="true" class="mx-1 h-6 w-px bg-border"></span>{/if}
                 <Button
@@ -200,11 +213,11 @@
                     heightOut="0"
                     heightIn="2"
                     injClass="min-h-11 gap-2 px-5 text-sm font-semibold"
-                    disabled={busy || Boolean(nextAction.blockedReason)}
+                    disabled={busy || Boolean(phaseAction.blockedReason)}
                     loading={advancing ? {} : null}
                     onclick={advance}
                 >
-                    {nextAction.label}
+                    {phaseAction.label}
                     <svg
                         width="16"
                         height="16"

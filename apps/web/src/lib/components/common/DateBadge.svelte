@@ -18,7 +18,7 @@
     </span>
 {:else}
     <span
-        class="flex size-11 shrink-0 items-center justify-center rounded-(--radius-form) border border-dashed border-border text-[0.6875rem] opacity-70"
+        class="flex size-11 shrink-0 items-center justify-center rounded-(--radius-form) border border-dashed border-border px-0.5 text-center text-xs leading-4 text-text-muted"
     >
         {emptyText}
     </span>

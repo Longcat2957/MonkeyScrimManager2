@@ -352,6 +352,7 @@ test('같은 사용자들의 다른 내전 후속 결과는 넘지 않으며 최
             lineupId: lineup!.id,
             nextGameNumber: 1,
             blueTeamSlot: 'a',
+            blueTeamConfirmed: true,
             bytes: replayBytes(f.players(false), { gameLengthMs: 2_300_000 })
         },
         f.dependencies

@@ -78,6 +78,20 @@ test('안전한 복귀 주소는 쿼리와 fragment를 유지한다', () => {
     assert.equal(safeReturnTo('/g/123/scrims?page=2#recruit'), '/g/123/scrims?page=2#recruit');
 });
 
+test('봇에서 연 서버·내전·대진·경기 문맥은 OAuth 트랜잭션에 그대로 보관한다', () => {
+    for (const target of [
+        '/g/123/scrims',
+        '/g/123/admin',
+        '/g/123/scrims/scrim-id?publication=publication-id',
+        '/g/123/scrims/scrim-id/bracket?publication=publication-id',
+        '/g/123/matches/match-id?game=game-id'
+    ]) {
+        const login = beginDiscordLogin(config, target, now);
+        const state = new URL(login.authorizationUrl).searchParams.get('state');
+        assert.equal(readOAuthTransaction(login.cookie, state, config.clientSecret, now).returnTo, target);
+    }
+});
+
 test('OAuth 요청별 state·PKCE는 독립적이고 URL에 비밀 값이 없다', () => {
     const login = beginDiscordLogin(config, '/me', now);
     const second = beginDiscordLogin(config, '/me', now);

@@ -1,6 +1,6 @@
 {
     "schemaVersion": 2,
-    "generatedAt": "2026-11-16T13:34:31.591269+00:00",
+    "generatedAt": "2026-11-16T14:52:14.724107+00:00",
     "title": "Design System: Monkeybot",
     "extensions": {
         "colorMeta": {
@@ -541,8 +541,8 @@
                 "section": "components"
             },
             {
-                "name": "예정 단계",
-                "body": "모집 요약의 단계 제목·번호·원 테두리는 `text-text-muted`를 사용하고 opacity를 낮추지 않는다. 현재의 채운 원, 완료 체크, 예정의 빈 원으로 상태를 함께 구분한다. 연결선은 장식으로 유지한다.",
+                "name": "작업 위치",
+                "body": "서버 메뉴와 내전 메뉴는 단계가 바뀌어도 순서를 유지한다. 현재 위치는 채운 표면과 `aria-current`, 아직 사용할 수 없는 목적지는 비활성 텍스트로 구분한다.",
                 "section": "colors"
             },
             {
@@ -617,7 +617,7 @@
             },
             {
                 "name": "참가·ROFL 선택",
-                "body": "STDF Radio·Checkbox의 실제 버튼에 선택 상태와 최소 (44px) 조작 영역을 제공한다. Riot 계정은 신청의 선택 사항이며, ROFL 블루 팀은 해당 세트의 실제 진영을 고르는 필수 입력이다.",
+                "body": "STDF Radio·Checkbox의 실제 버튼에 선택 상태와 최소 (44px) 조작 영역을 제공한다. Riot 계정은 신청의 선택 사항이며, ROFL 블루 팀은 해당 세트의 실제 진영을 고르는 필수 입력이다. 블루·레드 팀 확인은 별도 체크로 받고 파일·팀·세트 변경 시 해제한다. 여러 명 수동 추가는 검색·쪽 이동 사이 선택을 보존하고 부분 성공과 재시도 대상을 구분한다.",
                 "section": "components"
             },
             {

@@ -396,7 +396,7 @@ export async function confirmBracket(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput,
+    input: RevisionInput & { start?: boolean },
     access?: ScrimAccessDependencies
 ) {
     return mutateScrim(
@@ -416,10 +416,12 @@ export async function confirmBracket(
             ) {
                 throw new DomainError('CONFLICT', '모든 팀을 서로 다른 자리에 배치해 주세요');
             }
-            await tx
+            const [confirmed] = await tx
                 .update(scrims)
                 .set({ bracketConfirmedAt: new Date(), bracketConfirmedByUserId: user.userId })
-                .where(eq(scrims.id, row.id));
+                .where(eq(scrims.id, row.id))
+                .returning();
+            return input.start ? startPreparedScrim(tx, confirmed!) : [];
         },
         access
     );
@@ -449,6 +451,20 @@ export async function unlockBracket(
         },
         access
     );
+}
+
+/** 확정한 대진의 시작은 편성·대진 확정과 같은 트랜잭션에서도 재사용한다. */
+export async function startPreparedScrim(tx: Transaction, row: ScrimRow): Promise<string[]> {
+    if (row.status !== 'ready' || !row.bracketConfirmedAt)
+        throw new DomainError('CONFLICT', '대진을 확정한 뒤 내전을 시작해 주세요');
+    await assertNoGames(tx, row.id);
+    if (!(await createResolvedMatches(tx, row))) throw new DomainError('CONFLICT', '시작할 경기가 없어요');
+    await tx.update(scrims).set({ status: 'in_progress' }).where(eq(scrims.id, row.id));
+    const nodes = await tx
+        .select({ matchId: scrimBracketNodes.matchId })
+        .from(scrimBracketNodes)
+        .where(eq(scrimBracketNodes.scrimId, row.id));
+    return nodes.flatMap((node) => (node.matchId ? [node.matchId] : []));
 }
 
 /** 시작과 결과 등록이 같은 트랜잭션에서 호출한다. 양 팀이 정해진 노드만 실제 경기를 갖는다. */

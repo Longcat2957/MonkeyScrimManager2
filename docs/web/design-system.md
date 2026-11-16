@@ -66,7 +66,7 @@ JavaScript의 데스크톱 분기는 `lg`(1024px) 하나이며 CSS 배치는 `sm
 | 참가자 일괄 작업 | `List batchSelectable` | 평소 목록과 관리 모드를 분리; 보기 전용 행은 별도 `<ul>` |
 | 상태 | `StatusTag` | STDF `Tag fill="light" size="sm"`의 장식 래퍼. 상태 대응은 [README](README.md#상태-값의-화면-문구) |
 | 관리 변경 이력 | `GuildAuditHistory` | 최신순 `<ol>`·시각·대상·담당자·변경 전후, 실제 사용자/계정 참조. 이력에 이동·복구 조작을 덧붙이지 않음. 쪽 이동은 기존 PageNav |
-| 진행 단계 | `Steps` | `ScrimSummary`의 번호·완료 체크와 숨긴 `<ol>`; 간략 머리에는 미표시 |
+| 내전 작업 위치 | `ScrimSummary` + `ContextNav` | 제목·상태·설정과 고정 순서의 메뉴. 내전 작업판·경기 상세에서 같은 구성 |
 | 신청 비율 | `Progress` | `NextScrimHero`의 신청 수/정원과 함께 표시. `percentPosition={null}`로 중복 수치 생략 |
 | 지표 칸 | `Grids`·`Grid`·`StatTile` | 사용자 전적·서버 통계·경매 선수 지표 |
 | 참가자 얼굴 | `PlayerFace`, `AvatarStack` | 얼굴 하나와 겹친 얼굴 묶음. 정적 이미지가 별도 동작을 만들지 않도록 구성 |

@@ -47,6 +47,30 @@ async function ready(t: TestContext, count = 2) {
     return { ...f, view, seed, start };
 }
 
+test('4팀 대진 확정·내전 시작은 준결승 두 경기와 수동 라인업을 함께 만든다', async (t) => {
+    const f = await ready(t, 4);
+    await f.seed();
+    const revision = await f.revision();
+    const matchIds = await confirmBracket(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...revision, start: true },
+        f.access
+    );
+    assert.equal((await f.row()).status, 'in_progress');
+    assert.equal((await f.row()).revision, revision.expectedRevision + 1);
+    assert.equal(new Set(matchIds).size, 2);
+    const bracket = await f.view();
+    assert.ok(bracket.confirmed);
+    assert.equal(bracket.matches.find((match) => match.key === 'final')?.matchId, null);
+    const lineups = await f.db.select().from(schema.matchLineups);
+    assert.equal(lineups.length, 2);
+    assert.ok(lineups.every((lineup) => lineup.confirmedAt));
+    assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 20);
+});
+
 for (const count of [2, 3, 4])
     test(`${count}팀 대진은 양 팀이 정해진 Match만 생성한다`, async (t) => {
         const f = await ready(t, count);

@@ -13,7 +13,7 @@ export function renderConfirmation(publication: BotPublication, origin: URL) {
                 `## 참가가 확정됐어요\n**${label(publication.data.title, 50)}**${scheduled}`,
                 '내전에서 팀 편성과 경기 정보를 확인하세요.'
             ).setAccentColor(CARD_COLORS.success),
-            linkRow('내전 열기', publicationUrl(origin, publication))
+            linkRow('웹에서 내전 보기', publicationUrl(origin, publication))
         ],
         allowedMentions: { parse: [] as never[] }
     };

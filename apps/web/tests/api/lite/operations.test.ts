@@ -82,15 +82,17 @@ test('ROFL 본문 시간 초과는 실제 reader를 취소하고 완료되지 �
     assert.equal(body.locked, false);
 });
 
-test('정상 multipart는 파일·진영을 보존하고 크기/중단 제한은 parsing 전에 거절한다', async () => {
+test('정상 multipart는 파일·진영·확인값을 보존하고 크기/중단 제한은 parsing 전에 거절한다', async () => {
     const form = new FormData();
     form.set('blueTeamSlot', 'a');
+    form.set('blueTeamConfirmed', 'true');
     form.set('file', new File([Uint8Array.from(bytes())], 'fixture.rofl'));
     const parsed = await readRoflForm(
         new Request('http://fixture.invalid', { method: 'POST', body: form }),
         1000
     );
     assert.equal(parsed.get('blueTeamSlot'), 'a');
+    assert.equal(parsed.get('blueTeamConfirmed'), 'true');
     assert.equal((parsed.get('file') as File).name, 'fixture.rofl');
     await assert.rejects(
         readRoflForm(
