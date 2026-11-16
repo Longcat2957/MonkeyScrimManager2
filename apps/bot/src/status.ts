@@ -3,11 +3,12 @@ import type { Client } from 'discord.js';
 import type { ApiHealth } from './api/client.js';
 import type { WorkerHealth } from './delivery/worker.js';
 
-// 백오피스 상태 확인은 같은 서버에서만 접근하며 토큰·게시 본문을 반환하지 않는다.
+// 백오피스 상태 확인은 기본 loopback, Compose에서는 내부 네트워크에 바인딩한다.
 export function startStatusServer(
     client: Client,
     port: number,
-    details: () => { api: ApiHealth; delivery: WorkerHealth }
+    details: () => { api: ApiHealth; delivery: WorkerHealth },
+    host = '127.0.0.1'
 ) {
     const server = createServer((request, response) => {
         if (request.method !== 'GET' || request.url !== '/status') {
@@ -34,6 +35,6 @@ export function startStatusServer(
     server.on('error', () => {
         console.error('상태 확인 포트를 열 수 없습니다.');
     });
-    server.listen(port, '127.0.0.1');
+    server.listen(port, host);
     return server;
 }

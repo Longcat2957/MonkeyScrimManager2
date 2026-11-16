@@ -15,12 +15,14 @@ test('설정은 로컬 내부 API와 명시한 공개 origin을 분리한다', (
     assert.equal(config.apiUrl.origin, 'http://127.0.0.1:3000');
     assert.equal(config.webOrigin.origin, 'https://monkeybot.example');
     assert.equal(config.statusPort, 0);
+    assert.equal(config.statusHost, '127.0.0.1');
     assert.equal(config.testGuildId, null);
 });
 
 test('Compose 내부 API는 웹 서비스 DNS로 연결하고 공개 origin은 HTTPS를 유지한다', () => {
-    const config = readConfig({ ...environment, BOT_API_URL: 'http://web:3000' });
+    const config = readConfig({ ...environment, BOT_API_URL: 'http://web:3000', BOT_STATUS_HOST: '0.0.0.0' });
     assert.equal(config.apiUrl.origin, 'http://web:3000');
+    assert.equal(config.statusHost, '0.0.0.0');
     assert.equal(config.webOrigin.origin, environment.WEB_ORIGIN);
     assert.throws(() => readConfig({ ...environment, WEB_ORIGIN: 'http://web:3000' }), Error);
 });
@@ -34,6 +36,7 @@ for (const [key, value] of [
     ['WEB_ORIGIN', 'https://example.com/path'],
     ['BOT_STATUS_PORT', '-1'],
     ['BOT_STATUS_PORT', '65536'],
+    ['BOT_STATUS_HOST', 'example.com'],
     ['DISCORD_APPLICATION_ID', 'wrong']
 ])
     test(`${key}의 잘못된 설정은 기동 전에 거절한다: ${value?.split(':')[0]}`, () => {

@@ -45,14 +45,9 @@ services:
             - edge
             - data
         healthcheck:
-            # 앱 전용 DB 준비 상태 검사는 후속 배포 검증 단계에서 연결한다.
-            test:
-                - CMD
-                - node
-                - -e
-                - fetch('http://127.0.0.1:3000/docs',{signal:AbortSignal.timeout(3000)}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+            test: ['CMD', 'node', 'scripts/healthcheck.mjs']
             interval: 10s
-            timeout: 5s
+            timeout: 10s
             start_period: 20s
             retries: 5
         stop_grace_period: 35s
@@ -71,6 +66,7 @@ services:
             BOT_API_URL: http://web:3000
             WEB_ORIGIN: https://monkeybot.lol
             BOT_STATUS_PORT: '3101'
+            BOT_STATUS_HOST: 0.0.0.0
         depends_on:
             web:
                 condition: service_healthy

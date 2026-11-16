@@ -1,0 +1,58 @@
+name: CD
+
+on:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+    packages: read
+
+concurrency:
+    group: production-deploy
+    cancel-in-progress: false
+
+jobs:
+    deploy:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        environment: production
+        steps:
+            - name: 배포 설정 읽기
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: VPS에 설정 전송·배포
+              env:
+                  VPS_HOST: ${{ vars.VPS_HOST }}
+                  VPS_USER: ${{ vars.VPS_USER }}
+                  VPS_PORT: ${{ vars.VPS_PORT }}
+                  VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+                  VPS_SSH_KNOWN_HOSTS: ${{ vars.VPS_SSH_KNOWN_HOSTS }}
+                  VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  umask 077
+                  [[ "$VPS_HOST" =~ ^[a-zA-Z0-9.-]+$ && "$VPS_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+                  [[ "$VPS_PORT" =~ ^[0-9]+$ && "$VPS_DEPLOY_PATH" =~ ^/[a-zA-Z0-9/_-]+$ ]]
+                  mkdir -p "$RUNNER_TEMP/msm2-ssh"
+                  key="$RUNNER_TEMP/msm2-ssh/key"
+                  hosts="$RUNNER_TEMP/msm2-ssh/known_hosts"
+                  printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$key"
+                  printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$hosts"
+                  ssh_options=(-i "$key" -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$hosts")
+                  destination="$VPS_USER@$VPS_HOST"
+                  staging="/tmp/msm2-deploy-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+                  cleanup() {
+                      ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "rm -rf -- '$staging'" || true
+                      rm -rf -- "$RUNNER_TEMP/msm2-ssh"
+                  }
+                  trap cleanup EXIT
+                  tar -czf "$RUNNER_TEMP/deploy.tar.gz" -C deploy compose.yml compose.app.yml deploy.sh nginx
+                  ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "mkdir -m 700 -p '$staging'"
+                  scp "${ssh_options[@]}" -P "$VPS_PORT" "$RUNNER_TEMP/deploy.tar.gz" "$destination:$staging/deploy.tar.gz"
+                  ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "tar -xzf '$staging/deploy.tar.gz' -C '$staging'"
+                  image="ghcr.io/${GITHUB_REPOSITORY,,}:dev"
+                  printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" \
+                      "bash '$staging/deploy.sh' '$VPS_DEPLOY_PATH' '$image' '$GITHUB_ACTOR'"

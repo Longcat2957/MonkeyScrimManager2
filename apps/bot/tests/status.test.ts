@@ -27,9 +27,9 @@ test('상태 서버는 Gateway만 연결된 상태와 실제 업무 연결 준�
     const address = server.address();
     assert.ok(address && typeof address === 'object');
     assert.equal(address.address, '127.0.0.1');
-    const request = () =>
+    const request = (port = address.port) =>
         new Promise<Record<string, unknown>>((resolve, reject) => {
-            get(`http://127.0.0.1:${address.port}/status`, (response) => {
+            get(`http://127.0.0.1:${port}/status`, (response) => {
                 assert.equal(response.headers['cache-control'], 'no-store');
                 let body = '';
                 response.on('data', (part) => {
@@ -47,4 +47,20 @@ test('상태 서버는 Gateway만 연결된 상태와 실제 업무 연결 준�
     assert.equal((await request()).ready, true);
     api.checkedAt = new Date(Date.now() - 31_000).toISOString();
     assert.equal((await request()).ready, false);
+
+    const containerServer = startStatusServer(
+        client,
+        0,
+        () => ({
+            api,
+            delivery: { running: true, lastSuccessAt: null, errorCode: null, awaitingAcknowledgement: false }
+        }),
+        '0.0.0.0'
+    );
+    t.after(() => new Promise<void>((resolve) => containerServer.close(() => resolve())));
+    await once(containerServer, 'listening');
+    const containerAddress = containerServer.address();
+    assert.ok(containerAddress && typeof containerAddress === 'object');
+    assert.equal(containerAddress.address, '0.0.0.0');
+    assert.equal((await request(containerAddress.port)).ready, false);
 });

@@ -19,7 +19,12 @@ const worker = new PublicationWorker(api, createDiscordDelivery(client.rest, con
     client.isReady()
 );
 const status = config.statusPort
-    ? startStatusServer(client, config.statusPort, () => ({ api: api.health, delivery: worker.health }))
+    ? startStatusServer(
+          client,
+          config.statusPort,
+          () => ({ api: api.health, delivery: worker.health }),
+          config.statusHost
+      )
     : null;
 const handleInteraction = createInteractionHandler(api, config.webOrigin);
 let reconcileTimer: ReturnType<typeof setInterval> | null = null;

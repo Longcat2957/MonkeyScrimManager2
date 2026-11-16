@@ -5,6 +5,7 @@ export interface BotConfig {
     webOrigin: URL;
     applicationId: string | null;
     testGuildId: string | null;
+    statusHost: string;
     statusPort: number;
 }
 
@@ -55,6 +56,10 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env): BotCon
     if (!Number.isInteger(statusPort) || statusPort < 0 || statusPort > 65535) {
         throw new Error('BOT_STATUS_PORT는 1~65535 또는 빈 값이어야 합니다.');
     }
+    const statusHost = environment.BOT_STATUS_HOST?.trim() || '127.0.0.1';
+    if (!['127.0.0.1', '0.0.0.0'].includes(statusHost)) {
+        throw new Error('BOT_STATUS_HOST는 127.0.0.1 또는 0.0.0.0이어야 합니다.');
+    }
     return {
         token: secret(environment, 'DISCORD_TOKEN'),
         apiUrl: url(environment.BOT_API_URL?.trim() || 'http://127.0.0.1:3000', 'BOT_API_URL'),
@@ -62,6 +67,7 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env): BotCon
         webOrigin: url(environment.WEB_ORIGIN?.trim() || '', 'WEB_ORIGIN'),
         applicationId: snowflake(environment.DISCORD_APPLICATION_ID, 'DISCORD_APPLICATION_ID'),
         testGuildId: snowflake(environment.DISCORD_TEST_GUILD_ID, 'DISCORD_TEST_GUILD_ID'),
+        statusHost,
         statusPort
     };
 }

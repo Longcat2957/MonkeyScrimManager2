@@ -1,12 +1,12 @@
 # VPS 배포 준비와 격리 검증
 
-웹은 SvelteKit adapter-node, 봇은 별도 Node.js 프로세스, DB는 PostgreSQL 17 이상을 사용한다. 신규 VPS 운영은 아래 Docker Compose 구성을 기준으로 준비한다. 기존 systemd·nginx 단독 실행 예제와 CI·백업 도구는 별도 검증 경로로 유지한다. 실제 인증서·운영 비밀 값은 저장소에 포함하지 않는다. 실제 Discord 로그인·명령 등록·게시/DM 발송과 앱 운영 배포는 아직 검증하지 않았다. 약관·개인정보 본문은 기존 사용자 보류를 유지한다.
+웹은 SvelteKit adapter-node, 봇은 별도 Node.js 프로세스, DB는 PostgreSQL 17 이상을 사용한다. 신규 VPS 운영은 아래 Docker Compose 구성을 따른다. 기존 systemd·nginx 단독 실행 예제와 CI·백업 도구는 별도 검증 경로로 유지한다. 실제 인증서·운영 비밀 값은 저장소에 포함하지 않는다. 앱 배포 결과는 해당 main CD의 Actions 실행과 VPS 상태로 확인한다. 사용자 OAuth 로그인·슬래시 명령 등록·게시/DM 발송은 별도 운영 확인 대상이다. 약관·개인정보 본문은 기존 사용자 보류를 유지한다.
 
 최신 기능과 migration의 전체 CI·브라우저·격리 배포 결과는 [릴리스 통합 검증](release-validation.md)을 따른다. 과거 격리 실행이나 부분 테스트 통과를 새 커밋의 전체 성공으로 대체하지 않는다.
 
 ## Docker Compose 운영: 인프라 통합
 
-2026-11-16 기준 기존 nginx·PostgreSQL을 `monkeybot` Compose 프로젝트로 이관하고 MSM2 전용 빈 DB와 서비스별 운영 환경을 준비했다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. dev CI가 공통 앱 이미지를 만들며, main CD 연결과 앱의 최초 공개는 다음 단계다.
+2026-11-16 기준 기존 nginx·PostgreSQL을 `monkeybot` Compose 프로젝트로 이관하고 MSM2 전용 DB와 서비스별 운영 환경을 준비했다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. dev CI가 공통 앱 이미지를 만들고 main CD가 VPS의 Compose 서비스를 갱신한다.
 
 | 위치 | 역할 |
 | --- | --- |
@@ -46,7 +46,7 @@ DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunn
 
 이미지와 `web.env`·`bot.env`·`migration.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 순서다. nginx는 이때 중단 안내 대신 `application.conf`를 읽고 웹을 연결한다.
 
-기본 nginx의 `/healthz` 200은 nginx 생존 확인이며 앱·DB 준비 상태를 의미하지 않는다. 앱 구성의 현재 웹 검사는 `/docs`의 HTTP 응답이고, DB 준비 상태 검사와 봇 상태 서버의 컨테이너 간 바인딩은 CD 단계에서 보완한다. 운영 봇 기동과 슬래시 명령 등록은 이번 단계에 포함하지 않는다.
+기본 nginx의 `/healthz` 200은 nginx 생존 확인이다. 앱 구성의 웹 healthcheck는 실행 계정으로 업무 테이블 조회와 `/docs` 응답을 확인한다. 봇 상태 서버는 Compose에서 `BOT_STATUS_HOST=0.0.0.0`으로 바인딩하며 공개 포트 없이 웹이 내부 상태를 조회한다. 실제 봇은 CD가 기동하며 슬래시 명령 등록은 별도 운영 명령이다.
 
 ## 운영 환경과 이미지 분리
 
@@ -82,7 +82,7 @@ DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunn
 
 Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱 ID 일치를 확인했다. KR 플랫폼 상태 조회의 HTTP 403은 당시 요청의 진단 기록으로 보존한다. 이후 사용자가 Riot 키의 유효성을 확인했으므로 키 교체를 요구하거나 CI 진행을 막지 않는다. 키 유효성 확인과 해당 요청 경로의 접근 결과는 구분하며 같은 요청을 반복하지 않는다. 이 단계는 Gateway 로그인·OAuth 로그인 완료·명령 등록·게시/DM 발송을 검증하지 않는다. [Riot 응답 코드 문서](https://developer.riotgames.com/docs/portal#response-codes)
 
-환경 파일·SSH 설정의 변경 전 보관본과 비밀 값을 제외한 검증 보고서는 `/var/backups/monkeybot/environment-<UTC시각>/`에 저장한다. `/opt/monkeybot/.env-backup-path`로 이번 경로를 확인한다. 현재 기본 Compose의 nginx·PostgreSQL만 계속 실행한다.
+환경 파일·SSH 설정의 변경 전 보관본과 비밀 값을 제외한 검증 보고서는 `/var/backups/monkeybot/environment-<UTC시각>/`에 저장한다. `/opt/monkeybot/.env-backup-path`로 이번 경로를 확인한다. 환경 준비 단계에서는 nginx·PostgreSQL만 실행했고 앱은 아래 CD에서 기동한다.
 
 ### 구 프로젝트 정리 결과
 
@@ -106,7 +106,7 @@ Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱
 
 ## 저장소 CI
 
-[ci.yml](../.github/workflows/ci.yml)은 **dev push**에서 Ubuntu 24.04·Node 24·pnpm 10.20.0으로 검사하고 GHCR에 이미지를 발행한다. main은 다음 CD 단계의 배포 트리거다. CI에는 저장소 읽기와 GHCR 발행에 필요한 `packages: write`만 부여한다. 운영 서버 접속·명령 등록·실제 봇 기동은 하지 않는다.
+[ci.yml](../.github/workflows/ci.yml)은 **dev push**에서 Ubuntu 24.04·Node 24·pnpm 10.20.0으로 검사하고 GHCR에 이미지를 발행한다. main은 아래 CD의 배포 트리거다. CI에는 저장소 읽기와 GHCR 발행에 필요한 `packages: write`만 부여한다. 운영 서버 접속·명령 등록·실제 봇 기동은 하지 않는다.
 
 실행 순서는 잠금 파일로 의존성 설치 → `pnpm check` → `pnpm test` → 공통 이미지 빌드·GHCR 발행이다. `check`는 포맷·브랜딩·웹/봇 타입을, `test`는 DB 없이 실행하는 기본 웹·봇 단위 테스트를 검사한다. 검사나 빌드가 실패하면 이미지를 발행하지 않는다.
 
@@ -116,9 +116,22 @@ CI에는 PostgreSQL 서비스·Chromium 설치·테스트 타입 검사·DB/HTTP
 
 [Dockerfile](../Dockerfile)은 잠금 파일로 의존성을 설치하고 웹·봇을 함께 빌드한다. Node 24의 고정 digest를 사용하고 최종 컨테이너는 `node` 사용자로 실행한다. 웹·봇·migration은 같은 이미지에서 서로 다른 명령과 환경으로 실행하며 Drizzle Kit와 pnpm workspace 의존성 구조를 유지한다.
 
-발행 주소는 `ghcr.io/longcat2957/monkeyscrimmanager2:dev`와 같은 경로의 `:<dev 커밋 SHA>`다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. 타입·기본 단위 테스트를 통과한 소스를 한 번 빌드해 두 태그로 발행한다. 후속 main CD는 마지막으로 발행한 `dev` 이미지를 가져오는 방식으로 연결한다. 이때 main은 배포 요청이며 실제 앱 소스 revision은 이미지의 dev 커밋이다. 특정 버전으로 돌아갈 때는 보관된 SHA 태그를 선택한다.
+발행 주소는 `ghcr.io/longcat2957/monkeyscrimmanager2:dev`와 같은 경로의 `:<dev 커밋 SHA>`다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. 타입·기본 단위 테스트를 통과한 소스를 한 번 빌드해 두 태그로 발행한다. main CD는 마지막으로 발행한 `dev` 이미지를 가져온다. 이때 main은 배포 요청이며 실제 앱 소스 revision은 이미지의 dev 커밋이다. 특정 버전으로 돌아갈 때는 보관된 SHA 태그를 선택한다.
 
 Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비밀 값은 기존 VPS 환경 파일에서 읽는다.
+
+## main 배포
+
+[cd.yml](../.github/workflows/cd.yml)은 **main push**에서 `production` Environment의 SSH 설정으로 VPS에 배포한다. 이미지를 새로 빌드하거나 CI 검사를 반복하지 않는다. dev CI 완료 후 main으로 반영하면 된다. CD는 동시에 하나만 실행하며 진행 중 배포를 취소하지 않는다.
+
+1. Compose·nginx 설정과 [deploy.sh](../deploy/deploy.sh)를 임시 디렉터리로 전송한다.
+2. Actions의 `GITHUB_TOKEN`으로 GHCR에 로그인하고 `:dev` 이미지를 받는다. 받은 digest를 Compose에 고정해 웹·봇·migration이 같은 이미지를 사용한다.
+3. `/var/backups/monkeybot/release-<UTC시각>-…`에 기존 Compose 설정과 `msm2_main` custom dump·SHA256을 보관한다. 백업 검사가 실패하면 배포를 중단한다.
+4. `docker compose up -d --wait`로 migration 성공·웹/봇 healthy를 기다린 뒤 nginx 설정을 검사·reload하고 공개 `/docs` 응답을 확인한다.
+
+VPS에서는 빌드·패키지 설치를 하지 않는다. 서비스 비밀 파일과 PostgreSQL 볼륨을 유지하며, 임시 전송 파일과 GHCR 인증 정보는 작업 종료 시 제거한다. [Compose up](https://docs.docker.com/reference/cli/docker/compose/up/), [GHCR 인증](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-in-a-github-actions-workflow)
+
+실패 시 Actions와 `docker compose ps`, `docker compose logs --tail=100 web bot migrate`로 상태를 확인한다. 자동 DB 복원은 하지 않는다. 이전 앱으로 돌아가려면 백업된 `.env`·Compose·nginx 설정을 복구하고 `docker compose up -d --wait`를 실행한다. 이미 적용한 migration과 이전 앱의 호환성을 확인하며, DB 복원이 필요하면 보관된 dump를 별도 빈 DB에 복원해 전환한다.
 
 ## 웹·봇 프로세스
 
