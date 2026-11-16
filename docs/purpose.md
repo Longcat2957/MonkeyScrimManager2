@@ -43,6 +43,7 @@ MSM2의 기술 스택과 배포 환경은 다음과 같이 확정한다.
 - **데이터베이스:** PostgreSQL
 - **ORM 및 마이그레이션:** Drizzle ORM + node-postgres(`pg`), Drizzle Kit
 - **로그인:** Discord OAuth2만 지원
+- **참가:** Discord 참가 버튼은 웹 사전 가입·Riot 연결 없이 내부 사용자와 신청을 자동 생성한다. 웹 인증은 Discord OAuth2를 유지한다.
 - **배포 환경:** VPS
 
 MSM1에서 사용하던 Rust-Axum 기반의 별도 웹 백엔드와 분리된 Riot API 처리 구조는 제거한다.

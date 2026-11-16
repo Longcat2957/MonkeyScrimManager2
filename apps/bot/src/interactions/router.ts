@@ -5,13 +5,26 @@ import { BotApiError, errorCode } from '../api/client.js';
 import { handleAutocomplete, handleCommand } from '../commands/scrims.js';
 import { notice } from '../messages/shared.js';
 import { handleRegistration, RegistrationForms } from './registration.js';
+import {
+    openScrimCreation,
+    reopenScrimCreation,
+    ScrimCreationForms,
+    submitScrimCreation
+} from './create-scrim.js';
 
 export function createInteractionHandler(api: BotApi, origin: URL) {
     const forms = new RegistrationForms();
+    const creations = new ScrimCreationForms();
     return async (interaction: Interaction) => {
         try {
             if (interaction.isAutocomplete()) await handleAutocomplete(interaction, api);
-            else if (interaction.isChatInputCommand()) await handleCommand(interaction, api, origin);
+            else if (interaction.isChatInputCommand()) {
+                if (interaction.commandName === '내전모집') await openScrimCreation(interaction, creations);
+                else await handleCommand(interaction, api, origin);
+            } else if (interaction.isButton() && interaction.customId.startsWith('scrim-create:edit:'))
+                await reopenScrimCreation(interaction, creations);
+            else if (interaction.isModalSubmit())
+                await submitScrimCreation(interaction, api, origin, creations);
             else if (interaction.isButton() || interaction.isStringSelectMenu())
                 await handleRegistration(interaction, api, forms);
         } catch (error) {
@@ -29,6 +42,7 @@ export function createInteractionHandler(api: BotApi, origin: URL) {
                 if (interaction.deferred || interaction.replied) {
                     if (
                         interaction.isChatInputCommand() ||
+                        interaction.isModalSubmit() ||
                         (interaction.isButton() && interaction.customId.startsWith('registration:'))
                     ) {
                         await interaction.editReply(notice(text));

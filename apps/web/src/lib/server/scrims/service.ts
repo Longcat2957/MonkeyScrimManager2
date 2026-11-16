@@ -51,7 +51,7 @@ import {
 
 type ScrimRow = typeof scrims.$inferSelect;
 export type RevisionInput = { expectedRevision: number };
-export type RegistrationInput = { riotAccountId: string; positions: readonly LolPosition[] };
+export type RegistrationInput = { riotAccountId: string | null; positions: readonly LolPosition[] };
 export type ScrimAccessDependencies = Pick<GuildAccessDependencies, 'discord'>;
 
 export function settingsFromRow(row: ScrimRow): ScrimSettings {
@@ -124,7 +124,7 @@ async function lockRegistrationAccounts(
     actor: Actor,
     guildId: string,
     scrimId: string,
-    nextAccountId?: string
+    nextAccountId?: string | null
 ) {
     const [user] = await tx.select().from(users).where(eq(users.id, actor.userId)).for('no key update');
     if (!user || user.withdrawnAt) throw new DomainError('UNAUTHENTICATED', '다시 로그인해 주세요');
@@ -166,9 +166,10 @@ async function lockRegistrationAccounts(
 async function requireUnusedAccount(
     tx: Transaction,
     scrimId: string,
-    accountId: string,
+    accountId: string | null,
     participantId?: string
 ): Promise<void> {
+    if (!accountId) return;
     const [other] = await tx
         .select({ id: scrimParticipants.id })
         .from(scrimParticipants)

@@ -66,9 +66,5 @@ test('등록할 명령은 Discord가 검증하는 빌더 계약을 만족한다'
         ['초기설정', '시즌', '내전모집', '내전목록', '게시복구']
     );
     assert.ok(values.every((value) => value.contexts?.length === 1));
-    assert.equal(
-        values.find((value) => value.name === '내전모집')?.options?.find((option) => option.name === '제목')
-            ?.required,
-        true
-    );
+    assert.deepEqual(values.find((value) => value.name === '내전모집')?.options, []);
 });

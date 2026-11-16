@@ -56,13 +56,14 @@ export async function assertRecoverableParticipants(
                 options.matchId ? exists(lineup) : or(exists(registration), exists(lineup))
             )
         );
-    const message = '탈퇴했거나 연결 계정이 없는 참가자가 있어요. 참가자 연결을 확인한 뒤 다시 진행해 주세요';
-    if (participants.some((person) => !person.knownUserId || person.withdrawnAt || !person.accountId))
+    const message = '탈퇴했거나 유효하지 않은 참가자가 있어요. 참가자 상태를 확인한 뒤 다시 진행해 주세요';
+    if (participants.some((person) => !person.knownUserId || person.withdrawnAt))
         throw new DomainError('CONFLICT', message);
     if (!participants.length) return;
     const pairs = participants.flatMap((person) =>
         person.userId && person.accountId ? [{ userId: person.userId, accountId: person.accountId }] : []
     );
+    if (!pairs.length) return;
     // 연결 해제가 동시에 진행되면 삭제 뒤 재검사하거나, 복구 뒤 활성 사용 검사까지 기다리게 한다.
     // 사용자·계정 행을 내전 뒤에 잠그지 않아 기존 user → account → scrim 순서와 교착하지 않는다.
     const links = await tx

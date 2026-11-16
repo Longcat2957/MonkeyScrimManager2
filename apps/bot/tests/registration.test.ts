@@ -103,12 +103,21 @@ test('봇 재시작으로 개인 폼이 없어져도 공개 내 신청 버튼에
         registration: async (...args: string[]) => {
             calls.push(args);
             return registrationContext();
-        }
+        },
+        saveRegistration: async () =>
+            registrationContext({
+                registration: {
+                    id: REGISTRATION,
+                    status: 'selected',
+                    riotAccountId: ACCOUNT,
+                    positions: ['mid']
+                }
+            })
     } as unknown as BotApi;
     const reopened = interaction(`registration:${SCRIM}`);
     await handleRegistration(reopened.value, api, forms);
     assert.deepEqual(calls, [[GUILD, SCRIM, USER]]);
-    assert.match(JSON.stringify(reopened.replies), /신청하기/);
+    assert.match(JSON.stringify(reopened.replies), /신청했어요/);
     const expired = interaction('form:' + '0'.repeat(24) + ':submit');
     await handleRegistration(expired.value, api, forms);
     assert.match(JSON.stringify(expired.replies), /만료/);
@@ -121,6 +130,36 @@ test('타인의 폼 요청은 업무 API를 호출하지 않는다', async () =>
     const fake = interaction(`form:${form.id}:submit`, undefined, '970000000000000999');
     await handleRegistration(fake.value, {} as BotApi, forms);
     assert.match(JSON.stringify(fake.replies), /만료/);
+});
+
+test('계정 없는 참가자도 버튼 한 번으로 신청하고 이후 상세 신청을 수정한다', async () => {
+    const forms = new RegistrationForms();
+    const calls: BotRegistrationInput[] = [];
+    let context = registrationContext({ accounts: [] });
+    const api = {
+        registration: async () => context,
+        saveRegistration: async (_guild: string, _scrim: string, input: BotRegistrationInput) => {
+            calls.push(input);
+            context = registrationContext({
+                accounts: [],
+                registration: {
+                    id: REGISTRATION,
+                    status: 'selected',
+                    riotAccountId: null,
+                    positions: input.positions!
+                }
+            });
+            return context;
+        }
+    } as unknown as BotApi;
+    const opened = interaction(`registration:${SCRIM}`);
+    await handleRegistration(opened.value, api, forms);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.riotAccountId, null);
+    assert.equal(calls[0]!.positions?.length, 5);
+    assert.match(JSON.stringify(opened.replies), /수정하기/);
+    await handleRegistration(interaction(`registration:${SCRIM}`).value, api, forms);
+    assert.equal(calls.length, 1);
 });
 
 test('마감된 신청은 상태를 보여 주고 수정 조작은 제공하지 않는다', () => {
@@ -155,6 +194,6 @@ test('계정이 25개를 넘어도 페이지별로 모두 선택할 수 있다',
     await handleRegistration(interaction(`form:${form.id}:next`).value, {} as BotApi, forms);
     json = renderForm(form).components.map((component) => component.toJSON());
     const last = json[1] as { components: { options: unknown[] }[] };
-    assert.equal(last.components[0]!.options.length, 1);
+    assert.equal(last.components[0]!.options.length, 3);
     assert.equal(parseFormId(`form:${form.id}:next`)?.id, form.id);
 });

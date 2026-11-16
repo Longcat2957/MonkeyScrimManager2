@@ -26,7 +26,9 @@ async function recordedPair(t: TestContext, hardFearless = true) {
         { ...(await f.slot(1)), bytes: replayBytes(f.players()) },
         f.dependencies
     );
-    const players = f.players(false);
+    const players = f
+        .players(false)
+        .map((player) => ({ ...player, TEAM: player.TEAM === '100' ? '200' : '100' }));
     // 양 팀이 이전 상대의 챔피언을 쓰고, 한 명만 이전에 쓰지 않은 챔피언을 선택한다.
     players[0]!.SKIN = 'Darius';
     players[5]!.SKIN = 'Ahri';

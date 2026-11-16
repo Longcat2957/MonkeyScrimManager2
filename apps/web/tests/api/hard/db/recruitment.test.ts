@@ -68,6 +68,38 @@ async function fill(f: Fixture, count: number) {
     for (let i = 0; i < count; i++) await join(f, i);
 }
 
+test('Riot 계정 없이 신청·조회·수정·철회하고 기존 희망 포지션을 재사용한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    const actor = f.actors[0]!;
+    await f.db.delete(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.userId, actor.userId));
+    await createRegistration(
+        f.db,
+        actor,
+        f.guildId,
+        f.scrimId,
+        { riotAccountId: null, positions: ['mid'] },
+        f.access
+    );
+    let detail = await getScrimDetail(f.db, actor, f.guildId, f.scrimId, f.access);
+    assert.ok(detail?.myRegistration);
+    assert.equal(detail.myRegistration.riotAccountId, null);
+    await updateRegistration(
+        f.db,
+        actor,
+        f.guildId,
+        f.scrimId,
+        { riotAccountId: null, positions: ['support'] },
+        f.access
+    );
+    detail = await getScrimDetail(f.db, actor, f.guildId, f.scrimId, f.access);
+    assert.deepEqual(detail?.myRegistration?.positions, ['support']);
+    await withdrawRegistration(f.db, actor, f.guildId, f.scrimId, f.access);
+    detail = await getScrimDetail(f.db, actor, f.guildId, f.scrimId, f.access);
+    assert.equal(detail?.myRegistration, null);
+    assert.deepEqual(detail?.previousPositions, ['support']);
+    assert.equal((await registrations(f)).length, 0);
+});
+
 test('생성 재요청은 동일 내전을 반환하고 별도 연결에서도 커밋한 행을 읽는다', async (t) => {
     const f = await createDomainFixture(t);
     const input = { ...settings, requestId: randomUUID() };

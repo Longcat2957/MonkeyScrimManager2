@@ -41,11 +41,9 @@ export class RegistrationForms {
     create(actorId: string, guildId: string, context: BotRegistrationContext): RegistrationForm {
         for (const [id, form] of this.forms) if (form.expiresAt <= this.now()) this.forms.delete(id);
         if (this.forms.size >= this.maximum) this.forms.delete(this.forms.keys().next().value!);
-        const accountId =
-            context.registration?.riotAccountId ??
-            context.accounts.find((account) => account.isPrimary)?.id ??
-            context.accounts[0]?.id ??
-            '';
+        const accountId = context.registration
+            ? (context.registration.riotAccountId ?? '')
+            : (context.accounts.find((account) => account.isPrimary)?.id ?? context.accounts[0]?.id ?? '');
         const form: RegistrationForm = {
             id: randomBytes(12).toString('hex'),
             actorId,
@@ -89,15 +87,15 @@ export function renderForm(form: RegistrationForm) {
     const parts = [`## ${label(form.context.title, 50)} · 내 신청`, `현재 상태: **${status}**`];
     if (form.feedback) parts.push(form.feedback);
     if (form.context.reason) parts.push(form.context.reason);
-    if (form.context.accounts.length === 1 || !form.context.canEdit)
-        parts.push(`계정: ${account ? label(account.label) : '연결된 계정 없음'}`);
+    if (!form.context.accounts.length || !form.context.canEdit)
+        parts.push(`계정: ${account ? label(account.label) : '미지정'}`);
     if (!form.context.canEdit)
         parts.push(
             `희망 포지션: ${form.positions.map((position) => POSITIONS[position]).join(' / ') || '미설정'}`
         );
     const components: (
         ReturnType<typeof card> | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
-    )[] = [card(parts.join('\n\n'))];
+    )[] = [card(parts[0]!, parts.slice(1).join('\n\n'))];
     const message = {
         flags: MessageFlags.IsComponentsV2 as const,
         components,
@@ -121,25 +119,28 @@ export function renderForm(form: RegistrationForm) {
         );
         return message;
     }
-    if (form.context.accounts.length > 1) {
-        const accounts = form.context.accounts.slice(form.accountPage * 25, form.accountPage * 25 + 25);
+    if (form.context.accounts.length) {
+        const accounts = form.context.accounts.slice(form.accountPage * 24, form.accountPage * 24 + 24);
         components.push(
             new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId(customId('account'))
-                    .setPlaceholder(account ? `계정: ${account.label}`.slice(0, 150) : '참가 계정 선택')
+                    .setPlaceholder(
+                        account ? `계정: ${account.label}`.slice(0, 150) : '참가 계정 선택 (선택 사항)'
+                    )
                     .setMinValues(1)
                     .setMaxValues(1)
-                    .addOptions(
-                        accounts.map((value) => ({
+                    .addOptions([
+                        { label: '계정 없이 참가', value: 'none', default: !form.accountId },
+                        ...accounts.map((value) => ({
                             label: value.label.slice(0, 100),
                             value: value.id,
                             default: value.id === form.accountId
                         }))
-                    )
+                    ])
             )
         );
-        if (form.context.accounts.length > 25)
+        if (form.context.accounts.length > 24)
             components.push(
                 new ActionRowBuilder<ButtonBuilder>().addComponents(
                     new ButtonBuilder()
@@ -151,37 +152,34 @@ export function renderForm(form: RegistrationForm) {
                         .setCustomId(customId('next'))
                         .setLabel('다음 계정')
                         .setStyle(ButtonStyle.Secondary)
-                        .setDisabled((form.accountPage + 1) * 25 >= form.context.accounts.length)
+                        .setDisabled((form.accountPage + 1) * 24 >= form.context.accounts.length)
                 )
             );
     }
-    if (form.context.accounts.length) {
-        components.push(
-            new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId(customId('positions'))
-                    .setPlaceholder('희망 포지션 선택')
-                    .setMinValues(1)
-                    .setMaxValues(5)
-                    .addOptions(
-                        Object.entries(POSITIONS).map(([value, title]) => ({
-                            label: title,
-                            value,
-                            default: form.positions.includes(value as BotPosition)
-                        }))
-                    )
-            )
-        );
-    }
+    components.push(
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId(customId('positions'))
+                .setPlaceholder('희망 포지션 선택')
+                .setMinValues(1)
+                .setMaxValues(5)
+                .addOptions(
+                    Object.entries(POSITIONS).map(([value, title]) => ({
+                        label: title,
+                        value,
+                        default: form.positions.includes(value as BotPosition)
+                    }))
+                )
+        )
+    );
     const actions = new ActionRowBuilder<ButtonBuilder>();
-    if (form.context.accounts.length)
-        actions.addComponents(
-            new ButtonBuilder()
-                .setCustomId(customId('submit'))
-                .setLabel(activeRegistration(form.context) ? '수정하기' : '신청하기')
-                .setStyle(ButtonStyle.Primary)
-                .setDisabled(!account || form.positions.length === 0)
-        );
+    actions.addComponents(
+        new ButtonBuilder()
+            .setCustomId(customId('submit'))
+            .setLabel(activeRegistration(form.context) ? '수정하기' : '신청하기')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(form.positions.length === 0)
+    );
     if (activeRegistration(form.context))
         actions.addComponents(
             new ButtonBuilder()
@@ -205,8 +203,26 @@ export async function handleRegistration(
             await interaction.editReply(notice('서버의 모집 글에서 신청해 주세요.'));
             return;
         }
-        const context = await api.registration(interaction.guildId, opener[1]!, interaction.user.id);
+        let context = await api.registration(interaction.guildId, opener[1]!, interaction.user.id);
+        let joined = false;
+        if (context.canEdit && !activeRegistration(context)) {
+            // 처음에는 전 포지션을 허용하고, 희망 포지션은 신청 뒤 필요한 경우 수정한다.
+            context = await api.saveRegistration(interaction.guildId, context.scrimId, {
+                actorId: interaction.user.id,
+                interactionId: interaction.id,
+                action: 'create',
+                riotAccountId:
+                    context.accounts.find((account) => account.isPrimary)?.id ??
+                    context.accounts[0]?.id ??
+                    null,
+                positions: context.registration?.positions.length
+                    ? context.registration.positions
+                    : (Object.keys(POSITIONS) as BotPosition[])
+            });
+            joined = true;
+        }
         const form = forms.create(interaction.user.id, interaction.guildId, context);
+        if (joined) form.feedback = '신청했어요. 희망 포지션은 필요하면 수정해 주세요.';
         await interaction.editReply(renderForm(form));
         return;
     }
@@ -232,9 +248,9 @@ export async function handleRegistration(
         form.feedback = null;
         if (parsed.action === 'account' && interaction.isStringSelectMenu()) {
             const account = interaction.values[0];
-            if (!form.context.accounts.some((value) => value.id === account))
+            if (account !== 'none' && !form.context.accounts.some((value) => value.id === account))
                 throw new BotApiError(400, 'INVALID_ACCOUNT', '다시 계정을 선택해 주세요.');
-            form.accountId = account!;
+            form.accountId = account === 'none' ? '' : account!;
         } else if (parsed.action === 'positions' && interaction.isStringSelectMenu()) {
             if (
                 !interaction.values.length ||
@@ -247,7 +263,7 @@ export async function handleRegistration(
             form.accountPage = Math.max(0, form.accountPage - 1);
         } else if (parsed.action === 'next') {
             form.accountPage = Math.min(
-                Math.floor((form.context.accounts.length - 1) / 25),
+                Math.floor((form.context.accounts.length - 1) / 24),
                 form.accountPage + 1
             );
         } else if (parsed.action === 'withdraw') {
@@ -271,7 +287,9 @@ export async function handleRegistration(
                 ...(action !== 'create' && form.context.registration
                     ? { registrationId: form.context.registration.id }
                     : {}),
-                ...(action === 'withdraw' ? {} : { riotAccountId: form.accountId, positions: form.positions })
+                ...(action === 'withdraw'
+                    ? {}
+                    : { riotAccountId: form.accountId || null, positions: form.positions })
             });
             form.confirmingWithdrawal = false;
             form.feedback =
@@ -281,7 +299,7 @@ export async function handleRegistration(
                       ? '신청을 수정했어요.'
                       : '신청했어요.';
             form.positions = form.context.registration?.positions.slice() ?? form.positions;
-            form.accountId = form.context.registration?.riotAccountId ?? form.accountId;
+            form.accountId = form.context.registration?.riotAccountId ?? '';
         }
         await interaction.editReply(renderForm(form));
     } finally {

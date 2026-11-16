@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ComponentType } from 'discord.js';
 import { renderRecruitment } from '../src/messages/recruitment.ts';
 import { renderEntry } from '../src/messages/entry.ts';
 import { renderMatch } from '../src/messages/match.ts';
@@ -8,6 +9,17 @@ import { publication } from './fixtures.ts';
 import type { BotPosition } from '../../../shared/bot-api.js';
 
 const origin = new URL('https://monkeybot.example');
+
+interface MessageComponent {
+    type: number;
+    content?: string;
+    divider?: boolean;
+    components?: readonly MessageComponent[];
+}
+
+function messageComponents(components: readonly MessageComponent[]): MessageComponent[] {
+    return components.flatMap((component) => [component, ...messageComponents(component.components ?? [])]);
+}
 
 for (const kind of ['recruitment', 'entry'] as const) {
     test(`${kind} 링크는 게시 작업을 식별하고 기존 목적지를 유지한다`, () => {
@@ -33,9 +45,15 @@ test('선발 정원이 차도 모집 카드의 내 신청 버튼을 유지한다
     const value = renderRecruitment(job, origin);
     const controls = value.components[1]!.toJSON();
     assert.equal('components' in controls && controls.components.length, 2);
-    assert.match(JSON.stringify(controls), /내 신청/);
+    assert.match(JSON.stringify(controls), /참가하기/);
     assert.match(JSON.stringify(value), /<t:/);
     assert.deepEqual(value.allowedMentions, { parse: [] });
+    const parts = messageComponents(value.components.map((component) => component.toJSON()));
+    assert.equal(parts.filter((part) => part.type === ComponentType.Separator && part.divider).length, 2);
+    const paragraphs = parts.filter((part) => part.type === ComponentType.TextDisplay);
+    assert.match(paragraphs[0]!.content!, /모집 중/);
+    assert.match(paragraphs[1]!.content!, /선발 10\/10/);
+    assert.match(paragraphs[2]!.content!, /대기/);
 });
 
 function matchJob(kind: 'lineup' | 'result') {
@@ -87,10 +105,10 @@ test('결과 카드는 실제 승자·시리즈 점수·ROFL KDA를 한도 안�
     assert.match(json, /포로 2 : 0 칼날부리/);
     assert.match(json, /Ahri · 0\/—\/0/);
     assert.match(json, /시리즈 승자 · 포로/);
-    assert.ok(
-        (value.components[0]!.toJSON() as { components: { content: string }[] }).components[0]!.content
-            .length < 4000
-    );
+    const parts = messageComponents(value.components.map((component) => component.toJSON()));
+    assert.ok(parts.some((part) => part.type === ComponentType.Separator && part.divider));
+    assert.ok(parts.reduce((sum, part) => sum + (part.content?.length ?? 0), 0) <= 4000);
+    assert.ok(parts.length <= 40);
     assert.deepEqual(value.allowedMentions, { parse: [] });
 });
 
@@ -118,8 +136,10 @@ test('최대 인원과 긴 이름에도 Discord 글·버튼 길이 제한을 만
     }));
     const value = renderRecruitment(job, origin);
     const json = value.components.map((component) => component.toJSON());
-    const text = json[0] as { components: { content: string }[] };
-    assert.ok(text.components[0]!.content.length <= 4000);
+    const parts = messageComponents(json);
+    assert.ok(parts.reduce((sum, part) => sum + (part.content?.length ?? 0), 0) <= 4000);
+    assert.ok(parts.length <= 40);
+    assert.match(JSON.stringify(json), /`01\.`/);
     const controls = json[1] as { components: { custom_id?: string }[] };
     assert.ok(
         controls.components.every((component) => !component.custom_id || component.custom_id.length <= 100)

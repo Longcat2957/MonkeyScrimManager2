@@ -41,7 +41,10 @@
     const id = $props.id();
 
     const title = $derived(editing ? '신청 수정' : '참가 신청');
-    const accountItems = $derived(accounts.map((item) => ({ name: item.id, label: item.riotId })));
+    const accountItems = $derived([
+        { name: '', label: '계정 없이 참가' },
+        ...accounts.map((item) => ({ name: item.id, label: item.riotId }))
+    ]);
 
     $effect(() => {
         if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
@@ -143,18 +146,13 @@
         >
             <h2 class="text-lg font-semibold">{title}</h2>
 
-            {#if accounts.length === 1}
-                <div class="flex flex-col gap-1">
-                    <span class="text-sm font-medium">Riot 계정</span>
-                    <span class="break-all">{accounts[0]!.riotId}</span>
-                </div>
-            {:else}
+            {#if accounts.length > 0}
                 <fieldset
                     disabled={pending || refreshRequired}
                     class="flex flex-col gap-2"
-                    {@attach selectedOptions(accounts.map((account) => account.id === accountId))}
+                    {@attach selectedOptions(accountItems.map((account) => account.name === accountId))}
                 >
-                    <legend class="mb-2 text-sm font-medium">Riot 계정</legend>
+                    <legend class="mb-2 text-sm font-medium">Riot 계정 (선택)</legend>
                     <Radio data={accountItems} bind:value={accountId} layout="v" />
                 </fieldset>
             {/if}

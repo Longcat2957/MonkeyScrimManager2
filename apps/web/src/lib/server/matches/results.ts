@@ -25,6 +25,7 @@ import {
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { requireGuildAdmin, requireGuildMember } from '../guild/access.ts';
+import { writeGuildAudit } from '../guild/audit.ts';
 import { applyGameMmr, reverseGameMmr } from '../mmr/service.ts';
 import type { RoflImportData } from '../rofl/import-model.ts';
 import { RoflError } from '../rofl/format.ts';
@@ -164,7 +165,7 @@ function validateProjection(prepared: RoflImportData) {
 
 async function resolveReplayAccounts(prepared: RoflImportData, dependencies: MatchDependencies) {
     const riot = dependencies.riot ?? (await import('../riot/account.ts'));
-    const accounts: { index: number; puuid: string }[] = [];
+    const accounts: { index: number; puuid: string; gameName: string; tagLine: string }[] = [];
     // 공용 Riot 전송기의 동시 요청 상한보다 작게 나누며 실패한 묶음도 모두 정리한 뒤 반환한다.
     for (let offset = 0; offset < prepared.rows.participantData.length; offset += 4) {
         const batch = await Promise.allSettled(
@@ -176,7 +177,14 @@ async function resolveReplayAccounts(prepared: RoflImportData, dependencies: Mat
                     });
                     if (!/^[A-Za-z0-9_-]{1,128}$/.test(account.puuid))
                         throw new DomainError('SERVICE_UNAVAILABLE', 'Riot 계정 식별자를 확인할 수 없어요');
-                    return { index: player.participantIndex, puuid: account.puuid };
+                    const gameName = account.gameName?.trim() || player.gameName!;
+                    const tagLine = account.tagLine?.trim() || player.tagLine!;
+                    if (!parseRiotId(`${gameName}#${tagLine}`))
+                        throw new DomainError(
+                            'SERVICE_UNAVAILABLE',
+                            'Riot 계정의 현재 이름을 확인할 수 없어요'
+                        );
+                    return { index: player.participantIndex, puuid: account.puuid, gameName, tagLine };
                 } catch (error) {
                     if (error instanceof RiotError && error.code === 'NOT_FOUND')
                         throw new DomainError('CONFLICT', 'ROFL의 Riot ID를 현재 계정으로 확인할 수 없어요');
@@ -230,7 +238,7 @@ async function lockResultUsers(tx: Transaction, actor: Actor, userIds: string[])
         .for('no key update');
 }
 
-/** 사용자 → 계정 키 → 연결 순서를 시즌·내전보다 먼저 잡는다. 읽기만 하는 계정 키는 표시정보 수정 잠금과 충돌하지 않는다. */
+/** 사용자 → 계정 키 → 연결 순서로 잠근다. 다른 서버의 표시정보 변경과 계정 키 읽기는 함께 진행한다. */
 async function lockReplayAccounts(
     tx: Transaction,
     guildId: string,
@@ -255,10 +263,16 @@ async function lockReplayAccounts(
         .filter((account) => !identities.some((identity) => identity.puuid === account.puuid))
         .sort((left, right) => (left.puuid < right.puuid ? -1 : left.puuid > right.puuid ? 1 : 0));
     if (missing.length) {
-        // 자동 확인된 부계정은 실사용 기록의 외래키만 만든다. 서버 연결·대표 계정은 바꾸지 않는다.
+        // 아직 없는 실사용 계정을 준비하며 연결까지 같은 결과 저장 트랜잭션에서 확정한다.
         await tx
             .insert(riotAccounts)
-            .values(missing.map((account) => ({ puuid: account.puuid })))
+            .values(
+                missing.map((account) => ({
+                    puuid: account.puuid,
+                    gameName: account.gameName,
+                    tagLine: account.tagLine
+                }))
+            )
             .onConflictDoNothing({ target: riotAccounts.puuid });
         identities = await tx
             .select()
@@ -291,15 +305,22 @@ async function lockReplayAccounts(
     });
 }
 
-/** 기존 서버 계정으로 팀을 확인한 뒤 파일의 명시적 포지션과 확정 라인업을 대조한다. */
+/** 표준 진영·업로드 선택 또는 기존 계정 연결로 팀을 확인하고 실제 포지션을 확정 라인업과 대조한다. */
 function linkReplayParticipants(
     prepared: RoflImportData,
     identity: RoflIdentity[],
     accounts: Awaited<ReturnType<typeof lockReplayAccounts>>,
     players: Awaited<ReturnType<typeof validateLineupRoster>>,
-    match: typeof matches.$inferSelect
+    match: typeof matches.$inferSelect,
+    blueTeamSlot: 'a' | 'b'
 ) {
     const teamLinks = new Map<number, string>();
+    const replayTeams = prepared.rows.gameData.teams.map((team) => team.teamId);
+    if (replayTeams.includes(100) && replayTeams.includes(200)) {
+        // 표준 팀 코드 100은 블루, 200은 레드다. 참가자 배열 순서로 진영을 만들지 않는다.
+        teamLinks.set(100, blueTeamSlot === 'a' ? match.teamAId : match.teamBId);
+        teamLinks.set(200, blueTeamSlot === 'a' ? match.teamBId : match.teamAId);
+    }
     for (const player of prepared.rows.participantData) {
         const account = accounts.find((row) => row.index === player.participantIndex)!;
         if (!account.userId) continue;
@@ -313,7 +334,8 @@ function linkReplayParticipants(
             conflict('ROFL의 양 팀 구성과 확정한 출전 팀이 일치하지 않아요');
         teamLinks.set(replayTeam, assigned.teamId);
     }
-    if (!teamLinks.size) conflict('ROFL의 팀을 확인할 기존 연결 계정이 필요해요');
+    if (!teamLinks.size)
+        conflict('표준 블루·레드 팀 코드가 없는 ROFL은 팀을 확인할 기존 연결 계정이 필요해요');
     if (teamLinks.size === 1) {
         const known = [...teamLinks][0]!;
         const otherTeam = prepared.rows.gameData.teams.find((team) => team.teamId !== known[0])!;
@@ -324,6 +346,8 @@ function linkReplayParticipants(
     const linked = prepared.rows.participantData.map((player) => {
         const account = accounts.find((row) => row.index === player.participantIndex)!;
         const position = identity.find((row) => row.participantIndex === player.participantIndex)?.position;
+        if (!account.userId && !position)
+            conflict('계정이 연결되지 않은 출전자는 ROFL에 실제 포지션이 있어야 해요');
         const teamId = teamLinks.get(player.replayTeamId!);
         const assigned = account.userId
             ? players.find((row) => row.member.userId === account.userId)
@@ -337,6 +361,77 @@ function linkReplayParticipants(
     if (new Set(linked.map((row) => row.assigned.participantId)).size !== 10)
         conflict('ROFL 출전자와 확정한 라인업이 일치하지 않아요');
     return linked;
+}
+
+/** 첫 정상 결과에서 확인한 서버별 계정 연결을 다음 경기에도 재사용한다. 기존 대표와 신청 선택은 보존한다. */
+async function persistReplayAccounts(
+    tx: Transaction,
+    guildId: string,
+    actor: Actor,
+    linked: ReturnType<typeof linkReplayParticipants>,
+    resolved: Awaited<ReturnType<typeof resolveReplayAccounts>>
+) {
+    // 다른 서버가 편집 중인 표시정보는 기다리지 않는다. 현재 실사용 이름은 경기 출전에 따로 보존한다.
+    const refreshable = await tx
+        .select({ id: riotAccounts.id })
+        .from(riotAccounts)
+        .where(
+            inArray(
+                riotAccounts.id,
+                linked.map((row) => row.account.accountId)
+            )
+        )
+        .orderBy(asc(riotAccounts.id))
+        .for('no key update', { skipLocked: true });
+    const refreshableIds = new Set(refreshable.map((row) => row.id));
+    const ownLinks = await tx
+        .select()
+        .from(guildRiotAccounts)
+        .where(
+            and(
+                eq(guildRiotAccounts.guildId, guildId),
+                inArray(
+                    guildRiotAccounts.userId,
+                    linked.map((row) => row.assigned.member.userId!)
+                )
+            )
+        )
+        .orderBy(asc(guildRiotAccounts.riotAccountId))
+        .for('share');
+    for (const { player, account, assigned } of linked) {
+        const current = resolved.find((row) => row.index === player.participantIndex)!;
+        if (refreshableIds.has(account.accountId))
+            await tx
+                .update(riotAccounts)
+                .set({ gameName: current.gameName, tagLine: current.tagLine })
+                .where(eq(riotAccounts.id, account.accountId));
+        if (!account.userId) {
+            const userId = assigned.member.userId!;
+            const previousPrimary = ownLinks.find((link) => link.userId === userId && link.isPrimary);
+            await tx.insert(guildRiotAccounts).values({
+                guildId,
+                riotAccountId: account.accountId,
+                userId,
+                isPrimary: !previousPrimary,
+                linkedByUserId: actor.userId
+            });
+            await writeGuildAudit(tx, {
+                kind: 'riot_account_linked',
+                guildId,
+                actorUserId: actor.userId,
+                targetUserId: userId,
+                riotAccountId: account.accountId,
+                previousPrimaryAccountId: previousPrimary?.riotAccountId ?? null,
+                nextPrimaryAccountId: previousPrimary?.riotAccountId ?? account.accountId
+            });
+        }
+        await tx
+            .update(scrimParticipants)
+            .set({ riotAccountId: account.accountId })
+            .where(
+                and(eq(scrimParticipants.id, assigned.participantId), isNull(scrimParticipants.riotAccountId))
+            );
+    }
 }
 
 async function finishSeries(tx: Transaction, context: Awaited<ReturnType<typeof lockMatch>>) {
@@ -596,7 +691,14 @@ export async function importMatchRofl(
             const players = await validateLineupRoster(tx, context.match, lineup.players, true);
             if (replay?.kind === 'cancelled')
                 return restoreGameResult(tx, user, guildId, context, input, replay.source, players);
-            const linked = linkReplayParticipants(prepared, identity, accounts, players, context.match);
+            const linked = linkReplayParticipants(
+                prepared,
+                identity,
+                accounts,
+                players,
+                context.match,
+                input.blueTeamSlot
+            );
             const blueTeamId = input.blueTeamSlot === 'a' ? context.match.teamAId : context.match.teamBId;
             const winnerSide = winnerSideFor(
                 linked.map(({ player, assigned }) => ({
@@ -612,6 +714,7 @@ export async function importMatchRofl(
                 .where(eq(matchRoflImports.resultFingerprint, fingerprint))
                 .limit(1);
             if (duplicate) conflict('같은 게임의 결과가 이미 등록되어 있어요');
+            await persistReplayAccounts(tx, guildId, user, linked, resolved);
             await tx.insert(roflMetadata).values(prepared.rows.metadata);
             await tx.insert(roflParticipants).values(prepared.rows.participants);
             await tx.insert(roflGameDataV1).values(prepared.rows.gameData);

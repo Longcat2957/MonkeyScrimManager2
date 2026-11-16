@@ -4,6 +4,8 @@ import {
     ButtonStyle,
     ContainerBuilder,
     MessageFlags,
+    SeparatorBuilder,
+    SeparatorSpacingSize,
     TextDisplayBuilder,
     escapeMarkdown
 } from 'discord.js';
@@ -25,6 +27,12 @@ export const STATUSES: Record<BotScrimStatus, string> = {
     ended_early: '중도 종료',
     cancelled: '취소'
 };
+export const CARD_COLORS = {
+    info: 0x22d3ee,
+    success: 0x34d399,
+    warning: 0xfbbf24,
+    error: 0xf87171
+} as const;
 
 export function label(value: string, maximum = 80): string {
     const text = value.replace(/\s+/g, ' ').trim();
@@ -45,10 +53,19 @@ export function publicationUrl(origin: URL, publication: BotPublication, suffix 
     return url.href;
 }
 
-export function card(text: string) {
-    return new ContainerBuilder()
-        .setAccentColor(0x22d3ee)
+export function card(text: string, ...sections: string[]) {
+    const container = new ContainerBuilder()
+        .setAccentColor(CARD_COLORS.info)
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(text));
+    for (const section of sections) {
+        if (!section.trim()) continue;
+        container
+            .addSeparatorComponents(
+                new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+            )
+            .addTextDisplayComponents(new TextDisplayBuilder().setContent(section));
+    }
+    return container;
 }
 
 export function linkRow(title: string, url: string) {

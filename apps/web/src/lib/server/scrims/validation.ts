@@ -102,8 +102,14 @@ export function validateSettings(input: ScrimSettings): ScrimSettings {
     };
 }
 
-export function validateRegistration(input: { riotAccountId: string; positions: readonly LolPosition[] }) {
-    const riotAccountId = requireUuid(input.riotAccountId, 'Riot 계정');
+export function validateRegistration(input: {
+    riotAccountId?: string | null;
+    positions: readonly LolPosition[];
+}) {
+    const riotAccountId =
+        input.riotAccountId === null || input.riotAccountId === undefined || input.riotAccountId === ''
+            ? null
+            : requireUuid(input.riotAccountId, 'Riot 계정');
     if (
         !Array.isArray(input.positions) ||
         input.positions.length < 1 ||

@@ -62,6 +62,7 @@
                     registration={data.me.registration}
                     accounts={data.me.riotAccounts}
                     primaryAccountId={data.me.primaryAccountId}
+                    previousPositions={data.me.previousPositions}
                     canRegister={data.can.register}
                     canEdit={data.can.editRegistration}
                     blockedReason={data.can.registerBlockedReason}

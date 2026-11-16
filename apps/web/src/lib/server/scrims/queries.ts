@@ -18,6 +18,7 @@ import { publicDisplayName, readPublicIdentities } from '../accounts/public-iden
 import type { Database, Transaction } from '../db/types.ts';
 import {
     guildRiotAccounts,
+    guildMembers,
     riotAccounts,
     scrimParticipantPreferences,
     scrimParticipantRegistrations,
@@ -333,6 +334,14 @@ export async function getScrimDetail(
                     registeredAt: entry.joinedAt.toISOString()
                 };
             });
+            const [membership] = user
+                ? await tx
+                      .select({ userId: guildMembers.userId })
+                      .from(guildMembers)
+                      .where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, user.userId)))
+                      .limit(1)
+                : [];
+            const previous = user ? entries.find((entry) => entry.userId === user.userId) : undefined;
             const mine = user
                 ? entries.find(
                       (entry) =>
@@ -340,7 +349,7 @@ export async function getScrimDetail(
                           (entry.status === 'selected' || entry.status === 'standby')
                   )
                 : undefined;
-            const myRegistration: MyRegistration | null = mine?.riotAccountId
+            const myRegistration: MyRegistration | null = mine
                 ? {
                       id: mine.registrationId,
                       status: mine.status,
@@ -357,6 +366,10 @@ export async function getScrimDetail(
                 participants,
                 counts,
                 myRegistration,
+                isMember: Boolean(membership),
+                previousPositions: preferences
+                    .filter((preference) => preference.scrimParticipantId === previous?.participantId)
+                    .map((preference) => preference.position),
                 operations: recruitmentOperations(row, guild.isAdmin, counts.selected)
             };
         },

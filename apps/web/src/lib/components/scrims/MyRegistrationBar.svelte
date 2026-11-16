@@ -2,7 +2,7 @@
     import { Button, toast } from 'stdf';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
-    import { REGISTRATION_STATUS } from '#lib/features/labels.ts';
+    import { POSITIONS, REGISTRATION_STATUS } from '#lib/features/labels.ts';
     import type { MyRegistration, RegistrationAccount } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
@@ -13,19 +13,47 @@
         registration: MyRegistration | null;
         accounts: RegistrationAccount[];
         primaryAccountId: string | null;
+        previousPositions: LolPosition[];
         canRegister: boolean;
         canEdit: boolean;
         // 신청할 수 없을 때 보여 줄 한 줄이다. 신청했거나 신청할 수 있으면 null이다.
         blockedReason: string | null;
     };
 
-    let { registration, accounts, primaryAccountId, canRegister, canEdit, blockedReason }: Props = $props();
+    let {
+        registration,
+        accounts,
+        primaryAccountId,
+        previousPositions,
+        canRegister,
+        canEdit,
+        blockedReason
+    }: Props = $props();
 
     let dialogOpen = $state(false);
     let withdrawing = $state(false);
+    let registering = $state(false);
 
     const status = $derived(registration ? REGISTRATION_STATUS[registration.status] : null);
     const account = $derived(accounts.find((item) => item.id === registration?.riotAccountId));
+
+    async function register() {
+        if (registering || !canRegister || registration) return;
+        registering = true;
+        try {
+            const positions = previousPositions.length
+                ? previousPositions
+                : POSITIONS.map((item) => item.key);
+            const message = await postAction('register', {
+                riotAccountId:
+                    accounts.find((item) => item.id === primaryAccountId)?.id ?? accounts[0]?.id ?? '',
+                positions: positions.join(',')
+            });
+            if (message) toast.error(message);
+        } finally {
+            registering = false;
+        }
+    }
 
     async function withdraw() {
         if (withdrawing) return;
@@ -40,9 +68,10 @@
     }
 </script>
 
-<!-- 내 신청은 한 줄로 요약하고, 신청·수정 입력은 팝업에서 받는다. -->
+<!-- 신규 신청은 한 번에 저장하고, 세부 선택 변경만 팝업에서 받는다. -->
 <section
     aria-labelledby="my-registration"
+    aria-busy={registering || withdrawing}
     class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3"
 >
     <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
@@ -53,7 +82,9 @@
             {:else}
                 <span class="text-xs opacity-60">{status.text}</span>
             {/if}
-            <span class="truncate text-sm opacity-70">{account?.riotId ?? '연결이 해제된 계정'}</span>
+            <span class="truncate text-sm opacity-70">
+                {registration.riotAccountId ? (account?.riotId ?? '연결이 해제된 계정') : '계정 없이 참가'}
+            </span>
             <PositionChips positions={registration.positions as LolPosition[]} />
         {:else if blockedReason}
             <span class="text-sm opacity-70">{blockedReason}</span>
@@ -93,18 +124,20 @@
                 heightOut="0"
                 heightIn="2"
                 injClass="min-h-11 px-4 text-sm"
-                onclick={() => (dialogOpen = true)}>신청하기</Button
+                loading={registering ? {} : null}
+                disabled={registering}
+                onclick={register}>신청하기</Button
             >
         </span>
     {/if}
 </section>
 
-{#if canRegister || (registration && canEdit)}
+{#if registration && canEdit}
     <RegistrationDialog
         bind:open={dialogOpen}
-        editing={Boolean(registration)}
+        editing={true}
         {accounts}
-        accountId={registration?.riotAccountId ?? primaryAccountId ?? accounts[0]?.id ?? ''}
-        positions={(registration?.positions as LolPosition[] | undefined) ?? []}
+        accountId={registration.riotAccountId ?? ''}
+        positions={registration.positions}
     />
 {/if}

@@ -288,11 +288,14 @@ test('팀 대응을 확인할 기존 계정이 없으면 원본 PUUID나 표시 
     );
     assert.ok(Object.values(await storedCounts(f)).every((count) => count === 0));
     await f.db.delete(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.guildId, f.guildId));
-    await assert.rejects(upload(f, slot));
+    const unidentifiedTeams = f
+        .players()
+        .map((player) => ({ ...player, TEAM: player.TEAM === '100' ? '1' : '2' }));
+    await assert.rejects(upload(f, slot, replayBytes(unidentifiedTeams)));
     assert.ok(Object.values(await storedCounts(f)).every((count) => count === 0));
 });
 
-test('명시된 팀·포지션의 미연결 부계정은 당시 출전에만 저장하고 서버 연결과 대표 계정을 바꾸지 않는다', async (t) => {
+test('명시된 팀·포지션의 미연결 부계정도 서버에 연결하되 기존 대표와 신청 계정은 바꾸지 않는다', async (t) => {
     const f = await createMatchResultFixture(t);
     const slot = await f.confirm();
     const beforeLinks = await f.db.select().from(schema.guildRiotAccounts);
@@ -325,7 +328,20 @@ test('명시된 팀·포지션의 미연결 부계정은 당시 출전에만 저
     assert.equal(played?.position, 'top');
     assert.equal(played?.roflParticipantIndex, 9);
     assert.equal((await f.db.select().from(schema.riotAccounts)).length, beforeAccounts + 1);
-    assert.deepEqual(await f.db.select().from(schema.guildRiotAccounts), beforeLinks);
+    const afterLinks = await f.db.select().from(schema.guildRiotAccounts);
+    assert.equal(afterLinks.length, beforeLinks.length + 1);
+    assert.deepEqual(
+        afterLinks.filter((link) => link.riotAccountId !== account.id),
+        beforeLinks
+    );
+    assert.equal(afterLinks.find((link) => link.riotAccountId === account.id)?.isPrimary, false);
+    assert.equal(afterLinks.find((link) => link.riotAccountId === account.id)?.userId, f.actors[0]!.userId);
+    const [audit] = await f.db
+        .select()
+        .from(schema.guildAuditEntries)
+        .where(eq(schema.guildAuditEntries.riotAccountId, account.id));
+    assert.equal(audit?.previousPrimaryAccountId, f.accounts[0]!.id);
+    assert.equal(audit?.nextPrimaryAccountId, f.accounts[0]!.id);
     assert.equal(
         (
             await f.db
@@ -386,8 +402,95 @@ test('한 팀의 연결 근거만 있어도 반대 팀을 확인하고 명시된
                 .from(schema.guildRiotAccounts)
                 .where(eq(schema.guildRiotAccounts.guildId, f.guildId))
         ).length,
-        1
+        10
     );
+});
+
+test('전원 계정 미연결이어도 선택한 블루 팀과 실제 포지션으로 첫 결과를 귀속하고 다음 세트에서 연결을 재사용한다', async (t) => {
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    await f.db.delete(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.guildId, f.guildId));
+    await f.db
+        .update(schema.scrimParticipants)
+        .set({ riotAccountId: null })
+        .where(eq(schema.scrimParticipants.scrimId, f.scrimId));
+    const usersBefore = (await f.db.select().from(schema.users)).length;
+    const first = { ...(await f.slot()), blueTeamSlot: 'b' as const };
+    const swapTeam = (player: ReturnType<Fixture['players']>[number]) => ({
+        ...player,
+        TEAM: player.TEAM === '100' ? '200' : '100'
+    });
+    const bytes = replayBytes(f.players().map(swapTeam).reverse());
+    const game = await upload(f, first, bytes);
+    assert.deepEqual(await upload(f, first, bytes), game);
+    const links = await f.db
+        .select()
+        .from(schema.guildRiotAccounts)
+        .where(eq(schema.guildRiotAccounts.guildId, f.guildId));
+    assert.equal(links.length, 10);
+    for (let index = 0; index < 10; index++) {
+        const account = f.accounts[index]!;
+        const link = links.find((row) => row.riotAccountId === account.id)!;
+        assert.equal(link.userId, f.participants[index]!.userId);
+        assert.equal(link.isPrimary, true);
+        assert.equal(link.linkedByUserId, f.manager.userId);
+        const [participant] = await f.db
+            .select()
+            .from(schema.scrimParticipants)
+            .where(eq(schema.scrimParticipants.id, f.participants[index]!.id));
+        assert.equal(participant?.riotAccountId, account.id);
+        const [played] = await f.db
+            .select()
+            .from(schema.gameParticipants)
+            .where(
+                and(
+                    eq(schema.gameParticipants.gameId, game.gameId),
+                    eq(schema.gameParticipants.scrimParticipantId, participant!.id)
+                )
+            );
+        assert.equal(played?.riotAccountId, account.id);
+        assert.equal(played?.position, MMR_POSITIONS[index % 5]);
+    }
+    const auditBefore = await f.db.select().from(schema.guildAuditEntries);
+    assert.equal(auditBefore.filter((entry) => entry.kind === 'riot_account_linked').length, 10);
+    const secondPlayers = f
+        .players(false)
+        .map((player) => ({ ...swapTeam(player), TEAM_POSITION: undefined }));
+    await upload(
+        f,
+        { ...(await f.slot(2)), blueTeamSlot: 'b' },
+        replayBytes(secondPlayers, { gameLengthMs: 1_900_000 })
+    );
+    assert.equal((await f.db.select().from(schema.gameParticipants)).length, 20);
+    assert.deepEqual(await f.db.select().from(schema.guildAuditEntries), auditBefore);
+    assert.equal((await f.db.select().from(schema.users)).length, usersBefore);
+});
+
+test('첫 자동 연결에 포지션이나 표준 진영 근거가 없거나 기존 소유자와 충돌하면 저장하지 않는다', async (t) => {
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    await f.db.delete(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.guildId, f.guildId));
+    await f.db
+        .update(schema.scrimParticipants)
+        .set({ riotAccountId: null })
+        .where(eq(schema.scrimParticipants.scrimId, f.scrimId));
+    const before = await f.db.select().from(schema.riotAccounts);
+    const slot = await f.slot();
+    const variants = [
+        f.players().map((player) => ({ ...player, TEAM_POSITION: undefined })),
+        f.players().map((player) => ({ ...player, TEAM: player.TEAM === '100' ? '1' : '2' }))
+    ];
+    for (const players of variants)
+        await assert.rejects(upload(f, slot, replayBytes(players)), errorCode('CONFLICT'));
+    await f.db.insert(schema.guildRiotAccounts).values({
+        guildId: f.guildId,
+        riotAccountId: f.accounts[0]!.id,
+        userId: f.actors[5]!.userId,
+        isPrimary: true
+    });
+    await assert.rejects(upload(f, slot), errorCode('CONFLICT'));
+    assert.equal((await f.db.select().from(schema.guildRiotAccounts)).length, 1);
+    assert.equal((await f.db.select().from(schema.guildAuditEntries)).length, 0);
+    assert.deepEqual(await f.db.select().from(schema.riotAccounts), before);
+    assert.ok(Object.values(await storedCounts(f)).every((count) => count === 0));
 });
 
 test('포지션이 누락된 구형 파일은 열 명 모두 기존 계정으로 확인될 때만 확정 출전을 사용한다', async (t) => {
@@ -463,6 +566,8 @@ test('MMR 원장 쓰기가 실패하면 ROFL·출전·시리즈·게시 작업�
     const scrim = await f.row();
     const publications = await f.db.select().from(schema.discordPublicationJobs);
     const accounts = await f.db.select().from(schema.riotAccounts);
+    const links = await f.db.select().from(schema.guildRiotAccounts);
+    const audit = await f.db.select().from(schema.guildAuditEntries);
     const alternate = alternateAccount(f);
     await f.pool.query(
         "CREATE FUNCTION fail_result_ledger() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture-result-rollback'; END $$"
@@ -490,6 +595,8 @@ test('MMR 원장 쓰기가 실패하면 ROFL·출전·시리즈·게시 작업�
     assert.deepEqual(await f.row(), scrim);
     assert.deepEqual(await f.db.select().from(schema.discordPublicationJobs), publications);
     assert.equal((await f.db.select().from(schema.userPositionMmr)).length, 0);
+    assert.deepEqual(await f.db.select().from(schema.guildRiotAccounts), links);
+    assert.deepEqual(await f.db.select().from(schema.guildAuditEntries), audit);
     assert.deepEqual(await f.db.select().from(schema.riotAccounts), accounts);
 });
 

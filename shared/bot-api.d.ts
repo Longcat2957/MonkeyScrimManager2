@@ -44,7 +44,7 @@ export interface BotRegistrationInput {
     interactionId: string;
     action: 'create' | 'update' | 'withdraw';
     registrationId?: string;
-    riotAccountId?: string;
+    riotAccountId?: string | null;
     positions?: BotPosition[];
 }
 

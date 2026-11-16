@@ -7,7 +7,8 @@ import type {
     BotSeasonSnapshot
 } from '../../../../shared/bot-api.js';
 import { BotApiError } from '../api/client.js';
-import { card, label, linkRow, notice, scrimUrl, webUrl } from '../messages/shared.js';
+import { card, label, linkRow, notice, webUrl } from '../messages/shared.js';
+export { scheduleFromKst } from './schedule.js';
 
 const PUBLICATION_LABELS: Record<BotPublicationKind, string> = {
     recruitment: '모집',
@@ -16,22 +17,6 @@ const PUBLICATION_LABELS: Record<BotPublicationKind, string> = {
     result: '경기 결과',
     confirmation_dm: '참가 안내 DM'
 };
-
-export function scheduleFromKst(value: string | null): string | null {
-    if (!value?.trim()) return null;
-    const match = /^(\d{4})-(\d{2})-(\d{2}) ([01]\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
-    if (!match) throw new Error('예정 시각은 한국 시각으로 2026-11-05 20:00처럼 입력해 주세요.');
-    const [, year, month, day, hour, minute] = match;
-    const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00+09:00`);
-    if (
-        !Number.isFinite(date.getTime()) ||
-        new Date(date.getTime() + 9 * 60 * 60_000).toISOString().slice(0, 16) !==
-            `${year}-${month}-${day}T${hour}:${minute}`
-    ) {
-        throw new Error('실제 달력에 있는 날짜를 입력해 주세요.');
-    }
-    return date.toISOString();
-}
 
 function seasonDate(value: string) {
     return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium' }).format(
@@ -134,32 +119,6 @@ export async function handleCommand(interaction: ChatInputCommandInteraction, ap
             components: [
                 card('서버 준비를 확인했어요. 서버 관리에서 계정과 게시 채널을 설정해 주세요.'),
                 linkRow('서버 관리 열기', webUrl(origin, `/g/${guildId}/admin`))
-            ]
-        });
-    } else if (interaction.commandName === '내전모집') {
-        let scheduledAt: string | null;
-        try {
-            scheduledAt = scheduleFromKst(interaction.options.getString('예정시각'));
-        } catch (error) {
-            await interaction.editReply(
-                notice(error instanceof Error ? error.message : '예정 시각을 확인해 주세요.')
-            );
-            return;
-        }
-        const result = await api.createScrim(guildId, {
-            actorId,
-            interactionId: interaction.id,
-            title: interaction.options.getString('제목', true),
-            scheduledAt,
-            teamCount: interaction.options.getInteger('팀수') ?? 2,
-            reserveCapacity: interaction.options.getInteger('대기정원') ?? 0,
-            hardFearless: interaction.options.getBoolean('하드피어리스') ?? false
-        });
-        await interaction.editReply({
-            ...notice('내전을 만들었어요.'),
-            components: [
-                card('내전을 만들었어요.'),
-                linkRow('내전 열기', scrimUrl(origin, guildId, result.scrimId))
             ]
         });
     } else if (interaction.commandName === '게시복구') {

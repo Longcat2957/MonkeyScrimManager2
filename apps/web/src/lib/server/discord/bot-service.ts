@@ -177,12 +177,9 @@ async function registrationContext(
     const reason =
         row.status !== 'recruit'
             ? '모집이 마감되어 신청을 변경할 수 없어요'
-            : (!mine || mine.withdrawnAt !== null) && !accounts.length
-              ? '서버 관리자에게 Riot 계정 연결을 요청해 주세요'
-              : (!mine || mine.withdrawnAt !== null) &&
-                  active.length >= row.teamCount * 5 + row.reserveCapacity
-                ? '신청 정원이 찼어요'
-                : null;
+            : (!mine || mine.withdrawnAt !== null) && active.length >= row.teamCount * 5 + row.reserveCapacity
+              ? '신청 정원이 찼어요'
+              : null;
     return {
         guildId,
         scrimId,
@@ -244,7 +241,7 @@ export async function mutateBotRegistration(
     const registration =
         input.action === 'withdraw'
             ? null
-            : validateRegistration({ riotAccountId: input.riotAccountId!, positions: input.positions! });
+            : validateRegistration({ riotAccountId: input.riotAccountId, positions: input.positions! });
     await requireGuildMember(actor, guildId, { ...access, db });
     return db.transaction(async (tx) =>
         withBotReceipt(

@@ -36,7 +36,7 @@ const noIcon: IconResolver = () => null;
 
 // mmr은 현재 시즌의 포지션별 값이다(초기값 1500). 팀 편성·경매 화면이 사용한다.
 export type MockParticipant = Omit<ScrimParticipant, 'iconUrl'> & {
-    riotAccountId: string;
+    riotAccountId: string | null;
     championId: string;
     mmr: Record<LolPosition, number>;
 };
@@ -529,7 +529,10 @@ export async function getMockScrimDetail(
             })
         ),
         counts: counts(scrim),
-        myRegistration
+        myRegistration,
+        previousPositions: [
+            ...(scrim.participants.findLast((participant) => participant.userId === userId)?.positions ?? [])
+        ]
     };
 }
 
@@ -568,8 +571,8 @@ export async function updateMockScrimSettings(
 type RegistrationInput = {
     userId: string;
     displayName: string;
-    riotAccountId: string;
-    riotId: string;
+    riotAccountId: string | null;
+    riotId: string | null;
     positions: LolPosition[];
 };
 
@@ -585,7 +588,10 @@ export async function registerMock(
     if (myParticipant(scrim, input.userId)) return { status: 409, message: '이미 신청했어요' };
     if (activeRegistrations(scrim).length >= capacity(scrim))
         return { status: 409, message: '신청 정원이 찼어요' };
-    if (activeRegistrations(scrim).some((participant) => participant.riotAccountId === input.riotAccountId)) {
+    if (
+        input.riotAccountId &&
+        activeRegistrations(scrim).some((participant) => participant.riotAccountId === input.riotAccountId)
+    ) {
         return { status: 409, message: '이 Riot 계정은 이미 신청에 쓰였어요' };
     }
     scrim.participants.push({

@@ -4,8 +4,10 @@ import { getMockBracket } from '../src/lib/mocks/bracket.ts';
 import {
     createMockScrim,
     findMockScrimRecord,
+    getMockScrimDetail,
     registerMock,
     setMockParticipantStatus,
+    updateMockRegistration,
     withdrawMock
 } from '../src/lib/mocks/scrims.ts';
 import {
@@ -60,6 +62,37 @@ const register = (scrimId: string, key: string) =>
 
 const statusOf = (scrimId: string, userId: string) =>
     findMockScrimRecord(guildId, scrimId)!.participants.find((item) => item.userId === userId)?.status;
+
+test('Riot 계정 없는 여러 참가자도 신청하고 계정 없이 수정·철회할 수 있다', async () => {
+    const scrimId = await createMockScrim(guildId, {
+        title: '계정 없는 신청',
+        scheduledAt: null,
+        teamCount: 2,
+        reserveCapacity: 0,
+        hardFearless: false
+    });
+    const input = {
+        userId: 'unlinked-first',
+        displayName: '계정 없는 참가자',
+        riotAccountId: null,
+        riotId: null,
+        positions: ['mid'] as const
+    };
+    assert.equal(await registerMock(guildId, scrimId, { ...input, positions: [...input.positions] }), null);
+    assert.equal(
+        await registerMock(guildId, scrimId, { ...input, userId: 'unlinked-second', positions: ['top'] }),
+        null
+    );
+    assert.equal(await updateMockRegistration(guildId, scrimId, { ...input, positions: ['support'] }), null);
+    const detail = await getMockScrimDetail(guildId, scrimId, input.userId);
+    assert.equal(detail?.myRegistration?.riotAccountId, null);
+    assert.deepEqual(detail?.myRegistration?.positions, ['support']);
+    assert.equal(await withdrawMock(guildId, scrimId, input.userId), null);
+    assert.equal(statusOf(scrimId, input.userId), 'withdrawn');
+    const withdrawn = await getMockScrimDetail(guildId, scrimId, input.userId);
+    assert.equal(withdrawn?.myRegistration, null);
+    assert.deepEqual(withdrawn?.previousPositions, ['support']);
+});
 
 test('신청하면 선발 자리가 남았을 때 선발, 찼으면 대기가 되고 빈자리는 먼저 신청한 대기자가 채운다', async () => {
     const { scrimId } = await nearlyFullScrim();

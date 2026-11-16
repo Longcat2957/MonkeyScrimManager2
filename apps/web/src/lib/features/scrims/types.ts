@@ -80,7 +80,7 @@ export type RegistrationAccount = {
 export type MyRegistration = {
     id: string;
     status: RegistrationStatus;
-    riotAccountId: string;
+    riotAccountId: string | null;
     positions: LolPosition[];
 };
 

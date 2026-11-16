@@ -226,6 +226,64 @@ test('같은 참가 interaction의 동시 처리와 재전송은 신청·revisio
     assert.equal((await f.row()).revision, before.revision + 1);
 });
 
+test('웹 가입·Riot 연결 없는 Discord 멤버도 참가 화면에서 자동 사용자 생성 후 모든 포지션으로 신청한다', async (t) => {
+    const f = await createBotFixture(t);
+    const userId = '990000000000102001';
+    const profile = { ...f.profile(userId), globalName: '신규 Discord 참가자' };
+    f.members.get(f.ids.guild)!.set(userId, { user: profile, roleIds: [] });
+    assert.deepEqual(await f.db.select().from(schema.users).where(eq(schema.users.id, userId)), []);
+    assert.deepEqual(
+        await f.db.select().from(schema.guildMembers).where(eq(schema.guildMembers.userId, userId)),
+        []
+    );
+    const context = await getBotRegistration(f.db, f.ids.guild, f.scrimId, userId, f.dependencies);
+    assert.equal(context.canEdit, true);
+    assert.deepEqual(context.accounts, []);
+    assert.equal(context.registration, null);
+    const input: BotRegistrationInput = {
+        actorId: userId,
+        interactionId: nextInteractionId(),
+        action: 'create',
+        riotAccountId: null,
+        positions: ['top', 'jungle', 'mid', 'bot', 'support']
+    };
+    const joined = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, input, f.dependencies);
+    assert.equal(joined.registration?.status, 'selected');
+    assert.equal(joined.registration?.riotAccountId, null);
+    assert.deepEqual(joined.registration?.positions, input.positions);
+    const [user] = await f.db.select().from(schema.users).where(eq(schema.users.id, userId));
+    assert.ok(user);
+    assert.equal(user.globalName, profile.globalName);
+    assert.equal(user.isServiceAdmin, false);
+    const [membership] = await f.db
+        .select()
+        .from(schema.guildMembers)
+        .where(and(eq(schema.guildMembers.guildId, f.ids.guild), eq(schema.guildMembers.userId, userId)));
+    assert.ok(membership);
+    assert.equal(membership.isAdmin, false);
+    const [participant] = await f.db
+        .select()
+        .from(schema.scrimParticipants)
+        .where(
+            and(eq(schema.scrimParticipants.scrimId, f.scrimId), eq(schema.scrimParticipants.userId, userId))
+        );
+    assert.ok(participant);
+    assert.equal(participant.riotAccountId, null);
+    assert.equal(participant.displayName, profile.globalName);
+    const registrations = await f.db
+        .select()
+        .from(schema.scrimParticipantRegistrations)
+        .where(eq(schema.scrimParticipantRegistrations.scrimParticipantId, participant.id));
+    assert.equal(registrations.length, 1);
+    assert.equal(registrations[0]!.joinedByUserId, userId);
+    assert.equal(registrations[0]!.status, 'selected');
+    assert.deepEqual(await f.db.select().from(schema.sessions).where(eq(schema.sessions.userId, userId)), []);
+    assert.deepEqual(
+        await f.db.select().from(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.userId, userId)),
+        []
+    );
+});
+
 test('철회 후 옛 참가 재전송은 재가입하지 않고 새 신청에는 새 이력이 생긴다', async (t) => {
     const f = await createBotFixture(t);
     const input = f.input();

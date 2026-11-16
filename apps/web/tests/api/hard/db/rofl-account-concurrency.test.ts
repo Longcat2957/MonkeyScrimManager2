@@ -253,13 +253,17 @@ test(
                 );
             assert.equal(link?.userId, otherManager.userId);
             assert.equal(link?.isPrimary, false);
+            const currentLinks = await f.db
+                .select()
+                .from(schema.guildRiotAccounts)
+                .where(eq(schema.guildRiotAccounts.guildId, f.guildId));
             assert.deepEqual(
-                await f.db
-                    .select()
-                    .from(schema.guildRiotAccounts)
-                    .where(eq(schema.guildRiotAccounts.guildId, f.guildId)),
+                currentLinks.filter((row) => row.riotAccountId !== alternateId),
                 originalLinks
             );
+            const automatic = currentLinks.find((row) => row.riotAccountId === alternateId);
+            assert.equal(automatic?.userId, f.actors[0]!.userId);
+            assert.equal(automatic?.isPrimary, false);
         } finally {
             continueImport.open();
             continueAccount.open();

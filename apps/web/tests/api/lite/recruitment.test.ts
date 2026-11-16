@@ -113,6 +113,14 @@ test('희망 포지션의 사용자 순서를 유지하되 입력 배열을 공�
     );
 });
 
+test('Riot 계정이 미지정이어도 희망 포지션으로 신청할 수 있다', () => {
+    for (const riotAccountId of [null, undefined, ''])
+        assert.deepEqual(validateRegistration({ riotAccountId, positions: ['mid'] }), {
+            riotAccountId: null,
+            positions: ['mid']
+        });
+});
+
 test('정원은 선발과 전체 활성 신청을 각각 제한하고 철회·제외 이력은 제외한다', () => {
     const selected = Array.from({ length: 10 }, (_, index) => registration(String(index), 'selected'));
     const active = [...selected, registration('a', 'standby'), registration('b', 'standby')];

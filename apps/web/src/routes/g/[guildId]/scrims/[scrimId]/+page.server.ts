@@ -96,8 +96,8 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
                   ? '모집이 마감됐어요'
                   : !locals.actor
                     ? '로그인하면 신청할 수 있어요'
-                    : accounts.accounts.length === 0
-                      ? 'Riot 계정이 연결돼야 신청할 수 있어요 — 서버 운영자에게 연결을 요청해 주세요'
+                    : !detail.isMember
+                      ? '이 서버의 멤버만 신청할 수 있어요'
                       : active >= detail.counts.activeCapacity
                         ? '신청 정원이 찼어요'
                         : null;
@@ -108,6 +108,7 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
                 me: locals.actor
                     ? {
                           registration: detail.myRegistration,
+                          previousPositions: detail.previousPositions,
                           riotAccounts: accounts.accounts,
                           primaryAccountId: accounts.primaryAccountId
                       }
@@ -153,11 +154,9 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
           ? '모집이 마감됐어요'
           : !user
             ? '로그인하면 신청할 수 있어요'
-            : accounts.length === 0
-              ? 'Riot 계정이 연결돼야 신청할 수 있어요 — 서버 운영자에게 연결을 요청해 주세요'
-              : active >= detail.counts.activeCapacity
-                ? '신청 정원이 찼어요'
-                : null;
+            : active >= detail.counts.activeCapacity
+              ? '신청 정원이 찼어요'
+              : null;
 
     return {
         // 레이아웃의 값과 같다. null이 아님을 확인한 뒤 다시 넘겨 페이지에서 바로 쓴다.
@@ -167,6 +166,7 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
         me: user
             ? {
                   registration: detail.myRegistration,
+                  previousPositions: detail.previousPositions,
                   riotAccounts: accounts,
                   primaryAccountId: primary?.id ?? accounts[0]?.id ?? null
               }
@@ -195,20 +195,21 @@ function failWith(failure: MockFailure | null) {
 
 // 신청·수정 폼을 읽는다. 내 계정이 아니거나 포지션이 없으면 필드 오류를 돌려준다.
 function readRegistration(data: FormData) {
-    const account = myAccounts().find((item) => item.id === String(data.get('riotAccountId') ?? ''));
+    const accountId = String(data.get('riotAccountId') ?? '').trim();
+    const account = myAccounts().find((item) => item.id === accountId);
     const keys = POSITIONS.map((position) => position.key);
     const positions = String(data.get('positions') ?? '')
         .split(',')
         .filter((key): key is LolPosition => keys.includes(key as LolPosition));
-    if (!account) return { error: fail(400, { message: 'Riot 계정을 다시 골라 주세요' }) };
+    if (accountId && !account) return { error: fail(400, { message: 'Riot 계정을 다시 골라 주세요' }) };
     if (positions.length === 0)
         return { error: fail(400, { positionsError: '희망 포지션을 하나 이상 골라 주세요' }) };
     return {
         input: {
             userId: mockUser.userId,
             displayName: mockUser.displayName,
-            riotAccountId: account.id,
-            riotId: account.riotId,
+            riotAccountId: account?.id ?? null,
+            riotId: account?.riotId ?? null,
             positions: [...new Set(positions)]
         }
     };
@@ -338,7 +339,7 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
         const revision = { expectedRevision };
         if (name === 'register' || name === 'registration') {
             const input = {
-                riotAccountId: String(data.get('riotAccountId') ?? ''),
+                riotAccountId: String(data.get('riotAccountId') ?? '').trim() || null,
                 positions: String(data.get('positions') ?? '').split(
                     ','
                 ) as (typeof POSITIONS)[number]['key'][]
