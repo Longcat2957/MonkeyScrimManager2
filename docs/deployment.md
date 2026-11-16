@@ -124,10 +124,12 @@ Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비�
 
 [cd.yml](../.github/workflows/cd.yml)은 **main push**에서 `production` Environment의 SSH 설정으로 VPS에 배포한다. 이미지를 새로 빌드하거나 CI 검사를 반복하지 않는다. dev CI 완료 후 main으로 반영하면 된다. CD는 동시에 하나만 실행하며 진행 중 배포를 취소하지 않는다.
 
+운영 도메인의 Cloudflare SSL/TLS 모드는 **Full (strict)**로 설정한다. VPS는 `monkeybot.lol`의 Origin CA 인증서와 443 포트를 준비하며 HTTP는 HTTPS로 이동시킨다. Flexible 모드에서는 공개 HTTPS 요청이 origin HTTP로 전달돼 리다이렉트가 반복될 수 있다. Discord 앱은 멤버 동기화에 필요한 **Server Members Intent**를 활성화한다. [Cloudflare Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/), [Discord 앱 설정](https://discord.com/developers/docs/resources/application#edit-current-application)
+
 1. Compose·nginx 설정과 [deploy.sh](../deploy/deploy.sh)를 임시 디렉터리로 전송한다.
 2. Actions의 `GITHUB_TOKEN`으로 GHCR에 로그인하고 `:dev` 이미지를 받는다. 받은 digest를 Compose에 고정해 웹·봇·migration이 같은 이미지를 사용한다.
 3. `/var/backups/monkeybot/release-<UTC시각>-…`에 기존 Compose 설정과 `msm2_main` custom dump·SHA256을 보관한다. 백업 검사가 실패하면 배포를 중단한다.
-4. `docker compose up -d --wait`로 migration 성공·웹/봇 healthy를 기다린 뒤 nginx 설정을 검사·reload하고 공개 `/docs` 응답을 확인한다.
+4. `docker compose up -d --wait`로 migration 성공·웹/봇 healthy를 기다린 뒤 nginx 설정을 검사·reload하고 공개 `/docs`의 HTTP 200을 확인한다. 리다이렉트 응답은 배포 성공으로 처리하지 않는다.
 
 VPS에서는 빌드·패키지 설치를 하지 않는다. 서비스 비밀 파일과 PostgreSQL 볼륨을 유지하며, 임시 전송 파일과 GHCR 인증 정보는 작업 종료 시 제거한다. [Compose up](https://docs.docker.com/reference/cli/docker/compose/up/), [GHCR 인증](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-in-a-github-actions-workflow)
 

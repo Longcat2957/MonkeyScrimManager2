@@ -50,6 +50,10 @@ docker compose config --quiet
 docker compose up -d --wait --wait-timeout 180
 docker compose exec -T nginx nginx -t
 docker compose exec -T nginx nginx -s reload
-curl --fail --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null https://monkeybot.lol/docs
+http_status=$(curl --fail --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' https://monkeybot.lol/docs)
+if [[ "$http_status" != 200 ]]; then
+    printf '공개 /docs 응답: HTTP %s (200 필요)\n' "$http_status" >&2
+    exit 1
+fi
 printf '배포 완료: %s (%s)\n' "$resolved_image" "$revision"
 docker compose ps
