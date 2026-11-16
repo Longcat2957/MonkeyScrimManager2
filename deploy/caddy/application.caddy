@@ -1,0 +1,8 @@
+# 기본 전송은 요청·SSE를 버퍼링하지 않으며 위조된 X-Forwarded-*를 신뢰하지 않는다.
+# 이름으로 연결하므로 웹 컨테이너가 재생성돼도 Docker DNS로 새 주소를 조회한다.
+reverse_proxy web:3000 {
+    transport http {
+        dial_timeout 5s
+        response_header_timeout 60s
+    }
+}

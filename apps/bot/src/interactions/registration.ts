@@ -10,7 +10,7 @@ import type { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js'
 import type { BotPosition, BotRegistrationContext } from '../../../../shared/bot-api.js';
 import type { BotApi } from '../api/client.js';
 import { BotApiError } from '../api/client.js';
-import { card, label, notice, POSITIONS } from '../messages/shared.js';
+import { card, label, notice, POSITIONS, preferredPositionLabel } from '../messages/shared.js';
 
 type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction;
 export interface RegistrationForm {
@@ -90,9 +90,7 @@ export function renderForm(form: RegistrationForm) {
     if (!form.context.accounts.length || !form.context.canEdit)
         parts.push(`계정: ${account ? label(account.label) : '미지정'}`);
     if (!form.context.canEdit)
-        parts.push(
-            `희망 포지션: ${form.positions.map((position) => POSITIONS[position]).join(' / ') || '미설정'}`
-        );
+        parts.push(`희망 포지션: ${preferredPositionLabel(form.positions) || '미설정'}`);
     const components: (
         ReturnType<typeof card> | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
     )[] = [card(parts[0]!, parts.slice(1).join('\n\n'))];

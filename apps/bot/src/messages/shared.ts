@@ -34,6 +34,12 @@ export const CARD_COLORS = {
     error: 0xf87171
 } as const;
 
+export function preferredPositionLabel(positions: readonly BotPosition[]): string {
+    return positions.length === 5
+        ? '포지션 무관'
+        : positions.map((position) => POSITIONS[position]).join(' / ');
+}
+
 export function label(value: string, maximum = 80): string {
     const text = value.replace(/\s+/g, ' ').trim();
     return escapeMarkdown([...text].slice(0, maximum).join(''));

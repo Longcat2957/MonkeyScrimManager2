@@ -15,6 +15,12 @@ test('HTTP: 유효 세션은 사용자를 복원하고 만료 세션은 DB와 �
     const f = await createHttpFixture(t);
     const active = await f.session(HTTP_IDS.member);
     assert.equal((await f.request('/me', { headers: { cookie: active.cookie } })).status, 200);
+    const home = await f.request('/', { headers: { cookie: active.cookie } });
+    assert.equal(home.status, 303);
+    assert.equal(new URL(home.headers.get('location')!, f.origin).pathname, '/g/' + HTTP_IDS.guild);
+    assert.equal(home.headers.get('cache-control'), 'private, no-store');
+    const outsider = await f.session(HTTP_IDS.outsider);
+    assert.equal((await f.request('/', { headers: { cookie: outsider.cookie } })).status, 200);
     const expired = await f.session(HTTP_IDS.member, true);
     const denied = await f.request('/me', { headers: { cookie: expired.cookie } });
     assert.equal(denied.status, 401);

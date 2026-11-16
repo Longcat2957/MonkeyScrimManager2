@@ -1,0 +1,29 @@
+{
+    # 접근 로그를 켜지 않으며 upstream 오류에도 OAuth code·state가 기록되지 않게 한다.
+    log default {
+        exclude http.log.error
+    }
+}
+
+http://monkeybot.lol {
+    # 프록시 생존 확인이며 앱·DB 준비 상태 검사와 구분한다.
+    handle /healthz {
+        respond "ok\n" 200
+    }
+    handle {
+        redir https://monkeybot.lol{uri} 308
+    }
+}
+
+monkeybot.lol {
+    @internal path /internal /internal/*
+    handle @internal {
+        respond 404
+    }
+    handle {
+        request_body {
+            max_size 70MiB
+        }
+        import {$MSM2_CADDY_HANDLER:maintenance.caddy}
+    }
+}

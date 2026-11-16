@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import type { BotPublication } from '../../../../shared/bot-api.js';
-import { card, CARD_COLORS, label, POSITIONS, publicationUrl, STATUSES } from './shared.js';
+import { card, CARD_COLORS, label, preferredPositionLabel, publicationUrl, STATUSES } from './shared.js';
 
 export function renderRecruitment(publication: BotPublication, origin: URL) {
     const data = publication.data;
@@ -12,7 +12,7 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             ? players
                   .map(
                       (player, index) =>
-                          `\`${String(index + 1).padStart(2, '0')}.\` **${label(player.name, 40)}** · ${player.positions.map((position) => POSITIONS[position]).join(' / ') || '포지션 미정'}`
+                          `\`${String(index + 1).padStart(2, '0')}.\` **${label(player.name, 40)}** · ${preferredPositionLabel(player.positions) || '포지션 미정'}`
                   )
                   .join('\n')
             : '없음';

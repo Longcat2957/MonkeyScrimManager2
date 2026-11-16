@@ -49,7 +49,7 @@ jobs:
                       rm -rf -- "$RUNNER_TEMP/msm2-ssh"
                   }
                   trap cleanup EXIT
-                  tar -czf "$RUNNER_TEMP/deploy.tar.gz" -C deploy compose.yml compose.app.yml deploy.sh nginx
+                  tar -czf "$RUNNER_TEMP/deploy.tar.gz" -C deploy compose.yml compose.app.yml deploy.sh caddy
                   ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "mkdir -m 700 -p '$staging'"
                   scp "${ssh_options[@]}" -P "$VPS_PORT" "$RUNNER_TEMP/deploy.tar.gz" "$destination:$staging/deploy.tar.gz"
                   ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "tar -xzf '$staging/deploy.tar.gz' -C '$staging'"

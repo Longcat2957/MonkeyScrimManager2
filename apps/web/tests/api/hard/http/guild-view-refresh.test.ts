@@ -33,7 +33,7 @@ function discordCalls(f: Fixture) {
 }
 
 async function warmGuildList(f: Fixture, cookie: string) {
-    const response = await f.request('/', { headers: { cookie } });
+    const response = await f.request('/docs', { headers: { cookie } });
     assert.equal(response.status, 200);
     await response.text();
     f.upstreamCalls.length = 0;

@@ -6,14 +6,14 @@
 
 ## Docker Compose 운영: 인프라 통합
 
-2026-11-16 기준 기존 nginx·PostgreSQL을 `monkeybot` Compose 프로젝트로 이관하고 MSM2 전용 DB와 서비스별 운영 환경을 준비했다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. dev CI가 공통 앱 이미지를 만들고 main CD가 VPS의 Compose 서비스를 갱신한다.
+운영 Compose 설정은 Caddy·PostgreSQL·웹·봇을 `monkeybot` 프로젝트로 관리한다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. 웹 요청을 VPS에 직접 연결하려면 Cloudflare DNS only 설정이 필요하다. Caddy가 공인 HTTPS 인증서를 자동 발급·갱신하며 dev CI가 공통 앱 이미지를 만들고 main CD가 VPS의 Compose 서비스를 갱신한다. 실제 적용 결과는 해당 Actions 실행과 VPS·DNS 상태로 확인한다. 2026-11-16의 최초 nginx·PostgreSQL 이관 기록은 아래에 보존한다.
 
 | 위치 | 역할 |
 | --- | --- |
-| [compose.yml](../deploy/compose.yml) | 기본 인프라: nginx·PostgreSQL, 상태 확인, 로그 회전, 네트워크, 기존 외부 볼륨 |
+| [compose.yml](../deploy/compose.yml) | 기본 인프라: Caddy·PostgreSQL, 상태 확인, 로그 회전, 네트워크, 인증서 영속 볼륨과 기존 DB 외부 볼륨 |
 | [compose.app.yml](../deploy/compose.app.yml) | 같은 프로젝트에 웹·봇·일회성 migration을 합치는 앱 구성. 이미지 설정이 없으면 실패 |
 | [Compose 환경 예제](../deploy/.env.example) | 경로·볼륨·포트와 후속 릴리스 이미지 설정. 서비스 비밀 값과 분리 |
-| [nginx/](../deploy/nginx/) | 공통 프록시 설정, 현재 중단 안내, 후속 앱 연결 설정 |
+| [caddy/](../deploy/caddy/) | Caddy 자동 HTTPS와 내부 경로 차단·앱 프록시 설정 |
 | [provision.sql](../deploy/postgres/provision.sql) | MSM2 전용 DB·비특권 계정·미래 migration 객체의 런타임 권한 준비 |
 
 서버의 활성 배포 경로는 `/opt/monkeybot`이다. `deploy/`의 위 파일 구조를 그대로 배치하며 `/opt/monkeybot/.env`는 Compose 환경 예제를 기준으로 작성한다. 기본 `COMPOSE_FILE=compose.yml`은 인프라 두 서비스만 선택한다.
@@ -23,10 +23,10 @@ cd /opt/monkeybot
 docker compose config --quiet
 docker compose up -d --wait
 docker compose ps
-docker compose logs --tail=100 nginx postgres
+docker compose logs --tail=100 caddy postgres
 ```
 
-서비스 환경과 인증서는 서버의 `/etc/monkeybot`에 보관한다. 디렉터리는 0700, 환경 파일·인증서 키는 0600이다. `postgres.env`는 기존 PostgreSQL 프로세스의 실제 설정을 유지하며, 웹과 migration은 서로 다른 DB 계정으로 연결한다. 서비스별 값은 아래 2단계의 환경 파일을 따른다. 인증서와 nginx 설정은 읽기 전용 bind mount이며 Rocky Linux의 SELinux를 고려해 전용 경로에 `Z` 라벨을 적용한다.
+서비스 환경은 서버의 `/etc/monkeybot`에 보관하며 디렉터리는 0700, 환경 파일은 0600이다. `postgres.env`는 기존 PostgreSQL 프로세스의 실제 설정을 유지하며 웹과 migration은 서로 다른 DB 계정으로 연결한다. Caddy의 인증서·ACME 계정은 `monkeybot-caddy-data` 볼륨의 `/data`, 실행 설정은 `monkeybot-caddy-config` 볼륨의 `/config`에 보관한다. 앱 교체 때 이 볼륨을 삭제하지 않는다. Caddy 설정은 읽기 전용 bind mount이며 Rocky Linux의 SELinux를 고려해 전용 경로에 `Z` 라벨을 적용한다. 기존 `/etc/monkeybot/certs`의 Cloudflare Origin CA 인증서는 새 Caddy 구성에서 사용하지 않는다.
 
 ### DB와 기존 데이터 보존
 
@@ -34,19 +34,19 @@ docker compose logs --tail=100 nginx postgres
 
 MSM2 전용 DB는 `msm2_main`이다. `msm2_migrator`는 이 DB의 소유자로서 DDL을 실행하고, `msm2_runtime`은 업무용 테이블의 SELECT·INSERT·UPDATE·DELETE와 sequence 사용 권한만 받는다. 두 계정 모두 superuser·역할 생성·DB 생성 권한이 없다. `provision.sql`은 기존 비밀번호를 변경하지 않으며 서버 환경의 `MSM2_RUNTIME_PASSWORD`·`MSM2_MIGRATOR_PASSWORD`를 읽는다. bootstrap 계정으로 `postgres` DB에 연결해 실행한다. 새 DB의 업무 테이블은 실제 앱 릴리스의 migration 단계에서 생성한다.
 
-DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunnel` 네트워크는 유지한다. 앱용 `data` 네트워크는 Compose가 만드는 내부 네트워크이며 nginx·웹·봇은 `edge` 네트워크로 통신한다. nginx의 80·443은 기존처럼 IPv4·IPv6에 공개하고 앱 구성의 웹·봇·migration에는 호스트 공개 포트가 없다.
+DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunnel` 네트워크는 유지한다. 앱용 `data` 네트워크는 Compose가 만드는 내부 네트워크이며 Caddy·웹·봇은 `edge` 네트워크로 통신한다. Caddy는 TCP 80·443과 HTTP/3용 UDP 443을 호스트에 공개하며 앱 구성의 웹·봇·migration에는 호스트 공개 포트가 없다.
 
 최초 이관 전에는 `/var/backups/monkeybot/infra-<UTC시각>/`에 기존 컨테이너 설정·nginx·인증서, DB별 custom dump와 globals SQL, SHA256 목록을 보관한다. dump의 archive 목록을 검사하고 기존 DB의 테이블별 행 수·행 해시·sequence 상태·DB 소유자와 기존 역할의 권한·비밀번호 해시를 이관 전후에 비교한다. 해당 자료에는 비밀 값과 사용자 자료가 포함되므로 서버에서만 제한된 권한으로 보관한다.
 
-활성 컨테이너는 `monkeybot-nginx-1`·`monkeybot-postgres-1`이다. 이전 컨테이너의 설정·로그는 아래 정리 보관본에 남기고 중지된 컨테이너는 제거했다. 복구 때는 보관한 설정으로 컨테이너를 다시 만들며, 같은 PostgreSQL 볼륨을 사용하는 두 컨테이너를 동시에 시작하지 않는다.
+최초 인프라 이관 직후 컨테이너는 `monkeybot-nginx-1`·`monkeybot-postgres-1`이었다. Caddy 전환에서는 nginx를 교체하며 PostgreSQL 컨테이너·볼륨은 유지한다. 이전 컨테이너의 설정·로그는 아래 정리 보관본에 남기고 중지된 컨테이너는 제거했다. 복구 때는 보관한 설정으로 컨테이너를 다시 만들며 같은 PostgreSQL 볼륨을 사용하는 두 컨테이너를 동시에 시작하지 않는다.
 
-2026-11-16 이관에서는 기존 DB 130개 테이블의 행 수·데이터 해시와 sequence 상태, DB 소유자 및 기존 계정의 권한·비밀번호 해시가 모두 일치했다. MSM2 전용 DB는 업무 테이블 0개이며 실행·migration 계정의 실제 TCP 접속과 스키마 생성 권한 구분을 확인했다. 격리 Compose에서도 계정 준비 재실행, migration 계정의 DDL, 런타임의 DML·DDL 거부, Compose 재생성 후 기존 볼륨의 자료 보존을 검증했다. 서버의 `/opt/monkeybot/.infra-backup-path`가 이번 이관의 백업·검증 보고서 경로를 가리킨다.
+2026-11-16 최초 이관에서는 기존 DB 130개 테이블의 행 수·데이터 해시와 sequence 상태, DB 소유자 및 기존 계정의 권한·비밀번호 해시가 모두 일치했다. 당시 MSM2 전용 DB는 업무 테이블 0개였으며 실행·migration 계정의 실제 TCP 접속과 스키마 생성 권한 구분을 확인했다. 격리 Compose에서도 계정 준비 재실행, migration 계정의 DDL, 런타임의 DML·DDL 거부, Compose 재생성 후 기존 볼륨의 자료 보존을 검증했다. 서버의 `/opt/monkeybot/.infra-backup-path`가 최초 이관의 백업·검증 보고서 경로를 가리킨다.
 
 ### 후속 앱 구성의 연결점
 
-이미지와 `web.env`·`bot.env`·`migration.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 순서다. nginx는 이때 중단 안내 대신 `application.conf`를 읽고 웹을 연결한다.
+이미지와 `web.env`·`bot.env`·`migration.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 순서다. Caddy는 이때 `maintenance.caddy` 대신 `application.caddy`를 읽고 웹을 연결한다.
 
-기본 nginx의 `/healthz` 200은 nginx 생존 확인이다. 앱 구성의 웹 healthcheck는 실행 계정으로 업무 테이블 조회와 `/docs` 응답을 확인한다. 봇 상태 서버는 Compose에서 `BOT_STATUS_HOST=0.0.0.0`으로 바인딩하며 공개 포트 없이 웹이 내부 상태를 조회한다. 실제 봇은 CD가 기동하며 슬래시 명령 등록은 별도 운영 명령이다.
+Caddy의 HTTP `/healthz` 200은 프록시 생존 확인이다. 앱 구성의 웹 healthcheck는 실행 계정으로 업무 테이블 조회와 `/docs` 응답을 확인한다. 봇 상태 서버는 Compose에서 `BOT_STATUS_HOST=0.0.0.0`으로 바인딩하며 공개 포트 없이 웹이 내부 상태를 조회한다. 실제 봇은 CD가 기동하며 슬래시 명령 등록은 별도 운영 명령이다.
 
 ## 운영 환경과 이미지 분리
 
@@ -124,16 +124,19 @@ Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비�
 
 [cd.yml](../.github/workflows/cd.yml)은 **main push**에서 `production` Environment의 SSH 설정으로 VPS에 배포한다. 이미지를 새로 빌드하거나 CI 검사를 반복하지 않는다. dev CI 완료 후 main으로 반영하면 된다. CD는 동시에 하나만 실행하며 진행 중 배포를 취소하지 않는다.
 
-운영 도메인의 Cloudflare SSL/TLS 모드는 **Full (strict)**로 설정한다. VPS는 `monkeybot.lol`의 Origin CA 인증서와 443 포트를 준비하며 HTTP는 HTTPS로 이동시킨다. Flexible 모드에서는 공개 HTTPS 요청이 origin HTTP로 전달돼 리다이렉트가 반복될 수 있다. Discord 앱은 멤버 동기화에 필요한 **Server Members Intent**를 활성화한다. [Cloudflare Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/), [Discord 앱 설정](https://discord.com/developers/docs/resources/application#edit-current-application)
+`monkeybot.lol`의 A 레코드는 VPS `141.164.46.191`을 가리키고 Cloudflare 프록시는 **DNS only**로 둔다. 권한 DNS는 Cloudflare에 유지하고 HTTP 프록시 경유만 해제한다. AAAA는 VPS에서 실제로 서비스하는 공개 IPv6가 있을 때만 유지한다. Caddy에 도메인과 외부 80·443 접근을 제공하면 공인 인증서를 자동 발급·갱신한다. DNS only에서는 Cloudflare SSL/TLS 모드가 브라우저와 VPS 사이의 TLS를 처리하지 않으며 Cloudflare Origin CA 인증서를 직접 서비스하지 않는다. 기존 프록시 상태에서 전환할 때는 공인 인증서 준비를 확인하고 DNS를 변경한다. [Caddy 자동 HTTPS](https://caddyserver.com/docs/automatic-https), [Cloudflare 프록시 상태](https://developers.cloudflare.com/dns/proxy-status/)
 
-1. Compose·nginx 설정과 [deploy.sh](../deploy/deploy.sh)를 임시 디렉터리로 전송한다.
+Discord 앱은 멤버 동기화에 필요한 **Server Members Intent**를 활성화한다. [Discord 앱 설정](https://discord.com/developers/docs/resources/application#edit-current-application)
+
+1. Compose·Caddy 설정과 [deploy.sh](../deploy/deploy.sh)를 임시 디렉터리로 전송한다.
 2. Actions의 `GITHUB_TOKEN`으로 GHCR에 로그인하고 `:dev` 이미지를 받는다. 받은 digest를 Compose에 고정해 웹·봇·migration이 같은 이미지를 사용한다.
-3. `/var/backups/monkeybot/release-<UTC시각>-…`에 기존 Compose 설정과 `msm2_main` custom dump·SHA256을 보관한다. 백업 검사가 실패하면 배포를 중단한다.
-4. `docker compose up -d --wait`로 migration 성공·웹/봇 healthy를 기다린 뒤 nginx 설정을 검사·reload하고 공개 `/docs`의 HTTP 200을 확인한다. 리다이렉트 응답은 배포 성공으로 처리하지 않는다.
+3. `/var/backups/monkeybot/release-<UTC시각>-…`에 기존 Compose·프록시 설정과 `msm2_main` custom dump·SHA256을 보관한다. 백업 검사가 실패하면 배포를 중단한다.
+4. migration 성공·웹/봇 healthy를 기다리고 Caddy 설정을 검사한다. 최초 전환에서는 기존 nginx를 중지해 80·443을 넘긴 뒤 Caddy를 올린다. 전환이 실패하면 Caddy를 중지하고 이전 nginx를 다시 시작하며 성공한 뒤 이전 nginx 컨테이너를 제거한다.
+5. Caddy를 reload하고 인증서 검증을 켠 VPS 직접 HTTPS와 공개 `/docs`의 HTTP 200을 확인한다. 리다이렉트 응답이나 인증서 검증 생략은 배포 성공으로 처리하지 않는다.
 
 VPS에서는 빌드·패키지 설치를 하지 않는다. 서비스 비밀 파일과 PostgreSQL 볼륨을 유지하며, 임시 전송 파일과 GHCR 인증 정보는 작업 종료 시 제거한다. [Compose up](https://docs.docker.com/reference/cli/docker/compose/up/), [GHCR 인증](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-in-a-github-actions-workflow)
 
-실패 시 Actions와 `docker compose ps`, `docker compose logs --tail=100 web bot migrate`로 상태를 확인한다. 자동 DB 복원은 하지 않는다. 이전 앱으로 돌아가려면 백업된 `.env`·Compose·nginx 설정을 복구하고 `docker compose up -d --wait`를 실행한다. 이미 적용한 migration과 이전 앱의 호환성을 확인하며, DB 복원이 필요하면 보관된 dump를 별도 빈 DB에 복원해 전환한다.
+실패 시 Actions와 `docker compose ps`, `docker compose logs --tail=100 caddy web bot migrate`로 상태를 확인한다. 자동 DB 복원은 하지 않는다. 이전 앱으로 돌아가려면 백업된 `.env`·Compose·프록시 설정을 복구하고 `docker compose up -d --wait`를 실행한다. nginx 구성으로 돌아가는 경우 Caddy를 먼저 중지해 포트 충돌을 피한다. DNS only에서 브라우저가 신뢰하지 않는 과거 Origin CA 인증서를 그대로 쓰지 않는다. 이미 적용한 migration과 이전 앱의 호환성을 확인하며 DB 복원이 필요하면 보관된 dump를 별도 빈 DB에 복원해 전환한다.
 
 ## 웹·봇 프로세스
 
@@ -160,6 +163,14 @@ unit은 실패 시 재시작하고 SIGTERM으로 종료한다. 봇의 `After=mon
 운영 적용 시에는 환경 파일·검토한 릴리스와 migration을 먼저 준비하고 `systemd-analyze verify`·`nginx -t`를 통과시킨다. 웹을 먼저 올려 공개 화면과 내부 접근 경계를 확인한 뒤 봇을 시작한다. **봇 시작은 실제 Discord 연결과 대기 중인 게시를 발생시킬 수 있으므로 현재 제외된 실연동 검증으로 자동 실행하지 않는다.** 장애 때는 `journalctl -u monkeybot-web`, `journalctl -u monkeybot-bot`와 기존 백오피스 상태를 확인하며 비밀 값이나 메시지 본문을 복사하지 않는다.
 
 ## HTTPS 프록시
+
+운영 Compose는 [Caddyfile](../deploy/caddy/Caddyfile)과 [앱 프록시](../deploy/caddy/application.caddy)를 사용한다. 도메인을 지정하면 HTTP는 HTTPS로 308 이동하고 인증서는 자동으로 관리한다. `/internal`·`/internal/…`은 외부에서 404이며 봇은 Compose 내부의 웹 주소로 접근한다. 요청 본문은 70MiB로 제한하고 프록시가 본문을 파일에 버퍼링하지 않는다. 웹의 `BODY_SIZE_LIMIT=70M`과 파일 자체 64MiB 제한도 유지한다.
+
+Caddy는 외부에서 받은 전달 헤더를 그대로 신뢰하지 않고 실제 연결의 HTTPS 정보를 웹에 제공한다. 웹 포트는 공개하지 않으며 adapter-node의 `PROTOCOL_HEADER=x-forwarded-proto`를 유지한다. Caddy의 접근 로그는 켜지 않고 OAuth callback의 query가 오류 로그에 남지 않도록 처리한다. 인증서·ACME 자료가 있는 영속 볼륨을 백업·복구 대상에 포함하고 `docker compose down -v`로 지우지 않는다. [Caddy Docker 운영](https://caddyserver.com/docs/running#docker-compose), [Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
+
+### 기존 nginx 단독 실행 예제
+
+아래는 현재 Compose와 별개인 단독 실행·격리 검증 경로다.
 
 [사이트 예제](../deploy/nginx.conf.example)는 nginx `http` 문맥의 sites-enabled에 포함한다. 예제의 도메인과 인증서 두 경로를 바꾸고, [내부 차단·프록시 조각](../deploy/nginx-internal.conf.example)을 `/etc/nginx/snippets/monkeybot-internal.conf`에 설치한다. HTTP는 지정 도메인의 HTTPS로 이동하며 `/internal`과 `/internal/…`은 외부에서 404다.
 
@@ -229,6 +240,8 @@ dump는 단일 DB의 schema·자료·sequence를 보존한다. role·tablespace 
 복원 후에는 행·FK·sequence·migration 상태와 대표 업무 결과를 확인한 뒤 새 DB로 앱을 전환한다. 실패하면 기존 데이터/릴리스를 보존한 상태로 원인을 확인한다. 이미 적용한 migration을 수정하거나 앱 시작 시 초기화하지 않는다. 구버전 코드로 돌아갈 때도 변경된 schema와의 호환성을 먼저 검토한다.
 
 ## 격리된 로컬 배포 검사
+
+이 도구는 기존 systemd·nginx 예제를 검사한다. 현재 Caddy Compose 설정이나 공인 인증서 발급·갱신의 검증으로 합산하지 않는다.
 
 Docker 데몬을 사용하는 Linux, Node 24 이상, OpenSSL, systemd-analyze와 미리 빌드한 웹·봇이 필요하다. Docker 컨텍스트는 이 Linux 파일 시스템을 읽을 수 있는 로컬 데몬이어야 한다. PostgreSQL CLI를 호스트에 설치하지 않아도 임시 PostgreSQL 컨테이너의 같은 버전 도구로 검사한다.
 

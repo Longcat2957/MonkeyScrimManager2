@@ -85,15 +85,9 @@ services:
         stop_grace_period: 45s
         logging: *logging
 
-    nginx:
-        volumes:
-            - type: bind
-              source: ./nginx/application.conf
-              target: /etc/nginx/conf.d/default.conf
-              read_only: true
-              bind:
-                  create_host_path: false
-                  selinux: Z
+    caddy:
+        environment:
+            MSM2_CADDY_HANDLER: application.caddy
         depends_on:
             web:
                 condition: service_healthy

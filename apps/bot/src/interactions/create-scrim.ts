@@ -138,7 +138,10 @@ export function creationModal(form: ScrimCreationForm) {
 
 const expired = () => notice('작성 화면이 만료됐어요. /내전모집으로 다시 열어 주세요.');
 
-export async function openScrimCreation(interaction: ChatInputCommandInteraction, forms: ScrimCreationForms) {
+export async function openScrimCreation(
+    interaction: ChatInputCommandInteraction | ButtonInteraction,
+    forms: ScrimCreationForms
+) {
     if (!interaction.guildId) {
         await interaction.reply({
             ...notice('서버 안에서 명령을 사용해 주세요.'),
