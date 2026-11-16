@@ -124,7 +124,7 @@ export async function getManualFormation(
             const pairs = await formationPairRecords(tx, guildId, row.mmrSeasonId, players);
             return {
                 teams,
-                players: await publicFormationPlayers(tx, players),
+                players: await publicFormationPlayers(tx, players, guildId),
                 assignments,
                 confirmed: ['ready', 'in_progress', 'completed', 'ended_early'].includes(row.status),
                 pairs
@@ -137,11 +137,13 @@ export async function getManualFormation(
 /** 편성의 실제 사용자·MMR 계산을 끝낸 뒤 공개 표현만 바꾼다. 참가자 UUID와 배정은 유지한다. */
 export async function publicFormationPlayers(
     tx: Transaction,
-    players: FormationPlayer[]
+    players: FormationPlayer[],
+    guildId?: string
 ): Promise<FormationPlayer[]> {
     const identities = await readPublicIdentities(
         tx,
-        players.map((player) => player.userId)
+        players.map((player) => player.userId),
+        guildId
     );
     return players.map((player) => {
         const identity = player.userId ? identities.get(player.userId) : undefined;

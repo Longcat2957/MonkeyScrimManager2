@@ -197,3 +197,119 @@ test('계정이 25개를 넘어도 페이지별로 모두 선택할 수 있다',
     assert.equal(last.components[0]!.options.length, 3);
     assert.equal(parseFormId(`form:${form.id}:next`)?.id, form.id);
 });
+
+test('공개 대기·취소 버튼은 수정 화면 없이 신규 대기·기존 선발의 대기 전환·철회를 직접 요청한다', async () => {
+    const forms = new RegistrationForms();
+    const calls: BotRegistrationInput[] = [];
+    let context = registrationContext({ accounts: [] });
+    const api = {
+        registration: async () => context,
+        saveRegistration: async (_guild: string, _scrim: string, input: BotRegistrationInput) => {
+            calls.push(input);
+            context = registrationContext({
+                accounts: [],
+                registration: {
+                    id: REGISTRATION,
+                    status: input.action === 'withdraw' ? 'withdrawn' : 'standby',
+                    riotAccountId: null,
+                    positions: ['mid']
+                }
+            });
+            return context;
+        }
+    } as unknown as BotApi;
+    const first = interaction(`registration-standby:${SCRIM}`);
+    await handleRegistration(first.value, api, forms);
+    assert.equal(calls[0]!.action, 'standby');
+    assert.equal(calls[0]!.riotAccountId, null);
+    assert.equal(calls[0]!.positions?.length, 5);
+    assert.equal(calls[0]!.registrationId, undefined);
+    assert.doesNotMatch(JSON.stringify(first.replies), /희망 포지션 선택|수정하기|신청을 철회할까요/);
+    context = registrationContext({
+        registration: { id: REGISTRATION, status: 'selected', riotAccountId: ACCOUNT, positions: ['mid'] }
+    });
+    await handleRegistration(interaction(`registration-standby:${SCRIM}`).value, api, forms);
+    assert.deepEqual(calls[1], {
+        actorId: USER,
+        interactionId: '970000000000000100',
+        action: 'standby',
+        registrationId: REGISTRATION
+    });
+    const cancel = interaction(`registration-withdraw:${SCRIM}`);
+    await handleRegistration(cancel.value, api, forms);
+    assert.deepEqual(calls[2], {
+        actorId: USER,
+        interactionId: '970000000000000100',
+        action: 'withdraw',
+        registrationId: REGISTRATION
+    });
+    assert.match(JSON.stringify(cancel.replies), /참가를 취소했어요/);
+    assert.doesNotMatch(JSON.stringify(cancel.replies), /철회할까요/);
+});
+
+test('대기자가 참가를 누르면 기존 신청으로 선발 복귀를 요청하고 서버의 대기 유지 결과도 구분한다', async () => {
+    for (const status of ['selected', 'standby'] as const) {
+        const calls: BotRegistrationInput[] = [];
+        const original = registrationContext({
+            registration: { id: REGISTRATION, status: 'standby', riotAccountId: null, positions: ['mid'] }
+        });
+        const api = {
+            registration: async () => original,
+            saveRegistration: async (_guild: string, _scrim: string, input: BotRegistrationInput) => {
+                calls.push(input);
+                return registrationContext({ registration: { ...original.registration!, status } });
+            }
+        } as unknown as BotApi;
+        const request = interaction(`registration:${SCRIM}`);
+        await handleRegistration(request.value, api, new RegistrationForms());
+        assert.deepEqual(calls, [
+            {
+                actorId: USER,
+                interactionId: '970000000000000100',
+                action: 'select',
+                registrationId: REGISTRATION
+            }
+        ]);
+        assert.match(
+            JSON.stringify(request.replies),
+            status === 'selected' ? /참가자로 복귀/ : /대기를 유지/
+        );
+        assert.doesNotMatch(JSON.stringify(request.replies), /수정하기/);
+    }
+});
+
+test('공개 직접 버튼도 마감·미신청 철회·중복 대기는 쓰기 없이 현재 상태를 안내한다', async () => {
+    let context = registrationContext({
+        registration: { id: REGISTRATION, status: 'selected', riotAccountId: null, positions: ['mid'] },
+        canEdit: false,
+        reason: '모집이 마감됐어요.'
+    });
+    let calls = 0;
+    const api = {
+        registration: async () => context,
+        saveRegistration: async () => {
+            calls++;
+            throw Error('호출되면 안 됨');
+        }
+    } as unknown as BotApi;
+    for (const action of ['standby', 'withdraw']) {
+        const request = interaction(`registration-${action}:${SCRIM}`);
+        await handleRegistration(request.value, api, new RegistrationForms());
+        assert.match(JSON.stringify(request.replies), /마감/);
+    }
+    context = registrationContext();
+    await handleRegistration(
+        interaction(`registration-withdraw:${SCRIM}`).value,
+        api,
+        new RegistrationForms()
+    );
+    context = registrationContext({
+        registration: { id: REGISTRATION, status: 'standby', riotAccountId: null, positions: ['mid'] }
+    });
+    await handleRegistration(
+        interaction(`registration-standby:${SCRIM}`).value,
+        api,
+        new RegistrationForms()
+    );
+    assert.equal(calls, 0);
+});

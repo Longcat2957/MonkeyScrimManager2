@@ -6,6 +6,8 @@ import type { BotPublication, BotRegistrationInput } from '../../../../../../sha
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import {
     createBotScrim,
+    getBotManualRegistration,
+    addBotParticipant,
     getBotRegistration,
     initializeBotGuild,
     mutateBotRegistration,
@@ -122,8 +124,27 @@ async function registerWhilePublicationWaits(
     }
 }
 
-test('봇 초기 설정은 현재 관리자만 실행하며 동시 요청에도 활성 시즌을 하나만 만든다', async (t) => {
+test('봇 초기 설정은 일반 멤버를 자동 등록하고 동시·반복 실행에도 시즌과 멤버를 중복 생성하지 않는다', async (t) => {
     const f = await createAccessFixture(t);
+    const newcomer = '990000000000000081';
+    const bot = '990000000000000082';
+    const withdrawn = '990000000000000083';
+    f.members.get(f.ids.guild)!.set(newcomer, {
+        user: { ...f.profile(newcomer), username: '신규 사용자' },
+        nickname: '서버 새 별명',
+        roleIds: []
+    });
+    f.members.get(f.ids.guild)!.set(bot, { user: f.profile(bot), isBot: true, roleIds: [] });
+    f.members
+        .get(f.ids.guild)!
+        .set(withdrawn, { user: f.profile(withdrawn), nickname: '복원하지 않을 별명', roleIds: [] });
+    await f.db.insert(schema.users).values({
+        ...f.profile(withdrawn),
+        username: '탈퇴한 사용자',
+        withdrawnAt: new Date(),
+        publicProfile: false,
+        publicRiotIds: false
+    });
     await assert.rejects(
         initializeBotGuild(
             f.db,
@@ -158,6 +179,49 @@ test('봇 초기 설정은 현재 관리자만 실행하며 동시 요청에도 
         f.dependencies
     );
     assert.equal(repeated.seasonId, seasons[0]!.id);
+    assert.equal(repeated.membersSynced, 4);
+    const memberships = await f.db
+        .select()
+        .from(schema.guildMembers)
+        .where(eq(schema.guildMembers.guildId, f.ids.guild));
+    assert.equal(memberships.length, 4);
+    assert.equal(memberships.find((member) => member.userId === newcomer)?.nickname, '서버 새 별명');
+    assert.equal(memberships.find((member) => member.userId === newcomer)?.isAdmin, false);
+    assert.ok(!memberships.some((member) => [bot, withdrawn, f.ids.bot].includes(member.userId)));
+    const accounts = await f.db.select().from(schema.users);
+    assert.equal(accounts.find((user) => user.id === newcomer)?.username, '신규 사용자');
+    assert.equal(accounts.find((user) => user.id === newcomer)?.isServiceAdmin, false);
+    assert.ok(!accounts.some((user) => user.id === bot));
+    assert.equal(accounts.find((user) => user.id === withdrawn)?.username, '탈퇴한 사용자');
+    assert.ok(accounts.find((user) => user.id === withdrawn)?.withdrawnAt);
+    assert.equal((await f.db.select().from(schema.sessions)).length, 0);
+});
+
+test('초기 설정은 전체 명단 조회 실패나 조회 중 권한 회수 시 부분 멤버·시즌을 저장하지 않는다', async (t) => {
+    for (const failure of ['조회 실패', '권한 회수']) {
+        const f = await createAccessFixture(t);
+        const newcomer = '990000000000000081';
+        const discord = {
+            ...f.discord,
+            listMembers: async () => {
+                if (failure === '조회 실패') throw new DiscordError(503, '멤버 목록을 가져올 수 없어요');
+                f.guilds.get(f.ids.guild)!.ownerId = f.ids.otherMember;
+                return [{ user: f.profile(newcomer), roleIds: [] }];
+            }
+        };
+        await assert.rejects(
+            initializeBotGuild(
+                f.db,
+                f.ids.guild,
+                { actorId: f.ids.owner, interactionId: nextInteractionId() },
+                { discord }
+            ),
+            (cause: unknown) =>
+                failure === '조회 실패' ? cause instanceof DiscordError : errorCode('FORBIDDEN')(cause)
+        );
+        assert.equal((await f.db.select().from(schema.mmrSeasons)).length, 0);
+        assert.equal((await f.db.select().from(schema.users).where(eq(schema.users.id, newcomer))).length, 0);
+    }
 });
 
 test('종료된 시즌은 봇 초기 설정으로 임의 재개하거나 새 시즌으로 덮어쓰지 않는다', async (t) => {
@@ -226,6 +290,183 @@ test('같은 참가 interaction의 동시 처리와 재전송은 신청·revisio
     assert.equal((await f.row()).revision, before.revision + 1);
 });
 
+test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환은 기존 신청 정보와 멱등성을 보존한다', async (t) => {
+    const f = await createBotFixture(t);
+    const waiting: BotRegistrationInput = {
+        ...f.input(),
+        action: 'standby',
+        riotAccountId: null,
+        positions: ['jungle', 'mid']
+    };
+    const joined = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, waiting, f.dependencies);
+    assert.equal(joined.registration?.status, 'standby');
+    assert.equal(joined.registration?.riotAccountId, null);
+    assert.deepEqual(joined.registration?.positions, ['jungle', 'mid']);
+    assert.deepEqual(
+        await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, waiting, f.dependencies),
+        joined
+    );
+    assert.equal((await f.registrationRows()).length, 1);
+    const select: BotRegistrationInput = {
+        actorId: f.ids.member,
+        interactionId: nextInteractionId(),
+        action: 'select',
+        registrationId: joined.registration!.id
+    };
+    const selected = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, select, f.dependencies);
+    assert.equal(selected.registration?.status, 'selected');
+    const standby: BotRegistrationInput = {
+        ...select,
+        interactionId: nextInteractionId(),
+        action: 'standby'
+    };
+    const demoted = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, standby, f.dependencies);
+    assert.equal(demoted.registration?.status, 'standby');
+    assert.equal(demoted.registration?.id, joined.registration?.id);
+    assert.equal(demoted.registration?.riotAccountId, null);
+    assert.deepEqual(demoted.registration?.positions, ['jungle', 'mid']);
+    assert.equal((await f.registrationRows()).length, 1);
+    const revision = (await f.row()).revision;
+    await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, standby, f.dependencies);
+    assert.equal((await f.row()).revision, revision);
+    await assert.rejects(
+        mutateBotRegistration(
+            f.db,
+            f.ids.guild,
+            f.scrimId,
+            { ...select, interactionId: nextInteractionId(), registrationId: randomUUID() },
+            f.dependencies
+        ),
+        errorCode('CONFLICT')
+    );
+    await assert.rejects(
+        mutateBotRegistration(
+            f.db,
+            f.ids.guild,
+            f.scrimId,
+            { ...select, actorId: f.ids.otherMember, interactionId: nextInteractionId() },
+            f.dependencies
+        ),
+        errorCode('CONFLICT')
+    );
+    await cancelScrim(f.db, f.owner, f.ids.guild, f.scrimId, { expectedRevision: revision }, f.dependencies);
+    await assert.rejects(
+        mutateBotRegistration(
+            f.db,
+            f.ids.guild,
+            f.scrimId,
+            { ...select, interactionId: nextInteractionId() },
+            f.dependencies
+        ),
+        errorCode('CONFLICT')
+    );
+    await assert.rejects(
+        mutateBotRegistration(
+            f.db,
+            f.ids.guild,
+            f.scrimId,
+            { ...waiting, actorId: f.ids.otherMember, interactionId: nextInteractionId() },
+            f.dependencies
+        ),
+        errorCode('CONFLICT')
+    );
+});
+
+test('참가 전환은 선발 정원을 넘지 않으며 직접 대기도 전체 정원과 동시 전환을 검증한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    for (let index = 0; index < 10; index++)
+        await createRegistration(
+            f.db,
+            f.actors[index]!,
+            f.guildId,
+            f.scrimId,
+            { riotAccountId: null, positions: ['mid'] },
+            f.access
+        );
+    const waiting: BotRegistrationInput = {
+        actorId: f.actors[10]!.userId,
+        interactionId: nextInteractionId(),
+        action: 'standby',
+        riotAccountId: null,
+        positions: ['mid']
+    };
+    const first = await mutateBotRegistration(f.db, f.guildId, f.scrimId, waiting, f.access);
+    const revision = (await f.row()).revision;
+    const select: BotRegistrationInput = {
+        actorId: waiting.actorId,
+        interactionId: nextInteractionId(),
+        action: 'select',
+        registrationId: first.registration!.id
+    };
+    assert.equal(
+        (await mutateBotRegistration(f.db, f.guildId, f.scrimId, select, f.access)).registration?.status,
+        'standby'
+    );
+    assert.equal((await f.row()).revision, revision);
+    const second = await mutateBotRegistration(
+        f.db,
+        f.guildId,
+        f.scrimId,
+        { ...waiting, actorId: f.actors[11]!.userId, interactionId: nextInteractionId() },
+        f.access
+    );
+    await assert.rejects(
+        mutateBotRegistration(
+            f.db,
+            f.guildId,
+            f.scrimId,
+            { ...waiting, actorId: f.actors[12]!.userId, interactionId: nextInteractionId() },
+            f.access
+        ),
+        errorCode('CONFLICT')
+    );
+    const initial = await getBotRegistration(f.db, f.guildId, f.scrimId, f.actors[0]!.userId, f.access);
+    const demoted = await mutateBotRegistration(
+        f.db,
+        f.guildId,
+        f.scrimId,
+        {
+            action: 'standby',
+            actorId: f.actors[0]!.userId,
+            interactionId: nextInteractionId(),
+            registrationId: initial.registration!.id
+        },
+        f.access
+    );
+    assert.equal(demoted.registration?.status, 'standby');
+    const results = await concurrently([
+        () =>
+            mutateBotRegistration(
+                f.db,
+                f.guildId,
+                f.scrimId,
+                { ...select, interactionId: nextInteractionId() },
+                f.access
+            ),
+        () =>
+            mutateBotRegistration(
+                f.db,
+                f.guildId,
+                f.scrimId,
+                {
+                    ...select,
+                    actorId: f.actors[11]!.userId,
+                    registrationId: second.registration!.id,
+                    interactionId: nextInteractionId()
+                },
+                f.access
+            )
+    ]);
+    assert.ok(results.every((result) => result.status === 'fulfilled'));
+    const statuses = results
+        .map((result) => (result.status === 'fulfilled' ? result.value.registration?.status : null))
+        .sort();
+    assert.deepEqual(statuses, ['selected', 'standby']);
+    const registrations = await f.db.select().from(schema.scrimParticipantRegistrations);
+    assert.equal(registrations.filter((registration) => registration.status === 'selected').length, 10);
+    assert.equal(registrations.length, 12);
+});
+
 test('웹 가입·Riot 연결 없는 Discord 멤버도 참가 화면에서 자동 사용자 생성 후 모든 포지션으로 신청한다', async (t) => {
     const f = await createBotFixture(t);
     const userId = '990000000000102001';
@@ -282,6 +523,85 @@ test('웹 가입·Riot 연결 없는 Discord 멤버도 참가 화면에서 자�
         await f.db.select().from(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.userId, userId)),
         []
     );
+});
+
+test('봇 운영자는 웹 미가입 멤버를 별명으로 대신 신청하며 재전송·대상·권한 경계를 지킨다', async (t) => {
+    const f = await createBotFixture(t);
+    const userId = '990000000000102011';
+    const elsewhere = '990000000000102012';
+    f.members.get(f.ids.guild)!.set(userId, {
+        user: { ...f.profile(userId), globalName: '전역 표시 이름' },
+        nickname: '현재 서버 별명',
+        roleIds: []
+    });
+    f.members.get(f.ids.otherGuild)!.set(elsewhere, { user: f.profile(elsewhere), roleIds: [] });
+    assert.equal((await f.db.select().from(schema.users).where(eq(schema.users.id, userId))).length, 0);
+    const input = { actorId: f.ids.owner, userId, interactionId: nextInteractionId() };
+    await assert.rejects(
+        getBotManualRegistration(f.db, f.ids.guild, f.scrimId, f.ids.member, f.dependencies),
+        errorCode('FORBIDDEN')
+    );
+    await assert.rejects(
+        addBotParticipant(f.db, f.ids.guild, f.scrimId, { ...input, actorId: f.ids.member }, f.dependencies),
+        errorCode('FORBIDDEN')
+    );
+    for (const target of [elsewhere, f.ids.bot])
+        await assert.rejects(
+            addBotParticipant(
+                f.db,
+                f.ids.guild,
+                f.scrimId,
+                { ...input, userId: target, interactionId: nextInteractionId() },
+                f.dependencies
+            ),
+            errorCode('NOT_FOUND')
+        );
+    await assert.rejects(
+        getBotManualRegistration(f.db, f.ids.otherGuild, f.scrimId, f.ids.owner, f.dependencies),
+        errorCode('NOT_FOUND')
+    );
+    const context = await getBotManualRegistration(f.db, f.ids.guild, f.scrimId, f.ids.owner, f.dependencies);
+    assert.equal(context.canAdd, true);
+    const result = await addBotParticipant(f.db, f.ids.guild, f.scrimId, input, f.dependencies);
+    assert.equal(result.participant.name, '현재 서버 별명');
+    assert.equal(result.participant.status, 'selected');
+    assert.deepEqual(await addBotParticipant(f.db, f.ids.guild, f.scrimId, input, f.dependencies), result);
+    const [participant] = await f.db
+        .select()
+        .from(schema.scrimParticipants)
+        .where(
+            and(eq(schema.scrimParticipants.scrimId, f.scrimId), eq(schema.scrimParticipants.userId, userId))
+        );
+    assert.ok(participant);
+    assert.equal(participant.displayName, '현재 서버 별명');
+    assert.equal(participant.riotAccountId, null);
+    const registrations = await f.registrationRows();
+    assert.equal(registrations.length, 1);
+    assert.equal(registrations[0]!.joinedByUserId, f.ids.owner);
+    assert.deepEqual(
+        (
+            await f.db
+                .select()
+                .from(schema.scrimParticipantPreferences)
+                .where(eq(schema.scrimParticipantPreferences.scrimParticipantId, participant.id))
+        )
+            .map((preference) => preference.position)
+            .sort(),
+        ['top', 'jungle', 'mid', 'bot', 'support'].sort()
+    );
+    const [user] = await f.db.select().from(schema.users).where(eq(schema.users.id, userId));
+    assert.ok(user);
+    assert.equal(user.isServiceAdmin, false);
+    assert.equal(
+        (await f.db.select().from(schema.sessions).where(eq(schema.sessions.userId, userId))).length,
+        0
+    );
+    const [membership] = await f.db
+        .select()
+        .from(schema.guildMembers)
+        .where(and(eq(schema.guildMembers.guildId, f.ids.guild), eq(schema.guildMembers.userId, userId)));
+    assert.equal(membership?.nickname, '현재 서버 별명');
+    assert.equal(membership?.isAdmin, false);
 });
 
 test('철회 후 옛 참가 재전송은 재가입하지 않고 새 신청에는 새 이력이 생긴다', async (t) => {

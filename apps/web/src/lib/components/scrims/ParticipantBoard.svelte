@@ -15,6 +15,7 @@
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import PositionChips from './PositionChips.svelte';
+    import ManualRegistrationDialog from './ManualRegistrationDialog.svelte';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
 
     type Props = {
@@ -41,6 +42,7 @@
     let managing = $state(false);
     let selected = $state<(string | number)[]>([]);
     let pending = $state(false);
+    let adding = $state(false);
     let managementControls = $state<HTMLFieldSetElement>();
 
     const active = $derived(counts.selected + counts.standby);
@@ -206,7 +208,17 @@
                 {/if}
             </div>
             {#if canSelect && !managing}
-                <span class="shrink-0">
+                <span class="flex shrink-0 flex-wrap gap-2">
+                    <Button
+                        fill="lineLight"
+                        size="auto"
+                        heightOut="0"
+                        injClass="min-h-11 px-3 text-sm"
+                        disabled={active >= counts.activeCapacity}
+                        onclick={() => (adding = true)}
+                    >
+                        참가자 추가
+                    </Button>
                     <Button
                         fill="lineLight"
                         size="auto"
@@ -292,6 +304,10 @@
         {/if}
     </CellGroup>
 </section>
+
+{#if canSelect}
+    <ManualRegistrationDialog bind:open={adding} {participants} />
+{/if}
 
 <style>
     .management-controls {

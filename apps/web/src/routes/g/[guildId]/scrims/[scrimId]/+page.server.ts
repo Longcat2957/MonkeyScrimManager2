@@ -35,6 +35,8 @@ import {
     revertMockScrim
 } from '#lib/mocks/workflow.ts';
 import { findMockGuild, mockUser } from '#lib/mocks/session.ts';
+import { listMockMembers } from '#lib/mocks/admin.ts';
+import { listGuildMembers } from '#lib/server/accounts/queries.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import {
     getParticipantConfirmationSummary,
@@ -45,6 +47,7 @@ import { routeError } from '#lib/server/http.ts';
 import { getScrimDetail, listRegistrationAccounts } from '#lib/server/scrims/queries.ts';
 import {
     createRegistration,
+    createManualRegistration,
     updateRegistration,
     withdrawRegistration,
     setParticipantStatus,
@@ -222,6 +225,27 @@ function requireManager(guildId: string, scrimId: string) {
 }
 
 const previewActions: Actions = {
+    addParticipant: async ({ request, params }) => {
+        requireDev();
+        const denied = requireManager(params.guildId, params.scrimId);
+        if (denied) return denied;
+        const userId = String((await request.formData()).get('userId') ?? '');
+        const target = listMockMembers(params.guildId, { q: '', page: 1, pageSize: 1000 }).members.find(
+            (member) => member.userId === userId
+        );
+        if (!target) return fail(404, { message: '서버 멤버를 찾을 수 없어요' });
+        const primary = target.riotAccounts.find((account) => account.isPrimary) ?? target.riotAccounts[0];
+        return failWith(
+            await registerMock(params.guildId, params.scrimId, {
+                userId: target.userId,
+                displayName: target.displayName,
+                riotAccountId: primary?.id ?? null,
+                riotId: primary ? `${primary.gameName}#${primary.tagLine}` : null,
+                positions: POSITIONS.map((position) => position.key)
+            })
+        );
+    },
+
     register: async ({ request, params }) => {
         requireDev();
         const parsed = readRegistration(await request.formData());
@@ -337,7 +361,11 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
         const { guildId, scrimId } = params;
         const expectedRevision = data.has('expectedRevision') ? Number(data.get('expectedRevision')) : NaN;
         const revision = { expectedRevision };
-        if (name === 'register' || name === 'registration') {
+        if (name === 'addParticipant') {
+            await createManualRegistration(db, actor, guildId, scrimId, {
+                userId: String(data.get('userId') ?? '')
+            });
+        } else if (name === 'register' || name === 'registration') {
             const input = {
                 riotAccountId: String(data.get('riotAccountId') ?? '').trim() || null,
                 positions: String(data.get('positions') ?? '').split(
@@ -388,6 +416,45 @@ export const actions: Actions = {
                 dev && findMockGuild(event.params.guildId) ? preview!(event) : runAction(name, event)
         ])
     ),
+    participantOptions: async ({ request, params, locals, setHeaders }) => {
+        try {
+            const data = await request.formData();
+            const q = String(data.get('q') ?? '')
+                .trim()
+                .slice(0, 50);
+            const page = Number(data.get('page') ?? 1);
+            if (!Number.isSafeInteger(page) || page < 1 || page > 10_000)
+                return fail(400, { message: '페이지를 다시 확인해 주세요' });
+            const preview = dev && findMockGuild(params.guildId);
+            if (preview) {
+                const denied = requireManager(params.guildId, params.scrimId);
+                if (denied) return denied;
+            }
+            const result = preview
+                ? listMockMembers(params.guildId, { q, page, pageSize: 20 })
+                : await listGuildMembers(getDb(), locals.actor, params.guildId, {
+                      q,
+                      page,
+                      pageSize: 20
+                  });
+            return {
+                memberOptions: {
+                    members: result.members.map((member) => ({
+                        userId: member.userId,
+                        displayName: member.displayName,
+                        username:
+                            'username' in member && typeof member.username === 'string'
+                                ? member.username
+                                : null
+                    })),
+                    total: result.total,
+                    page
+                }
+            };
+        } catch (cause) {
+            return actionFailure(cause, setHeaders);
+        }
+    },
     notifyParticipants: async ({ request, params, locals, setHeaders }) => {
         if (dev && findMockGuild(params.guildId)) error(404, '내전을 찾을 수 없습니다.');
         try {

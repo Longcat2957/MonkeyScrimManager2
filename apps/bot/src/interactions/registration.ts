@@ -194,14 +194,67 @@ export async function handleRegistration(
     api: BotApi,
     forms: RegistrationForms
 ) {
-    const opener = /^registration:([a-f0-9-]{36})$/.exec(interaction.customId);
+    const opener = /^registration(?:-(standby|withdraw))?:([a-f0-9-]{36})$/.exec(interaction.customId);
     if (opener) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         if (!interaction.guildId) {
             await interaction.editReply(notice('서버의 모집 글에서 신청해 주세요.'));
             return;
         }
-        let context = await api.registration(interaction.guildId, opener[1]!, interaction.user.id);
+        let context = await api.registration(interaction.guildId, opener[2]!, interaction.user.id);
+        if (opener[1]) {
+            const action = opener[1] === 'withdraw' ? 'withdraw' : 'standby';
+            const active = activeRegistration(context);
+            if (action === 'withdraw' && !active) {
+                await interaction.editReply(notice('참가 중인 신청이 없어요.'));
+                return;
+            }
+            if (!context.canEdit) {
+                await interaction.editReply(notice(context.reason ?? '지금은 신청을 변경할 수 없어요.'));
+                return;
+            }
+            if (action === 'standby' && context.registration?.status === 'standby') {
+                await interaction.editReply(notice('이미 대기 중이에요.'));
+                return;
+            }
+            context = await api.saveRegistration(interaction.guildId, context.scrimId, {
+                actorId: interaction.user.id,
+                interactionId: interaction.id,
+                action,
+                ...(active && context.registration ? { registrationId: context.registration.id } : {}),
+                ...(action === 'standby' && !active
+                    ? {
+                          riotAccountId:
+                              context.accounts.find((account) => account.isPrimary)?.id ??
+                              context.accounts[0]?.id ??
+                              null,
+                          positions: context.registration?.positions.length
+                              ? context.registration.positions
+                              : (Object.keys(POSITIONS) as BotPosition[])
+                      }
+                    : {})
+            });
+            await interaction.editReply(
+                notice(action === 'withdraw' ? '참가를 취소했어요.' : '대기로 신청했어요.')
+            );
+            return;
+        }
+        if (context.canEdit && context.registration?.status === 'standby') {
+            context = await api.saveRegistration(interaction.guildId, context.scrimId, {
+                actorId: interaction.user.id,
+                interactionId: interaction.id,
+                action: 'select',
+                registrationId: context.registration.id
+            });
+            await interaction.editReply(
+                notice(
+                    context.registration?.status === 'selected'
+                        ? '참가자로 복귀했어요.'
+                        : '선발 자리가 없어 대기를 유지했어요.'
+                )
+            );
+            return;
+        }
         let joined = false;
         if (context.canEdit && !activeRegistration(context)) {
             // 처음에는 전 포지션을 허용하고, 희망 포지션은 신청 뒤 필요한 경우 수정한다.

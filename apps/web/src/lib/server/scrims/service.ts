@@ -9,6 +9,7 @@ import type { Database, Transaction } from '../db/types.ts';
 import {
     auctions,
     games,
+    guildMembers,
     guildRiotAccounts,
     matches,
     mmrSeasons,
@@ -36,6 +37,8 @@ import {
     requireGuildMember,
     type GuildAccessDependencies
 } from '../guild/access.ts';
+import { isDiscordId } from '../discord/client.ts';
+import { discordDisplayName } from '../discord/display-name.ts';
 import {
     assertCapacity,
     assertEditableSettings,
@@ -279,8 +282,10 @@ export async function createRegistrationInTransaction(
     user: Actor,
     guildId: string,
     scrimId: string,
-    next: RegistrationInput
+    next: RegistrationInput,
+    options: { joinedBy?: Actor; initialStatus?: 'standby' } = {}
 ): Promise<void> {
+    const { joinedBy } = options;
     const { user: profile, participant } = await lockRegistrationAccounts(
         tx,
         user,
@@ -288,7 +293,8 @@ export async function createRegistrationInTransaction(
         scrimId,
         next.riotAccountId
     );
-    const row = await lockScrim(tx, user, guildId, scrimId, false);
+    const row = await lockScrim(tx, joinedBy ?? user, guildId, scrimId, Boolean(joinedBy));
+    if (joinedBy) await assertGuildAccess(tx, user, guildId);
     requireRecruitment(row.status);
     const active = await registrations(tx, row.id);
     const current = active.find((registration) => registration.userId === user.userId);
@@ -296,13 +302,18 @@ export async function createRegistrationInTransaction(
     if (active.length >= playCapacity(row.teamCount) + row.reserveCapacity)
         throw new DomainError('CONFLICT', '신청 정원이 찼어요');
     await requireUnusedAccount(tx, row.id, next.riotAccountId, participant?.id);
+    const [membership] = await tx
+        .select({ nickname: guildMembers.nickname })
+        .from(guildMembers)
+        .where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, user.userId)));
+    const displayName = discordDisplayName(profile, membership?.nickname);
     let participantId = participant?.id;
     if (participantId) {
         await tx
             .update(scrimParticipants)
             .set({
                 riotAccountId: next.riotAccountId,
-                displayName: profile.globalName ?? profile.username,
+                displayName,
                 teamId: null,
                 position: null
             })
@@ -314,7 +325,7 @@ export async function createRegistrationInTransaction(
                 scrimId: row.id,
                 userId: user.userId,
                 riotAccountId: next.riotAccountId,
-                displayName: profile.globalName ?? profile.username
+                displayName
             })
             .returning({ id: scrimParticipants.id });
         participantId = created!.id;
@@ -322,13 +333,97 @@ export async function createRegistrationInTransaction(
     await replacePreferences(tx, participantId, next.positions);
     await tx.insert(scrimParticipantRegistrations).values({
         scrimParticipantId: participantId,
-        joinedByUserId: user.userId,
+        joinedByUserId: joinedBy?.userId ?? user.userId,
         status:
+            options.initialStatus !== 'standby' &&
             active.filter((registration) => registration.status === 'selected').length <
-            playCapacity(row.teamCount)
+                playCapacity(row.teamCount)
                 ? 'selected'
                 : 'standby'
     });
+    await bumpRevision(tx, row.id);
+}
+
+/** 운영자가 실제 서버 멤버를 대신 신청한다. 정원·대기·중복 검사는 본인 신청과 공유한다. */
+export async function createManualRegistration(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    scrimId: string,
+    input: { userId: string },
+    access?: ScrimAccessDependencies
+): Promise<void> {
+    const operator = requireUser(actor);
+    requireUuid(scrimId, '내전');
+    if (!isDiscordId(input.userId)) throw new DomainError('INVALID_INPUT', '추가할 서버 멤버를 골라 주세요');
+    const target: Actor = { userId: input.userId, isServiceAdmin: false };
+    await requireGuildAdmin(operator, guildId, { ...access, db });
+    // 실제 소속과 봇 여부를 확인하면서 사전 웹 가입이 없는 대상도 등록한다.
+    await requireGuildMember(target, guildId, { ...access, db });
+    await db.transaction((tx) =>
+        createManualRegistrationInTransaction(tx, operator, target, guildId, scrimId)
+    );
+}
+
+export async function createManualRegistrationInTransaction(
+    tx: Transaction,
+    operator: Actor,
+    target: Actor,
+    guildId: string,
+    scrimId: string
+): Promise<void> {
+    const [primary] = await tx
+        .select({ id: guildRiotAccounts.riotAccountId })
+        .from(guildRiotAccounts)
+        .where(and(eq(guildRiotAccounts.guildId, guildId), eq(guildRiotAccounts.userId, target.userId)))
+        .orderBy(
+            sql`${guildRiotAccounts.isPrimary} desc`,
+            asc(guildRiotAccounts.linkedAt),
+            asc(guildRiotAccounts.riotAccountId)
+        )
+        .limit(1);
+    await createRegistrationInTransaction(
+        tx,
+        target,
+        guildId,
+        scrimId,
+        { riotAccountId: primary?.id ?? null, positions: ['top', 'jungle', 'mid', 'bot', 'support'] },
+        { joinedBy: operator }
+    );
+}
+
+/** 본인 신청의 참가·대기만 전환하며, 계정·희망 포지션과 신청 순서는 보존한다. */
+export async function setOwnRegistrationStatusInTransaction(
+    tx: Transaction,
+    user: Actor,
+    guildId: string,
+    scrimId: string,
+    input: { registrationId: string; status: 'selected' | 'standby' }
+): Promise<void> {
+    await lockRegistrationAccounts(tx, user, guildId, scrimId);
+    const row = await lockScrim(tx, user, guildId, scrimId, false);
+    requireRecruitment(row.status);
+    const active = await registrations(tx, row.id);
+    const mine = active.find((registration) => registration.userId === user.userId);
+    if (!mine || mine.id !== input.registrationId)
+        throw new DomainError('CONFLICT', '신청이 변경됐어요. 내 신청을 다시 열어 주세요');
+    if (mine.status === input.status) return;
+    if (
+        input.status === 'selected' &&
+        active.filter((registration) => registration.status === 'selected').length >=
+            playCapacity(row.teamCount)
+    )
+        return;
+    await tx
+        .update(scrimParticipantRegistrations)
+        .set({ status: input.status })
+        .where(eq(scrimParticipantRegistrations.id, mine.id));
+    if (input.status === 'standby')
+        await tx
+            .update(scrimParticipants)
+            .set({ teamId: null, position: null })
+            .where(eq(scrimParticipants.id, mine.participantId));
+    // 직접 대기를 선택한 직후에는 승급하지 않고, 기존 철회·제외·설정 저장 때의 승급 정책을 유지한다.
     await bumpRevision(tx, row.id);
 }
 

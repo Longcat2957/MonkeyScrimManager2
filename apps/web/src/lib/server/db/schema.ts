@@ -21,7 +21,7 @@ import {
     uuid
 } from 'drizzle-orm/pg-core';
 
-// Discord 봇에서 참가 신청하거나 웹에 로그인하면 자동으로 만든다. 별도 가입 절차는 없다.
+// 초기설정의 서버 멤버 동기화·참가 신청·웹 로그인으로 자동 생성한다. 별도 가입 절차는 없다.
 export const users = pgTable(
     'users',
     {
@@ -147,6 +147,8 @@ export const guildMembers = pgTable(
         userId: text('user_id')
             .notNull()
             .references(() => users.id, { onDelete: 'cascade' }),
+        // Discord 서버별 별명이며 전역 프로필 이름과 분리해서 보관한다.
+        nickname: text('nickname'),
         // 해당 길드의 서버 관리자 여부. 웹에서 직접 바꾸지 않고, 봇이 Discord 서버 관리 권한이나
         // guild_discord_settings.operator_role_id 역할 보유 여부로 동기화한다.
         isAdmin: boolean('is_admin').default(false).notNull(),

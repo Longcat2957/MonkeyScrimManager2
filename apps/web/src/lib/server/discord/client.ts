@@ -28,6 +28,8 @@ export type DiscordGuildChannel = {
 };
 export type DiscordMember = {
     user: { id: string; username: string; globalName: string | null; avatarHash: string | null };
+    nickname?: string | null;
+    isBot?: boolean;
     roleIds: string[];
     communicationDisabledUntil?: string | null;
 };
@@ -155,6 +157,7 @@ function guild(value: unknown, expectedId: string): DiscordGuild {
 function member(value: unknown, expectedUserId: string): DiscordMember {
     const item = record(value);
     const user = record(item.user);
+    if (user.bot !== undefined && typeof user.bot !== 'boolean') invalidResponse();
     if (user.id !== expectedUserId || !Array.isArray(item.roles) || item.roles.length > 1_000)
         invalidResponse();
     const roleIds = item.roles.map(id);
@@ -180,6 +183,8 @@ function member(value: unknown, expectedUserId: string): DiscordMember {
             globalName: user.global_name == null ? null : name(user.global_name, 32),
             avatarHash: hash(user.avatar)
         },
+        nickname: item.nick == null ? null : name(item.nick, 32),
+        isBot: user.bot === true,
         roleIds,
         ...(communicationDisabledUntil === undefined ? {} : { communicationDisabledUntil })
     };
@@ -262,6 +267,33 @@ export function createDiscordClient(options: { token: string; fetch?: typeof fet
             const value = await request(`/guilds/${guildId}/members/${userId}`, true);
             return value === undefined ? null : member(value, userId);
         },
+        async listMembers(guildId: string): Promise<DiscordMember[]> {
+            if (!isDiscordId(guildId)) throw new DiscordError(502, 'Discord 서버 식별자가 올바르지 않아요');
+            const members: DiscordMember[] = [];
+            const seen = new Set<string>();
+            let after: string | undefined;
+            while (true) {
+                const value = await request(
+                    `/guilds/${guildId}/members?limit=1000${after ? `&after=${after}` : ''}`
+                );
+                if (!Array.isArray(value) || value.length > 1_000) invalidResponse();
+                const page = value.map((value) => {
+                    const user = record(record(value).user);
+                    return member(value, id(user.id));
+                });
+                for (const entry of page) {
+                    if (seen.has(entry.user.id) || (after && BigInt(entry.user.id) <= BigInt(after)))
+                        invalidResponse();
+                    seen.add(entry.user.id);
+                    members.push(entry);
+                }
+                if (page.length < 1_000) return members;
+                after = page.reduce(
+                    (highest, entry) => (BigInt(entry.user.id) > BigInt(highest) ? entry.user.id : highest),
+                    page[0]!.user.id
+                );
+            }
+        },
         async listRoles(guildId: string): Promise<DiscordGuildRole[]> {
             if (!isDiscordId(guildId)) throw new DiscordError(502, 'Discord 서버 식별자가 올바르지 않아요');
             const value = await request(`/guilds/${guildId}/roles`);
@@ -311,4 +343,9 @@ export function createDiscordClient(options: { token: string; fetch?: typeof fet
 
 type FullDiscordClient = ReturnType<typeof createDiscordClient>;
 export type DiscordClient = Pick<FullDiscordClient, 'listGuilds' | 'getGuild' | 'getMember'> &
-    Partial<Pick<FullDiscordClient, 'listRoles' | 'listChannels' | 'getCurrentUserId' | 'getMessage'>>;
+    Partial<
+        Pick<
+            FullDiscordClient,
+            'listMembers' | 'listRoles' | 'listChannels' | 'getCurrentUserId' | 'getMessage'
+        >
+    >;

@@ -229,7 +229,8 @@ export async function getMatch(
             : [];
         const identities = await readPublicIdentities(
             tx,
-            players.map((entry) => entry.userId)
+            players.map((entry) => entry.userId),
+            guildId
         );
         const selected = recorded.find((item) => item.game.id === gameId) ?? recorded.at(-1);
         const match: MatchDetail = {

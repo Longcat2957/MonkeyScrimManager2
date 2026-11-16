@@ -8,6 +8,7 @@ import {
     cancelScrim,
     closeRecruitment,
     createRegistration,
+    createManualRegistration,
     createScrim,
     reopenRecruitment,
     setParticipantStatus,
@@ -67,6 +68,58 @@ const registrations = (f: Fixture) =>
 async function fill(f: Fixture, count: number) {
     for (let i = 0; i < count; i++) await join(f, i);
 }
+
+test('수동 추가도 운영 권한·실제 소속·대표 계정·중복·선발/대기 정원·모집 마감을 검사한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    const add = (index: number) =>
+        createManualRegistration(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { userId: f.actors[index]!.userId },
+            f.access
+        );
+    await assert.rejects(
+        createManualRegistration(
+            f.db,
+            f.viewer,
+            f.guildId,
+            f.scrimId,
+            { userId: f.actors[2]!.userId },
+            f.access
+        ),
+        errorCode('FORBIDDEN')
+    );
+    await assert.rejects(
+        createManualRegistration(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { userId: '999000000000000001' },
+            f.access
+        ),
+        errorCode('NOT_FOUND')
+    );
+    await fill(f, 10);
+    await add(10);
+    const [added] = await f.db
+        .select()
+        .from(schema.scrimParticipants)
+        .where(eq(schema.scrimParticipants.userId, f.actors[10]!.userId));
+    assert.equal(added!.riotAccountId, f.accounts[10]!.id);
+    assert.equal(
+        (await registrations(f)).find((row) => row.userId === f.actors[10]!.userId)!.status,
+        'standby'
+    );
+    await assert.rejects(add(10), errorCode('CONFLICT'));
+    await add(11);
+    await assert.rejects(add(12), errorCode('CONFLICT'));
+    await f.db.update(schema.scrims).set({ status: 'preparing' }).where(eq(schema.scrims.id, f.scrimId));
+    await assert.rejects(add(12), errorCode('CONFLICT'));
+    assert.equal((await registrations(f)).length, 12);
+});
 
 test('Riot 계정 없이 신청·조회·수정·철회하고 기존 희망 포지션을 재사용한다', async (t) => {
     const f = await createRecruitmentFixture(t);

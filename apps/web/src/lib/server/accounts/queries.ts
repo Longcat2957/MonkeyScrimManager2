@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { GuildRiotAccounts, RiotAccount, RiotLookup } from '../../features/me/types.ts';
 import { parseRiotId, RIOT_ID_FORMAT_ERROR } from '../../features/me/riot-id.ts';
 import { requireUser } from '../auth/guards.ts';
@@ -205,14 +205,19 @@ export async function listGuildMembers(
     return db.transaction(
         async (tx) => {
             await assertGuildAccess(tx, user, guildId, true);
-            const displayName = sql<string>`coalesce(${users.globalName}, ${users.username})`;
+            const displayName = sql<string>`coalesce(nullif(trim(${guildMembers.nickname}), ''), nullif(trim(${users.globalName}), ''), ${users.username})`;
             const isAdmin = sql<boolean>`(${guildMembers.manageGuild} or (${guildDiscordSettings.operatorRoleId} is not null and ${guildDiscordSettings.operatorRoleId} <> ${guildMembers.guildId} and ${guildDiscordSettings.operatorRoleId} = any(${guildMembers.roleIds})))`;
             const where = and(
                 eq(guildMembers.guildId, guildId),
-                q ? ilike(displayName, `%${q.replace(/[\\%_]/g, '\\$&')}%`) : undefined
+                q
+                    ? or(
+                          ilike(displayName, `%${q.replace(/[\\%_]/g, '\\$&')}%`),
+                          ilike(users.username, `%${q.replace(/[\\%_]/g, '\\$&')}%`)
+                      )
+                    : undefined
             );
             const members = await tx
-                .select({ userId: users.id, displayName, isAdmin })
+                .select({ userId: users.id, displayName, username: users.username, isAdmin })
                 .from(guildMembers)
                 .innerJoin(users, eq(users.id, guildMembers.userId))
                 .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, guildMembers.guildId))

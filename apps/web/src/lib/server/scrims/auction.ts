@@ -175,7 +175,7 @@ export async function getAuction(
             if (row.status === 'recruit') return null;
             const state = await auctionState(tx, row);
             const rawPlayers = await formationPlayers(tx, row, state.selected);
-            const players = await publicFormationPlayers(tx, rawPlayers);
+            const players = await publicFormationPlayers(tx, rawPlayers, guildId);
             const participants = await tx
                 .select({
                     id: scrimParticipants.id,
@@ -186,7 +186,8 @@ export async function getAuction(
                 .where(eq(scrimParticipants.scrimId, row.id));
             const identities = await readPublicIdentities(
                 tx,
-                participants.map((entry) => entry.userId)
+                participants.map((entry) => entry.userId),
+                guildId
             );
             const pick = (id: string) => players.find((player) => player.participantId === id);
             const openLot = state.open ? (pick(state.open.scrimParticipantId) ?? null) : null;

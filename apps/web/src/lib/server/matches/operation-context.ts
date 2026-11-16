@@ -25,7 +25,8 @@ export async function getMatchOperationContext(
             const roster = await readRoster(tx, match);
             const identities = await readPublicIdentities(
                 tx,
-                roster.map(({ participant }) => participant.userId)
+                roster.map(({ participant }) => participant.userId),
+                guildId
             );
             const teams = await tx
                 .select()

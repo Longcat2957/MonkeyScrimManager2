@@ -72,6 +72,37 @@ test('반복된 목록 페이지를 부분 성공으로 처리하지 않는다',
     await assert.rejects(client(page).listGuilds(), discordError(502));
 });
 
+test('전체 멤버는 1000명 단위로 끝까지 읽고 서버 별명과 봇 여부를 보존한다', async () => {
+    const page = Array.from({ length: 1_000 }, (_, index) => ({
+        ...member,
+        nick: index === 0 ? '서버 별명' : null,
+        user: { ...member.user, id: String(BigInt(userId) + BigInt(index)), bot: index === 1 }
+    }));
+    let calls = 0;
+    const discord = createDiscordClient({
+        token: 'test-token',
+        fetch: async (input) => {
+            const url = new URL(String(input));
+            assert.equal(url.pathname, `/api/v10/guilds/${guildId}/members`);
+            assert.equal(url.searchParams.get('limit'), '1000');
+            if (++calls === 2) assert.equal(url.searchParams.get('after'), page[999]!.user.id);
+            return Response.json(calls === 1 ? page : []);
+        }
+    });
+    const result = await discord.listMembers(guildId);
+    assert.equal(result.length, 1_000);
+    assert.equal(result[0]!.nickname, '서버 별명');
+    assert.equal(result[1]!.isBot, true);
+    assert.equal(calls, 2);
+    await assert.rejects(client(page).listMembers(guildId), discordError(502));
+    let failures = 0;
+    const failed = createDiscordClient({
+        token: 'test-token',
+        fetch: async () => (++failures === 1 ? Response.json(page) : new Response(null, { status: 403 }))
+    });
+    await assert.rejects(failed.listMembers(guildId), discordError(503));
+});
+
 for (const [name, value] of [
     ['null', null],
     ['다른 길드', { ...payload, id: userId }],

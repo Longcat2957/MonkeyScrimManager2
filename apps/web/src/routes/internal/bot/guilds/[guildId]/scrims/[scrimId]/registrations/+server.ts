@@ -16,7 +16,7 @@ export const POST: RequestHandler = ({ request, params }) =>
 export const PATCH: RequestHandler = ({ request, params }) =>
     botResponse(request, async () => {
         const input = await botJson<BotRegistrationInput>(request, keys);
-        if (input.action !== 'update' && input.action !== 'withdraw')
-            throw new DomainError('INVALID_INPUT', 'PATCH는 신청 수정과 철회에 사용해 주세요');
+        if (!['update', 'withdraw', 'standby', 'select'].includes(input.action))
+            throw new DomainError('INVALID_INPUT', 'PATCH는 신청 수정·철회·참가/대기 전환에 사용해 주세요');
         return mutateBotRegistration(getDb(), params.guildId!, params.scrimId!, input);
     });

@@ -30,7 +30,7 @@
     />
 {/snippet}
 
-<!-- 운영자는 단계 조작·참가자 관리를 먼저, 참가자는 내 신청을 먼저 읽는다. -->
+<!-- 역할과 관계없이 내 신청을 참가자 목록보다 먼저 확인한다. -->
 <div class="flex flex-col gap-6">
     {#if showOperations && data.settings}
         <div class="rounded-(--radius-box) border border-border bg-bg-surface dark:bg-bg-surface-dark">
@@ -47,10 +47,6 @@
                 notifications={data.notifications}
             />
         </div>
-    {/if}
-
-    {#if data.can.manage}
-        {@render participants()}
     {/if}
 
     {#if showRegistration || choosingMethod}
@@ -74,7 +70,5 @@
         </div>
     {/if}
 
-    {#if !data.can.manage}
-        {@render participants()}
-    {/if}
+    {@render participants()}
 </div>

@@ -18,7 +18,7 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             : '없음';
     const heading =
         `## ${label(data.title, 50)}\n${date}\n` +
-        `**${STATUSES[data.status]}** · ${data.teamCount}팀${data.formationMethod ? ' · ' + (data.formationMethod === 'manual' ? '수동 편성' : '경매') : ''}${data.hardFearless ? ' · 하드 피어리스' : ''}`;
+        `**${STATUSES[data.status]}** · ${data.teamCount}팀${data.hardFearless ? ' · 하드 피어리스' : ''}`;
     const colors = {
         recruit: data.selected >= data.teamCount * 5 ? CARD_COLORS.success : CARD_COLORS.info,
         preparing: CARD_COLORS.warning,
@@ -34,9 +34,26 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             .setLabel('참가하기')
             .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
+            .setCustomId(`registration-standby:${publication.scrimId}`)
+            .setLabel('대기하기')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(data.status !== 'recruit'),
+        new ButtonBuilder()
+            .setCustomId(`registration-withdraw:${publication.scrimId}`)
+            .setLabel('참가 취소')
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(data.status !== 'recruit')
+    );
+    const navigation = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
             .setLabel('내전 열기')
             .setURL(publicationUrl(origin, publication))
-            .setStyle(ButtonStyle.Link)
+            .setStyle(ButtonStyle.Link),
+        new ButtonBuilder()
+            .setCustomId(`manual-registration:open:${publication.scrimId}`)
+            .setLabel('참가자 추가')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(data.status !== 'recruit')
     );
     return {
         flags: MessageFlags.IsComponentsV2 as const,
@@ -44,9 +61,10 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             card(
                 heading,
                 `### 선발 ${data.selected}/${data.teamCount * 5}\n${roster(selected)}`,
-                `### 대기 ${data.standby}/${data.capacity - data.teamCount * 5}\n${roster(standby)}`
+                `### 대기 ${data.standby}명\n${roster(standby)}`
             ).setAccentColor(colors[data.status]),
-            controls
+            controls,
+            navigation
         ],
         allowedMentions: { parse: [] as never[] }
     };

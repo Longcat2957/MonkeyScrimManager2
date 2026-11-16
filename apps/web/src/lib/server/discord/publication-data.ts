@@ -43,7 +43,8 @@ export async function publicationData(tx: Transaction, scrimId: string): Promise
     const ids = people.map((person) => person.id);
     const identities = await readPublicIdentities(
         tx,
-        people.map((person) => person.userId)
+        people.map((person) => person.userId),
+        row.guildId
     );
     const preferences = ids.length
         ? await tx
@@ -108,6 +109,11 @@ export async function matchPublicationData(tx: Transaction, job: Job): Promise<B
     if (!context) return undefined;
     const [match] = await tx.select().from(matches).where(eq(matches.id, context.matchId));
     if (!match) return undefined;
+    const [scrim] = await tx
+        .select({ guildId: scrims.guildId })
+        .from(scrims)
+        .where(eq(scrims.id, job.scrimId));
+    if (!scrim) return undefined;
     const teams = await tx.select().from(scrimTeams).where(eq(scrimTeams.scrimId, job.scrimId));
     const teamName = (id: string) => teams.find((team) => team.id === id)?.name ?? '팀';
     const completed = await tx
@@ -132,7 +138,8 @@ export async function matchPublicationData(tx: Transaction, job: Job): Promise<B
             .where(eq(matchLineupPlayers.lineupId, context.id));
         const identities = await readPublicIdentities(
             tx,
-            rows.map((row) => row.userId)
+            rows.map((row) => row.userId),
+            scrim.guildId
         );
         players = rows.map(({ player, userId, name }) => ({
             name: publicDisplayName(userId ? identities.get(userId) : undefined, name),
@@ -163,7 +170,8 @@ export async function matchPublicationData(tx: Transaction, job: Job): Promise<B
             .where(eq(gameParticipants.gameId, context.id));
         const identities = await readPublicIdentities(
             tx,
-            rows.map((row) => row.userId)
+            rows.map((row) => row.userId),
+            scrim.guildId
         );
         players = rows.map(({ player, userId, rofl }) => ({
             name: publicDisplayName(userId ? identities.get(userId) : undefined, player.displayName),

@@ -25,7 +25,7 @@ for (const kind of ['recruitment', 'entry'] as const) {
     test(`${kind} 링크는 게시 작업을 식별하고 기존 목적지를 유지한다`, () => {
         const job = publication({ kind });
         const rendered = kind === 'recruitment' ? renderRecruitment(job, origin) : renderEntry(job, origin);
-        const row = rendered.components[1]!.toJSON();
+        const row = rendered.components[kind === 'recruitment' ? 2 : 1]!.toJSON();
         assert.ok('components' in row);
         const button = row.components.find((component) => 'url' in component);
         assert.ok(button && 'url' in button && typeof button.url === 'string');
@@ -39,12 +39,31 @@ for (const kind of ['recruitment', 'entry'] as const) {
     });
 }
 
-test('선발 정원이 차도 모집 카드의 내 신청 버튼을 유지한다', () => {
+test('선발 정원이 차도 참가·대기·취소 버튼을 독립적으로 제공하고 마감 후 직접 변경만 막는다', () => {
     const job = publication();
     job.data.selected = 10;
     const value = renderRecruitment(job, origin);
     const controls = value.components[1]!.toJSON();
-    assert.equal('components' in controls && controls.components.length, 2);
+    assert.ok('components' in controls);
+    const registration = controls.components.find(
+        (component) => 'custom_id' in component && component.custom_id === `registration:${job.scrimId}`
+    );
+    assert.ok(registration && (!('disabled' in registration) || !registration.disabled));
+    assert.equal(controls.components.length, 3);
+    const navigation = value.components[2]!.toJSON();
+    assert.ok('components' in navigation);
+    assert.equal(navigation.components.length, 2);
+    assert.match(JSON.stringify(navigation), /내전 열기/);
+    assert.match(JSON.stringify(navigation), /참가자 추가/);
+    for (const action of ['standby', 'withdraw']) {
+        assert.ok(
+            controls.components.some(
+                (component) =>
+                    'custom_id' in component &&
+                    component.custom_id === `registration-${action}:${job.scrimId}`
+            )
+        );
+    }
     assert.match(JSON.stringify(controls), /참가하기/);
     assert.match(JSON.stringify(value), /<t:/);
     assert.deepEqual(value.allowedMentions, { parse: [] });
@@ -54,6 +73,16 @@ test('선발 정원이 차도 모집 카드의 내 신청 버튼을 유지한다
     assert.match(paragraphs[0]!.content!, /모집 중/);
     assert.match(paragraphs[1]!.content!, /선발 10\/10/);
     assert.match(paragraphs[2]!.content!, /대기/);
+    job.data.status = 'preparing';
+    const closed = renderRecruitment(job, origin).components[1]!.toJSON();
+    assert.ok('components' in closed);
+    for (const action of ['standby', 'withdraw']) {
+        const button = closed.components.find(
+            (component) =>
+                'custom_id' in component && component.custom_id === `registration-${action}:${job.scrimId}`
+        );
+        assert.ok(button && 'disabled' in button && button.disabled);
+    }
 });
 
 function matchJob(kind: 'lineup' | 'result') {

@@ -183,7 +183,7 @@ export async function queryRankingPage(
                   .groupBy(scrimParticipants.userId, roflParticipantDataV1.champion)
                   .orderBy(desc(count()), asc(roflParticipantDataV1.champion))
             : [];
-        const identities = await readPublicIdentities(tx, selectedUsers);
+        const identities = await readPublicIdentities(tx, selectedUsers, guildId);
         const entry = (row: (typeof rows)[number]): RankingEntry => {
             const championId = championCounts.find((champion) => champion.userId === row.userId)?.champion;
             const identity = identities.get(row.userId)!;

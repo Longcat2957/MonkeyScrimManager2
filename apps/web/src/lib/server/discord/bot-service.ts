@@ -3,11 +3,15 @@ import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from 'dr
 import { alias } from 'drizzle-orm/pg-core';
 import type {
     BotCreateScrimInput,
+    BotInitializationResult,
     BotFailedPublication,
     BotGuildSyncInput,
     BotPublicationRetryInput,
     BotRegistrationContext,
-    BotRegistrationInput
+    BotRegistrationInput,
+    BotManualRegistrationContext,
+    BotManualRegistrationInput,
+    BotManualRegistrationResult
 } from '../../../../../../shared/bot-api.js';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -29,7 +33,8 @@ import {
     scrimParticipantRegistrations,
     scrimParticipants,
     scrims,
-    scrimTeams
+    scrimTeams,
+    users
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import {
@@ -41,16 +46,19 @@ import {
 import { canPostToDiscordChannel } from '../guild/settings.ts';
 import {
     createRegistrationInTransaction,
+    setOwnRegistrationStatusInTransaction,
+    createManualRegistrationInTransaction,
     createScrimInTransaction,
     updateRegistrationInTransaction,
     withdrawRegistrationInTransaction,
     type ScrimAccessDependencies
 } from '../scrims/service.ts';
 import { requireUuid, validateRegistration, validateSettings } from '../scrims/validation.ts';
-import { isDiscordId } from './client.ts';
+import { DiscordError, isDiscordId } from './client.ts';
 import { withBotReceipt } from './bot-receipts.ts';
-import { synchronizeGuildMembership } from './membership.ts';
+import { saveGuildMembers, synchronizeGuildMembership } from './membership.ts';
 import { enqueueGuildPublications, publicationChannel } from './publications.ts';
+import { discordDisplayName } from './display-name.ts';
 
 export function botActor(actorId: string): Actor {
     if (!isDiscordId(actorId)) throw new DomainError('INVALID_INPUT', '사용자 식별자가 올바르지 않아요');
@@ -65,10 +73,18 @@ export async function initializeBotGuild(
     guildId: string,
     input: { actorId: string; interactionId: string },
     access?: ScrimAccessDependencies
-): Promise<{ guildId: string; seasonId: string }> {
+): Promise<BotInitializationResult> {
     requireGuildId(guildId);
     const actor = botActor(input.actorId);
-    await requireGuildAdmin(actor, guildId, { ...access, db });
+    const dependencies = await getGuildAccessDependencies({ ...access, db });
+    await requireGuildAdmin(actor, guildId, dependencies);
+    const { discord } = dependencies;
+    if (!discord.listMembers) throw new DiscordError(503, 'Discord 서버의 전체 멤버 목록을 가져올 수 없어요');
+    // 일부 명단으로 완료하지 않도록 모든 페이지 조회를 저장보다 먼저 끝낸다.
+    const members = await discord.listMembers(guildId);
+    await requireGuildAdmin(actor, guildId, dependencies);
+    const guild = await discord.getGuild(guildId);
+    if (!guild) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
     return db.transaction(async (tx) =>
         withBotReceipt(tx, { ...input, guildId, operation: 'initialize', payload: {} }, async () => {
             // receipt 외래키의 KEY SHARE와 충돌하지 않는 잠금으로 최초 시즌 생성만 직렬화한다.
@@ -80,15 +96,16 @@ export async function initializeBotGuild(
             await assertGuildAccess(tx, actor, guildId, true);
             const seasons = await tx.select().from(mmrSeasons).where(eq(mmrSeasons.guildId, guildId));
             const active = seasons.find((season) => season.endedAt === null);
-            if (active) return { guildId, seasonId: active.id };
-            if (seasons.length)
+            if (!active && seasons.length)
                 throw new DomainError('CONFLICT', '종료된 시즌이 있어요. 새 시즌 운영을 먼저 준비해 주세요');
             await tx.insert(guildDiscordSettings).values({ guildId }).onConflictDoNothing();
+            const membersSynced = await saveGuildMembers(tx, guild, members);
+            if (active) return { guildId, seasonId: active.id, membersSynced };
             const [season] = await tx
                 .insert(mmrSeasons)
                 .values({ guildId, name: '시즌 1' })
                 .returning({ id: mmrSeasons.id });
-            return { guildId, seasonId: season!.id };
+            return { guildId, seasonId: season!.id, membersSynced };
         })
     );
 }
@@ -233,23 +250,27 @@ export async function mutateBotRegistration(
     requireGuildId(guildId);
     requireUuid(scrimId, '내전');
     const actor = botActor(input.actorId);
-    if (!['create', 'update', 'withdraw'].includes(input.action))
+    if (!['create', 'update', 'withdraw', 'standby', 'select'].includes(input.action))
         throw new DomainError('INVALID_INPUT', '신청 동작이 올바르지 않아요');
     if (input.action === 'create' && input.registrationId !== undefined)
         throw new DomainError('INVALID_INPUT', '신규 신청에는 기존 신청 식별자를 사용할 수 없어요');
-    if (input.action !== 'create') requireUuid(input.registrationId ?? '', '신청');
+    const creating =
+        input.action === 'create' || (input.action === 'standby' && input.registrationId === undefined);
+    if (!creating) requireUuid(input.registrationId ?? '', '신청');
     const registration =
-        input.action === 'withdraw'
-            ? null
-            : validateRegistration({ riotAccountId: input.riotAccountId, positions: input.positions! });
+        creating || input.action === 'update'
+            ? validateRegistration({ riotAccountId: input.riotAccountId, positions: input.positions! })
+            : null;
     await requireGuildMember(actor, guildId, { ...access, db });
     return db.transaction(async (tx) =>
         withBotReceipt(
             tx,
             { ...input, guildId, operation: 'registration:' + scrimId, payload: input },
             async () => {
-                if (input.action === 'create')
-                    await createRegistrationInTransaction(tx, actor, guildId, scrimId, registration!);
+                if (creating)
+                    await createRegistrationInTransaction(tx, actor, guildId, scrimId, registration!, {
+                        ...(input.action === 'standby' ? { initialStatus: 'standby' as const } : {})
+                    });
                 else if (input.action === 'update')
                     await updateRegistrationInTransaction(
                         tx,
@@ -259,6 +280,11 @@ export async function mutateBotRegistration(
                         registration!,
                         input.registrationId
                     );
+                else if (input.action === 'standby' || input.action === 'select')
+                    await setOwnRegistrationStatusInTransaction(tx, actor, guildId, scrimId, {
+                        registrationId: input.registrationId!,
+                        status: input.action === 'standby' ? 'standby' : 'selected'
+                    });
                 else
                     await withdrawRegistrationInTransaction(
                         tx,
@@ -701,4 +727,124 @@ export async function reconcileBotGuilds(db: Database, access?: ScrimAccessDepen
             .where(inArray(guilds.id, removed));
         await tx.update(guildMembers).set({ syncedAt: null }).where(inArray(guildMembers.guildId, removed));
     });
+}
+
+async function manualRegistrationContext(
+    tx: Transaction,
+    guildId: string,
+    scrimId: string
+): Promise<BotManualRegistrationContext> {
+    const [scrim] = await tx
+        .select({
+            title: scrims.title,
+            status: scrims.status,
+            teamCount: scrims.teamCount,
+            reserveCapacity: scrims.reserveCapacity
+        })
+        .from(scrims)
+        .where(and(eq(scrims.id, scrimId), eq(scrims.guildId, guildId)));
+    if (!scrim) throw new DomainError('NOT_FOUND', '내전을 찾을 수 없어요');
+    const [count] = await tx
+        .select({ active: sql<number>`count(*)::int` })
+        .from(scrimParticipantRegistrations)
+        .innerJoin(
+            scrimParticipants,
+            eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
+        )
+        .where(
+            and(eq(scrimParticipants.scrimId, scrimId), isNull(scrimParticipantRegistrations.withdrawnAt))
+        );
+    const reason =
+        scrim.status !== 'recruit'
+            ? '모집이 마감되어 참가자를 추가할 수 없어요.'
+            : count!.active >= scrim.teamCount * 5 + scrim.reserveCapacity
+              ? '신청 정원이 찼어요.'
+              : null;
+    return { guildId, scrimId, title: scrim.title, canAdd: reason === null, reason };
+}
+
+/** 모집 글의 운영자용 참가자 선택 화면에서만 사용하는 조회다. */
+export async function getBotManualRegistration(
+    db: Database,
+    guildId: string,
+    scrimId: string,
+    actorId: string,
+    access?: ScrimAccessDependencies
+): Promise<BotManualRegistrationContext> {
+    requireGuildId(guildId);
+    requireUuid(scrimId, '내전');
+    const actor = botActor(actorId);
+    await requireGuildAdmin(actor, guildId, { ...access, db });
+    return db.transaction(
+        async (tx) => {
+            await assertGuildAccess(tx, actor, guildId, true);
+            return manualRegistrationContext(tx, guildId, scrimId);
+        },
+        { isolationLevel: 'repeatable read', accessMode: 'read only' }
+    );
+}
+
+export async function addBotParticipant(
+    db: Database,
+    guildId: string,
+    scrimId: string,
+    input: BotManualRegistrationInput,
+    access?: ScrimAccessDependencies
+): Promise<BotManualRegistrationResult> {
+    requireGuildId(guildId);
+    requireUuid(scrimId, '내전');
+    const actor = botActor(input.actorId);
+    const target = botActor(input.userId);
+    const dependencies = await getGuildAccessDependencies({ ...access, db });
+    await requireGuildAdmin(actor, guildId, dependencies);
+    // 대상의 현재 서버 소속을 확인하면서 미등록 사용자를 만들고 봇·탈퇴 사용자는 제외한다.
+    await requireGuildMember(target, guildId, dependencies);
+    return db.transaction(async (tx) =>
+        withBotReceipt(
+            tx,
+            {
+                ...input,
+                guildId,
+                operation: 'manual-registration:' + scrimId,
+                payload: { userId: input.userId }
+            },
+            async () => {
+                await createManualRegistrationInTransaction(tx, actor, target, guildId, scrimId);
+                const [participant] = await tx
+                    .select({
+                        status: scrimParticipantRegistrations.status,
+                        nickname: guildMembers.nickname,
+                        username: users.username,
+                        globalName: users.globalName
+                    })
+                    .from(scrimParticipantRegistrations)
+                    .innerJoin(
+                        scrimParticipants,
+                        eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
+                    )
+                    .innerJoin(users, eq(users.id, scrimParticipants.userId))
+                    .innerJoin(
+                        guildMembers,
+                        and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, users.id))
+                    )
+                    .where(
+                        and(
+                            eq(scrimParticipants.scrimId, scrimId),
+                            eq(scrimParticipants.userId, input.userId),
+                            isNull(scrimParticipantRegistrations.withdrawnAt)
+                        )
+                    )
+                    .limit(1);
+                if (!participant || (participant.status !== 'selected' && participant.status !== 'standby'))
+                    throw new DomainError('CONFLICT', '참가 처리 결과를 다시 확인해 주세요.');
+                return {
+                    context: await manualRegistrationContext(tx, guildId, scrimId),
+                    participant: {
+                        name: discordDisplayName(participant, participant.nickname),
+                        status: participant.status
+                    }
+                };
+            }
+        )
+    );
 }

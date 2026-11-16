@@ -1,0 +1,1 @@
+ALTER TABLE "guild_members" ADD COLUMN "nickname" text;

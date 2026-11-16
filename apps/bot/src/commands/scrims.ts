@@ -20,11 +20,15 @@ export async function handleCommand(interaction: ChatInputCommandInteraction, ap
             components: [linkRow('내전 목록 열기', webUrl(origin, `/g/${guildId}/scrims`))]
         });
     } else if (interaction.commandName === '초기설정') {
-        await api.initialize(guildId, actorId, interaction.id);
+        const result = await api.initialize(guildId, actorId, interaction.id);
         await interaction.editReply({
             flags: MessageFlags.IsComponentsV2,
             components: [
-                card('## 서버 준비 완료', '게시 채널과 운영자 역할은 서버 관리에서 설정해 주세요.'),
+                card(
+                    '## 서버 준비 완료',
+                    `일반 멤버 **${result.membersSynced}명**을 등록·갱신했어요.`,
+                    '게시 채널과 운영자 역할은 서버 관리에서 설정해 주세요.'
+                ),
                 new ActionRowBuilder<ButtonBuilder>().addComponents(
                     new ButtonBuilder()
                         .setCustomId('scrim-create:open')

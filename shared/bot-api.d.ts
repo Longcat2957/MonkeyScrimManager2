@@ -1,4 +1,10 @@
 /** 웹 내부 API와 봇이 공유하는 JSON 계약이다. 런타임 업무 코드는 웹 서버에 둔다. */
+export interface BotInitializationResult {
+    guildId: string;
+    seasonId: string;
+    membersSynced: number;
+}
+
 export interface BotSeason {
     id: string;
     name: string;
@@ -42,10 +48,29 @@ export interface BotRegistrationContext {
 export interface BotRegistrationInput {
     actorId: string;
     interactionId: string;
-    action: 'create' | 'update' | 'withdraw';
+    action: 'create' | 'update' | 'withdraw' | 'standby' | 'select';
     registrationId?: string;
     riotAccountId?: string | null;
     positions?: BotPosition[];
+}
+
+export interface BotManualRegistrationContext {
+    guildId: string;
+    scrimId: string;
+    title: string;
+    canAdd: boolean;
+    reason: string | null;
+}
+
+export interface BotManualRegistrationInput {
+    actorId: string;
+    interactionId: string;
+    userId: string;
+}
+
+export interface BotManualRegistrationResult {
+    context: BotManualRegistrationContext;
+    participant: { name: string; status: 'selected' | 'standby' };
 }
 
 export interface BotPublicationData {

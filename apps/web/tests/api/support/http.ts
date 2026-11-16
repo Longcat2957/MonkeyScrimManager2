@@ -111,10 +111,31 @@ export function fixtureUpstreams(): UpstreamRule[] {
                 method: 'GET',
                 url: base + '/guilds/' + id + '/members/' + userId,
                 body: {
-                    user: { id: userId, username: 'HTTP 사용자', global_name: null, avatar: null },
+                    user: {
+                        id: userId,
+                        username: 'HTTP 사용자',
+                        global_name: null,
+                        avatar: null,
+                        bot: userId === HTTP_IDS.bot
+                    },
                     roles: []
                 }
             });
+        rules.push({
+            method: 'GET',
+            url: base + '/guilds/' + id + '/members?limit=1000',
+            body: [...people, HTTP_IDS.bot].map((userId) => ({
+                user: {
+                    id: userId,
+                    username: 'HTTP 사용자',
+                    global_name: null,
+                    avatar: null,
+                    bot: userId === HTTP_IDS.bot
+                },
+                nick: null,
+                roles: []
+            }))
+        });
         rules.push({
             method: 'GET',
             url: base + '/guilds/' + id + '/members/' + HTTP_IDS.outsider,

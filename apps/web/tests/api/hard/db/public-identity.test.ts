@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import type { GameResolvers } from '../../../../src/lib/features/matches/types.ts';
 import { setMyPrivacy, withdrawAccount } from '../../../../src/lib/server/accounts/privacy.ts';
 import { readPublicIdentities } from '../../../../src/lib/server/accounts/public-identity.ts';
+import { listGuildMembers } from '../../../../src/lib/server/accounts/queries.ts';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import {
     publicationData,
@@ -76,6 +77,57 @@ test('공개 기본 ID를 보존하고 두 공개 설정을 독립 적용하며 
     assert.deepEqual(hiddenRiot.player.riotIds, []);
     assert.equal((await ranking())!.page.entries[0]!.identityKey, initialRank.identityKey);
     assert.deepEqual(await f.ratings(), ratings);
+});
+
+test('참가자와 모집 글은 해당 서버 별명을 우선하고 별명 해제·서버 경계·비공개 설정을 반영한다', async (t) => {
+    const f = await createGameFixture(t);
+    const target = f.users[2]!;
+    await f.db.update(schema.users).set({ globalName: '전역 이름' }).where(eq(schema.users.id, target.id));
+    await f.db
+        .update(schema.guildMembers)
+        .set({ nickname: '내전 서버 별명' })
+        .where(and(eq(schema.guildMembers.guildId, f.guildId), eq(schema.guildMembers.userId, target.id)));
+    await f.db
+        .insert(schema.guildMembers)
+        .values({ guildId: f.otherGuildId, userId: target.id, nickname: '다른 서버 별명' });
+    // 기존 신청 스냅샷에 식별자가 남아 있어도 현재 서버에서 부르는 이름을 표시한다.
+    await f.db
+        .update(schema.scrimParticipants)
+        .set({ displayName: target.id })
+        .where(eq(schema.scrimParticipants.userId, target.id));
+    const name = async () =>
+        (await getScrimDetail(f.db, null, f.guildId, f.scrimId))!.participants.find(
+            (person) => person.userId === target.id
+        )?.displayName;
+    assert.equal(await name(), '내전 서버 별명');
+    for (const q of ['내전 서버 별명', target.username]) {
+        const options = await listGuildMembers(
+            f.db,
+            f.manager,
+            f.guildId,
+            { q, page: 1, pageSize: 20 },
+            f.access
+        );
+        assert.equal(
+            options.members.find((member) => member.userId === target.id)?.displayName,
+            '내전 서버 별명'
+        );
+    }
+    const notice = await f.db.transaction((tx) => publicationData(tx, f.scrimId));
+    assert.ok(notice.participants.some((person) => person.name === '내전 서버 별명'));
+    const other = await f.db.transaction((tx) => readPublicIdentities(tx, [target.id], f.otherGuildId));
+    const global = await f.db.transaction((tx) => readPublicIdentities(tx, [target.id]));
+    assert.equal(other.get(target.id)!.displayName, '다른 서버 별명');
+    assert.equal(global.get(target.id)!.displayName, '전역 이름');
+    await f.db
+        .update(schema.guildMembers)
+        .set({ nickname: null })
+        .where(and(eq(schema.guildMembers.guildId, f.guildId), eq(schema.guildMembers.userId, target.id)));
+    assert.equal(await name(), '전역 이름');
+    await setMyPrivacy(f.db, f.actors[2]!, { publicProfile: false, publicRiotIds: false });
+    const hiddenDetail = await getScrimDetail(f.db, null, f.guildId, f.scrimId);
+    assert.ok(hiddenDetail!.participants.some((person) => person.displayName === '비공개 사용자'));
+    hidden(hiddenDetail, ['전역 이름', '내전 서버 별명', '다른 서버 별명']);
 });
 
 test('공개 참가자·편성·대진·경기 운영 DTO와 Discord 게시에서 과거 스냅샷을 명시적으로 가린다', async (t) => {

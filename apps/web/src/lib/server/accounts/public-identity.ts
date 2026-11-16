@@ -1,8 +1,9 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Actor } from '../auth/types.ts';
-import { users } from '../db/schema.ts';
+import { guildMembers, users } from '../db/schema.ts';
 import type { Transaction } from '../db/types.ts';
 import { isDiscordId } from '../discord/client.ts';
+import { discordDisplayName } from '../discord/display-name.ts';
 import { DomainError } from '../errors.ts';
 
 export type PublicIdentity = {
@@ -10,6 +11,8 @@ export type PublicIdentity = {
     // 공개 설정이 바뀌어도 같은 사람의 목록·추가 조회 키는 유지한다.
     identityKey: string;
     displayName: string;
+    // 서버 문맥에서는 과거 신청 스냅샷보다 현재 서버 표시 이름을 우선한다.
+    currentGuildName?: string;
     avatarUrl: string | null;
     profileVisible: boolean;
     showRiotIds: boolean;
@@ -18,24 +21,30 @@ export type PublicIdentity = {
 /** DB·업무 계산의 사용자 ID는 건드리지 않고 공개 DTO에 필요한 표현만 한 번에 읽는다. */
 export async function readPublicIdentities(
     tx: Transaction,
-    userIds: readonly (string | null | undefined)[]
+    userIds: readonly (string | null | undefined)[],
+    guildId?: string
 ): Promise<Map<string, PublicIdentity>> {
     const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
     if (!ids.length) return new Map();
     const rows = await tx.select().from(users).where(inArray(users.id, ids));
+    const memberships = guildId
+        ? await tx
+              .select({ userId: guildMembers.userId, nickname: guildMembers.nickname })
+              .from(guildMembers)
+              .where(and(eq(guildMembers.guildId, guildId), inArray(guildMembers.userId, ids)))
+        : [];
+    const nicknames = new Map(memberships.map((member) => [member.userId, member.nickname]));
     return new Map(
         rows.map((row) => {
             const visible = row.publicProfile && row.withdrawnAt === null;
+            const name = discordDisplayName(row, nicknames.get(row.id));
             return [
                 row.id,
                 {
                     userId: visible ? row.id : row.publicId,
                     identityKey: row.publicId,
-                    displayName: visible
-                        ? row.globalName || row.username
-                        : row.withdrawnAt
-                          ? '탈퇴한 사용자'
-                          : '비공개 사용자',
+                    displayName: visible ? name : row.withdrawnAt ? '탈퇴한 사용자' : '비공개 사용자',
+                    ...(guildId && visible ? { currentGuildName: name } : {}),
                     avatarUrl:
                         visible && row.avatarHash
                             ? `https://cdn.discordapp.com/avatars/${row.id}/${row.avatarHash}.webp?size=128`
@@ -51,7 +60,7 @@ export async function readPublicIdentities(
 /** 과거 이름도 현재 공개 설정을 따르며 누락된 사용자에게서 스냅샷 개인정보를 되살리지 않는다. */
 export function publicDisplayName(identity: PublicIdentity | undefined, snapshotName?: string | null) {
     return identity?.profileVisible
-        ? snapshotName || identity.displayName
+        ? identity.currentGuildName || snapshotName || identity.displayName
         : identity?.displayName || '삭제된 사용자';
 }
 

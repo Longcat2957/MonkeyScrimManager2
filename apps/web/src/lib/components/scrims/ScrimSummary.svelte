@@ -58,7 +58,7 @@
         [
             formatSchedule(scrim.scheduledAt),
             `${scrim.teamCount}팀`,
-            scrim.formationMethod && formationMethodLabel(scrim.formationMethod),
+            scrim.canManage && scrim.formationMethod && formationMethodLabel(scrim.formationMethod),
             scrim.hardFearless ? '하드 피어리스' : null
         ].filter((item): item is string => Boolean(item))
     );

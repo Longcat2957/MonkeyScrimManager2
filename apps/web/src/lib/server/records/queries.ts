@@ -101,7 +101,8 @@ async function recordsInTransaction(
         : [];
     const identities = await readPublicIdentities(
         tx,
-        participants.map((entry) => entry.userId)
+        participants.map((entry) => entry.userId),
+        guildId
     );
     const participantsByGame = new Map<string, typeof participants>();
     for (const entry of participants) {
@@ -236,7 +237,7 @@ export async function getPlayerRecords(
     return readGuild(db, actor, guildId, async (tx) => {
         const user = await resolveRecordUser(tx, identifier, actor, privateLegacyAdmin);
         const userId = user.id;
-        const identity = (await readPublicIdentities(tx, [userId])).get(userId)!;
+        const identity = (await readPublicIdentities(tx, [userId], guildId)).get(userId)!;
         const [member] = await tx
             .select({ id: guildMembers.userId })
             .from(guildMembers)

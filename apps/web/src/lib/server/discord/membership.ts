@@ -1,6 +1,6 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { GuildContext } from '../../features/guild/types.ts';
-import type { Database } from '../db/types.ts';
+import type { Database, Transaction } from '../db/types.ts';
 import { guildDiscordSettings, guildMembers, guilds, users } from '../db/schema.ts';
 import type { DiscordClient, DiscordGuild, DiscordMember } from './client.ts';
 
@@ -43,7 +43,7 @@ export async function synchronizeGuildMembership(
     guildId: string
 ): Promise<GuildContext | null> {
     const member = await discord.getMember(guildId, userId);
-    if (!member) {
+    if (!member || member.isBot) {
         // 현재 소속만 제거하고 사용자·참가자·경기 기록은 보존한다.
         await db
             .delete(guildMembers)
@@ -97,6 +97,7 @@ export async function synchronizeGuildMembership(
         }
         const currentRoles = new Set(guild.roles.map((role) => role.id));
         const permissions = {
+            nickname: member.nickname ?? null,
             isAdmin,
             manageGuild,
             roleIds: member.roleIds.filter((id) => currentRoles.has(id)),
@@ -111,4 +112,72 @@ export async function synchronizeGuildMembership(
             });
         return { id: guild.id, name: guild.name, isAdmin };
     });
+}
+
+/** 전체 명단 조회가 끝난 뒤 초기 설정 트랜잭션에서 일반 멤버만 일괄 저장한다. */
+export async function saveGuildMembers(
+    tx: Transaction,
+    guild: DiscordGuild,
+    members: DiscordMember[]
+): Promise<number> {
+    const people = members
+        .filter((member) => !member.isBot)
+        .sort((left, right) => left.user.id.localeCompare(right.user.id));
+    const settings = await tx.query.guildDiscordSettings.findFirst({
+        where: eq(guildDiscordSettings.guildId, guild.id)
+    });
+    const syncedAt = new Date();
+    const currentRoles = new Set(guild.roles.map((role) => role.id));
+    let savedCount = 0;
+    for (let start = 0; start < people.length; start += 1_000) {
+        const batch = people.slice(start, start + 1_000);
+        const saved = await tx
+            .insert(users)
+            .values(batch.map((member) => member.user))
+            .onConflictDoUpdate({
+                target: users.id,
+                set: {
+                    username: sql`excluded.username`,
+                    globalName: sql`excluded.global_name`,
+                    avatarHash: sql`excluded.avatar_hash`
+                },
+                setWhere: isNull(users.withdrawnAt)
+            })
+            .returning({ id: users.id });
+        const savedIds = new Set(saved.map((user) => user.id));
+        const withheld = batch
+            .filter((member) => !savedIds.has(member.user.id))
+            .map((member) => member.user.id);
+        if (withheld.length)
+            await tx
+                .delete(guildMembers)
+                .where(and(eq(guildMembers.guildId, guild.id), inArray(guildMembers.userId, withheld)));
+        const eligible = batch.filter((member) => savedIds.has(member.user.id));
+        if (!eligible.length) continue;
+        await tx
+            .insert(guildMembers)
+            .values(
+                eligible.map((member) => ({
+                    guildId: guild.id,
+                    userId: member.user.id,
+                    nickname: member.nickname ?? null,
+                    manageGuild: canManageDiscordGuild(guild, member),
+                    isAdmin: isGuildOperator(guild, member, settings?.operatorRoleId ?? null),
+                    roleIds: member.roleIds.filter((roleId) => currentRoles.has(roleId)),
+                    syncedAt
+                }))
+            )
+            .onConflictDoUpdate({
+                target: [guildMembers.guildId, guildMembers.userId],
+                set: {
+                    nickname: sql`excluded.nickname`,
+                    manageGuild: sql`excluded.manage_guild`,
+                    isAdmin: sql`excluded.is_admin`,
+                    roleIds: sql`excluded.role_ids`,
+                    syncedAt
+                }
+            });
+        savedCount += eligible.length;
+    }
+    return savedCount;
 }

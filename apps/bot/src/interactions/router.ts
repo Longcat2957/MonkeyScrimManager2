@@ -5,6 +5,7 @@ import { BotApiError, errorCode } from '../api/client.js';
 import { handleAutocomplete, handleCommand } from '../commands/scrims.js';
 import { notice } from '../messages/shared.js';
 import { handleRegistration, RegistrationForms } from './registration.js';
+import { handleManualRegistration, ManualRegistrationForms } from './manual-registration.js';
 import { SeasonPanels, openSeasonPanel, handleSeasonButton, submitSeasonName } from './seasons.js';
 import {
     RecoveryForms,
@@ -24,6 +25,7 @@ export function createInteractionHandler(api: BotApi, origin: URL) {
     const creations = new ScrimCreationForms();
     const seasons = new SeasonPanels();
     const recoveries = new RecoveryForms();
+    const manualRegistrations = new ManualRegistrationForms();
     return async (interaction: Interaction) => {
         try {
             if (interaction.isAutocomplete()) await handleAutocomplete(interaction, api);
@@ -50,6 +52,11 @@ export function createInteractionHandler(api: BotApi, origin: URL) {
                 await submitRecoveryModal(interaction, api, recoveries);
             else if (interaction.isModalSubmit() && interaction.customId.startsWith('scrim-create:'))
                 await submitScrimCreation(interaction, api, origin, creations);
+            else if (
+                (interaction.isButton() || interaction.isUserSelectMenu()) &&
+                interaction.customId.startsWith('manual-registration:')
+            )
+                await handleManualRegistration(interaction, api, manualRegistrations);
             else if (interaction.isButton() || interaction.isStringSelectMenu())
                 await handleRegistration(interaction, api, forms);
         } catch (error) {
@@ -68,7 +75,11 @@ export function createInteractionHandler(api: BotApi, origin: URL) {
                     if (
                         interaction.isChatInputCommand() ||
                         interaction.isModalSubmit() ||
-                        (interaction.isButton() && interaction.customId.startsWith('registration:'))
+                        (interaction.isButton() &&
+                            (interaction.customId.startsWith('registration:') ||
+                                interaction.customId.startsWith('registration-standby:') ||
+                                interaction.customId.startsWith('registration-withdraw:') ||
+                                interaction.customId.startsWith('manual-registration:open:')))
                     ) {
                         await interaction.editReply(notice(text));
                     } else await interaction.followUp(reply);

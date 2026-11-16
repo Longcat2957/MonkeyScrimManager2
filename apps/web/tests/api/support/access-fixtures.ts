@@ -82,6 +82,8 @@ export async function createAccessFixture(t: TestContext) {
                     userId,
                     {
                         user: profile(userId),
+                        isBot: userId === ids.bot,
+                        nickname: null,
                         roleIds: userId === ids.bot ? [ids.botRole] : userId === ids.member ? [ids.role] : []
                     }
                 ])
@@ -108,6 +110,7 @@ export async function createAccessFixture(t: TestContext) {
             [...guilds.values()].map(({ id, name, iconHash }) => ({ id, name, iconHash })),
         getGuild: async (guildId) => guilds.get(guildId) ?? null,
         getMember: async (guildId, userId) => members.get(guildId)?.get(userId) ?? null,
+        listMembers: async (guildId) => [...(members.get(guildId)?.values() ?? [])],
         getCurrentUserId: async () => ids.bot,
         listRoles: async (guildId) => roles.get(guildId) ?? [],
         listChannels: async (guildId) => channels.get(guildId) ?? []

@@ -1,10 +1,14 @@
 import type {
     BotCreateScrimInput,
+    BotInitializationResult,
     BotGuildSyncInput,
     BotPublication,
     BotPublicationResult,
     BotRegistrationContext,
     BotRegistrationInput,
+    BotManualRegistrationContext,
+    BotManualRegistrationInput,
+    BotManualRegistrationResult,
     BotFailedPublication,
     BotPublicationRetryInput,
     BotSeasonSnapshot,
@@ -99,10 +103,11 @@ export function createApiClient(options: {
     return {
         health,
         initialize(guildId: string, actorId: string, interactionId: string) {
-            return request<{ guildId: string; seasonId: string }>(
+            return request<BotInitializationResult>(
                 'POST',
                 guildPath(guildId) + '/initialization',
-                { actorId, interactionId }
+                { actorId, interactionId },
+                60_000
             );
         },
         seasons(guildId: string, actorId: string, autocomplete = false) {
@@ -129,6 +134,19 @@ export function createApiClient(options: {
             return request<BotRegistrationContext>(
                 input.action === 'create' ? 'POST' : 'PATCH',
                 scrimPath(guildId, scrimId) + '/registrations',
+                input
+            );
+        },
+        manualRegistration(guildId: string, scrimId: string, actorId: string) {
+            return request<BotManualRegistrationContext>(
+                'GET',
+                scrimPath(guildId, scrimId) + '/manual-registrations?' + new URLSearchParams({ actorId })
+            );
+        },
+        addParticipant(guildId: string, scrimId: string, input: BotManualRegistrationInput) {
+            return request<BotManualRegistrationResult>(
+                'POST',
+                scrimPath(guildId, scrimId) + '/manual-registrations',
                 input
             );
         },

@@ -82,7 +82,8 @@ export async function getBracketInTransaction(
         .orderBy(asc(scrimParticipants.id));
     const identities = await readPublicIdentities(
         tx,
-        members.map((member) => member.userId)
+        members.map((member) => member.userId),
+        row.guildId
     );
     const keys = new Map(
         nodes.map((node) => [

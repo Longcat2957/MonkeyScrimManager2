@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { eq } from 'drizzle-orm';
-import type { BotRegistrationContext } from '../../../../../../shared/bot-api.js';
+import type {
+    BotManualRegistrationContext,
+    BotManualRegistrationResult,
+    BotRegistrationContext
+} from '../../../../../../shared/bot-api.js';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { assertAction, createHttpFixture, HTTP_BOT_TOKEN, HTTP_IDS } from '../../support/http.ts';
 
@@ -72,6 +76,8 @@ test('HTTP 봇: 모든 내부 경로는 브라우저 세션과 무관하게 서�
         ['GET', guildPath() + '/scrims/' + scrimId + '/registration?actorId=' + HTTP_IDS.member],
         ['POST', guildPath() + '/scrims/' + scrimId + '/registrations'],
         ['PATCH', guildPath() + '/scrims/' + scrimId + '/registrations'],
+        ['GET', guildPath() + '/scrims/' + scrimId + '/manual-registrations?actorId=' + HTTP_IDS.manager],
+        ['POST', guildPath() + '/scrims/' + scrimId + '/manual-registrations'],
         ['PUT', guildPath() + '/sync'],
         ['GET', guildPath() + '/members'],
         ['POST', '/internal/bot/reconciliation'],
@@ -168,6 +174,25 @@ test('HTTP 봇: 모집 생성은 현재 관리자와 활성 시즌을 요구하�
     assert.equal(conflict.status, 409);
 });
 
+test('HTTP 봇: 운영자의 수동 참가 선택을 서비스 인증·실제 권한으로 처리하고 재전송은 같은 결과를 반환한다', async (t) => {
+    const f = await createHttpFixture(t);
+    const { scrimId } = await createRecruitment(f);
+    const path = guildPath() + '/scrims/' + scrimId + '/manual-registrations';
+    assert.equal((await requestBot(f, path + '?actorId=' + HTTP_IDS.member)).status, 403);
+    const context = await success<BotManualRegistrationContext>(
+        await requestBot(f, path + '?actorId=' + HTTP_IDS.manager)
+    );
+    assert.equal(context.canAdd, true);
+    const input = { actorId: HTTP_IDS.manager, userId: HTTP_IDS.member, interactionId: interactionId() };
+    const added = await success<BotManualRegistrationResult>(await requestBot(f, path, 'POST', input));
+    const replay = await success<BotManualRegistrationResult>(await requestBot(f, path, 'POST', input));
+    assert.deepEqual(replay, added);
+    assert.equal(added.participant.status, 'selected');
+    const rows = await f.db.select().from(schema.scrimParticipantRegistrations);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]!.joinedByUserId, HTTP_IDS.manager);
+});
+
 test('HTTP 봇: 쿠키 없이 본인 계정으로 신청·수정·철회하고 오래된 생성 재전송은 재가입시키지 않는다', async (t) => {
     const f = await createHttpFixture(t);
     const account = await seedAccount(f);
@@ -201,6 +226,19 @@ test('HTTP 봇: 쿠키 없이 본인 계정으로 신청·수정·철회하고 �
         })
     );
     assert.deepEqual(edited.registration?.positions, ['top']);
+    for (const action of ['standby', 'select']) {
+        const changed = await success<BotRegistrationContext>(
+            await requestBot(f, base + '/registrations', 'PATCH', {
+                actorId: HTTP_IDS.member,
+                interactionId: interactionId(),
+                registrationId: joined.registration!.id,
+                action
+            })
+        );
+        assert.equal(changed.registration?.status, action === 'standby' ? 'standby' : 'selected');
+        assert.equal(changed.registration?.riotAccountId, account.id);
+        assert.deepEqual(changed.registration?.positions, ['top']);
+    }
     const withdrawn = await success<BotRegistrationContext>(
         await requestBot(f, base + '/registrations', 'PATCH', {
             actorId: HTTP_IDS.member,

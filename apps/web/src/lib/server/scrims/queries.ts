@@ -113,7 +113,8 @@ async function listItems(tx: Transaction, rows: ScrimRow[], user: Actor | null):
         );
     const identities = await readPublicIdentities(
         tx,
-        active.map((entry) => entry.userId)
+        active.map((entry) => entry.userId),
+        rows[0]!.guildId
     );
     return rows.map((row) => {
         const registered = active.filter((registration) => registration.scrimId === row.id);
@@ -313,7 +314,8 @@ export async function getScrimDetail(
                 : [];
             const identities = await readPublicIdentities(
                 tx,
-                entries.map((entry) => entry.userId)
+                entries.map((entry) => entry.userId),
+                guildId
             );
             const participants: (ScrimParticipant & { participantId: string })[] = entries.map((entry) => {
                 const identity = entry.userId ? identities.get(entry.userId) : undefined;
