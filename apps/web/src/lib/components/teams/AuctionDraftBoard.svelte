@@ -1,10 +1,11 @@
 <script lang="ts">
     import { onMount, untrack, type Snippet } from 'svelte';
-    import { Button, Loading, NoticeBar, toast } from 'stdf';
-    import AccessibleAccordion from '#lib/components/common/AccessibleAccordion.svelte';
+    import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
+    import { toast } from '#lib/ui/toast.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
     import {
         formatMmr,
@@ -51,7 +52,8 @@
     const open = $derived(auction.openLot);
     const lotKey = $derived(auction.openLotId ?? open?.participantId ?? null);
     const profile = $derived(auction.openProfile);
-    const stories = $derived(auctionStories(auction));
+    // 이야기 문구 앞의 이모지는 아이콘 문법에 맞지 않아 걷어 낸다.
+    const stories = $derived(auctionStories(auction).map((story) => story.replace(/^[^\p{L}\p{N}]+/u, '')));
     const canRevert = $derived(auction.canRevert ?? auction.history.some((entry) => !entry.voided));
     const canReset = $derived(auction.history.some((entry) => !entry.voided));
     const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
@@ -193,17 +195,15 @@
         <div class="flex shrink-0 items-center gap-2">
             <h2 id="auction-board" class="text-base font-semibold">경매</h2>
             <StatusTag text={STATUS[auction.status].text} state={STATUS[auction.status].state} />
-            {#if busy || refreshing}<Loading type="1_0" height="6" width="6" />{/if}
+            {#if busy || refreshing}<Spinner />{/if}
         </div>
         {@render refreshAction?.()}
         {#if controls}
             <!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 기존 경매 기록은 무효화해 보존한다. -->
             <div class="-mr-3 flex flex-wrap justify-end">
                 <Button
-                    fill="text"
+                    variant="quiet"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
                     injClass="min-h-11 px-3 text-sm"
                     disabled={busy}
                     onclick={reopenSetup}>팀장 다시 정하기</Button
@@ -220,7 +220,7 @@
     <!-- 작업판: 왼쪽 현재 매물·후보 현황, 오른쪽 팀 패널. 1px 경계로 붙는다. -->
     <div
         class={[
-            'overflow-clip rounded-(--radius-box) border border-border bg-border',
+            'hex-panel overflow-clip',
             live &&
                 'grid gap-px xl:h-[52rem] xl:grid-cols-[minmax(22rem,30rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto]'
         ]}
@@ -243,32 +243,25 @@
                         <div class="flex flex-wrap items-center justify-end gap-0.5">
                             {#if controls && canRevert}
                                 <Button
-                                    fill="textState"
-                                    state="warning"
+                                    variant="quiet"
                                     size="auto"
-                                    heightOut="0"
-                                    heightIn="2"
-                                    injClass="min-h-11 px-2 text-sm"
+                                    injClass="min-h-11 px-2 text-sm text-warning"
                                     disabled={busy}
                                     onclick={revert}>되돌리기</Button
                                 >
                             {/if}
                             {#if open && profile}
                                 <Button
-                                    fill={details ? 'lineLight' : 'text'}
+                                    variant={details ? 'secondary' : 'quiet'}
                                     size="auto"
-                                    heightOut="0"
-                                    heightIn="2"
                                     injClass="min-h-11 px-2 text-sm"
                                     onclick={() => (details = !details)}>상세보기</Button
                                 >
                             {/if}
                             {#if controls}
                                 <Button
-                                    fill="text"
+                                    variant="quiet"
                                     size="auto"
-                                    heightOut="0"
-                                    heightIn="2"
                                     injClass="min-h-11 px-2 text-sm"
                                     disabled={busy || Boolean(open) || auction.queue.length === 0}
                                     onclick={draw}>다음 후보</Button
@@ -288,12 +281,12 @@
                                 aria-label={`현재 매물 ${open.displayName}`}
                                 draggable={controls}
                                 class={[
-                                    'sticky top-(--app-header-height) z-20 isolate mx-3 flex shrink-0 flex-col overflow-hidden border px-4 py-3 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:py-5',
+                                    'hex-panel sticky top-(--app-header-height) z-20 isolate mx-3 flex shrink-0 flex-col overflow-hidden px-4 py-3 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:py-5',
                                     details ? 'gap-3' : 'justify-between gap-4 xl:min-h-[24rem] xl:gap-5',
                                     controls && 'cursor-grab active:cursor-grabbing',
                                     drag.id === open.participantId
-                                        ? 'border-primary/60 bg-bg-highlight opacity-70 xl:bg-primary/10 dark:bg-bg-highlight-dark'
-                                        : 'border-primary/30 bg-bg-surface xl:bg-bg-highlight/30 dark:border-dark/30 dark:bg-bg-surface-dark xl:dark:bg-bg-highlight-dark/30'
+                                        ? 'border-primary/60 bg-primary/10 opacity-70'
+                                        : 'border-primary/30 xl:bg-bg-highlight/30 xl:dark:bg-bg-highlight-dark/30'
                                 ]}
                                 ondragstart={(event) => drag.start(event, open.participantId)}
                                 ondragend={() => drag.end()}
@@ -395,7 +388,7 @@
                             {/if}
                         {:else}
                             <div
-                                class="flex min-h-80 flex-1 flex-col items-center justify-center gap-1 border border-dashed border-border bg-bg-surface px-4 text-center dark:bg-bg-surface-dark"
+                                class="hex-panel flex min-h-80 flex-1 flex-col items-center justify-center gap-1 border-dashed px-4 text-center"
                             >
                                 <p class="font-semibold text-text-muted">후보 대기</p>
                                 <p class="text-sm text-text-muted">
@@ -414,12 +407,9 @@
                         <!-- 유찰은 현재 매물 칸 하단에 고정해 카드 길이와 상관없이 같은 자리에 둔다. -->
                         <div class="flex justify-end bg-bg-surface px-3 pb-3 dark:bg-bg-surface-dark">
                             <Button
-                                fill="textState"
-                                state="warning"
+                                variant="quiet"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="2"
-                                injClass="min-h-11 px-2 text-sm"
+                                injClass="min-h-11 px-2 text-sm text-warning"
                                 disabled={busy}
                                 onclick={() => run('pass')}>유찰</Button
                             >
@@ -462,33 +452,18 @@
                     >
                 </div>
                 <div class={['grid gap-1.5', controls ? 'sm:grid-cols-3' : 'grid-cols-1']}>
-                    <Button
-                        fill="lineLight"
-                        size="full"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="min-h-11 text-sm"
-                        onclick={() => (listOpen = true)}>후보 목록</Button
+                    <Button variant="secondary" size="full" onclick={() => (listOpen = true)}
+                        >후보 목록</Button
                     >
                     {#if controls}
                         <Button
-                            fill="lineLight"
+                            variant="secondary"
                             size="full"
-                            heightOut="0"
-                            heightIn="2"
-                            injClass="min-h-11 text-sm"
                             disabled={busy || auction.queue.length < 2}
                             onclick={() => run('shuffle')}>순서 섞기</Button
                         >
-                        <Button
-                            fill="lineLight"
-                            state="error"
-                            size="full"
-                            heightOut="0"
-                            heightIn="2"
-                            injClass="min-h-11 text-sm"
-                            disabled={busy || !canReset}
-                            onclick={reset}>초기화</Button
+                        <Button variant="danger" size="full" disabled={busy || !canReset} onclick={reset}
+                            >초기화</Button
                         >
                     {/if}
                 </div>
@@ -504,57 +479,58 @@
         {/if}
     </div>
 
-    <!--
-		경매 이야기 공지 막대. STDF NoticeBar는 마운트 때만 크기를 재므로 내용이 바뀌면 다시 만든다.
-		오른쪽에 이름 없는 빈 버튼이 항상 생겨 화면용은 inert로 숨기고, 보조기기에는 같은 내용을 목록으로 준다.
-	-->
-    <div class="relative">
-        <ul class="sr-only" aria-label="경매 이야기">
-            {#each stories as story (story)}<li>{story}</li>{/each}
-        </ul>
-        <div inert aria-hidden="true">
-            {#key stories.join('|')}
-                <NoticeBar textList={stories} vertical interval={4} rightIcon={null} />
-            {/key}
+    {#if stories.length}
+        <div class="hex-panel px-4 py-3" role="region" aria-label="경매 이야기">
+            <p class="text-xs font-semibold text-text-muted">경매 이야기</p>
+            <ul class="mt-1 flex flex-col gap-0.5 text-sm">
+                {#each stories as story (story)}<li>{story}</li>{/each}
+            </ul>
         </div>
-    </div>
+    {/if}
 
     {#if auction.history.length}
-        <AccessibleAccordion items={[{ title: `경매 기록 (${auction.history.length})` }]} border="solid">
-            {#snippet children()}
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <caption class="sr-only">경매 기록</caption>
-                        <thead class="text-xs opacity-70">
-                            <tr>
-                                <th scope="col" class="py-2 text-right font-medium">순서</th>
-                                <th scope="col" class="px-3 py-2 text-left font-medium">후보</th>
-                                <th scope="col" class="px-3 py-2 text-left font-medium">결과</th>
-                                <th scope="col" class="px-3 py-2 text-left font-medium">팀</th>
-                                <th scope="col" class="py-2 text-right font-medium">가격</th>
+        <details class="hex-panel group">
+            <summary
+                class="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 text-sm font-semibold marker:content-none"
+            >
+                <span
+                    aria-hidden="true"
+                    class="text-xs text-text-muted transition-transform group-open:rotate-90">▸</span
+                >
+                경매 기록 ({auction.history.length})
+            </summary>
+            <div class="overflow-x-auto border-t border-brass-line px-4 pb-3">
+                <table class="w-full text-sm">
+                    <caption class="sr-only">경매 기록</caption>
+                    <thead class="text-xs opacity-70">
+                        <tr>
+                            <th scope="col" class="py-2 text-right font-medium">순서</th>
+                            <th scope="col" class="px-3 py-2 text-left font-medium">후보</th>
+                            <th scope="col" class="px-3 py-2 text-left font-medium">결과</th>
+                            <th scope="col" class="px-3 py-2 text-left font-medium">팀</th>
+                            <th scope="col" class="py-2 text-right font-medium">가격</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each auction.history as entry (entry.id)}
+                            <tr class={['border-t border-brass-line', entry.voided && 'opacity-50']}>
+                                <td class="py-2 text-right tabular-nums">{entry.order}</td>
+                                <td class={['px-3 py-2', entry.voided && 'line-through']}
+                                    >{entry.displayName}</td
+                                >
+                                <td class="px-3 py-2"
+                                    >{RESULT[entry.result]}{entry.voided ? ' (되돌림)' : ''}</td
+                                >
+                                <td class="px-3 py-2">{entry.teamName ?? '-'}</td>
+                                <td class="py-2 text-right tabular-nums"
+                                    >{entry.price === null ? '-' : `${entry.price}P`}</td
+                                >
                             </tr>
-                        </thead>
-                        <tbody>
-                            {#each auction.history as entry (entry.id)}
-                                <tr class={['border-t border-border', entry.voided && 'opacity-50']}>
-                                    <td class="py-2 text-right tabular-nums">{entry.order}</td>
-                                    <td class={['px-3 py-2', entry.voided && 'line-through']}
-                                        >{entry.displayName}</td
-                                    >
-                                    <td class="px-3 py-2"
-                                        >{RESULT[entry.result]}{entry.voided ? ' (되돌림)' : ''}</td
-                                    >
-                                    <td class="px-3 py-2">{entry.teamName ?? '-'}</td>
-                                    <td class="py-2 text-right tabular-nums"
-                                        >{entry.price === null ? '-' : `${entry.price}P`}</td
-                                    >
-                                </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                </div>
-            {/snippet}
-        </AccessibleAccordion>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
+        </details>
     {/if}
 </section>
 

@@ -1,36 +1,30 @@
 <script lang="ts">
-    import { Button, toast } from 'stdf';
-    import type { ActionProps } from 'stdf';
-    import { goto, invalidateAll } from '$app/navigation';
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import { formationPath } from '#lib/features/scrims/paths.ts';
-    import ActionMenu from '#lib/components/common/ActionMenu.svelte';
+    import MenuButton from '#lib/components/layout/MenuButton.svelte';
+    import type { MenuAction } from '#lib/components/common/menu.ts';
     import type {
-        ScrimNextAction,
         ScrimRevertAction,
         ScrimSettings,
         ScrimSettingsField
     } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { toast } from '#lib/ui/toast.ts';
     import ScrimSettingsDialog from './ScrimSettingsDialog.svelte';
 
     type Props = {
-        nextAction: ScrimNextAction | null;
         revert: ScrimRevertAction | null;
         restore?: ScrimRevertAction | null;
         endEarly: boolean;
-        // 끝난 내전은 취소할 수 없다.
         cancellable: boolean;
         cancelGameCount?: number | null;
         settings: ScrimSettings;
         editable: ScrimSettingsField[];
         notifyParticipants?: boolean;
-        notifications?: { pending: number; sent: number; blocked: number; uncertain: number } | null;
     };
 
     let {
-        nextAction,
         revert,
         restore = null,
         endEarly,
@@ -38,30 +32,17 @@
         cancelGameCount = null,
         settings,
         editable,
-        notifyParticipants = false,
-        notifications = null
+        notifyParticipants = false
     }: Props = $props();
 
-    type MenuItem = {
-        key: 'settings' | 'revert' | 'restore' | 'endEarly' | 'cancel' | 'notifyParticipants';
-        action: ActionProps;
-    };
-
-    let menuOpen = $state(false);
+    type Key = 'settings' | 'revert' | 'restore' | 'endEarly' | 'cancel' | 'notifyParticipants';
     let editing = $state(false);
-    let advancing = $state(false);
-    let notifying = $state(false);
     let working = $state(false);
-    const busy = $derived(working || advancing || notifying);
-    // 대진의 확정·시작은 대진 작업판에서 한 번만 제공한다.
-    const phaseAction = $derived(
-        nextAction?.key === 'start' || nextAction?.key === 'ready' ? null : nextAction
-    );
-    let trigger = $state<HTMLElement | null>(null);
+    let notifying = $state(false);
+    const busy = $derived(working || notifying);
 
-    // 단계마다 쓸 수 있는 항목만 둔다. 되돌릴 수 없는 단계면 이유를 설명 줄에 쓰고 비활성으로 둔다.
     const menu = $derived.by(() => {
-        const items: MenuItem[] = [];
+        const items: { key: Key; action: MenuAction }[] = [];
         if (editable.length) items.push({ key: 'settings', action: { content: '내전 설정 수정' } });
         if (notifyParticipants)
             items.push({
@@ -86,37 +67,10 @@
                     disabled: Boolean(restore.blockedReason)
                 }
             });
-        if (endEarly) items.push({ key: 'endEarly', action: { content: '중도 종료', style: 'error' } });
-        if (cancellable) items.push({ key: 'cancel', action: { content: '내전 취소', style: 'error' } });
+        if (endEarly) items.push({ key: 'endEarly', action: { content: '중도 종료', danger: true } });
+        if (cancellable) items.push({ key: 'cancel', action: { content: '내전 취소', danger: true } });
         return items;
     });
-
-    const CONFIRM: Record<ScrimNextAction['key'], string> = {
-        close: '모집을 마감할까요?',
-        ready: '대진 준비로 넘어갈까요?',
-        start: '내전을 시작할까요?',
-        complete: '내전을 종료할까요?'
-    };
-
-    async function advance() {
-        if (!nextAction || busy) return;
-        const key = nextAction.key;
-        if (!(await confirm(CONFIRM[key], nextAction.label))) return;
-        advancing = true;
-        try {
-            const message = await postAction('advance', { key });
-            if (message) toast.error(message);
-            else if (key === 'close' && page.data.scrim?.formationMethod) {
-                const target = formationPath(
-                    { guildId: page.params.guildId!, scrimId: page.params.scrimId! },
-                    page.data.scrim.formationMethod
-                );
-                if (target) await goto(target);
-            }
-        } finally {
-            advancing = false;
-        }
-    }
 
     async function run(name: string, message: string, title: string) {
         if (busy) return;
@@ -130,9 +84,8 @@
         }
     }
 
-    async function onselect(index: number) {
+    async function select(index: number) {
         if (busy) return;
-        menuOpen = false;
         const key = menu[index]?.key;
         if (key === 'settings') editing = true;
         else if (key === 'notifyParticipants') {
@@ -169,102 +122,31 @@
     }
 </script>
 
-<!-- 운영자의 단계 진행과 내전 관리. 작업 헤더처럼 한 줄에 두고 진행 조건이 안 맞으면 이유를 왼쪽에 쓴다. -->
-<section aria-labelledby="operations">
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3">
-        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 id="operations" class="text-sm font-semibold">운영</h2>
-            {#if phaseAction?.blockedReason}
-                <span class="text-sm opacity-70">{phaseAction.blockedReason}</span>
-            {/if}
-        </div>
-        <div class="ml-auto flex shrink-0 items-center gap-2">
-            {#if menu.length}
-                <span bind:this={trigger}>
-                    <Button
-                        fill="lineLight"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="min-h-11 min-w-11 px-3"
-                        disabled={busy}
-                        onclick={() => (menuOpen = true)}
-                    >
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            aria-hidden="true"
-                        >
-                            <circle cx="5" cy="12" r="1.5" />
-                            <circle cx="12" cy="12" r="1.5" />
-                            <circle cx="19" cy="12" r="1.5" />
-                        </svg>
-                        <span class="sr-only">운영 메뉴</span>
-                    </Button>
-                </span>
-            {/if}
-            {#if phaseAction}
-                <!-- 다음 단계는 내전을 앞으로 넘기는 유일한 버튼이라 관리 메뉴와 선으로 나누고 화살표를 붙여 구분한다. -->
-                {#if menu.length}<span aria-hidden="true" class="mx-1 h-6 w-px bg-border"></span>{/if}
-                <Button
-                    size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="min-h-11 gap-2 px-5 text-sm font-semibold"
-                    disabled={busy || Boolean(phaseAction.blockedReason)}
-                    loading={advancing ? {} : null}
-                    onclick={advance}
-                >
-                    {phaseAction.label}
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.25"
-                        aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg
-                    >
-                </Button>
-            {/if}
-        </div>
-    </div>
-
-    {#if notifications && Object.values(notifications).some((count) => count > 0)}
-        <p role="status" class="px-4 pb-3 text-sm opacity-70">
-            참가 안내:
-            {[
-                notifications.pending ? `전송 대기 ${notifications.pending}명` : '',
-                notifications.sent ? `완료 ${notifications.sent}명` : '',
-                notifications.blocked ? `실패 ${notifications.blocked}명` : '',
-                notifications.uncertain ? `전달 확인 필요 ${notifications.uncertain}명` : ''
-            ]
-                .filter(Boolean)
-                .join(' · ')}
-            {#if notifications.blocked || notifications.uncertain}<span>
-                    · Discord의 /게시복구에서 확인하세요</span
-                >{/if}
-        </p>
-    {/if}
-
-    <ActionMenu
-        bind:open={menuOpen}
+{#if menu.length}
+    <MenuButton
         label="운영 메뉴"
         actions={menu.map((item) => item.action)}
-        {trigger}
-        {onselect}
+        align="right"
+        onselect={select}
+        triggerVariant="secondary"
+        triggerClass="gap-1"
+    >
+        <span class="text-sm font-semibold">운영 메뉴</span>
+        <span aria-hidden="true">▾</span>
+    </MenuButton>
+{/if}
+
+{#if editable.length}
+    <ScrimSettingsDialog
+        bind:open={editing}
+        title="내전 설정 수정"
+        submitText="저장"
+        action="settings"
+        initial={settings}
+        {editable}
+        onsaved={async () => {
+            const { invalidateAll } = await import('$app/navigation');
+            await invalidateAll();
+        }}
     />
-    {#if editable.length}
-        <ScrimSettingsDialog
-            bind:open={editing}
-            title="내전 설정 수정"
-            submitText="저장"
-            action="settings"
-            initial={settings}
-            {editable}
-            onsaved={() => invalidateAll()}
-        />
-    {/if}
-</section>
+{/if}

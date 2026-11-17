@@ -1,6 +1,5 @@
 <script lang="ts">
     import { untrack } from 'svelte';
-    import { CellGroup } from 'stdf';
     import { resolve } from '$app/paths';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
@@ -32,13 +31,8 @@
 <!-- 진행 중인 내전과 최근 경기를 한 카드에서 탭으로 나눈다. 전체 목록은 헤더의 내전·경기 기록 메뉴가 담당한다. -->
 <section aria-labelledby="activity" class="flex flex-col gap-3">
     <h2 id="activity" class="text-lg font-semibold">내전 현황</h2>
-    <CellGroup my="0" mx="0" shadow="none">
-        <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 내용은 목록 이름으로 알린다. -->
-        <div
-            role="group"
-            aria-label="보기 선택"
-            class="border-b border-text-primary/5 px-1 dark:border-text-dark/5"
-        >
+    <div class="hex-panel overflow-hidden">
+        <div role="group" aria-label="보기 선택" class="border-b border-brass-line px-1">
             <SelectionTabs {labels} {active} onclickTab={(index) => (active = index)} />
         </div>
 
@@ -48,12 +42,12 @@
                     <SectionState state="error" message="내전을 불러오지 못했어요" {onretry} />
                 </div>
             {:else if activeScrims.value.length === 0}
-                <p class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p class="px-3 py-8 text-center text-sm text-text-muted">
                     {heroShown ? '다른 진행 중인 내전이 없어요' : '진행 중인 내전이 없어요'}
                 </p>
             {:else}
-                <ul aria-label="진행 중인 내전">
-                    {#each activeScrims.value as scrim, index (scrim.id)}
+                <ul aria-label="진행 중인 내전" class="divide-y divide-brass-line">
+                    {#each activeScrims.value as scrim (scrim.id)}
                         <li>
                             <ScrimListRow
                                 {scrim}
@@ -61,7 +55,7 @@
                                     guildId,
                                     scrimId: scrim.id
                                 })}
-                                line={index < activeScrims.value.length - 1}
+                                line={false}
                             />
                         </li>
                     {/each}
@@ -72,21 +66,19 @@
                 <SectionState state="error" message="경기 기록을 불러오지 못했어요" {onretry} />
             </div>
         {:else if recentMatches.value.length === 0}
-            <p class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                아직 기록된 경기가 없어요
-            </p>
+            <p class="px-3 py-8 text-center text-sm text-text-muted">아직 기록된 경기가 없어요</p>
         {:else}
-            <ul aria-label="최근 경기">
-                {#each recentMatches.value as match, index (match.id)}
+            <ul aria-label="최근 경기" class="divide-y divide-brass-line">
+                {#each recentMatches.value as match (match.id)}
                     <li>
                         <MatchListRow
                             {match}
                             href={resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id })}
-                            line={index < recentMatches.value.length - 1}
+                            line={false}
                         />
                     </li>
                 {/each}
             </ul>
         {/if}
-    </CellGroup>
+    </div>
 </section>

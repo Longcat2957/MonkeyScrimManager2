@@ -1,12 +1,13 @@
 <script lang="ts">
-    import { Button } from 'stdf';
     import { untrack } from 'svelte';
+    import Button from '#lib/components/common/Button.svelte';
     import { invalidateAll } from '$app/navigation';
     import { page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import AuctionDraftBoard from '#lib/components/teams/AuctionDraftBoard.svelte';
     import AuctionSetupBoard from '#lib/components/teams/AuctionSetupBoard.svelte';
+    import ScrimSummary from '#lib/components/scrims/ScrimSummary.svelte';
     import { auctionContextKey, type AuctionLiveSnapshot } from '#lib/features/scrims/auction-live.ts';
     import type { PageProps } from './$types';
 
@@ -118,22 +119,20 @@
     <title>{data.scrim.title} · 경매 | {SERVICE_NAME}</title>
 </svelte:head>
 
+<ScrimSummary scrim={data.scrim} />
+
 {#snippet refreshAction()}
     {#if viewing && data.scrim.status === 'preparing' && auction && ['setup', 'in_progress'].includes(auction.status)}
         <Button
-            fill="text"
+            variant="quiet"
             size="auto"
-            heightOut="0"
-            heightIn="2"
             injClass="min-h-11 px-2 text-sm"
             disabled={refreshing}
             onclick={() => toggleAutomatic()}>{automatic ? '자동 갱신 끄기' : '자동 갱신 켜기'}</Button
         >
         <Button
-            fill="text"
+            variant="quiet"
             size="auto"
-            heightOut="0"
-            heightIn="2"
             injClass="min-h-11 px-2 text-sm"
             disabled={refreshing}
             onclick={() => refresh()}>새로고침</Button

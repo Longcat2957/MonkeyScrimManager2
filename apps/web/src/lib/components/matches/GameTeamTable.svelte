@@ -53,7 +53,7 @@
     </header>
     <table class="w-full text-sm [&_td:not(:first-child)]:whitespace-nowrap [&_th]:whitespace-nowrap">
         <caption class="sr-only">{sideText} {side.teamName} {side.win ? '승리' : '패배'}</caption>
-        <thead class="text-xs opacity-60">
+        <thead class="text-xs text-text-muted">
             <tr class="border-b border-border">
                 <th scope="col" class="px-4 py-2 text-left font-medium">선수</th>
                 <th scope="col" class="hidden px-2 py-2 font-medium sm:table-cell">평점</th>
@@ -132,7 +132,7 @@
                                             state="warning"
                                         />{/if}
                                 </span>
-                                <span class="truncate text-xs opacity-60"
+                                <span class="truncate text-xs text-text-muted"
                                     >{player.riotId ? `${player.riotId} · ` : ''}{player.champion.name}</span
                                 >
                             </span>
@@ -150,7 +150,7 @@
                             >{player.kills ?? '-'} / <span class="text-error">{player.deaths ?? '-'}</span> / {player.assists ??
                                 '-'}</span
                         >
-                        <span class="block text-xs opacity-60">{kdaRatio(player)} : 1</span>
+                        <span class="block text-xs text-text-muted">{kdaRatio(player)} : 1</span>
                     </td>
                     <td class="hidden px-2 py-2.5 lg:table-cell">
                         <span
@@ -163,7 +163,9 @@
                                     style:width={bar(player.damage)}
                                 ></span></span
                             >
-                            <span class="text-right opacity-60">{formatThousands(player.damageTaken)}</span>
+                            <span class="text-right text-text-muted"
+                                >{formatThousands(player.damageTaken)}</span
+                            >
                             <span class="h-1.5 rounded-full bg-bg-highlight dark:bg-bg-highlight-dark"
                                 ><span
                                     class="block h-full rounded-full bg-gray-400"
@@ -174,11 +176,13 @@
                     </td>
                     <td class="hidden px-2 py-2.5 text-center tabular-nums lg:table-cell">
                         <span class="block">{player.wardsPlaced ?? '-'} / {player.wardsKilled ?? '-'}</span>
-                        <span class="block text-xs opacity-60">시야 {player.visionScore ?? '-'}</span>
+                        <span class="block text-xs text-text-muted">시야 {player.visionScore ?? '-'}</span>
                     </td>
                     <td class="hidden px-2 py-2.5 text-center tabular-nums md:table-cell">
                         <span class="block">{player.cs ?? '-'}</span>
-                        <span class="block text-xs opacity-60">{perMinute(player.cs, durationSec)}/분</span>
+                        <span class="block text-xs text-text-muted"
+                            >{perMinute(player.cs, durationSec)}/분</span
+                        >
                     </td>
                     <!-- 넓은 화면은 한 줄, 그보다 좁으면 4칸씩 두 줄로 접어 열 폭을 줄인다. -->
                     <td class="hidden px-2 py-2.5 md:table-cell">

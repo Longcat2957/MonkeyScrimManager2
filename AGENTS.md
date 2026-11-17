@@ -5,7 +5,7 @@
 - `docs/purpose.md`: Project vision, goals, and constraints.
 - `docs/web/README.md`: Frontend doc index, terminology, enum → UI label/`Tag` state mapping, service-wide open policies.
 - `docs/web/routing.md`: Routes, layout hierarchy, header/navigation, URL state.
-- `docs/web/design-system.md`: STDF setup, tokens, per-purpose STDF component selection table, shared service components, known STDF 3.0.0 limits. Read before writing any UI.
+- `docs/web/design-system.md`: 소환사의 협곡 전술 상황판 토큰·타이포그래피·네이티브 프리미티브 선택표·셸·테마 규칙. UI를 쓰기 전에 읽는다.
 - `docs/web/patterns.md`: State, form, overlay, list, responsive, and accessibility patterns plus the UI completion checklist.
 - `docs/web/pages/*.md`: Per-page purpose, data, wireframe, component composition, states, and open decisions.
 
@@ -18,7 +18,7 @@ feature, or architectural decisions.
 - The user-facing service name is **`Monkeybot`**. Preserve this exact spelling; `Monketbot` is a typo.
 - Use `Monkeybot` in UI headers, headings, navigation, browser titles, metadata, and user-facing bot messages. Do not display the internal project name in these places.
 - In web code, import `SERVICE_NAME` from `#lib/branding.ts` for the service name instead of repeating a literal string.
-- Render the `Monkeybot` wordmark with the `font-brand` Jersey 10 font (regular 400). Keep body text, navigation, and STDF controls in Noto Sans KR.
+- Render the `Monkeybot` wordmark with the `font-brand` font. Keep body text, navigation, and controls in Noto Sans KR.
 - Before completing UI changes, check visible text and metadata and run `pnpm check:branding` (also included in `pnpm check`). The check rejects internal project names, `Monketbot`, and direct `Monkeybot` literals in web `.svelte` and `.html` files.
 
 ## Project Principles
@@ -57,10 +57,10 @@ feature, or architectural decisions.
 ## Frontend Implementation
 
 - 반복되는 UI·동작은 역할 단위의 컴포넌트로 모아 코드 중복을 줄인다. 실제 반복과 공통 책임이 확인된 범위만 공통화하며, 줄 수를 줄이기 위한 과도한 추상화나 읽기 어려운 축약은 피한다.
-- 디자인은 STDF 네이티브 컴포넌트를 우선 사용한다. 설치된 버전의 공식 API·옵션으로 해결할 수 있는 UI를 직접 다시 구현하지 않는다.
-- STDF 컴포넌트를 공통 컴포넌트로 감싸는 것은 서비스 공통 동작이나 구성이 필요할 때로 한정한다. 모든 STDF 컴포넌트에 일괄적으로 래퍼를 만들지 않는다.
+- UI는 Tailwind CSS와 네이티브 HTML 요소(`<dialog>`, Popover API, 폼 컨트롤)로 구현한다. STDF를 포함한 UI 컴포넌트 라이브러리를 추가하지 않는다.
+- 버튼·입력·다이얼로그 같은 서비스 공통 프리미티브는 `apps/web/src/lib/components/common/`에 한 번만 만들고 화면에서 재사용한다.
 - 페이지는 화면 조립, 컴포넌트는 표현과 상호작용, 라우트의 데이터 로딩은 데이터 준비를 담당한다. 컴포넌트는 필요한 데이터를 전달받아 사용하며 목 데이터나 API의 구체적인 조회 방식에 의존하지 않는다.
-- 색상·폰트·간격 등 반복되는 디자인 값은 STDF 설정과 전역 토큰으로 관리한다. 컴포넌트 옵션과 공통 테마를 먼저 활용하고, 개별 화면의 CSS 예외는 필요한 범위로 제한한다.
+- 색상·폰트·간격 등 반복되는 디자인 값은 Tailwind `@theme` 전역 토큰으로 관리한다. 개별 화면의 CSS 예외는 필요한 범위로 제한한다.
 - 화면을 설계할 때 정상·로딩·빈 데이터·오류·비활성 상태를 함께 고려하고 해당 기능에 필요한 상태를 제공한다.
 - 반응형 배치와 접근성을 처음부터 고려한다. 모바일 화면, 키보드 조작, 보이는 포커스, 입력 라벨과 접근 가능한 이름을 확인한다.
 

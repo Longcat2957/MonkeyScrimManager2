@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { Button, Input } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
     import { POSITIONS } from '#lib/features/labels.ts';
-    import { inputFeedback } from '#lib/ui/form.ts';
     import {
         bestMmr,
         formatMmr,
@@ -27,8 +27,6 @@
     };
 
     let { team, bidding, busy, drag, bid = $bindable(''), celebration, onaward }: Props = $props();
-    const id = $props.id();
-    const errorId = `${id}-bid-error`;
 
     // 같은 증감 조작을 터치와 키보드에서도 바로 사용할 수 있다.
     const STEPS = [-50, -10, 10, 50];
@@ -143,29 +141,19 @@
         <!-- 입찰 줄은 경매 중 가장 자주 누르는 곳이라 다른 조작보다 크게 둔다. -->
         <div class="flex flex-col gap-2">
             <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-                <!-- STDF Input 바깥 칸의 고정 여백(px-2 py-1)을 상쇄해 팀 패널 왼쪽 선에 맞춘다. 입력 글자 크기는 옵션이 없어 감싸는 요소에서 키운다. -->
-                <div
-                    class="-mx-2 -my-1 min-w-0 [&_input]:text-lg [&_input]:font-semibold"
-                    {@attach inputFeedback(bidError, errorId)}
-                >
-                    <Input
-                        title={`${team.name} 입찰가`}
-                        titlePosition="out"
-                        placeholder="입찰가"
+                <div class="min-w-0 [&_input]:text-lg [&_input]:font-semibold">
+                    <TextField
+                        label={`${team.name} 입찰가`}
                         inputmode="numeric"
+                        placeholder="입찰가"
                         bind:value={bid}
                         disabled={busy}
-                        state={bidError ? 'error' : 'theme'}
-                        py="1"
+                        error={bidError}
                     />
-                    {#if bidError}<p id={errorId} role="alert" class="px-2 text-sm text-error">
-                            {bidError}
-                        </p>{/if}
                 </div>
                 <Button
+                    variant="primary"
                     size="auto"
-                    heightOut="0"
-                    heightIn="3"
                     injClass="min-h-12 px-4 text-base"
                     disabled={busy || price === null || overBudget}
                     onclick={() => price !== null && onaward(price)}
@@ -176,10 +164,8 @@
             <div role="group" aria-label={`${team.name} 입찰가 조정`} class="grid grid-cols-4 gap-1">
                 {#each STEPS as step (step)}
                     <Button
-                        fill="lineLight"
+                        variant="secondary"
                         size="auto"
-                        heightOut="0"
-                        heightIn="3"
                         injClass="min-h-11 w-full px-2 text-base font-semibold"
                         disabled={busy}
                         onclick={() => adjust(step)}

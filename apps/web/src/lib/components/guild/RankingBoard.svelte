@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { CellGroup, InfiniteScroll } from 'stdf';
     import { resolve } from '$app/paths';
     import LinkCell from '#lib/components/common/LinkCell.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import type { RecordSeason } from '#lib/features/seasons.ts';
     import type { GuildRanking, LolPosition, RankingEntry, RankingPage } from '#lib/features/guild/types.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
@@ -31,9 +31,31 @@
     const pinnedMe = $derived(board?.me && !board.entries.some((entry) => entry.isMe) ? board.me : null);
 
     let scroller: HTMLDivElement | null = $state(null);
+    let sentinel: HTMLDivElement | null = $state(null);
     let loading = $state(false);
     let failed = $state(false);
     let controller: AbortController | null = null;
+
+    // 목록 끝이 보이면 다음 쪽을 이어 붙인다. 스크롤 영역 안에서만 관찰한다.
+    $effect(() => {
+        void position.key;
+        void selectedSeasonId;
+        void loading;
+        void failed;
+        const root = scroller;
+        const target = sentinel;
+        if (!root || !target) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (!entries.some((entry) => entry.isIntersecting)) return;
+                if (loading || failed || !board?.hasMore) return;
+                void loadMore();
+            },
+            { root, rootMargin: '0px 0px 120px 0px' }
+        );
+        observer.observe(target);
+        return () => observer.disconnect();
+    });
 
     $effect(() => {
         void guildId;
@@ -51,6 +73,7 @@
 
     function selectPosition(index: number) {
         active = index;
+        loading = false;
         failed = false;
         scroller?.scrollTo({ top: 0 });
     }
@@ -81,7 +104,7 @@
             if (!response.ok) throw new Error(String(response.status));
             return response.json();
         };
-        // STDF InfiniteScroll은 onload 뒤 잠기고, loading이 true에서 false로 돌아올 때 다시 풀린다.
+        // 로딩 중에는 다시 요청하지 않고, loading이 false로 돌아오면 끝이 보일 때 다음 쪽을 요청한다.
         loading = true;
         try {
             const next = await fetchPage(current.entries.length);
@@ -124,9 +147,7 @@
                 <span
                     class={[
                         'flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold tabular-nums',
-                        entry.rank <= 3
-                            ? [MEDAL[entry.rank - 1], 'text-bg-base-dark']
-                            : 'text-gray-500 dark:text-gray-400'
+                        entry.rank <= 3 ? [MEDAL[entry.rank - 1], 'text-bg-base-dark'] : 'text-text-muted'
                     ]}
                 >
                     <span class="sr-only">순위 </span>{entry.rank}
@@ -154,7 +175,7 @@
             <span class="flex items-center gap-2">
                 {#if entry.isMe}
                     <span
-                        class="rounded-full bg-primary px-1.5 py-0.5 text-[0.6875rem] font-semibold text-text-on-primary dark:bg-dark dark:text-text-on-dark"
+                        class="rounded-(--radius-small) bg-hex px-1.5 py-0.5 text-[0.6875rem] font-semibold text-hex-ink"
                     >
                         나
                     </span>
@@ -174,9 +195,7 @@
                 <SeasonSelector {seasons} {selectedSeasonId} />
             </div>
         {:else if ranking.ok && ranking.value}
-            <span class="text-xs text-gray-500 dark:text-gray-400"
-                >{ranking.value.seasonName} · 포지션별 MMR</span
-            >
+            <span class="text-xs text-text-muted">{ranking.value.seasonName} · 포지션별 MMR</span>
         {/if}
     </div>
 
@@ -185,13 +204,8 @@
     {:else if !ranking.value}
         <SectionState state="empty" message="조회할 시즌의 순위가 아직 없어요" />
     {:else}
-        <CellGroup my="0" mx="0" shadow="none">
-            <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 포지션은 목록 이름으로 알린다. -->
-            <div
-                role="group"
-                aria-label="포지션 선택"
-                class="border-b border-text-primary/5 px-1 dark:border-text-dark/5"
-            >
+        <div class="hex-panel overflow-hidden">
+            <div role="group" aria-label="포지션 선택" class="border-b border-brass-line px-1">
                 <SelectionTabs
                     labels={POSITIONS.map(({ text }) => ({ text }))}
                     {active}
@@ -201,38 +215,41 @@
             {#if board && board.entries.length}
                 <!-- 카드 안에서 스크롤하며 다음 순위를 불러온다. 페이지 전체 길이는 늘어나지 않는다. -->
                 <div bind:this={scroller} class="relative max-h-[26rem] overflow-y-auto overscroll-contain">
-                    <ul aria-label={`${position.text} 순위`}>
-                        {#each board.entries as entry, index (identityKey(entry))}
-                            <li>{@render row(entry, index < board.entries.length - 1)}</li>
+                    <ul aria-label={`${position.text} 순위`} class="divide-y divide-brass-line">
+                        {#each board.entries as entry (identityKey(entry))}
+                            <li>{@render row(entry, false)}</li>
                         {/each}
                     </ul>
-                    {#if scroller}
-                        {#key `${position.key}:${selectedSeasonId ?? ''}`}
-                            <InfiniteScroll
-                                scrollTarget={scroller}
-                                bind:loading
-                                bind:error={failed}
-                                finished={!board.hasMore}
-                                offset={120}
-                                loadingText="불러오는 중"
-                                finishedText="마지막 순위예요"
-                                errorText="불러오지 못했어요. 눌러서 다시 시도해 주세요"
-                                textClass="text-xs text-gray-500 dark:text-gray-400"
-                                onload={loadMore}
-                            />
-                        {/key}
-                    {/if}
+                    <div
+                        bind:this={sentinel}
+                        class="px-3 py-3 text-center text-xs text-text-muted"
+                        aria-live="polite"
+                    >
+                        {#if failed}
+                            <button
+                                type="button"
+                                class="min-h-11 px-3 underline"
+                                onclick={() => void loadMore()}
+                            >
+                                불러오지 못했어요. 눌러서 다시 시도해 주세요
+                            </button>
+                        {:else if loading}
+                            <Spinner label="순위 불러오는 중" />
+                        {:else if !board.hasMore}
+                            마지막 순위예요
+                        {/if}
+                    </div>
                 </div>
                 {#if pinnedMe}
-                    <div class="border-t border-text-primary/10 dark:border-text-dark/10">
+                    <div class="border-t border-brass-line">
                         {@render row(pinnedMe, false)}
                     </div>
                 {/if}
             {:else}
-                <p class="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p class="px-3 py-8 text-center text-sm text-text-muted">
                     {position.text} 기록이 아직 없어요
                 </p>
             {/if}
-        </CellGroup>
+        </div>
     {/if}
 </section>

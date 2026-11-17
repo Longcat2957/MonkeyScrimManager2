@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { Button } from 'stdf';
     import { goto, invalidateAll } from '$app/navigation';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import Button from '#lib/components/common/Button.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
@@ -121,9 +121,7 @@
 <div class="flex flex-col gap-6">
     <!-- 시리즈 머리 -->
     <header class="flex flex-col gap-4">
-        <h2
-            class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 rounded-(--radius-box) border border-border bg-bg-surface px-5 py-4 dark:bg-bg-surface-dark"
-        >
+        <h2 class="hex-panel grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-5 py-4">
             <span class="flex min-w-0 justify-end">{@render team(match.teamA, 'a')}</span>
             <span class="text-4xl font-black tabular-nums"
                 >{match.scoreA} <span aria-hidden="true" class="opacity-40">:</span><span class="sr-only"
@@ -142,10 +140,7 @@
             </div>
             {#if data.can.upload}
                 <Button
-                    fill="base"
-                    size="auto"
-                    heightOut="0"
-                    heightIn="2"
+                    variant="primary"
                     injClass="min-h-11 px-4"
                     disabled={remaining === 0}
                     onclick={() => (uploadOpen = true)}>ROFL 업로드</Button
@@ -165,27 +160,24 @@
             <h2 id="game-heading" class="sr-only">{data.game.order}세트</h2>
             {#if changing}<p role="status" class="text-sm text-text-muted">세트를 불러오는 중</p>{/if}
             {#if match.games.length > 1}
-                <div role="group" aria-label="세트 선택" class="border-b border-border">
+                <div role="group" aria-label="세트 선택" class="border-b border-brass-line">
                     <SelectionTabs {labels} active={activeGame} onclickTab={selectGame} />
                 </div>
             {/if}
             {#if data.operation?.can.revertResult && data.operation.latestGameId === data.game.id}
                 <div class="flex justify-end">
                     <Button
-                        fill="textState"
-                        state="error"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="min-h-11 px-3 text-sm"
-                        loading={reverting ? {} : null}
+                        variant="danger"
+                        size="sm"
+                        injClass="min-h-11 px-3"
+                        loading={reverting}
                         onclick={revertResult}>마지막 세트 취소</Button
                     >
                 </div>
             {/if}
             {#if revertFailure}<p role="alert" class="text-sm text-error">{revertFailure}</p>{/if}
             {#if data.operation?.blockedReason && data.operation.latestGameId === data.game.id}
-                <p class="text-sm opacity-70">결과 취소: {data.operation.blockedReason}</p>
+                <p class="text-sm text-text-muted">결과 취소: {data.operation.blockedReason}</p>
             {/if}
             <GameHero game={data.game} />
             {#each data.game.sides as side (side.side)}
@@ -206,9 +198,7 @@
     {#if data.usedChampions}
         <section aria-labelledby="fearless" class="flex flex-col gap-3">
             <h2 id="fearless" class="text-lg font-semibold">다음 세트에서 쓸 수 없는 챔피언</h2>
-            <ul
-                class="flex flex-wrap gap-2 rounded-(--radius-box) border border-border bg-bg-surface p-4 dark:bg-bg-surface-dark"
-            >
+            <ul class="hex-panel flex flex-wrap gap-2 p-4">
                 {#each data.usedChampions as champion (champion.id)}
                     <li
                         class="flex items-center gap-1.5 rounded-(--radius-small) bg-bg-highlight/60 py-1 pr-2 pl-1 text-xs dark:bg-bg-highlight-dark/60"

@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { Button, toast } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { toast } from '#lib/ui/toast.ts';
 
     // 수동 편성·경매 작업판에서 편성 방식 선택으로 되돌린다. 성공하면 다시 불러온 load가 방식을 고르는 요약으로 보낸다.
     let { disabled = false }: { disabled?: boolean } = $props();
@@ -29,10 +30,8 @@
 </script>
 
 <Button
-    fill="text"
+    variant="quiet"
     size="auto"
-    heightOut="0"
-    heightIn="2"
     injClass="min-h-11 px-3 text-sm"
     disabled={disabled || pending}
     onclick={change}>방식 다시 고르기</Button

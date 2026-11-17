@@ -1,7 +1,9 @@
 <script lang="ts">
-    import { Button, Loading, toast } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
+    import { toast } from '#lib/ui/toast.ts';
     import { DragState } from '#lib/components/teams/drag.svelte.ts';
     import {
         bestOfLabel,
@@ -107,7 +109,7 @@
     <section
         aria-labelledby="bracket-board"
         aria-busy={busy}
-        class="bracket-board w-full min-w-0 overflow-clip rounded-(--radius-box) border border-border bg-border"
+        class="bracket-board hex-panel w-full min-w-0 overflow-clip bg-brass-line"
         style:--selection-height={`${selectedId ? selectionHeight : 0}px`}
     >
         <div
@@ -120,7 +122,7 @@
                             text="확정"
                             state="success"
                         />{/if}
-                    {#if busy}<Loading type="1_0" height="6" width="6" />{/if}
+                    {#if busy}<Spinner label="대진 처리 중" />{/if}
                 </div>
                 {#if editing}
                     <p class="text-sm text-text-muted tabular-nums">{placed}/{seats.length} 배치</p>
@@ -129,37 +131,31 @@
             <div class="flex flex-wrap items-center gap-1.5">
                 {#if editing}
                     <Button
-                        fill="text"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="px-3 text-sm"
+                        variant="quiet"
+                        size="sm"
+                        injClass="min-h-11"
                         disabled={busy || placed === 0}
                         onclick={reset}>초기화</Button
                     >
                     <Button
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="px-4 text-sm"
+                        variant="primary"
+                        size="sm"
+                        injClass="min-h-11 px-4"
                         disabled={busy || pool.length > 0}
                         onclick={confirmBracket}>대진 확정·내전 시작</Button
                     >
                 {:else if bracket.can.unlock}
                     <Button
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="min-h-11 px-4 text-sm"
+                        variant="primary"
+                        size="sm"
+                        injClass="min-h-11 px-4"
                         disabled={busy}
                         onclick={start}>내전 시작</Button
                     >
                     <Button
-                        fill="lineLight"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="px-4 text-sm"
+                        variant="secondary"
+                        size="sm"
+                        injClass="min-h-11 px-4"
                         disabled={busy}
                         onclick={() => run('unlock')}>다시 편성</Button
                     >
@@ -170,7 +166,7 @@
         {#if editing && selectedId}
             <p
                 bind:clientHeight={selectionHeight}
-                class="sticky top-(--app-header-height) z-20 flex min-h-10 items-center gap-2 border-b border-border bg-bg-surface px-4 py-1 text-sm dark:bg-bg-surface-dark"
+                class="sticky top-(--app-header-height) z-20 flex min-h-10 items-center gap-2 border-b border-brass-line bg-bg-surface px-4 py-1 text-sm dark:bg-bg-surface-dark"
                 aria-live="polite"
             >
                 <span class="min-w-0 flex-1">
@@ -178,16 +174,14 @@
                     <span class="block text-xs text-text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
                 </span>
                 <Button
-                    fill="text"
-                    size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="min-h-11 shrink-0 px-2 text-sm"
+                    variant="quiet"
+                    size="sm"
+                    injClass="min-h-11 shrink-0 px-2"
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >
             </p>
         {:else if editing && pool.length}
-            <p class="bg-bg-surface px-4 pb-3 text-sm opacity-80 dark:bg-bg-surface-dark">
+            <p class="bg-bg-surface px-4 pb-3 text-sm text-text-muted dark:bg-bg-surface-dark">
                 팀을 고른 뒤 대진의 빈 자리를 눌러 배치하세요.
             </p>
         {/if}
@@ -199,7 +193,7 @@
                     aria-labelledby="bracket-pool"
                     class={[
                         'flex flex-col bg-bg-surface transition dark:bg-bg-surface-dark',
-                        drag.over === 'pool' && 'ring-2 ring-primary/40 ring-inset dark:ring-dark/40'
+                        drag.over === 'pool' && 'ring-2 ring-hex/40 ring-inset'
                     ]}
                     ondragover={(event) => drag.enter(event, 'pool')}
                     ondragleave={() => drag.leave('pool')}
@@ -219,7 +213,7 @@
                                             'flex min-h-14 w-full cursor-grab items-center rounded-(--radius-small) border px-3 py-2 active:cursor-grabbing',
                                             drag.id === team.id && 'opacity-50',
                                             selectedId === team.id
-                                                ? 'border-primary bg-primary/10 ring-2 ring-primary/30 dark:border-dark dark:bg-dark/15'
+                                                ? 'border-hex bg-hex/10 ring-2 ring-hex/30'
                                                 : 'border-warning/20 bg-warning/5 hover:border-warning/40 hover:bg-warning/10'
                                         ]}
                                         ondragstart={(event) => drag.start(event, team.id)}
@@ -232,9 +226,7 @@
                             {/each}
                         </ul>
                     {:else}
-                        <p class="px-3 pb-5 text-center text-sm text-gray-500 dark:text-gray-400">
-                            모든 팀을 배치했어요
-                        </p>
+                        <p class="px-3 pb-5 text-center text-sm text-text-muted">모든 팀을 배치했어요</p>
                     {/if}
                 </section>
             {/if}
@@ -246,7 +238,7 @@
                         {@const bestOf = bracket.bestOf[stage as BracketStage]!}
                         <section aria-labelledby={`stage-${stage}`} class="flex min-w-0 flex-col gap-3">
                             <header
-                                class="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-2"
+                                class="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-brass-line pb-2"
                             >
                                 <h3 id={`stage-${stage}`} class="font-semibold">{STAGE_LABEL[stage]}</h3>
                                 {#if editing}
@@ -258,7 +250,7 @@
                                             void (await run('bestOf', { stage, bestOf: String(value) }))}
                                     />
                                 {:else}
-                                    <span class="text-xs opacity-60">{bestOfLabel(bestOf)}</span>
+                                    <span class="text-xs text-text-muted">{bestOfLabel(bestOf)}</span>
                                 {/if}
                             </header>
                             <div class="flex flex-1 flex-col justify-around gap-4">

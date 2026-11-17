@@ -1,7 +1,7 @@
 <script lang="ts">
     import { untrack } from 'svelte';
     import { enhance, type SubmitFunction } from '$app/forms';
-    import { Button } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import type { MyPrivacy, PrivacyPreferences } from '#lib/features/me/privacy.ts';
     import SwitchCell from '#lib/components/common/SwitchCell.svelte';
     import { confirm } from '#lib/ui/confirm.ts';
@@ -156,13 +156,12 @@
         {#if error}<p role="alert" class="text-sm text-error">{error}</p>{/if}
         {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
         <Button
+            variant="primary"
             type="submit"
             size="full"
-            heightOut="0"
-            heightIn="2"
             injClass="min-h-12 text-base"
             disabled={locked || !dirty}
-            loading={busy === 'privacy' ? {} : null}>공개 설정 저장</Button
+            loading={busy === 'privacy'}>공개 설정 저장</Button
         >
     </form>
 </section>
@@ -182,15 +181,12 @@
     >
         <input type="hidden" name="confirm" value="true" />
         <Button
+            variant="danger"
             type="submit"
-            fill="lineLight"
-            state="error"
             size="auto"
-            heightOut="0"
-            heightIn="2"
             injClass="min-h-12 px-4 text-base"
             disabled={locked || Boolean(privacy.withdrawalBlock)}
-            loading={busy === 'withdraw' ? {} : null}>서비스 탈퇴</Button
+            loading={busy === 'withdraw'}>서비스 탈퇴</Button
         >
     </form>
 </section>

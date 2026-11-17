@@ -2,13 +2,14 @@
     import { tick, untrack } from 'svelte';
     import { deserialize } from '$app/forms';
     import { invalidateAll } from '$app/navigation';
-    import { Button, CheckboxItem, Input, Popup } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import Dialog from '#lib/components/common/Dialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
     import type { ManualRegistrationResult, ScrimParticipant } from '#lib/features/scrims/types.ts';
     import { playCapacity, RESERVE_CAPACITY, TEAM_COUNT } from '#lib/features/scrims/settings.ts';
-    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
-    import { overlay } from '#lib/ui/overlay.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
+    import { toast } from '#lib/ui/toast.ts';
 
     type MemberOption = { userId: string; displayName: string; username: string | null };
     type Options = { members: MemberOption[]; total: number; page: number };
@@ -16,9 +17,7 @@
     let { open = $bindable(false), participants }: { open: boolean; participants: ScrimParticipant[] } =
         $props();
 
-    let panel = $state<HTMLDivElement>();
     let feedback = $state<HTMLElement>();
-    let popupPosition = $state<'center' | 'bottom'>('bottom');
     let query = $state('');
     let appliedQuery = $state('');
     let options = $state<Options>({ members: [], total: 0, page: 1 });
@@ -47,11 +46,15 @@
             )
     );
     const maximum = playCapacity(TEAM_COUNT.max) + RESERVE_CAPACITY.max;
+    const submitText = $derived(
+        refreshRequired
+            ? '참가 현황 다시 확인'
+            : retrying
+              ? `실패한 ${pending.length}명 다시 추가`
+              : `선택한 ${pending.length}명 추가`
+    );
 
-    $effect(() => {
-        if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
-    });
-
+    // 열 때마다 검색 조건과 결과를 비우고 첫 쪽부터 다시 읽는다.
     $effect(() => {
         if (!open) return;
         untrack(() => {
@@ -103,22 +106,11 @@
         if (!adding) open = false;
     }
 
-    function toggle(member: MemberOption) {
+    function toggle(member: MemberOption, checked: boolean) {
         if (busy || refreshRequired || joined.has(member.userId)) return;
-        if (selected.some((value) => value.userId === member.userId))
-            selected = selected.filter((value) => value.userId !== member.userId);
+        if (!checked) selected = pending.filter((value) => value.userId !== member.userId);
         else if (pending.length < maximum) selected = [...pending, member];
-        else error = `한 번에 ${maximum}명까지 선택할 수 있어요.`;
-    }
-
-    function exposeSelection(userId: string) {
-        return (fieldset: HTMLFieldSetElement) => {
-            const button = fieldset.querySelector('button');
-            if (!button) return;
-            button.type = 'button';
-            button.setAttribute('role', 'checkbox');
-            button.setAttribute('aria-checked', String(pending.some((member) => member.userId === userId)));
-        };
+        else toast.info(`한 번에 ${maximum}명까지 선택할 수 있어요.`);
     }
 
     async function refreshParticipants() {
@@ -179,164 +171,149 @@
         } finally {
             adding = false;
             await tick();
-            (feedback ?? panel?.querySelector<HTMLInputElement>('input'))?.focus();
+            // 결과가 있으면 결과로, 없으면 네이티브 dialog의 포커스 복귀에 맡긴다.
+            feedback?.focus();
         }
     }
 </script>
 
-<div {@attach overlay({ open, label: '참가자 추가', onclose: close })}>
-    <Popup bind:visible={open} position={popupPosition} size={0} maskClosable={false} transparent>
-        <div
-            bind:this={panel}
-            aria-busy={busy}
-            class="mx-auto flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-(--radius-box) bg-bg-surface lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
+<!-- 추가 중에는 닫기·Escape·바깥 클릭을 막고, 끝나면 네이티브 dialog가 이전 포커스로 돌려보낸다. -->
+<Dialog bind:open title="참가자 추가" dismissible={false}>
+    <div class="flex flex-col gap-4" {@attach escapeClose}>
+        <div class="flex justify-end">
+            <Button variant="quiet" type="button" size="sm" disabled={adding} onclick={close}>닫기</Button>
+        </div>
+        <form
+            method="POST"
+            action="?/participantOptions"
+            role="search"
+            class="flex items-end gap-2"
+            onsubmit={(event) => {
+                event.preventDefault();
+                if (!busy) void search(query.trim(), 1);
+            }}
         >
-            <div class="flex shrink-0 items-center justify-between gap-3 px-6 py-4">
-                <h2 class="text-lg font-semibold">참가자 추가</h2>
-                <Button
-                    type="button"
-                    fill="text"
-                    size="auto"
-                    heightOut="0"
-                    injClass="min-h-11 px-3"
-                    disabled={adding}
-                    onclick={close}>닫기</Button
-                >
+            <div class="min-w-0 flex-1">
+                <TextField
+                    label="서버 멤버 검색"
+                    placeholder="서버 별명 또는 사용자명"
+                    maxlength={50}
+                    bind:value={query}
+                    disabled={busy}
+                />
             </div>
-            <div class="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-6 pb-4">
-                <form
-                    method="POST"
-                    action="?/participantOptions"
-                    role="search"
-                    class="flex items-end gap-2"
-                    {@attach nonSubmitButtons}
-                    onsubmit={(event) => {
-                        event.preventDefault();
-                        if (!busy) void search(query.trim(), 1);
-                    }}
-                >
-                    <div class="min-w-0 flex-1" {@attach inputLabel('서버 멤버 검색')}>
-                        <Input
-                            title="서버 멤버 검색"
-                            type="search"
-                            placeholder="서버 별명 또는 사용자명"
-                            maxlength={50}
-                            bind:value={query}
-                            disabled={busy}
-                            clear
-                        />
-                    </div>
-                    <Button
-                        type="submit"
-                        size="auto"
-                        heightOut="0"
-                        injClass="min-h-11 shrink-0 px-4"
-                        disabled={busy}
-                        loading={loading ? {} : null}>검색</Button
-                    >
-                </form>
-                <p class="text-sm text-text-muted">
-                    Riot 계정이 있으면 대표 계정을 사용하고, 희망 포지션은 무관으로 추가해요.
-                </p>
-                {#if error || results.length}
-                    <section bind:this={feedback} tabindex="-1" aria-label="참가자 추가 결과" class="text-sm">
-                        {#if error}<p role="alert" class="text-error">{error}</p>{/if}
-                        {#if results.length}
-                            <ul aria-label="추가 결과" class="space-y-2">
-                                {#each results as { member, result } (member.userId)}
-                                    <li>
-                                        <span class="font-medium wrap-anywhere">{member.displayName}</span>
-                                        {#if member.username !== member.displayName}
-                                            <span class="text-text-muted">
-                                                ({member.username
-                                                    ? `@${member.username}`
-                                                    : member.userId})</span
-                                            >
-                                        {/if}
-                                        <p class={result.status === 'failed' ? 'text-error' : 'text-success'}>
-                                            {result.status === 'failed'
-                                                ? result.message
-                                                : result.status === 'selected'
-                                                  ? '선발로 추가했어요'
-                                                  : '대기로 추가했어요'}
-                                        </p>
-                                    </li>
-                                {/each}
-                            </ul>
-                        {/if}
-                    </section>
-                {/if}
-                {#if options.members.length}
-                    <ul data-member-options aria-label="추가할 서버 멤버" class="divide-y divide-border">
-                        {#each options.members as member (member.userId)}
+            <Button variant="secondary" type="submit" injClass="shrink-0" disabled={busy} {loading}
+                >검색</Button
+            >
+        </form>
+        <p class="text-sm text-text-muted">
+            Riot 계정이 있으면 대표 계정을 사용하고, 희망 포지션은 무관으로 추가해요.
+        </p>
+        {#if loading}
+            <div class="flex justify-center"><Spinner label="멤버를 불러오는 중" /></div>
+        {/if}
+        {#if error || results.length}
+            <section bind:this={feedback} tabindex="-1" aria-label="참가자 추가 결과" class="text-sm">
+                {#if error}<p role="alert" class="text-error">{error}</p>{/if}
+                {#if results.length}
+                    <ul aria-label="추가 결과" class="space-y-2">
+                        {#each results as { member, result } (member.userId)}
                             <li>
-                                <fieldset
-                                    disabled={busy || refreshRequired || joined.has(member.userId)}
-                                    class="[&_button]:min-h-16 [&_button]:w-full [&_button]:items-center [&_button]:py-3 [&_button>div:last-child]:min-w-0 [&_button>div:last-child]:flex-1"
-                                    {@attach exposeSelection(member.userId)}
-                                >
-                                    <CheckboxItem
-                                        name={member.userId}
-                                        checked={pending.some((value) => value.userId === member.userId)}
-                                        onclick={() => toggle(member)}
+                                <span class="font-medium wrap-anywhere">{member.displayName}</span>
+                                {#if member.username !== member.displayName}
+                                    <span class="text-text-muted">
+                                        ({member.username ? `@${member.username}` : member.userId})</span
                                     >
-                                        <span class="block min-w-0 text-left">
-                                            <span class="block font-medium wrap-anywhere"
-                                                >{member.displayName}</span
-                                            >
-                                            {#if member.username && member.username !== member.displayName}
-                                                <span class="block text-sm text-text-muted wrap-anywhere"
-                                                    >@{member.username}</span
-                                                >
-                                            {/if}
-                                            {#if !member.username}<span
-                                                    class="block text-sm text-text-muted wrap-anywhere"
-                                                    >{member.userId}</span
-                                                >{/if}
-                                            {#if joined.has(member.userId)}<span
-                                                    class="block text-sm text-text-muted">참가 중</span
-                                                >{/if}
-                                        </span>
-                                    </CheckboxItem>
-                                </fieldset>
+                                {/if}
+                                <p class={result.status === 'failed' ? 'text-error' : 'text-success'}>
+                                    {result.status === 'failed'
+                                        ? result.message
+                                        : result.status === 'selected'
+                                          ? '선발로 추가했어요'
+                                          : '대기로 추가했어요'}
+                                </p>
                             </li>
                         {/each}
                     </ul>
-                {:else if !loading && !error}
-                    <p class="py-6 text-center text-sm text-text-muted">
-                        {appliedQuery
-                            ? `'${appliedQuery}'에 맞는 멤버가 없어요`
-                            : '등록된 서버 멤버가 없어요. Discord에서 /초기설정을 실행해 주세요.'}
-                    </p>
                 {/if}
-                <fieldset disabled={busy} aria-label="서버 멤버 페이지">
-                    <PageNav
-                        total={options.total}
-                        pageSize={20}
-                        current={options.page}
-                        label="서버 멤버"
-                        onchange={(page) => {
-                            if (!busy) void search(appliedQuery, page);
-                        }}
-                    />
-                </fieldset>
-            </div>
-            <div class="shrink-0 border-t border-border px-6 py-4">
-                <Button
-                    type="button"
-                    size="full"
-                    heightOut="0"
-                    injClass="min-h-11"
-                    disabled={busy || (!refreshRequired && !pending.length)}
-                    loading={adding ? {} : null}
-                    onclick={submit}
-                    >{refreshRequired
-                        ? '참가 현황 다시 확인'
-                        : retrying
-                          ? `실패한 ${pending.length}명 다시 추가`
-                          : `선택한 ${pending.length}명 추가`}</Button
-                >
-            </div>
-        </div>
-    </Popup>
-</div>
+            </section>
+        {/if}
+        {#if options.members.length}
+            <fieldset disabled={busy || refreshRequired} aria-label="추가할 서버 멤버">
+                <ul data-member-options class="divide-y divide-brass-line">
+                    {#each options.members as member (member.userId)}
+                        <li>
+                            <!-- 행 전체가 하나의 체크박스 조작 영역이다. -->
+                            <label
+                                class={[
+                                    'flex min-h-16 w-full items-start gap-3 py-3',
+                                    joined.has(member.userId) || busy || refreshRequired
+                                        ? 'cursor-not-allowed opacity-45'
+                                        : 'cursor-pointer'
+                                ]}
+                            >
+                                <input
+                                    type="checkbox"
+                                    class="mt-1 size-4 shrink-0 accent-[var(--color-hex)]"
+                                    checked={pending.some((value) => value.userId === member.userId)}
+                                    aria-checked={pending.some((value) => value.userId === member.userId)}
+                                    disabled={busy || refreshRequired || joined.has(member.userId)}
+                                    onchange={(event) => {
+                                        toggle(member, event.currentTarget.checked);
+                                        // 선택 한도에 걸려 상태가 그대로면 눌린 표시도 되돌린다.
+                                        event.currentTarget.checked = pending.some(
+                                            (value) => value.userId === member.userId
+                                        );
+                                    }}
+                                />
+                                <span class="block min-w-0 text-left">
+                                    <span class="block font-medium wrap-anywhere">{member.displayName}</span>
+                                    {#if member.username && member.username !== member.displayName}
+                                        <span class="block text-sm text-text-muted wrap-anywhere"
+                                            >@{member.username}</span
+                                        >
+                                    {/if}
+                                    {#if !member.username}<span
+                                            class="block text-sm text-text-muted wrap-anywhere"
+                                            >{member.userId}</span
+                                        >{/if}
+                                    {#if joined.has(member.userId)}<span class="block text-sm text-text-muted"
+                                            >참가 중</span
+                                        >{/if}
+                                </span>
+                            </label>
+                        </li>
+                    {/each}
+                </ul>
+            </fieldset>
+        {:else if !loading && !error}
+            <p class="py-6 text-center text-sm text-text-muted">
+                {appliedQuery
+                    ? `'${appliedQuery}'에 맞는 멤버가 없어요`
+                    : '등록된 서버 멤버가 없어요. Discord에서 /초기설정을 실행해 주세요.'}
+            </p>
+        {/if}
+        <fieldset disabled={busy || refreshRequired} aria-label="서버 멤버 페이지">
+            <PageNav
+                total={options.total}
+                pageSize={20}
+                current={options.page}
+                label="서버 멤버"
+                onchange={(page) => {
+                    if (!busy) void search(appliedQuery, page);
+                }}
+            />
+        </fieldset>
+    </div>
+
+    {#snippet footer()}
+        <Button
+            variant="primary"
+            type="button"
+            size="full"
+            disabled={busy || (!refreshRequired && !pending.length)}
+            loading={adding}
+            onclick={submit}>{submitText}</Button
+        >
+    {/snippet}
+</Dialog>

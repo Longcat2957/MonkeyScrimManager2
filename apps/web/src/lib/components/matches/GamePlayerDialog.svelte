@@ -1,9 +1,7 @@
 <script lang="ts">
-    import { Button, Popup } from 'stdf';
+    import Dialog from '#lib/components/common/Dialog.svelte';
     import { formatNumber, kdaRatio, perMinute } from '#lib/features/matches/format.ts';
     import type { GamePlayer } from '#lib/features/matches/types.ts';
-    import { overlay } from '#lib/ui/overlay.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
     import LoadoutIcon from './LoadoutIcon.svelte';
 
     // 한 선수의 전체 수치. 표에 다 싣지 못한 주문·룬·아이템 이름과 세부 지표를 보여 준다.
@@ -12,11 +10,6 @@
         player,
         durationSec
     }: { open: boolean; player: GamePlayer | null; durationSec: number | null } = $props();
-
-    let popupPosition = $state<'right' | 'bottom'>('bottom');
-    $effect(() => {
-        if (!open) popupPosition = desktop.current ? 'right' : 'bottom';
-    });
 
     const multi = $derived(
         player
@@ -55,78 +48,52 @@
     );
 </script>
 
-<div
-    {@attach overlay({
-        open,
-        label: player ? `${player.displayName} 상세` : '선수 상세',
-        onclose: () => (open = false)
-    })}
->
-    <Popup bind:visible={open} position={popupPosition} size={0} transparent>
-        {#if player}
-            <div
-                class="flex max-h-[85dvh] w-full flex-col bg-bg-surface lg:h-dvh lg:max-h-none lg:w-[26rem] dark:bg-bg-surface-dark"
-            >
-                <header class="flex items-center gap-3 border-b border-border px-5 py-4">
-                    {#if player.champion.iconUrl}<img
-                            src={player.champion.iconUrl}
-                            alt=""
-                            class="size-12 rounded-(--radius-form)"
-                        />{/if}
-                    <div class="flex min-w-0 flex-1 flex-col">
-                        <h2 class="text-base font-semibold break-words">{player.displayName}</h2>
-                        <span class="truncate text-sm opacity-60"
-                            >{player.champion.name}{player.level !== null
-                                ? ` · 레벨 ${player.level}`
-                                : ''}</span
-                        >
-                    </div>
-                    <Button
-                        fill="text"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
-                        injClass="min-h-11 min-w-11 px-2"
-                        onclick={() => (open = false)}
+<Dialog bind:open title="선수 상세">
+    {#if player}
+        <div class="flex flex-col gap-5">
+            <header class="flex items-center gap-3">
+                {#if player.champion.iconUrl}<img
+                        src={player.champion.iconUrl}
+                        alt=""
+                        class="size-12 rounded-(--radius-form)"
+                    />{/if}
+                <div class="flex min-w-0 flex-1 flex-col">
+                    <h3 class="text-base font-semibold break-words">{player.displayName}</h3>
+                    <span class="truncate text-sm text-text-muted"
+                        >{player.champion.name}{player.level !== null ? ` · 레벨 ${player.level}` : ''}</span
                     >
-                        <span aria-hidden="true" class="text-lg leading-none">×</span><span class="sr-only"
-                            >닫기</span
-                        >
-                    </Button>
-                </header>
-                <div class="flex flex-col gap-5 overflow-y-auto p-5">
-                    <section class="flex flex-col gap-2">
-                        <h3 class="text-xs font-semibold opacity-60">최종 세팅</h3>
-                        <ul class="flex flex-col gap-1.5 text-sm">
-                            {#each [['주문', player.spells], ['룬', [player.keystone, player.secondaryStyle]], ['아이템', player.items.filter(Boolean)]] as const as [label, icons] (label)}
-                                <li class="flex items-start gap-3">
-                                    <span class="w-12 shrink-0 pt-1 opacity-60">{label}</span>
-                                    <span class="flex flex-wrap gap-x-3 gap-y-1.5">
-                                        {#each icons as icon, index (index)}
-                                            <span class="flex items-center gap-1.5"
-                                                ><LoadoutIcon {icon} size="sm" round={label === '룬'} /><span
-                                                    >{icon?.name ?? '-'}</span
-                                                ></span
-                                            >
-                                        {:else}<span class="pt-1">-</span>{/each}
-                                    </span>
-                                </li>
-                            {/each}
-                        </ul>
-                    </section>
-                    <section class="flex flex-col gap-2">
-                        <h3 class="text-xs font-semibold opacity-60">세부 지표</h3>
-                        <dl class="divide-y divide-border text-sm">
-                            {#each rows as [label, value] (label)}
-                                <div class="flex justify-between gap-4 py-2">
-                                    <dt class="opacity-70">{label}</dt>
-                                    <dd class="text-right font-semibold tabular-nums">{value}</dd>
-                                </div>
-                            {/each}
-                        </dl>
-                    </section>
                 </div>
-            </div>
-        {/if}
-    </Popup>
-</div>
+            </header>
+            <section class="flex flex-col gap-2">
+                <h4 class="text-xs font-semibold text-text-muted">최종 세팅</h4>
+                <ul class="flex flex-col gap-1.5 text-sm">
+                    {#each [['주문', player.spells], ['룬', [player.keystone, player.secondaryStyle]], ['아이템', player.items.filter(Boolean)]] as const as [label, icons] (label)}
+                        <li class="flex items-start gap-3">
+                            <span class="w-12 shrink-0 pt-1 text-text-muted">{label}</span>
+                            <span class="flex flex-wrap gap-x-3 gap-y-1.5">
+                                {#each icons as icon, index (index)}
+                                    <span class="flex items-center gap-1.5"
+                                        ><LoadoutIcon {icon} size="sm" round={label === '룬'} /><span
+                                            >{icon?.name ?? '-'}</span
+                                        ></span
+                                    >
+                                {:else}<span class="pt-1">-</span>{/each}
+                            </span>
+                        </li>
+                    {/each}
+                </ul>
+            </section>
+            <section class="flex flex-col gap-2">
+                <h4 class="text-xs font-semibold text-text-muted">세부 지표</h4>
+                <dl class="divide-y divide-brass-line text-sm">
+                    {#each rows as [label, value] (label)}
+                        <div class="flex justify-between gap-4 py-2">
+                            <dt class="text-text-muted">{label}</dt>
+                            <dd class="text-right font-semibold tabular-nums">{value}</dd>
+                        </div>
+                    {/each}
+                </dl>
+            </section>
+        </div>
+    {/if}
+</Dialog>

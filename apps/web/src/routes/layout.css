@@ -1,103 +1,154 @@
 @import 'tailwindcss';
-@import 'stdf/source.css';
 
 @custom-variant dark (&:where([data-mode=dark], [data-mode=dark] *):not(:where([data-mode=primary], [data-mode=primary] *):not([data-mode=dark], [data-mode=dark] *)));
 
-/* STDF 단일 테마: https://stdf.dev/guide/theme
- * MSM2 Slate. primary/dark 색상 단계는 stdf/theme/plugin의 generateColorScale로 산출.
+/* 소환사의 협곡 전술 상황판: 전장 슬레이트 · 넥서스 시안 · 포지션 금장.
+ * 기준 목업은 apps/web/.impeccable/mocks/decision/rift-tactical.html이다.
  */
 @theme {
     --font-sans:
         'Noto Sans KR', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-brand: 'Jersey 10', ui-sans-serif, system-ui, sans-serif;
+    --font-brand: 'Oxanium', 'Noto Sans KR', sans-serif;
 
-    --color-primary-50: oklch(0.97 0.006 269.281);
-    --color-primary-100: oklch(0.883 0.013 267.281);
-    --color-primary-200: oklch(0.795 0.019 265.281);
-    --color-primary-300: oklch(0.708 0.025 263.281);
-    --color-primary-400: oklch(0.621 0.031 261.281);
-    --color-primary-500: oklch(0.533 0.037 259.281);
-    --color-primary: oklch(0.446 0.043 257.281);
-    --color-primary-700: oklch(0.397 0.047 255.281);
-    --color-primary-800: oklch(0.348 0.047 253.281);
-    --color-primary-900: oklch(0.299 0.047 251.281);
-    --color-primary-950: oklch(0.25 0.047 249.281);
-    --color-dark-50: oklch(0.97 0.003 264.894);
-    --color-dark-100: oklch(0.953 0.006 262.894);
-    --color-dark-200: oklch(0.936 0.01 260.894);
-    --color-dark-300: oklch(0.919 0.013 258.894);
-    --color-dark-400: oklch(0.903 0.016 256.894);
-    --color-dark-500: oklch(0.886 0.019 254.894);
-    --color-dark: oklch(0.869 0.022 252.894);
-    --color-dark-700: oklch(0.714 0.024 250.894);
-    --color-dark-800: oklch(0.559 0.024 248.894);
-    --color-dark-900: oklch(0.405 0.024 246.894);
-    --color-dark-950: oklch(0.25 0.024 244.894);
+    /* 라이트: 전장 석회암 용지와 남청 잉크 */
+    --color-bg-base: #eaeff5;
+    --color-bg-surface: #ffffff;
+    --color-bg-overlay: #f2f6fa;
+    --color-bg-highlight: #e5edf5;
+    --color-bg-base-dark: #080c12;
+    --color-bg-surface-dark: #0e151f;
+    --color-bg-overlay-dark: #141e2c;
+    --color-bg-highlight-dark: #192638;
 
-    /* 화면 바탕과 표면: Slate 50/100/200, 다크 모드 950/900/800/700 */
-    --color-bg-base: oklch(0.984 0.003 247.858);
-    --color-bg-surface: oklch(1 0 0);
-    --color-bg-overlay: oklch(0.968 0.007 247.896);
-    --color-bg-highlight: oklch(0.929 0.013 255.508);
-    --color-bg-base-dark: oklch(0.129 0.042 264.695);
-    --color-bg-surface-dark: oklch(0.208 0.042 265.755);
-    --color-bg-overlay-dark: oklch(0.279 0.041 260.031);
-    --color-bg-highlight-dark: oklch(0.372 0.044 257.287);
-    --color-text-primary: oklch(0.208 0.042 265.755);
-    --color-text-dark: oklch(0.968 0.007 247.896);
-    /* 보조 정보는 불투명 색으로 읽히게 한다. 강조 행을 포함해 양쪽 테마에서 대비를 확인했다. */
-    --color-text-muted: var(--color-primary);
-    --color-text-on-primary: oklch(0.984 0.003 247.858);
-    --color-text-on-dark: oklch(0.129 0.042 264.695);
-    --color-border: color-mix(in oklch, var(--color-text-primary) 18%, var(--color-bg-base));
-    --color-border-strong: color-mix(in oklch, var(--color-text-primary) 28%, var(--color-bg-base));
+    --color-text-primary: #0b1420;
+    --color-text-dark: #eaf2fa;
+    --color-text-muted: #4b5f75;
+    --color-text-on-primary: #ffffff;
+    --color-text-on-dark: #041017;
 
-    /* 상태 의미를 구분하는 색상은 유지한다. */
-    --color-success: oklch(0.432 0.095 166.913);
-    --color-warning: oklch(0.473 0.137 46.201);
-    --color-error: oklch(0.514 0.222 16.935);
-    --color-info: oklch(0.5 0.134 242.749);
-    /* 서버 순위 1~3위 표시. 숫자와 함께 쓰며 색만으로 순위를 전달하지 않는다. */
-    --color-medal-gold: oklch(0.84 0.15 85);
-    --color-medal-silver: oklch(0.83 0.02 255);
-    --color-medal-bronze: oklch(0.72 0.1 55);
-    --radius-box: 0.75rem;
-    --radius-form: 0.5rem;
+    --color-border: #cfdbe7;
+    --color-border-strong: #687e96;
+
+    --color-primary: #007396;
+    --color-primary-50: #eaf6f9;
+    --color-primary-100: #cbe9f0;
+    --color-primary-200: #9ad3e0;
+    --color-primary-300: #63b8cc;
+    --color-primary-400: #2f97b1;
+    --color-primary-500: #0b7c97;
+    --color-primary-700: #005f7c;
+    --color-primary-800: #004b63;
+    --color-primary-900: #003b4f;
+    --color-primary-950: #002a38;
+    --color-dark: #0b1420;
+    --color-dark-500: #192638;
+    --color-dark-700: #33ddff;
+
+    /* 협곡 전술 확장 토큰 */
+    --color-brass: #8c6622;
+    --color-brass-line: #cfdbe7;
+    --color-crown: #dfe7f0;
+    --color-hex: #007396;
+    --color-hex-hover: #005f7c;
+    --color-hex-ink: #ffffff;
+    --color-role-gold: #8c6622;
+    --color-role-dim: rgb(140 102 34 / 30%);
+
+    --color-success: #0a7547;
+    --color-warning: #945600;
+    --color-error: #b81434;
+    --color-info: #0c58a6;
+    --color-team-blue: #0062c4;
+    --color-team-red: #c4183c;
+    --color-medal-gold: #8a6412;
+    --color-medal-silver: #59606a;
+    --color-medal-bronze: #8a4f22;
+
+    --radius-box: 0.5rem;
+    --radius-form: 0.375rem;
     --radius-small: 0.25rem;
 }
 
 @layer base {
     html {
-        --app-header-height: 4rem;
+        --app-header-height: 3.375rem;
         --app-header-width: 96rem;
         --app-content-width: 84rem;
         font-family: var(--font-sans);
         color-scheme: light;
         scroll-padding-top: calc(var(--app-header-height) + 1rem);
-        /* 한국어는 어절 단위로 줄을 바꾸고, 띄어쓰기 없는 긴 이름만 칸을 넘칠 때 끊는다. */
         word-break: keep-all;
         overflow-wrap: anywhere;
         @apply bg-bg-base text-text-primary dark:bg-bg-base-dark dark:text-text-dark;
     }
 
     html[data-mode='dark'] {
-        --color-text-muted: var(--color-dark-700);
-        --color-border: color-mix(in oklch, var(--color-text-dark) 26%, var(--color-bg-base-dark));
-        --color-border-strong: color-mix(in oklch, var(--color-text-dark) 38%, var(--color-bg-base-dark));
+        --color-text-muted: #8ea4be;
+        --color-border: #1f2e42;
+        --color-border-strong: #3c5470;
+        --color-primary: #00d4ff;
+        --color-primary-700: #33ddff;
+        --color-brass: #d4b375;
+        --color-brass-line: #1f2e42;
+        --color-crown: #05080d;
+        --color-hex: #00d4ff;
+        --color-hex-hover: #33ddff;
+        --color-hex-ink: #041017;
+        --color-dark: #00d4ff;
+        --color-dark-500: #33ddff;
+        --color-role-gold: #d4b375;
+        --color-role-dim: rgb(212 179 117 / 35%);
+        --color-success: #2ce59b;
+        --color-warning: #f5b841;
+        --color-error: #ff647d;
+        --color-info: #5eb4ff;
+        --color-team-blue: #2997ff;
+        --color-team-red: #ff4769;
+        --color-medal-gold: #e0c078;
+        --color-medal-silver: #c3ccd8;
+        --color-medal-bronze: #d59a62;
         color-scheme: dark;
     }
 
-    /* 페이지 테마와 관계없이 어두운 표면에서는 같은 밝은 상태색을 쓴다. */
     html[data-mode='dark'],
     .inverse-surface {
-        --color-success: oklch(0.765 0.153 163.2);
-        --color-warning: oklch(0.769 0.165 61.3);
-        --color-error: oklch(0.71 0.166 15.3);
-        --color-info: oklch(0.746 0.13 237.3);
+        --color-success: #2ce59b;
+        --color-warning: #f5b841;
+        --color-error: #ff647d;
+        --color-info: #5eb4ff;
     }
 }
 
 @layer components {
+    .hex-panel {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-brass-line);
+        border-radius: var(--radius-box);
+    }
+    html[data-mode='dark'] .hex-panel {
+        background: var(--color-bg-surface-dark);
+    }
+
+    /* 목업의 작업 영역처럼 우상단에서 옅게 번지는 넥서스 시안. */
+    .app-main {
+        background:
+            radial-gradient(
+                circle at 82% 8%,
+                color-mix(in oklab, var(--color-hex) 16%, transparent),
+                transparent 36%
+            ),
+            var(--color-bg-base);
+    }
+    html[data-mode='dark'] .app-main {
+        background:
+            radial-gradient(
+                circle at 82% 8%,
+                color-mix(in oklab, var(--color-hex) 22%, transparent),
+                transparent 36%
+            ),
+            var(--color-bg-base-dark);
+    }
+
     .app-frame {
         width: min(calc(100% - 3rem), var(--app-content-width));
         margin-inline: auto;
@@ -110,7 +161,6 @@
         }
     }
 
-    /* 이용 안내·약관·개인정보 처리방침 본문. 세 페이지가 제목·문단·목록 간격을 함께 쓴다. */
     .doc {
         max-width: 48rem;
         line-height: 1.75;
@@ -147,13 +197,11 @@
 }
 
 @layer base {
-    /* 모든 조작 요소의 포커스 표시는 여기 한 곳에서 정한다. */
     :focus-visible {
         outline: 2px solid currentColor;
         outline-offset: 2px;
     }
 
-    /* 입력 예시도 양쪽 테마의 보조 정보 대비를 유지한다. */
     input::placeholder,
     textarea::placeholder {
         color: var(--color-text-muted);

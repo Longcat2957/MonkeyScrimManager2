@@ -35,7 +35,7 @@
 | 순서 | 문서 | 내용 |
 | --- | --- | --- |
 | 1 | [routing.md](routing.md) | 라우트, 레이아웃 계층, 헤더·내비게이션, URL 상태 |
-| 2 | [design-system.md](design-system.md) | STDF 설정, 토큰, 용도별 컴포넌트 선택표, 서비스 공통 컴포넌트, 알려진 STDF 제약 |
+| 2 | [design-system.md](design-system.md) | 소환사의 협곡 전술 상황판 토큰, 타이포그래피, 네이티브 프리미티브 선택표, 셸·테마 규칙 |
 | 3 | [patterns.md](patterns.md) | 상태·폼·오버레이·목록·반응형·접근성 패턴과 완료 체크리스트 |
 | 4 | [pages/](pages/) | 페이지별 화면 구성 |
 
@@ -78,7 +78,7 @@
 경매는 화면별로 상태를 해석하고, 백오피스 서비스 상태는 `lib/features/backoffice/status.ts`에서 별도로 정의한다.
 목록에서 **내** 신청 상태는 따로 `선발됨`·`대기 중`(`MY_REGISTRATION`)으로 쓰고 철회·제외는 표시하지 않는다.
 
-| enum | 값 → 문구 · `Tag state` |
+| enum | 값 → 문구 · `StatusTag state` |
 | --- | --- |
 | `scrim_status` | `recruit` 모집 중 · theme / `preparing` 편성 중 · info / `ready` 대진 준비 · info / `in_progress` 진행 중 · warning / `completed` 종료 · success / `ended_early` 중도 종료 · error / `cancelled` 취소 · error |
 | `scrim_registration_status` | `selected` 선발 · success / `standby` 대기 · info / `withdrawn` 철회 · (Tag 없이 흐린 텍스트) / `excluded` 제외 · error |

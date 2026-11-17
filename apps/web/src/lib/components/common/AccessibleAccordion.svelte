@@ -1,68 +1,42 @@
 <script lang="ts">
-    import { Accordion } from 'stdf';
-    import type { AccordionProps } from 'stdf';
-    import type { Attachment } from 'svelte/attachments';
-    import { MediaQuery } from 'svelte/reactivity';
+    import type { Snippet } from 'svelte';
 
-    let {
-        items,
-        activeIndex = $bindable<number | number[] | undefined>(undefined),
-        multiple = false,
-        transitionDuration = 300,
-        ...options
-    }: AccordionProps = $props();
+    type Item = { title: string };
 
-    const id = $props.id();
-    const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)', false);
-
-    // STDF의 항목 바로 아래 제목 버튼과 패널만 연결하고, 본문의 다른 버튼은 건드리지 않는다.
-    const accessible: Attachment<HTMLDivElement> = (node) => {
-        const current = activeIndex;
-        const several = multiple;
-        const count = items.length;
-        const apply = () => {
-            const root = node.firstElementChild;
-            for (let index = 0; index < count; index++) {
-                const item = root?.children.item(index);
-                const button = item?.querySelector<HTMLButtonElement>(':scope > button');
-                if (!button) continue;
-                const expanded =
-                    several && Array.isArray(current) ? current.includes(index) : current === index;
-                button.id = `${id}-trigger-${index}`;
-                button.setAttribute('aria-expanded', String(expanded));
-                const panel = button.nextElementSibling;
-                if (panel instanceof HTMLElement) {
-                    panel.id = `${id}-panel-${index}`;
-                    panel.inert = !expanded;
-                    button.setAttribute('aria-controls', panel.id);
-                } else {
-                    // STDF는 접힌 패널을 제거하므로 존재하는 패널에만 연결한다.
-                    button.removeAttribute('aria-controls');
-                }
-            }
-        };
-        apply();
-        const observer = new MutationObserver(apply);
-        observer.observe(node, { childList: true, subtree: true });
-        return () => observer.disconnect();
+    type Props = {
+        items: Item[];
+        multiple?: boolean;
+        border?: 'solid' | 'none';
+        children?: Snippet<[unknown, number]>;
     };
-</script>
 
-<div class="accessible-accordion min-w-0" data-accessible-accordion {@attach accessible}>
-    <Accordion
-        {...options}
-        {items}
-        {multiple}
-        bind:activeIndex
-        transitionDuration={reducedMotion.current ? 0 : transitionDuration}
-    />
-</div>
+    let { items, multiple = false, children }: Props = $props();
 
-<style>
-    @media (prefers-reduced-motion: reduce) {
-        /* STDF의 패널 시간 옵션과 별개인 제목 화살표의 회전 전환만 끈다. */
-        .accessible-accordion > :global(div > div > button > span) {
-            transition-duration: 0s;
+    // 하나만 열리는 아코디언도 details 네이티브 동작을 유지하며, 열릴 때 다른 항목을 접는다.
+    function toggle(event: Event) {
+        if (multiple) return;
+        const target = event.currentTarget as HTMLDetailsElement;
+        if (!target.open) return;
+        for (const other of target.parentElement?.querySelectorAll('details') ?? []) {
+            if (other !== target) other.open = false;
         }
     }
-</style>
+</script>
+
+<div class="flex flex-col">
+    {#each items as item, index (item.title)}
+        <details class="group border-b border-brass-line last:border-b-0" ontoggle={toggle}>
+            <summary
+                class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-semibold"
+            >
+                <span>{item.title}</span>
+                <span aria-hidden="true" class="text-text-muted transition-transform group-open:rotate-180"
+                    >▾</span
+                >
+            </summary>
+            <div class="pb-3 text-sm">
+                {#if children}{@render children(item, index)}{/if}
+            </div>
+        </details>
+    {/each}
+</div>

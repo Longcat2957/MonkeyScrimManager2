@@ -3,10 +3,11 @@
     import { enhance, type SubmitFunction } from '$app/forms';
     import { invalidate } from '$app/navigation';
     import { navigating } from '$app/state';
-    import { Button, Input } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
     import type { GuildSeasonOverview } from '#lib/features/seasons.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { inputFeedback, inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
+    import { nonSubmitButtons } from '#lib/ui/form.ts';
 
     type Props = { overview: GuildSeasonOverview; initialName?: string; initialError?: string };
     let { overview, initialName = '', initialError = '' }: Props = $props();
@@ -131,36 +132,27 @@
         <input type="hidden" name="name" value={name} />
         <input type="hidden" name="expectedCurrentSeasonId" value={overview.current?.id ?? ''} />
         <input type="hidden" name="confirm" value="true" />
-        <div
-            class="-mx-2 -my-1"
-            {@attach inputLabel('새 시즌 이름')}
-            {@attach inputFeedback(inputError, `${id}-name-error`)}
-        >
-            <Input
-                title="새 시즌 이름"
-                placeholder="예: 2027 시즌 1"
-                bind:value={name}
-                maxlength={100}
-                disabled={locked || !overview.current}
-            />
-        </div>
+        <TextField
+            label="새 시즌 이름"
+            placeholder="예: 2027 시즌 1"
+            bind:value={name}
+            maxlength={100}
+            error={inputError}
+            disabled={locked || !overview.current}
+        />
         <p class="text-sm leading-6 text-text-muted">
             기존 내전·MMR 이력은 유지해요. 새 내전부터 새 시즌에 기록하고, 새 시즌 MMR은 1500에서 시작해요.
         </p>
-        {#if inputError}<p id={`${id}-name-error`} role="alert" class="text-sm text-error">
-                {inputError}
-            </p>{/if}
         {#if error}<p role="alert" class="text-sm text-error">{error}</p>{/if}
         {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
         <div>
             <Button
+                variant="primary"
                 type="submit"
                 size="auto"
-                heightOut="0"
-                heightIn="2"
                 injClass="min-h-12 px-4 text-base"
                 disabled={locked || !overview.current}
-                loading={busy ? {} : null}>새 시즌 시작</Button
+                loading={busy}>새 시즌 시작</Button
             >
         </div>
     </form>

@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { Button, CellGroup, Grid, Grids } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import AccessibleAccordion from '#lib/components/common/AccessibleAccordion.svelte';
+    import Button from '#lib/components/common/Button.svelte';
     import LinkCell from '#lib/components/common/LinkCell.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
@@ -216,8 +216,8 @@
             message={data.selectedSeasonId ? '이 시즌에는 기록된 게임이 없어요' : '아직 기록된 게임이 없어요'}
         />
     {:else}
-        <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙인다. 포지션 필터는 요약·챔피언·최근 게임에 함께 적용한다. -->
-        <div role="group" aria-label="포지션 필터" class="border-b border-border">
+        <!-- 포지션 필터는 요약·챔피언·최근 게임에 함께 적용한다. -->
+        <div role="group" aria-label="포지션 필터" class="border-b border-brass-line">
             <SelectionTabs
                 {labels}
                 {active}
@@ -230,33 +230,31 @@
         <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <section aria-labelledby="summary" class="flex flex-col gap-3">
                 <h2 id="summary" class="text-lg font-semibold">핵심 지표</h2>
-                <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
+                <div class={['grid gap-2', desktop.current ? 'grid-cols-3' : 'grid-cols-2']}>
                     {#each primaryTiles as [key, label, value, note] (key)}
-                        <Grid><StatTile {label} {value} {note} /></Grid>
+                        <StatTile {label} {value} {note} />
                     {/each}
-                </Grids>
+                </div>
                 <AccessibleAccordion
                     items={[{ title: `세부 지표 ${secondaryTiles.length}개` }]}
                     border="solid"
                 >
                     {#snippet children()}
-                        <Grids cols={desktop.current ? '3' : '2'} gap="2" mx="0" my="0">
+                        <div class={['grid gap-2', desktop.current ? 'grid-cols-3' : 'grid-cols-2']}>
                             {#each secondaryTiles as [key, label, value, note] (key)}
-                                <Grid><StatTile {label} {value} {note} /></Grid>
+                                <StatTile {label} {value} {note} />
                             {/each}
-                        </Grids>
+                        </div>
                     {/snippet}
                 </AccessibleAccordion>
             </section>
 
             <section aria-labelledby="mmr" class="flex min-w-0 flex-col gap-3">
                 <h2 id="mmr" class="text-lg font-semibold">포지션별 MMR</h2>
-                <table
-                    class="w-full overflow-hidden rounded-(--radius-box) border border-border bg-bg-surface text-sm dark:bg-bg-surface-dark"
-                >
+                <table class="hex-panel w-full overflow-hidden text-sm">
                     <caption class="sr-only">포지션별 MMR</caption>
-                    <thead class="text-xs opacity-60">
-                        <tr class="border-b border-border">
+                    <thead class="text-xs text-text-muted">
+                        <tr class="border-b border-brass-line">
                             <th scope="col" class="px-3 py-2 text-left font-medium">포지션</th>
                             <th scope="col" class="px-3 py-2 text-right font-medium">MMR</th>
                             <th scope="col" class="px-3 py-2 text-right font-medium">게임</th>
@@ -264,7 +262,7 @@
                     </thead>
                     <tbody>
                         {#each data.mmr as row (row.position)}
-                            <tr class="border-b border-border last:border-b-0">
+                            <tr class="border-b border-brass-line last:border-b-0">
                                 <th scope="row" class="px-3 py-2 text-left font-medium"
                                     ><span class="flex items-center gap-2"
                                         ><PositionIcon position={row.position} size="sm" />{laneText(
@@ -294,7 +292,7 @@
                     <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                         {#each champions as record, index (record.champion.id)}
                             <li
-                                class="flex items-center gap-3 rounded-(--radius-box) border border-border bg-bg-surface p-3 dark:bg-bg-surface-dark"
+                                class="flex items-center gap-3 rounded-(--radius-box) border border-brass-line bg-bg-surface p-3 dark:bg-bg-surface-dark"
                             >
                                 <span class="relative shrink-0">
                                     {#if record.champion.iconUrl}<img
@@ -303,7 +301,7 @@
                                             class="size-11 rounded-(--radius-form)"
                                         />{/if}
                                     {#if index < 5}<span
-                                            class="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-warning text-[0.625rem] font-bold text-white dark:text-text-on-dark"
+                                            class="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-warning text-[0.625rem] font-bold text-bg-base-dark"
                                             >{index + 1}</span
                                         >{/if}
                                 </span>
@@ -325,10 +323,8 @@
                     {#if data.champions.length > CHAMPION_PREVIEW}
                         <span class="self-center">
                             <Button
-                                fill="text"
+                                variant="quiet"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="2"
                                 injClass="min-h-11 px-3 text-sm"
                                 onclick={() => (showAllChampions = !showAllChampions)}
                             >
@@ -340,13 +336,13 @@
 
                 <section aria-labelledby="history" class="flex flex-col gap-3">
                     <h2 id="history" class="text-lg font-semibold">게임 기록</h2>
-                    <CellGroup my="0" mx="0" shadow="none">
-                        <ul>
-                            {#each historyRows as { game, href }, index (game.gameId + game.playedAt)}
+                    <div class="hex-panel overflow-hidden">
+                        <ul class="divide-y divide-brass-line">
+                            {#each historyRows as { game, href } (game.gameId + game.playedAt)}
                                 <li>
                                     <LinkCell
                                         {href}
-                                        line={index < data.history.length - 1}
+                                        line={false}
                                         subTitle={`${game.scrimTitle} · ${game.playedAt ? formatShortDate(game.playedAt) : '경기 일시 미확인'}`}
                                     >
                                         {#snippet leftChild()}
@@ -392,7 +388,7 @@
                                 </li>
                             {/each}
                         </ul>
-                    </CellGroup>
+                    </div>
                     <PageNav
                         total={data.total}
                         pageSize={data.pageSize}

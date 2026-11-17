@@ -1,26 +1,22 @@
 <script lang="ts">
-    import { Button, Input, Popup, toast } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import Dialog from '#lib/components/common/Dialog.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
+    import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { enhance, type SubmitFunction } from '$app/forms';
     import { tick } from 'svelte';
-    import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { parseRiotId, RIOT_ID_FORMAT_ERROR } from '#lib/features/me/riot-id.ts';
     import type { RiotAccount, RiotLookup } from '#lib/features/me/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { overlay } from '#lib/ui/overlay.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
-    import { inputFeedback, inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
+    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { toast } from '#lib/ui/toast.ts';
 
     type Member = { userId: string; displayName: string; riotAccounts: RiotAccount[] };
 
     // 운영자가 멤버의 Riot 계정을 연결·해제하고 대표 계정을 정한다. 연결은 조회 → 확인 두 단계다.
     let { open = $bindable(false), member }: { open: boolean; member: Member | null } = $props();
-    const id = $props.id();
     let panel: HTMLDivElement | undefined = $state();
-    let popupPosition = $state<'center' | 'bottom'>('bottom');
-    $effect(() => {
-        if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
-    });
 
     let riotId = $state('');
     let error = $state('');
@@ -131,29 +127,9 @@
     };
 </script>
 
-<div {@attach overlay({ open, label: 'Riot 계정 관리', onclose: close })}>
-    <Popup bind:visible={open} position={popupPosition} size={0} maskClosable={false} transparent>
-        <div
-            bind:this={panel}
-            aria-busy={busy}
-            class="mx-auto flex max-h-[90dvh] w-full max-w-md flex-col gap-5 overflow-y-auto overscroll-contain rounded-t-(--radius-box) bg-bg-surface p-6 lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
-        >
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0 pt-2">
-                    <h2 class="text-lg font-semibold wrap-anywhere">{member?.displayName}의 Riot 계정</h2>
-                    <p class="mt-1 text-sm text-text-muted tabular-nums wrap-anywhere">{member?.userId}</p>
-                </div>
-                <Button
-                    type="button"
-                    fill="text"
-                    size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="min-h-11 shrink-0 px-3 text-sm"
-                    disabled={busy}
-                    onclick={close}>닫기</Button
-                >
-            </div>
+<Dialog bind:open title={`${member?.displayName ?? '멤버'}의 Riot 계정`} dismissible={!busy} onclose={close}>
+    <div bind:this={panel} aria-busy={busy} class="flex flex-col gap-5">
+        <p class="text-sm text-text-muted tabular-nums wrap-anywhere">{member?.userId}</p>
 
             {#if member?.riotAccounts.length}
                 <ul
@@ -174,34 +150,22 @@
                                         >진행 중인 내전에 쓰여 해제할 수 없어요</span
                                     >{/if}
                             </span>
-                            <span class="flex shrink-0 items-center">
-                                {#if !account.isPrimary}
-                                    <Button
-                                        fill="text"
-                                        size="auto"
-                                        heightOut="0"
-                                        heightIn="2"
-                                        injClass="min-h-11 px-2 text-sm"
-                                        disabled={busy}
-                                        loading={busyId === account.id && busyAction === 'primary'
-                                            ? {}
-                                            : null}
-                                        onclick={() => run('primary', account)}
-                                        >대표로<span class="sr-only">
-                                            {account.gameName}#{account.tagLine}</span
-                                        ></Button
-                                    >
-                                {/if}
+                            {#if account.inActiveScrim}<span class="text-xs opacity-60"
+                                    >진행 중인 내전에 쓰여 해제할 수 없어요</span
+                                >{/if}
+                        </span>
+                        <span class="flex shrink-0 items-center">
+                            {#if !account.isPrimary}
                                 <Button
-                                    fill="textState"
-                                    state="error"
+                                    variant="quiet"
                                     size="auto"
-                                    heightOut="0"
-                                    heightIn="2"
                                     injClass="min-h-11 px-2 text-sm"
-                                    disabled={busy || account.inActiveScrim}
-                                    loading={busyId === account.id && busyAction === 'unlink' ? {} : null}
-                                    onclick={() => run('unlink', account)}
+                                    disabled={busy}
+                                    loading={busyId === account.id && busyAction === 'primary'}
+                                    onclick={() => run('primary', account)}
+                                    >대표로<span class="sr-only">
+                                        {account.gameName}#{account.tagLine}</span
+                                    ></Button
                                 >
                                     해제<span class="sr-only"> {account.gameName}#{account.tagLine}</span>
                                 </Button>
@@ -222,78 +186,33 @@
                     use:enhance={submitLookup}
                     {@attach nonSubmitButtons}
                 >
-                    <div
-                        {@attach inputLabel('연결할 Riot ID')}
-                        {@attach inputFeedback(error, `${id}-riot-error`)}
+                    <span class="font-semibold break-all"
+                        >{found.gameName}<span class="font-normal opacity-60"> #{found.tagLine}</span></span
                     >
-                        <Input
-                            title="연결할 Riot ID"
-                            titlePosition="out"
-                            placeholder="이름#태그"
-                            bind:value={riotId}
-                            disabled={busy}
-                            state={error ? 'error' : 'theme'}
-                            autocomplete={false}
-                            required
-                        />
-                    </div>
-                    {#if error}<p id={`${id}-riot-error`} role="alert" class="text-sm text-error">
-                            {error}
-                        </p>{/if}
-                    <div class="flex justify-end gap-2">
-                        <Button
-                            type="submit"
-                            size="auto"
-                            heightOut="0"
-                            injClass="min-h-11 px-4"
-                            loading={pending ? {} : null}>조회</Button
-                        >
-                    </div>
-                </form>
-            {:else}
-                <form
-                    method="POST"
-                    action="?/link"
-                    class="flex flex-col gap-3"
-                    novalidate
-                    use:enhance={submitLink}
-                    {@attach nonSubmitButtons}
-                >
-                    <div
-                        class="flex flex-col gap-1 rounded-(--radius-form) bg-bg-overlay px-4 py-3 dark:bg-bg-overlay-dark"
+                    <span class="text-sm opacity-70">{found.region} 서버</span>
+                </div>
+                {#if error}
+                    <p role="alert" class="text-sm text-error">{error}</p>
+                {:else}
+                    <p class="text-sm opacity-80">이 Riot 계정을 연결할까요?</p>
+                {/if}
+                <div class="flex justify-end gap-2">
+                    <Button
+                        variant="secondary"
+                        size="auto"
+                        injClass="min-h-11 px-4"
+                        disabled={busy}
+                        onclick={() => ((found = null), (error = ''))}>다시 입력</Button
                     >
-                        <span class="font-semibold break-all"
-                            >{found.gameName}<span class="font-normal opacity-60">
-                                #{found.tagLine}</span
-                            ></span
-                        >
-                        <span class="text-sm opacity-70">{found.region} 서버</span>
-                    </div>
-                    {#if error}
-                        <p role="alert" class="text-sm text-error">{error}</p>
-                    {:else}
-                        <p class="text-sm opacity-80">이 Riot 계정을 연결할까요?</p>
-                    {/if}
-                    <div class="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            fill="lineLight"
-                            size="auto"
-                            heightOut="0"
-                            injClass="min-h-11 px-4"
-                            disabled={busy}
-                            onclick={() => ((found = null), (error = ''))}>다시 입력</Button
-                        >
-                        <Button
-                            type="submit"
-                            size="auto"
-                            heightOut="0"
-                            injClass="min-h-11 px-4"
-                            loading={pending ? {} : null}>연결</Button
-                        >
-                    </div>
-                </form>
-            {/if}
-        </div>
-    </Popup>
-</div>
+                    <Button
+                        variant="primary"
+                        type="submit"
+                        size="auto"
+                        injClass="min-h-11 px-4"
+                        loading={pending}>연결</Button
+                    >
+                </div>
+            </form>
+        {/if}
+    </div>
+</Dialog>

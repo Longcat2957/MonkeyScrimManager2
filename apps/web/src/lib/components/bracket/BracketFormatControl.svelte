@@ -1,6 +1,6 @@
 <script lang="ts">
     import { untrack } from 'svelte';
-    import { Radio } from 'stdf';
+    import RadioGroup from '#lib/components/common/RadioGroup.svelte';
     import type { BestOf } from '#lib/features/scrims/bracket.ts';
     import { nonSubmitButtons } from '#lib/ui/form.ts';
 
@@ -17,21 +17,16 @@
     } = $props();
 
     const formats = [
-        { name: '1', label: '단판' },
-        { name: '3', label: '3전 2선승' },
-        { name: '5', label: '5전 3선승' }
+        { value: '1', label: '단판' },
+        { value: '3', label: '3전 2선승' },
+        { value: '5', label: '5전 3선승' }
     ];
     let value = $state(untrack(() => String(bestOf)));
+
+    // 서버에서 확인된 경기 방식이 바뀌면 선택도 그 값으로 맞춘다.
     $effect(() => {
         value = String(bestOf);
     });
-
-    function exposeSelection(fieldset: HTMLFieldSetElement) {
-        // STDF 3의 Radio는 선택 상태를 ARIA로 전달하지 않아 버튼에 보완한다.
-        fieldset.querySelectorAll('button').forEach((button, index) => {
-            button.setAttribute('aria-pressed', String(formats[index]?.name === value));
-        });
-    }
 
     async function change(next: string) {
         if (disabled || Number(next) === bestOf) return;
@@ -45,13 +40,11 @@
 </script>
 
 <form onsubmit={(event) => event.preventDefault()} {@attach nonSubmitButtons}>
-    <fieldset
-        {disabled}
-        aria-label={`${label} 경기 방식`}
-        class="text-xs [&_button]:min-h-11"
-        {@attach exposeSelection}
+    <!-- 좁은 단계 머리에 맞춰 선택지를 한 줄로 펼치고, 단계 이름과 겹치지 않게 범례는 숨긴다. -->
+    <div
+        class="text-xs [&_fieldset]:flex-row [&_fieldset]:flex-wrap [&_fieldset]:items-center [&_fieldset]:gap-3 [&_legend]:sr-only"
+        onchange={(event) => void change((event.target as HTMLInputElement).value)}
     >
-        <legend class="sr-only">{label} 경기 방식</legend>
-        <Radio data={formats} bind:value layout="h" onchange={change} />
-    </fieldset>
+        <RadioGroup legend={`${label} 경기 방식`} name="bestOf" options={formats} bind:value {disabled} />
+    </div>
 </form>

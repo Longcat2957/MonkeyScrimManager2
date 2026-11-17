@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import { POSITIONS } from '#lib/features/labels.ts';
@@ -159,10 +159,8 @@
                     <span class="flex items-center justify-center">
                         {#if player}
                             <Button
-                                fill="text"
+                                variant="quiet"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="2"
                                 injClass="min-h-11 min-w-11 h-full w-full"
                                 onclick={() => onremove(player.participantId)}
                             >

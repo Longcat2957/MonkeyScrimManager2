@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { CountDown, Progress } from 'stdf';
     import type { NextScrim } from '#lib/features/guild/types.ts';
     import { MY_REGISTRATION, formatSchedule, formationMethodLabel } from '#lib/features/labels.ts';
 
@@ -36,6 +35,27 @@
     const cta = $derived(live ? '진행 상황 보기' : next?.kind === 'open' ? '신청하러 가기' : '내전 보기');
     const fill = $derived(scrim ? Math.round((scrim.registered / scrim.capacity) * 100) : 0);
     const pad = (value: number) => String(value).padStart(2, '0');
+    const countdown = $derived.by(() => {
+        if (remaining === null) return null;
+        const total = Math.floor(remaining / 1000);
+        return {
+            days: String(Math.floor(total / 86400)),
+            hours: pad(Math.floor((total % 86400) / 3600)),
+            minutes: pad(Math.floor((total % 3600) / 60)),
+            seconds: pad(total % 60)
+        };
+    });
+    // 카운트다운은 1초마다 현재 시각에서 다시 계산하고, 예정 시각이 지나면 멈춘다.
+    $effect(() => {
+        if (!scrim?.scheduledAt || live) return;
+        const deadline = Date.parse(scrim.scheduledAt);
+        if (deadline <= Date.now()) return;
+        const timer = setInterval(() => {
+            now = Date.now();
+            if (Date.now() >= deadline) clearInterval(timer);
+        }, 1000);
+        return () => clearInterval(timer);
+    });
 </script>
 
 <!--
@@ -44,7 +64,7 @@
 -->
 <section
     aria-labelledby="next-scrim"
-    class="inverse-surface relative isolate overflow-hidden rounded-(--radius-box) bg-bg-base-dark text-text-dark ring-1 ring-white/10"
+    class="inverse-surface relative isolate overflow-hidden rounded-(--radius-box) border border-brass-line bg-bg-base-dark text-text-dark"
 >
     {#if next?.artUrl}
         <img
@@ -110,14 +130,8 @@
                             {/each}
                         </span>
                     {/snippet}
-                    {#if remaining !== null}
-                        {#key `${scrim.id}:${scrim.scheduledAt}`}
-                            <CountDown time={remaining} onfinish={() => (now = Date.now())}>
-                                {#snippet children({ days, hours, minutes, seconds })}
-                                    {@render clock(String(days), pad(hours), pad(minutes), pad(seconds))}
-                                {/snippet}
-                            </CountDown>
-                        {/key}
+                    {#if countdown}
+                        {@render clock(countdown.days, countdown.hours, countdown.minutes, countdown.seconds)}
                     {:else}
                         {@render clock('-', '--', '--', '--')}
                     {/if}
@@ -132,20 +146,23 @@
                         <span>신청 현황</span>
                         <span class="tabular-nums">{scrim.registered}/{scrim.capacity}명</span>
                     </div>
-                    <Progress
-                        percent={fill}
-                        percentPosition={null}
-                        height="2"
-                        injClass="bg-text-dark!"
-                        trackInjClass="bg-white/15!"
-                    />
+                    <div
+                        role="progressbar"
+                        aria-label="신청 인원"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={fill}
+                        class="h-0.5 w-full overflow-hidden rounded-full bg-white/15"
+                    >
+                        <div class="h-full bg-hex" style:width={`${fill}%`}></div>
+                    </div>
                 </div>
             {/if}
 
             <div>
                 <a
                     {href}
-                    class="inline-flex items-center gap-2 rounded-(--radius-form) bg-text-dark px-5 py-3 text-sm font-semibold text-bg-base-dark no-underline hover:bg-white focus-visible:outline-text-dark"
+                    class="rounded-(--radius-form) inline-flex items-center gap-2 bg-hex px-5 py-3 text-sm font-semibold text-hex-ink no-underline hover:bg-hex-hover focus-visible:outline-text-dark"
                 >
                     {cta}
                     <svg

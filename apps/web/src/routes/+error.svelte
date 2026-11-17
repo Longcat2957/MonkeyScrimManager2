@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import { Button } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import { SERVICE_NAME } from '#lib/branding.ts';
 
     const messages: Record<number, { title: string; description: string }> = {
@@ -36,7 +36,7 @@
     <p class="mt-3 text-sm leading-relaxed text-pretty opacity-70">{message.description}</p>
     {#if page.status >= 500}
         <div class="mx-auto mt-8 w-36">
-            <Button size="full" fill="lineLight" heightOut="0" onclick={() => window.location.reload()}>
+            <Button variant="secondary" size="full" onclick={() => window.location.reload()}>
                 다시 시도
             </Button>
         </div>

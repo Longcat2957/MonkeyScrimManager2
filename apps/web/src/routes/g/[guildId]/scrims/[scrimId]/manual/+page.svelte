@@ -2,6 +2,7 @@
     import { SERVICE_NAME } from '#lib/branding.ts';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import ManualFormationBoard from '#lib/components/teams/ManualFormationBoard.svelte';
+    import ScrimSummary from '#lib/components/scrims/ScrimSummary.svelte';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -10,6 +11,8 @@
 <svelte:head>
     <title>{data.scrim.title} · 수동 편성 | {SERVICE_NAME}</title>
 </svelte:head>
+
+<ScrimSummary scrim={data.scrim} />
 
 {#if data.formation}
     <ManualFormationBoard

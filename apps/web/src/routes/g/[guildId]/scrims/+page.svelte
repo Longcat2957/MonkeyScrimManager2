@@ -1,12 +1,13 @@
 <script lang="ts">
-    import { Button, CellGroup, Loading } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import Button from '#lib/components/common/Button.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import ScrimListRow from '#lib/components/scrims/ScrimListRow.svelte';
     import ScrimSettingsDialog from '#lib/components/scrims/ScrimSettingsDialog.svelte';
     import { editableFields, TEAM_COUNT } from '#lib/features/scrims/settings.ts';
@@ -68,13 +69,7 @@
         <h1 class="text-2xl font-semibold">내전</h1>
         {#if data.can.createScrim}
             <span class="shrink-0">
-                <Button
-                    fill="base"
-                    size="auto"
-                    heightOut="0"
-                    injClass="px-4"
-                    onclick={() => (creating = true)}>모집 만들기</Button
-                >
+                <Button variant="primary" size="auto" onclick={() => (creating = true)}>모집 만들기</Button>
             </span>
         {/if}
     </div>
@@ -85,8 +80,8 @@
         <section aria-labelledby="scrim-list" aria-busy={changing} class="flex flex-col gap-3">
             <div class="flex items-center gap-2">
                 <h2 id="scrim-list" class="sr-only">{FILTERS[active]?.text} 내전</h2>
-                <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 내용은 숨긴 영역 제목으로 알린다. -->
-                <div role="group" aria-label="상태 필터" class="min-w-0 flex-1 border-b border-border">
+                <!-- 선택한 상태는 목록 이름과 탭이 함께 알린다. -->
+                <div role="group" aria-label="상태 필터" class="min-w-0 flex-1 border-b border-brass-line">
                     <SelectionTabs
                         {labels}
                         {active}
@@ -94,7 +89,7 @@
                     />
                 </div>
                 {#if changing}
-                    <Loading type="1_0" height="6" width="6" />
+                    <Spinner label="내전 목록을 불러오는 중" />
                 {/if}
             </div>
 
@@ -102,9 +97,9 @@
                 <SectionState state="empty" message="조건에 맞는 내전이 없어요" />
             {:else}
                 <div class={['transition-opacity', changing && 'opacity-50']}>
-                    <CellGroup my="0" mx="0" shadow="none">
-                        <ul>
-                            {#each data.scrims as scrim, index (scrim.id)}
+                    <div class="hex-panel overflow-hidden">
+                        <ul class="divide-y divide-brass-line">
+                            {#each data.scrims as scrim (scrim.id)}
                                 <li>
                                     <ScrimListRow
                                         {scrim}
@@ -112,12 +107,12 @@
                                             guildId,
                                             scrimId: scrim.id
                                         })}
-                                        line={index < data.scrims.length - 1}
+                                        line={false}
                                     />
                                 </li>
                             {/each}
                         </ul>
-                    </CellGroup>
+                    </div>
                 </div>
             {/if}
 

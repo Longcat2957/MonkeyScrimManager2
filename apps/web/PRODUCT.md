@@ -24,21 +24,21 @@ Discord 서버의 내전 운영자는 모집·참가자·팀·경기 운영을 �
 - 정상 ROFL은 서버 검증 후 자동 등록한다. 매번 사람의 승인이나 수동 승패 입력을 추가하지 않는다.
 - 불명확한 실제 시각·수치는 null을 유지한다. 희망 포지션이 확정 라인업을 대신하지 않는다.
 - 하드 피어리스는 사용 챔피언 안내이며 결과 등록을 막지 않는다.
-- 기존 SvelteKit3·Svelte5·STDF3·Tailwind4 구조를 사용한다. 목 데이터는 lib/mocks에 두고 실제 오류를 목 데이터로 대체하지 않는다.
+- SvelteKit3·Svelte5·Tailwind4 구조를 사용한다. UI 컴포넌트 라이브러리 없이 네이티브 HTML 요소로 구현한다. 목 데이터는 lib/mocks에 두고 실제 오류를 목 데이터로 대체하지 않는다.
 
 ## Brand Commitments
 
-사용자 화면의 이름은 branding.ts의 SERVICE_NAME으로 가져온다. 워드마크는 Jersey 10 regular 400, 본문·메뉴·STDF 컨트롤은 Noto Sans KR이다. 기존 Slate 테마와 primary/dark 모드를 존중한다. 한국어 설명은 동작과 다음 행동을 명확히 전달한다.
+사용자 화면의 이름은 branding.ts의 SERVICE_NAME으로 가져온다. 워드마크는 font-brand 전용 서체, 본문·메뉴·컨트롤은 Noto Sans KR이다. 라이트·다크 모드를 모두 제공한다. 한국어 설명은 동작과 다음 행동을 명확히 전달한다.
 
 ## Evidence on Hand
 
-확인 근거: ../../AGENTS.md, ../../README.md, ../../docs/purpose.md, ../../docs/web/README.md, ../../docs/web/routing.md 및 페이지별 문서와 현재 구현. 이번 요청은 기존 기능·브랜드·권한을 보존한 전체 UI 개선이다. 제품 정보는 이 근거에서 옮겼으며 새 마케팅 주장·사용자 조사 결과·성능 수치는 만들지 않았다.
+확인 근거: ../../AGENTS.md, ../../README.md, ../../docs/purpose.md, ../../docs/web/README.md, ../../docs/web/routing.md 및 페이지별 문서와 현재 구현. 이번 요청은 비즈니스 로직·라우트·권한을 보존하고 시각 체계와 내비게이션을 교체하는 리디자인이다. 제품 정보는 이 근거에서 옮겼으며 새 마케팅 주장·사용자 조사 결과·성능 수치는 만들지 않았다.
 
 ## Product Principles
 
 - 한 페이지에서 같은 기능은 한 조작, 같은 설명은 한 위치에 제공한다.
 - 핵심 과업과 현재 상태를 먼저 이해하고 모바일·키보드로도 완료할 수 있게 한다.
-- 기존 STDF API와 서비스 공통 컴포넌트를 우선 활용하고 실제 반복 책임만 추출한다.
+- 서비스 공통 컴포넌트를 우선 활용하고 실제 반복 책임만 추출한다.
 - 오류에서 입력을 보존하고 가능한 복구를 제공한다.
 
 ## Accessibility & Inclusion

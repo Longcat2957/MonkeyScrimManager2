@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import { goto, invalidate } from '$app/navigation';
     import { page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
@@ -59,7 +59,7 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-10">
     <h1 class="text-2xl font-semibold">백오피스</h1>
 
-    <section aria-labelledby="service-status" aria-busy={checking} class="flex flex-col gap-3">
+    <section aria-labelledby="service-status" aria-busy={checking} class="hex-panel flex flex-col gap-3 p-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 id="service-status" class="text-lg font-semibold">서비스 상태</h2>
             <div class="flex items-center gap-3 text-sm">
@@ -69,12 +69,10 @@
                     >
                 {/await}
                 <Button
-                    fill="lineLight"
+                    variant="secondary"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
                     injClass="min-h-11 px-3 text-sm"
-                    loading={checking ? {} : null}
+                    loading={checking}
                     disabled={checking}
                     onclick={recheck}
                 >
@@ -88,10 +86,7 @@
         {#await data.status}
             <SectionState state="loading" lines={2} />
         {:then status}
-            <ul
-                aria-live="polite"
-                class="flex flex-col divide-y divide-text-primary/5 rounded-(--radius-box) border border-border dark:divide-text-dark/5"
-            >
+            <ul aria-live="polite" class="flex flex-col divide-y divide-brass-line">
                 {#each status.services as service (service.key)}
                     {@const label = SERVICE_STATE_LABEL[service.state]}
                     <li class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">

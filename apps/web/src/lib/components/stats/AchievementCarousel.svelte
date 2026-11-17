@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import type { AchievementRanking } from '#lib/features/players/achievements.ts';
 
@@ -42,7 +42,7 @@
     }
 </script>
 
-<!-- STDF Swiper는 사용자 데이터·키보드 제어 API가 없어 업적 탐색만 서비스에서 구성한다. -->
+<!-- 업적 탐색은 사용자 데이터·키보드 제어가 필요해 서비스에서 직접 구성한다. -->
 {#if item}
     {@const winner = item.entries[0]!}
     <div
@@ -59,7 +59,7 @@
             ontouchcancel={() => (touch = null)}
         >
             <div
-                class="inverse-surface relative isolate flex min-h-52 items-center gap-5 overflow-hidden rounded-(--radius-box) border border-warning bg-bg-base-dark p-5 text-text-dark sm:min-h-64 sm:gap-8 sm:p-8"
+                class="inverse-surface relative isolate flex min-h-52 items-center gap-5 overflow-hidden rounded-(--radius-box) border border-brass-line bg-bg-base-dark p-5 text-text-dark sm:min-h-64 sm:gap-8 sm:p-8"
             >
                 {#if item.splashUrl}
                     <img
@@ -79,24 +79,24 @@
                             alt=""
                             width="128"
                             height="128"
-                            class="size-20 rounded-(--radius-box) border border-warning sm:size-32"
+                            class="size-20 rounded-(--radius-box) border border-brass-line sm:size-32"
                         />
                     {:else}
                         <PlayerFace name={winner.displayName} imageUrl={null} size="lg" />
                     {/if}
                     <span
                         aria-hidden="true"
-                        class="absolute -right-2 -bottom-2 flex size-9 items-center justify-center rounded-full bg-bg-base-dark text-xl ring-1 ring-warning"
+                        class="absolute -right-2 -bottom-2 flex size-9 items-center justify-center rounded-full bg-bg-base-dark text-xl ring-1 ring-brass-line"
                         >{item.emoji}</span
                     >
                 </span>
                 <div class="flex min-w-0 flex-1 flex-col gap-1">
-                    <h3 class="text-2xl font-bold text-balance text-warning sm:text-4xl">{item.title}</h3>
-                    <p class="text-sm text-white/80">{item.description}</p>
-                    <p class="mt-2 text-xl font-bold sm:text-2xl">{winner.displayName}</p>
+                    <h3 class="text-2xl font-bold text-balance text-brass sm:text-4xl">{item.title}</h3>
+                    <p class="text-sm text-text-dark/80">{item.description}</p>
+                    <p class="mt-2 text-xl font-bold">{winner.displayName}</p>
                     <p class="text-sm tabular-nums">
                         <span class="text-lg font-bold">{winner.value}</span>
-                        <span class="text-white/75">· {winner.games}게임</span>
+                        <span class="text-text-dark/75">· {winner.games}게임</span>
                     </p>
                 </div>
             </div>
@@ -107,11 +107,10 @@
         {#if items.length > 1}
             <div class="flex min-w-0 items-center gap-2">
                 <Button
-                    fill="lineLight"
+                    variant="secondary"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="size-11! shrink-0 justify-center"
+                    ariaLabel="이전 업적"
+                    injClass="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(-1)}
                 >
                     <svg
@@ -123,7 +122,6 @@
                         stroke-width="2"
                         aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg
                     >
-                    <span class="sr-only">이전 업적</span>
                 </Button>
                 <!-- svelte-ignore a11y_no_noninteractive_tabindex (키보드로 가로 스크롤할 수 있는 이름 있는 영역이다.) -->
                 <div
@@ -147,9 +145,7 @@
                                         aria-hidden="true"
                                         class={[
                                             'block h-1.5 rounded-full',
-                                            index === current
-                                                ? 'w-6 bg-warning'
-                                                : 'w-1.5 bg-primary/70 dark:bg-dark/50'
+                                            index === current ? 'w-6 bg-hex' : 'w-1.5 bg-brass-line'
                                         ]}
                                     ></span>
                                 </button>
@@ -158,11 +154,10 @@
                     </ol>
                 </div>
                 <Button
-                    fill="lineLight"
+                    variant="secondary"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="size-11! shrink-0 justify-center"
+                    ariaLabel="다음 업적"
+                    injClass="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(1)}
                 >
                     <svg
@@ -174,7 +169,6 @@
                         stroke-width="2"
                         aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
                     >
-                    <span class="sr-only">다음 업적</span>
                 </Button>
             </div>
         {/if}

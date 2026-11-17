@@ -1,31 +1,55 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { Button } from 'stdf';
-    import type { ActionProps } from 'stdf';
-    import ActionMenu from '#lib/components/common/ActionMenu.svelte';
+    import Button from '#lib/components/common/Button.svelte';
+    import PopoverMenu from '#lib/components/common/PopoverMenu.svelte';
+    import type { MenuAction } from '#lib/components/common/menu.ts';
 
     type Props = {
         label: string;
-        actions: ActionProps[];
+        actions: MenuAction[];
         onselect: (index: number) => void;
+        align?: 'left' | 'right';
+        side?: 'down' | 'up';
+        triggerVariant?: 'quiet' | 'secondary';
+        triggerClass?: string;
+        footer?: Snippet;
         children: Snippet;
     };
 
-    let { label, actions, onselect, children }: Props = $props();
+    let {
+        label,
+        actions,
+        onselect,
+        align = 'left',
+        side = 'down',
+        triggerVariant = 'quiet',
+        triggerClass = '',
+        footer,
+        children
+    }: Props = $props();
     let open = $state(false);
-    let trigger: HTMLElement | null = $state(null);
 </script>
 
-<span bind:this={trigger} class="inline-flex">
+<span class="relative inline-flex" data-menu-trigger>
     <Button
-        fill="text"
-        size="auto"
-        heightOut="0"
-        heightIn="2"
-        injClass="min-h-11 min-w-11 px-2"
+        variant={triggerVariant}
+        size="sm"
+        injClass={`min-h-9 px-3 text-sm font-semibold ${triggerClass}`}
+        ariaLabel={label}
         onclick={() => (open = !open)}
     >
         {@render children()}
     </Button>
+    <PopoverMenu
+        bind:open
+        {label}
+        {actions}
+        {align}
+        {side}
+        {footer}
+        onselect={(index) => {
+            open = false;
+            onselect(index);
+        }}
+    />
 </span>
-<ActionMenu bind:open {label} {actions} {trigger} {onselect} />

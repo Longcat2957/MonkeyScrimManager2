@@ -1,8 +1,10 @@
 <script lang="ts">
     import { untrack, type Snippet } from 'svelte';
-    import { Button, Input, toast } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
+    import { toast } from '#lib/ui/toast.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
     import {
         bestMmr,
@@ -12,7 +14,6 @@
     } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { inputFeedback, inputLabel } from '#lib/ui/form.ts';
     import ChangeMethodButton from './ChangeMethodButton.svelte';
 
     type Props = {
@@ -24,7 +25,6 @@
     };
 
     let { contextKey, teams, players, editable, refreshAction }: Props = $props();
-    const id = $props.id();
 
     // 같은 내전을 다시 조회해도 저장하지 않은 팀장·포인트 입력은 유지한다.
     const fromTeams = () => ({
@@ -138,10 +138,10 @@
 <section
     aria-labelledby="auction-setup"
     aria-busy={busy}
-    class="flex w-full min-w-0 flex-col overflow-hidden rounded-(--radius-box) border border-border bg-border"
+    class="hex-panel flex w-full min-w-0 flex-col overflow-hidden"
 >
     <div
-        class="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
+        class="flex flex-wrap items-start justify-between gap-3 border-b border-brass-line bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
     >
         <div class="min-w-0">
             <h2 id="auction-setup" class="text-lg font-semibold">경매 준비</h2>
@@ -158,24 +158,19 @@
     {#if editable}
         <div class="grid gap-2 bg-bg-surface px-3 pb-3 sm:grid-cols-2 dark:bg-bg-surface-dark">
             <Button
-                fill="lineLight"
+                variant="secondary"
                 size="full"
-                heightOut="0"
-                heightIn="3"
-                injClass="text-sm"
                 disabled={!dirty || invalidPoints || busy}
-                loading={pendingAction === 'save' ? {} : null}
+                loading={pendingAction === 'save'}
                 onclick={save}
             >
                 {dirty ? '설정 저장' : missingCaptain ? '설정 대기' : '저장됨'}
             </Button>
             <Button
+                variant="primary"
                 size="full"
-                heightOut="0"
-                heightIn="3"
-                injClass="text-sm"
                 disabled={Boolean(startBlocked) || busy}
-                loading={pendingAction === 'start' ? {} : null}
+                loading={pendingAction === 'start'}
                 onclick={start}>경매 시작</Button
             >
         </div>
@@ -192,19 +187,20 @@
                 aria-labelledby="captain-candidates"
                 class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-bg-surface dark:bg-bg-surface-dark"
             >
-                <div class="border-b border-border px-3 py-3" {@attach inputLabel('팀장 후보 검색')}>
+                <div class="border-b border-brass-line px-3 py-3">
                     <h3 id="captain-candidates" class="text-sm font-semibold">팀장 후보</h3>
                     <p class="mt-1 text-sm opacity-70">
                         누르는 순서대로 비어 있는 팀에 배정돼요. 다시 누르면 해제돼요.
                     </p>
-                    <Input
-                        title="팀장 후보 검색"
-                        type="search"
-                        placeholder="참가자 이름"
-                        bind:value={query}
-                        disabled={busy}
-                        clear
-                    />
+                    <div class="mt-2">
+                        <TextField
+                            label="팀장 후보 검색"
+                            type="search"
+                            placeholder="참가자 이름"
+                            bind:value={query}
+                            disabled={busy}
+                        />
+                    </div>
                 </div>
                 <ul
                     class="flex max-h-72 min-h-0 flex-col gap-1.5 overflow-y-auto overscroll-contain p-2 xl:max-h-[32rem]"
@@ -263,10 +259,9 @@
                 {#each teams as team, index (team.id)}
                     {@const captain = playerOf(captains[index] ?? null)}
                     {@const pointsError = parsed[index] === null ? '1 이상의 정수를 입력해 주세요' : ''}
-                    {@const pointsErrorId = `${id}-points-${index}`}
                     <section
                         aria-labelledby={`setup-${team.id}`}
-                        class="grid min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3 border border-border bg-bg-highlight/20 p-3 dark:bg-bg-highlight-dark/20"
+                        class="hex-panel grid min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3 bg-bg-highlight/20 p-3 dark:bg-bg-highlight-dark/20"
                     >
                         <div class="grid gap-2">
                             <h3
@@ -276,30 +271,14 @@
                                 {team.name}
                             </h3>
                             {#if editable}
-                                <div {@attach inputFeedback(pointsError, pointsErrorId)}>
-                                    <Input
-                                        title="시작 포인트"
-                                        titlePosition="out"
-                                        inputmode="numeric"
-                                        placeholder="1000"
-                                        bind:value={points[index]}
-                                        disabled={busy}
-                                        state={parsed[index] === null ? 'error' : 'theme'}
-                                    >
-                                        {#snippet titleChild()}
-                                            <span class="text-sm font-medium"
-                                                ><span class="sr-only">{team.name} </span>시작 포인트</span
-                                            >
-                                        {/snippet}
-                                    </Input>
-                                    {#if pointsError}<p
-                                            id={pointsErrorId}
-                                            role="alert"
-                                            class="mt-1 text-sm text-error"
-                                        >
-                                            {pointsError}
-                                        </p>{/if}
-                                </div>
+                                <TextField
+                                    label="시작 포인트"
+                                    inputmode="numeric"
+                                    placeholder="1000"
+                                    bind:value={points[index]}
+                                    disabled={busy}
+                                    error={pointsError}
+                                />
                             {:else}
                                 <p class="text-sm">
                                     <span class="opacity-60">시작 포인트</span>

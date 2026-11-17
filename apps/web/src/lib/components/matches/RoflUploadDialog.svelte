@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { Button, Checkbox, ImageList, Popup, Radio } from 'stdf';
-    import type { ImageListItemProps } from 'stdf';
     import { deserialize } from '$app/forms';
-    import { overlay } from '#lib/ui/overlay.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
+    import Button from '#lib/components/common/Button.svelte';
+    import CheckboxField from '#lib/components/common/CheckboxField.svelte';
+    import Dialog from '#lib/components/common/Dialog.svelte';
+    import RadioGroup from '#lib/components/common/RadioGroup.svelte';
 
     type Props = {
         open: boolean;
@@ -15,48 +15,34 @@
         onrecorded: (order: number | null) => void;
     };
 
+    type UploadFile = {
+        id: number;
+        file: File;
+        status: 'ready' | 'uploading' | 'success' | 'error';
+        message: string;
+    };
+
     let { open = $bindable(false), max, context, teams = [], onrecorded }: Props = $props();
 
-    let files = $state<ImageListItemProps[]>([]);
-    let list = $state<ImageList>();
+    const MAX_SIZE = 64 * 1024 * 1024;
+
+    let files = $state<UploadFile[]>([]);
     let picker = $state<HTMLInputElement>();
+    let nextId = 0;
     let uploading = $state(false);
     let selectionError = $state('');
     let refreshRequired = $state(false);
     let uploadContext = $state<Props['context']>();
     let blueTeamSlot = $state('');
     let blueTeamConfirmed = $state(false);
-    let popupPosition = $state<'center' | 'bottom'>('bottom');
+    let previousSlot = '';
     let wasOpen = false;
     let lastOrder: number | null = null;
     let touched = false;
     const waiting = $derived(files.filter((item) => item.status !== 'success'));
-    // 실제 등록은 한 파일을 전체 폭으로 표시하고, 개발 샘플의 다중 선택만 3열로 표시한다.
-    const empty = $derived(files.length === 0);
     const blueTeam = $derived(teams.find((team) => team.slot === blueTeamSlot));
     const redTeam = $derived(teams.find((team) => team.slot !== blueTeamSlot));
-
-    function exposeSelection(fieldset: HTMLFieldSetElement) {
-        // STDF 3의 실제 선택 버튼에 현재 블루 팀을 알린다.
-        fieldset.querySelectorAll('button').forEach((button, index) => {
-            button.type = 'button';
-            button.setAttribute('aria-pressed', String(teams[index]?.slot === blueTeamSlot));
-        });
-    }
-
-    function exposeConfirmation(fieldset: HTMLFieldSetElement) {
-        // STDF의 실제 체크 버튼에 확인 상태를 연결한다.
-        const button = fieldset.querySelector('button');
-        if (!button) return;
-        button.type = 'button';
-        button.setAttribute('role', 'checkbox');
-        button.setAttribute('aria-checked', String(blueTeamConfirmed));
-    }
-
-    $effect(() => {
-        // 열린 상태에서 전환 종류를 바꾸면 STDF가 이전·새 입력을 동시에 렌더링하므로 위치를 유지한다.
-        if (!open) popupPosition = desktop.current ? 'center' : 'bottom';
-    });
+    const options = $derived(teams.map((team) => ({ value: team.slot, label: team.name })));
 
     $effect(() => {
         // 입력창을 연 뒤 다른 운영자가 라인업을 바꿔도 원래 확인한 세트와 버전으로만 요청한다.
@@ -66,8 +52,29 @@
         wasOpen = open;
     });
 
-    async function send(item: ImageListItemProps) {
-        if (!item.file) return false;
+    $effect(() => {
+        // 진영을 바꾸면 이전 확인은 무효다.
+        if (blueTeamSlot === previousSlot) return;
+        previousSlot = blueTeamSlot;
+        blueTeamConfirmed = false;
+    });
+
+    function addFiles(selected: File[]) {
+        selectionError = '';
+        blueTeamConfirmed = false;
+        const room = Math.max(0, max - files.length);
+        if (selected.length > room) selectionError = `파일은 ${max}개까지 선택할 수 있어요`;
+        const accepted = selected.slice(0, room);
+        if (accepted.some((file) => file.size > MAX_SIZE)) selectionError = '64MB 이하의 파일을 골라 주세요';
+        files = [
+            ...files,
+            ...accepted
+                .filter((file) => file.size <= MAX_SIZE)
+                .map((file) => ({ id: ++nextId, file, status: 'ready' as const, message: '' }))
+        ];
+    }
+
+    async function send(item: UploadFile) {
         item.status = 'uploading';
         item.message = '';
         const body = new FormData();
@@ -125,9 +132,8 @@
         }
     }
 
-    function remove(item: ImageListItemProps) {
+    function remove(item: UploadFile) {
         if (uploading) return;
-        if (item.url) URL.revokeObjectURL(item.url);
         files = files.filter((file) => file.id !== item.id);
         selectionError = '';
         blueTeamSlot = '';
@@ -138,7 +144,6 @@
         if (uploading) return;
         open = false;
         if (touched) onrecorded(lastOrder);
-        for (const item of files) if (item.url) URL.revokeObjectURL(item.url);
         files = [];
         lastOrder = null;
         touched = false;
@@ -149,158 +154,104 @@
     }
 </script>
 
-<div {@attach overlay({ open, label: 'ROFL 업로드', onclose: close })}>
-    <Popup
-        bind:visible={open}
-        position={popupPosition}
-        size={0}
-        maskClosable={false}
-        onclickMask={close}
-        transparent
-    >
-        <div
-            class="mx-auto flex max-h-[85dvh] w-full max-w-lg flex-col rounded-t-(--radius-box) bg-bg-surface lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
-        >
-            <header class="border-b border-border px-5 py-3">
-                <h2 class="text-base font-semibold">ROFL 업로드</h2>
-            </header>
-            <div class="flex flex-col gap-3 overflow-y-auto p-5">
-                {#if uploadContext}<p class="text-sm">{uploadContext.expectedGameNumber}세트 결과</p>{/if}
-                {#if uploadContext}
-                    <fieldset
-                        disabled={uploading}
-                        class="[&_button]:min-h-11 [&_button]:min-w-11"
-                        {@attach exposeSelection}
-                    >
-                        <legend class="mb-2 text-sm font-semibold">이 세트의 블루 팀</legend>
-                        <Radio
-                            data={teams.map((team) => ({ name: team.slot, label: team.name }))}
-                            bind:value={blueTeamSlot}
-                            onchange={() => (blueTeamConfirmed = false)}
-                        />
-                    </fieldset>
-                    {#if blueTeam && redTeam}
-                        <fieldset
-                            disabled={uploading || refreshRequired}
-                            class="[&_button]:min-h-11 [&_button]:min-w-11 [&_button]:items-center [&_button]:text-left"
-                            {@attach exposeConfirmation}
-                        >
-                            <legend class="sr-only">진영 확인</legend>
-                            <Checkbox
-                                data={[
-                                    {
-                                        name: 'confirmed',
-                                        label: `블루 ${blueTeam.name} · 레드 ${redTeam.name}이 실제 진영과 맞아요`
-                                    }
-                                ]}
-                                checkeds={blueTeamConfirmed ? ['confirmed'] : []}
-                                onchange={(selected) => (blueTeamConfirmed = selected.includes('confirmed'))}
-                            />
-                        </fieldset>
-                    {/if}
-                {/if}
-                <ImageList
-                    bind:value={files}
-                    accept=".rofl"
-                    multiple={max > 1}
-                    {max}
-                    maxSize={64}
-                    columns={3}
-                    injClass={empty || max === 1 ? 'grid-cols-1!' : ''}
-                    aspectRatio={empty ? [3, 1] : max === 1 ? [2, 1] : [1, 1]}
-                    radius="md"
-                    previewable={false}
-                    disabled={uploading || refreshRequired}
-                    onexceed={() => (selectionError = `파일은 ${max}개까지 선택할 수 있어요`)}
-                    onoversized={() => (selectionError = '64MB 이하의 파일을 골라 주세요')}
-                    onclickUpload={() => picker?.click()}
-                    bind:this={list}
-                >
-                    {#snippet uploadChild()}
-                        <span
-                            class="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs font-semibold"
-                        >
-                            <span aria-hidden="true" class="text-xl leading-none">+</span>ROFL 선택
-                            {#if empty}<span class="font-normal opacity-60">최대 {max}개 · 파일당 64MB</span
-                                >{/if}
-                        </span>
-                    {/snippet}
-                    {#snippet itemChild(item)}
-                        <div
-                            class="flex h-full flex-col justify-between gap-2 overflow-y-auto bg-bg-highlight p-3 text-left text-sm dark:bg-bg-highlight-dark"
-                        >
-                            <span class="line-clamp-2 font-semibold break-all"
-                                >{item.file?.name ?? item.id}</span
-                            >
-                            <span class="opacity-60 tabular-nums"
-                                >{item.file ? `${(item.file.size / 1024 / 1024).toFixed(1)}MB` : ''}</span
-                            >
+<Dialog {open} title="ROFL 업로드" dismissible={!uploading} onclose={close}>
+    <div class="flex flex-col gap-4">
+        {#if uploadContext}<p class="text-sm">{uploadContext.expectedGameNumber}세트 결과</p>{/if}
+        {#if uploadContext}
+            <fieldset disabled={uploading} class="min-w-0">
+                <RadioGroup
+                    legend="이 세트의 블루 팀"
+                    name="blueTeamSlot"
+                    bind:value={blueTeamSlot}
+                    {options}
+                />
+            </fieldset>
+            {#if blueTeam && redTeam}
+                <fieldset disabled={uploading || refreshRequired}>
+                    <legend class="sr-only">진영 확인</legend>
+                    <CheckboxField
+                        label={`블루 ${blueTeam.name} · 레드 ${redTeam.name}이 실제 진영과 맞아요`}
+                        bind:checked={blueTeamConfirmed}
+                    />
+                </fieldset>
+            {/if}
+        {/if}
+
+        <div class="flex flex-wrap items-center gap-3">
+            <Button
+                variant="secondary"
+                disabled={uploading || refreshRequired || files.length >= max}
+                onclick={() => picker?.click()}
+            >
+                <span aria-hidden="true" class="text-base leading-none">+</span>ROFL 선택
+            </Button>
+            <span class="text-xs text-text-muted">최대 {max}개 · 파일당 64MB</span>
+            <!-- 공용 Button은 파일 대화상자를 열 수 없어 숨긴 입력에 선택을 맡긴다. -->
+            <input
+                bind:this={picker}
+                type="file"
+                accept=".rofl"
+                multiple={max > 1}
+                hidden
+                onchange={(event) => {
+                    addFiles([...(event.currentTarget.files ?? [])]);
+                    event.currentTarget.value = '';
+                }}
+            />
+        </div>
+
+        {#if files.length}
+            <ul
+                class="flex flex-col divide-y divide-brass-line overflow-hidden rounded-(--radius-box) border border-brass-line"
+            >
+                {#each files as item (item.id)}
+                    <li class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                        <span class="flex min-w-0 flex-col">
+                            <span class="truncate font-semibold">{item.file.name}</span>
                             <span
                                 aria-live="polite"
-                                class={item.status === 'error'
-                                    ? 'text-error'
-                                    : item.status === 'success'
-                                      ? 'text-success'
-                                      : ''}
+                                class={[
+                                    'text-xs tabular-nums',
+                                    item.status === 'error'
+                                        ? 'text-error'
+                                        : item.status === 'success'
+                                          ? 'text-success'
+                                          : 'text-text-muted'
+                                ]}
                             >
+                                {(item.file.size / 1024 / 1024).toFixed(1)}MB ·
                                 {item.status === 'uploading' ? '업로드 중' : item.message || '등록 대기'}
                             </span>
-                            {#if item.status !== 'success'}
-                                <Button
-                                    fill="text"
-                                    size="auto"
-                                    heightOut="0"
-                                    heightIn="2"
-                                    injClass="min-h-11"
-                                    disabled={uploading}
-                                    onclick={() => remove(item)}
-                                    ><span class="sr-only">{item.file?.name} </span>선택 해제</Button
-                                >
-                            {/if}
-                        </div>
-                    {/snippet}
-                </ImageList>
-                <!-- STDF ImageList는 파일 입력을 그리지 않으므로 숨긴 입력으로 고른 파일을 넘긴다. -->
-                <input
-                    bind:this={picker}
-                    type="file"
-                    accept=".rofl"
-                    multiple={max > 1}
-                    hidden
-                    onchange={(event) => {
-                        selectionError = '';
-                        blueTeamConfirmed = false;
-                        list?.addFiles([...(event.currentTarget.files ?? [])]);
-                        event.currentTarget.value = '';
-                    }}
-                />
-                {#if selectionError}<p role="alert" class="text-sm text-error">{selectionError}</p>{/if}
-                {#if refreshRequired}<p role="alert" class="text-sm">
-                        닫으면 현재 경기 상태를 다시 확인해요.
-                    </p>{/if}
-            </div>
-            <footer class="flex justify-end gap-2 border-t border-border px-5 py-3">
-                <Button
-                    fill="text"
-                    size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="min-h-11 px-4 text-sm"
-                    disabled={uploading}
-                    onclick={close}>닫기</Button
-                >
-                <Button
-                    size="auto"
-                    heightOut="0"
-                    heightIn="2"
-                    injClass="min-h-11 px-5 text-sm"
-                    disabled={!waiting.length ||
-                        refreshRequired ||
-                        Boolean(uploadContext && (!blueTeamSlot || !blueTeamConfirmed))}
-                    loading={uploading ? {} : null}
-                    onclick={upload}>업로드</Button
-                >
-            </footer>
+                        </span>
+                        {#if item.status !== 'success'}
+                            <Button
+                                variant="quiet"
+                                size="sm"
+                                disabled={uploading}
+                                injClass="shrink-0"
+                                onclick={() => remove(item)}
+                                ><span class="sr-only">{item.file.name} </span>선택 해제</Button
+                            >
+                        {/if}
+                    </li>
+                {/each}
+            </ul>
+        {/if}
+
+        {#if selectionError}<p role="alert" class="text-sm text-error">{selectionError}</p>{/if}
+        {#if refreshRequired}<p role="alert" class="text-sm">닫으면 현재 경기 상태를 다시 확인해요.</p>{/if}
+    </div>
+
+    {#snippet footer()}
+        <div class="flex justify-end gap-2">
+            <Button
+                variant="primary"
+                disabled={!waiting.length ||
+                    refreshRequired ||
+                    Boolean(uploadContext && (!blueTeamSlot || !blueTeamConfirmed))}
+                loading={uploading}
+                onclick={upload}>업로드</Button
+            >
         </div>
-    </Popup>
-</div>
+    {/snippet}
+</Dialog>

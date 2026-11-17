@@ -2,12 +2,13 @@
     import { enhance, type SubmitFunction } from '$app/forms';
     import { navigating, page } from '$app/state';
     import { tick } from 'svelte';
-    import { Button, Input } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import type { ServiceAdminOverview } from '#lib/features/service-admin.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { inputFeedback, inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
+    import { nonSubmitButtons } from '#lib/ui/form.ts';
 
     type Props = {
         overview: ServiceAdminOverview;
@@ -155,14 +156,12 @@
                     <input type="hidden" name="userId" value={admin.userId ?? ''} />
                     <input type="hidden" name="enabled" value="false" />
                     <Button
+                        variant="secondary"
                         type="submit"
-                        fill="lineLight"
                         size="auto"
-                        heightOut="0"
-                        heightIn="2"
                         injClass="min-h-12 px-3 text-sm"
                         disabled={locked || lastAdmin || !admin.userId}
-                        loading={busy && !granting && busyTarget === admin.userId ? {} : null}
+                        loading={busy && !granting && busyTarget === admin.userId}
                     >
                         권한 해제<span class="sr-only"> {admin.displayName} ({admin.userId})</span>
                     </Button>
@@ -183,35 +182,26 @@
         class="flex min-w-0 flex-col gap-3"
     >
         <input type="hidden" name="enabled" value="true" />
-        <div {@attach inputLabel('Discord 사용자 ID')} {@attach inputFeedback(inputError, `${id}-id-error`)}>
-            <Input
-                title="Discord 사용자 ID"
-                titlePosition="out"
-                placeholder="예: 970000000000000001"
-                type="text"
-                inputmode="numeric"
-                autocomplete={false}
-                bind:value={targetId}
-                maxlength={20}
-                required
-                disabled={locked}
-                state={inputError ? 'error' : 'theme'}
-                onchange={() => (inputError = '')}
-            />
-            {#if inputError}<p id={`${id}-id-error`} role="alert" class="mt-2 text-sm text-error">
-                    {inputError}
-                </p>{/if}
-        </div>
+        <TextField
+            label="Discord 사용자 ID"
+            placeholder="예: 970000000000000001"
+            autocomplete="off"
+            bind:value={targetId}
+            maxlength={20}
+            required
+            disabled={locked}
+            error={inputError}
+            oninput={() => (inputError = '')}
+        />
         <div class="flex flex-wrap items-center justify-between gap-3">
             <p class="text-sm text-text-muted">이 서비스에 로그인한 사용자를 지정할 수 있어요.</p>
             <Button
+                variant="primary"
                 type="submit"
                 size="auto"
-                heightOut="0"
-                heightIn="2"
                 injClass="min-h-12 w-full px-4 text-base sm:w-auto"
                 disabled={locked}
-                loading={busy && granting ? {} : null}>운영자 지정</Button
+                loading={busy && granting}>운영자 지정</Button
             >
         </div>
     </form>

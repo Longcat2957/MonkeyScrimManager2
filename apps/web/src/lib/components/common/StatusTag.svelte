@@ -1,17 +1,22 @@
 <script lang="ts">
-    import { Tag } from 'stdf';
-    import type { TagProps } from 'stdf';
+    import type { StatusState } from '#lib/ui/status.ts';
 
-    let { text, state }: { text: string; state: NonNullable<TagProps['state']> } = $props();
+    // 상태 라벨은 색과 함께 문구를 항상 보여 준다. 색만으로 의미를 전달하지 않는다.
+    let { text, state = 'neutral' }: { text: string; state?: StatusState } = $props();
+
+    const STATE: Record<StatusState, string> = {
+        theme: 'border-hex/60 bg-hex/10 text-hex',
+        success: 'border-success/50 bg-success/10 text-success',
+        warning: 'border-warning/50 bg-warning/10 text-warning',
+        error: 'border-error/50 bg-error/10 text-error',
+        info: 'border-info/50 bg-info/10 text-info',
+        neutral: 'border-brass-line bg-bg-highlight text-text-muted dark:bg-bg-highlight-dark'
+    };
 </script>
 
-<!--
-	STDF Tag는 동작이 없어도 항상 role="button" tabindex="0"이라 링크·버튼 안에서 조작 요소가 중첩된다.
-	모양은 STDF Tag를 그대로 쓰고 inert로 조작 대상에서 빼며, 문구는 보조기기용 텍스트로 따로 제공한다.
--->
-<span class="inline-flex">
-    <span class="sr-only">{text}</span>
-    <span inert aria-hidden="true" class="inline-flex">
-        <Tag {text} {state} fill="light" size="sm" />
-    </span>
-</span>
+<span
+    class={[
+        'inline-flex min-h-6 items-center whitespace-nowrap rounded-(--radius-small) border px-2 py-0.5 text-xs leading-tight font-semibold',
+        STATE[state]
+    ]}>{text}</span
+>

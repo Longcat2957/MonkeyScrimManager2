@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { Button, Loading } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import Button from '#lib/components/common/Button.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import MatchTable from '#lib/components/matches/MatchTable.svelte';
     import MatchFilters from '#lib/components/matches/MatchFilters.svelte';
     import type { MatchListItem } from '#lib/features/matches/types.ts';
@@ -51,7 +52,7 @@
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h1 class="flex items-center gap-2 text-2xl font-semibold">
             경기 기록
-            {#if changing}<Loading type="1_0" height="6" width="6" />{/if}
+            {#if changing}<Spinner label="경기 목록 불러오는 중" />{/if}
         </h1>
     </div>
 
@@ -102,7 +103,7 @@
             >
                 {#snippet footer()}
                     {#if data.doneTotal > data.pageSize}
-                        <div class="border-t border-border py-2">
+                        <div class="border-t border-brass-line py-2">
                             <PageNav
                                 total={data.doneTotal}
                                 pageSize={data.pageSize}
@@ -111,13 +112,10 @@
                             />
                         </div>
                     {:else if data.doneTotal > 0 && data.page > 1}
-                        <div class="flex justify-center border-t border-border py-2">
+                        <div class="flex justify-center border-t border-brass-line py-2">
                             <Button
                                 type="button"
-                                fill="text"
-                                size="auto"
-                                heightOut="0"
-                                heightIn="2"
+                                variant="quiet"
                                 injClass="min-h-12 px-3"
                                 onclick={() => navigate({ page: 1 })}>첫 페이지로</Button
                             >

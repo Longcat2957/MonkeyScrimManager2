@@ -1,69 +1,35 @@
 <script lang="ts">
-    import { onDestroy, tick } from 'svelte';
-    import { Button, CellGroup, ImageList, Input, Popup, toast } from 'stdf';
-    import type { ImageListItemProps } from 'stdf';
-    import { SERVICE_NAME } from '#lib/branding.ts';
-    import LinkCell from '#lib/components/common/LinkCell.svelte';
+    import Button from '#lib/components/common/Button.svelte';
+    import CheckboxField from '#lib/components/common/CheckboxField.svelte';
+    import Dialog from '#lib/components/common/Dialog.svelte';
+    import PageNav from '#lib/components/common/PageNav.svelte';
+    import RadioGroup from '#lib/components/common/RadioGroup.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
+    import SelectField from '#lib/components/common/SelectField.svelte';
+    import Skeleton from '#lib/components/common/Skeleton.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
-    import ScrimSummary from '#lib/components/scrims/ScrimSummary.svelte';
-    import { demoScrim, demoStatuses } from '#lib/mocks/component-demo/index.ts';
-    import { confirm } from '#lib/ui/confirm.ts';
-    import { inputFeedback, inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
-    import { overlay } from '#lib/ui/overlay.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
+    import SwitchCell from '#lib/components/common/SwitchCell.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
+    import { SERVICE_NAME } from '#lib/branding.ts';
 
-    let popupOpen = $state(false);
-    let title = $state('');
-    let titleError = $state('');
-    let confirmResult = $state('');
-    let files: ImageListItemProps[] = $state([]);
-    let imageList = $state<ImageList>();
-    let picker = $state<HTMLInputElement>();
-    let form = $state<HTMLFormElement>();
-    let fileError = $state('');
-    let actionResult = $state('');
-    let retryAttempts = $state(0);
-    let recovered = $state(false);
-    let popupPosition = $state<'center' | 'bottom'>('bottom');
-    const id = $props.id();
+    let text = $state('');
+    let choice = $state('one');
+    let checked = $state(false);
+    let radio = $state('a');
+    let toggle = $state(true);
+    let dialogOpen = $state(false);
+    let result = $state('');
+    let page = $state(1);
 
-    $effect(() => {
-        if (!popupOpen) popupPosition = desktop.current ? 'center' : 'bottom';
-    });
-
-    onDestroy(() => {
-        for (const item of files) if (item.url) URL.revokeObjectURL(item.url);
-    });
-
-    function removeFile(item: ImageListItemProps) {
-        if (item.url) URL.revokeObjectURL(item.url);
-        files = files.filter((file) => file.id !== item.id);
-        fileError = '';
-    }
-
-    async function retryDemo() {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        retryAttempts++;
-        if (retryAttempts === 1) throw new Error('재시도 실패 확인');
-        recovered = true;
-    }
-
-    async function submit(event: SubmitEvent) {
-        event.preventDefault();
-        titleError = title.trim() ? '' : '제목을 입력해 주세요';
-        if (titleError) {
-            await tick();
-            form?.querySelector('input')?.focus();
-            return;
-        }
-        popupOpen = false;
-        toast.success('저장했어요');
-    }
-
-    async function askConfirm() {
-        confirmResult = (await confirm('이 작업을 진행할까요?', '확인')) ? '확인함' : '취소함';
-    }
+    const statuses = [
+        { text: '모집 중', state: 'theme' },
+        { text: '완료', state: 'success' },
+        { text: '대기', state: 'warning' },
+        { text: '실패', state: 'error' },
+        { text: '안내', state: 'info' },
+        { text: '없음', state: 'neutral' }
+    ] as const;
 </script>
 
 <svelte:head>
@@ -72,191 +38,85 @@
 
 <h1 class="text-2xl font-semibold">컴포넌트 테스트</h1>
 
-<div class="mt-8 flex flex-col gap-12">
-    <section class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold">ScrimSummary</h2>
-        <ScrimSummary scrim={demoScrim} headingLevel={3} />
+<div class="mt-8 flex flex-col gap-6">
+    <section class="hex-panel flex flex-col gap-4 p-4">
+        <h2 class="text-lg font-semibold">Button</h2>
+        <div class="flex flex-wrap items-center gap-2">
+            <Button variant="primary" onclick={() => (result = '주 작업')}>주 작업</Button>
+            <Button variant="secondary" onclick={() => (result = '보조 작업')}>보조 작업</Button>
+            <Button variant="quiet" onclick={() => (result = '조용한 작업')}>조용한 작업</Button>
+            <Button variant="danger" onclick={() => (result = '위험 작업')}>위험 작업</Button>
+            <Button variant="primary" loading>저장 중</Button>
+            <Button variant="secondary" disabled>비활성</Button>
+        </div>
+        {#if result}<p role="status" class="text-sm">{result}</p>{/if}
     </section>
 
-    <section class="flex flex-col gap-4">
-        <h2 id="status-demo" tabindex="-1" class="text-lg font-semibold">상태 Tag</h2>
+    <section class="hex-panel flex flex-col gap-4 p-4">
+        <h2 class="text-lg font-semibold">입력</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <TextField label="제목" bind:value={text} placeholder="예: 10월 정기 내전" maxlength={50} />
+            <TextField label="오류 예시" value="잘못된 값" error="형식을 확인해 주세요" />
+            <SelectField
+                label="선택"
+                bind:value={choice}
+                options={[
+                    { value: 'one', label: '첫째' },
+                    { value: 'two', label: '둘째' }
+                ]}
+            />
+            <div class="flex flex-col gap-2">
+                <CheckboxField label="동의" bind:checked hint="필수 항목이에요" />
+                <RadioGroup
+                    legend="범위"
+                    name="scope"
+                    bind:value={radio}
+                    options={[
+                        { value: 'a', label: '전체' },
+                        { value: 'b', label: '내전만' }
+                    ]}
+                />
+            </div>
+        </div>
+        <div class="rounded-(--radius-box) border border-brass-line">
+            <SwitchCell title="알림 받기" subTitle="새 내전이 열리면 알려 줘요" bind:active={toggle} />
+        </div>
+    </section>
+
+    <section class="hex-panel flex flex-col gap-4 p-4">
+        <h2 class="text-lg font-semibold">상태</h2>
         <div class="flex flex-wrap gap-2">
-            {#each demoStatuses as status (status.key)}
+            {#each statuses as status (status.text)}
                 <StatusTag text={status.text} state={status.state} />
             {/each}
         </div>
     </section>
 
-    <section class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold">LinkCell</h2>
-        <CellGroup my="0" mx="0" shadow="none">
-            <ul>
-                <li>
-                    <LinkCell
-                        href="#status-demo"
-                        title="상태 Tag 예제로 이동"
-                        subTitle="모집·편성·대진·종료 상태"
-                        line
-                        info="신청함"
-                    >
-                        {#snippet detailChild()}<StatusTag text="모집 중" state="theme" />{/snippet}
-                    </LinkCell>
-                </li>
-                <li><LinkCell href="#section-state-demo" title="SectionState 예제로 이동" /></li>
-            </ul>
-        </CellGroup>
+    <section class="hex-panel flex flex-col gap-4 p-4">
+        <h2 class="text-lg font-semibold">Dialog</h2>
+        <div>
+            <Button variant="secondary" onclick={() => (dialogOpen = true)}>대화상자 열기</Button>
+        </div>
     </section>
 
-    <section class="flex flex-col gap-4">
-        <h2 id="section-state-demo" tabindex="-1" class="text-lg font-semibold">SectionState</h2>
-        <SectionState state="loading" />
+    <section class="hex-panel flex flex-col gap-4 p-4">
+        <h2 class="text-lg font-semibold">불러오기</h2>
+        <Spinner />
+        <Skeleton rows={2} />
         <SectionState state="empty" message="아직 내전이 없어요" />
-        {#if recovered}
-            <p role="status" class="text-sm text-success">목록을 다시 불러왔어요</p>
-        {:else}
-            <SectionState state="error" message="목록을 불러오지 못했어요" onretry={retryDemo} />
-        {/if}
     </section>
 
-    <section class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold">Button</h2>
-        <div class="flex flex-wrap items-center gap-2">
-            <Button
-                size="auto"
-                heightOut="0"
-                injClass="px-4"
-                onclick={() => (actionResult = '주 작업 버튼을 눌렀어요')}>주 작업</Button
-            >
-            <Button
-                fill="lineLight"
-                size="auto"
-                heightOut="0"
-                injClass="px-4"
-                onclick={() => (actionResult = '보조 작업 버튼을 눌렀어요')}>보조 작업</Button
-            >
-            <Button
-                fill="textState"
-                state="error"
-                size="auto"
-                heightOut="0"
-                injClass="px-4"
-                onclick={() => (actionResult = '위험 작업 버튼을 눌렀어요')}>위험 작업</Button
-            >
-            <Button size="auto" heightOut="0" injClass="px-4" loading={{}}>저장 중</Button>
-            <Button size="auto" heightOut="0" injClass="px-4" disabled>비활성</Button>
-        </div>
-        {#if actionResult}<p role="status" class="text-sm">{actionResult}</p>{/if}
-    </section>
-
-    <section class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold">오버레이</h2>
-        <p class="text-sm opacity-70">
-            포커스 이동, Escape 닫기, 배경 inert, 닫은 뒤 포커스 복귀를 확인한다.
-        </p>
-        <div class="flex flex-wrap items-center gap-2">
-            <Button
-                fill="lineLight"
-                size="auto"
-                heightOut="0"
-                injClass="px-4"
-                onclick={() => (popupOpen = true)}
-            >
-                입력 팝업 열기
-            </Button>
-            <Button fill="lineLight" size="auto" heightOut="0" injClass="px-4" onclick={askConfirm}
-                >확인 창 열기</Button
-            >
-            {#if confirmResult}<span role="status" class="text-sm">{confirmResult}</span>{/if}
-        </div>
-    </section>
-
-    <section class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold">ImageList (.rofl)</h2>
-        <ImageList
-            bind:this={imageList}
-            bind:value={files}
-            max={3}
-            radius="md"
-            previewable={false}
-            columns={3}
-            injClass="max-w-xl grid-cols-2! sm:grid-cols-3!"
-            aspectRatio={[3, 2]}
-            onclickUpload={() => picker?.click()}
-            onexceed={() => (fileError = '파일은 3개까지 선택할 수 있어요')}
-            onoversized={() => (fileError = '10MB 이하의 파일을 골라 주세요')}
-        >
-            {#snippet uploadChild()}
-                <span class="flex h-full items-center justify-center p-2 text-xs font-semibold"
-                    >ROFL 선택</span
-                >
-            {/snippet}
-            {#snippet itemChild(item)}
-                <span class="flex h-full flex-col justify-between gap-1 p-2">
-                    <span class="line-clamp-2 text-xs break-all">{item.file?.name ?? item.id}</span>
-                    <Button
-                        fill="text"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="1"
-                        injClass="min-h-11 min-w-11 self-end px-2 text-xs"
-                        onclick={() => removeFile(item)}
-                        ><span class="sr-only">{item.file?.name} </span>선택 해제</Button
-                    >
-                </span>
-            {/snippet}
-        </ImageList>
-        <input
-            bind:this={picker}
-            type="file"
-            accept=".rofl"
-            multiple
-            hidden
-            onchange={(event) => {
-                fileError = '';
-                imageList?.addFiles([...(event.currentTarget.files ?? [])]);
-                event.currentTarget.value = '';
-            }}
-        />
-        {#if fileError}<p role="alert" class="text-sm text-error">{fileError}</p>{/if}
+    <section class="hex-panel flex flex-col gap-4 p-4">
+        <h2 class="text-lg font-semibold">PageNav</h2>
+        <PageNav total={42} pageSize={10} current={page} onchange={(next) => (page = next)} />
     </section>
 </div>
 
-<div {@attach overlay({ open: popupOpen, label: '모집 만들기', onclose: () => (popupOpen = false) })}>
-    <Popup bind:visible={popupOpen} position={popupPosition} size={0} maskClosable={false} transparent>
-        <form
-            bind:this={form}
-            class="mx-auto flex w-full max-w-lg flex-col gap-4 rounded-t-(--radius-box) bg-bg-surface p-6 lg:rounded-(--radius-box) dark:bg-bg-surface-dark"
-            onsubmit={submit}
-            novalidate
-            {@attach nonSubmitButtons}
-        >
-            <h2 class="text-lg font-semibold">모집 만들기</h2>
-            <div {@attach inputLabel('제목')} {@attach inputFeedback(titleError, `${id}-title-error`)}>
-                <Input
-                    title="제목"
-                    titlePosition="out"
-                    bind:value={title}
-                    placeholder="예: 10월 정기 내전"
-                    state={titleError ? 'error' : 'theme'}
-                    required
-                    maxlength={50}
-                />{#if titleError}<p id={`${id}-title-error`} role="alert" class="text-sm text-error">
-                        {titleError}
-                    </p>{/if}
-            </div>
-            <div class="flex justify-end gap-2">
-                <Button
-                    type="button"
-                    fill="lineLight"
-                    size="auto"
-                    heightOut="0"
-                    injClass="px-4"
-                    onclick={() => (popupOpen = false)}
-                >
-                    취소
-                </Button>
-                <Button type="submit" size="auto" heightOut="0" injClass="px-4">만들기</Button>
-            </div>
-        </form>
-    </Popup>
-</div>
+<Dialog bind:open={dialogOpen} title="대화상자">
+    <p class="leading-7">네이티브 dialog가 포커스와 Escape 닫기를 처리해요.</p>
+    {#snippet footer()}
+        <div class="flex justify-end">
+            <Button variant="primary" onclick={() => (dialogOpen = false)}>확인</Button>
+        </div>
+    {/snippet}
+</Dialog>

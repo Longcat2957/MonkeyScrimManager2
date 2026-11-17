@@ -1,14 +1,15 @@
 <script lang="ts">
-    import { Loading, toast } from 'stdf';
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
+    import Button from '#lib/components/common/Button.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { formationPath } from '#lib/features/scrims/paths.ts';
     import type { FormationMethod, ScrimStatus } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { toast } from '#lib/ui/toast.ts';
 
-    // 운영자가 모집 중·편성 중에 편성 방식을 고르거나 바꾼다. 편성 중이면 고른 방식의 작업판으로 간다.
+    // 운영자가 모집 중·편성 중에 편성 방식을 고르거나 바꾼다.
     let { method, status }: { method: FormationMethod | null; status: ScrimStatus } = $props();
 
     const METHODS: { name: FormationMethod; title: string; description: string }[] = [
@@ -39,36 +40,35 @@
 </script>
 
 <section
+    class="hex-panel flex flex-col gap-3 p-3.5"
     aria-labelledby="formation-method"
     aria-busy={Boolean(pending)}
-    class="flex flex-col gap-3 px-4 py-3"
 >
-    <h2 id="formation-method" class="text-sm font-semibold">편성 방식</h2>
-    <!-- 두 방식을 같은 크기의 선택 칸으로 1px 경계에 붙여 둔다. 고른 방식은 테두리와 태그로 표시한다. -->
-    <div class="grid gap-px rounded-(--radius-form) border border-border bg-border sm:grid-cols-2">
-        {#each METHODS as item, index (item.name)}
+    <h2 id="formation-method" class="text-[0.9375rem] font-semibold">편성 방식</h2>
+    <div class="flex flex-col gap-2">
+        {#each METHODS as item (item.name)}
             {@const selected = item.name === method}
             <button
                 type="button"
                 aria-pressed={selected}
                 disabled={Boolean(pending)}
                 class={[
-                    'flex min-h-24 flex-col items-start gap-1.5 p-4 text-left transition disabled:cursor-wait',
-                    index === 0
-                        ? 'rounded-t-(--radius-form) sm:rounded-l-(--radius-form) sm:rounded-tr-none'
-                        : 'rounded-b-(--radius-form) sm:rounded-r-(--radius-form) sm:rounded-bl-none',
+                    'flex flex-col items-start gap-1 rounded-(--radius-form) border px-3 py-3 text-left transition-colors disabled:cursor-wait',
                     selected
-                        ? 'bg-bg-overlay ring-2 ring-primary ring-inset dark:bg-bg-overlay-dark dark:ring-dark'
-                        : 'bg-bg-surface enabled:hover:bg-bg-overlay dark:bg-bg-surface-dark dark:enabled:hover:bg-bg-overlay-dark'
+                        ? 'border-hex bg-hex/10 text-hex'
+                        : 'border-brass-line bg-bg-surface hover:border-hex dark:bg-bg-surface-dark'
                 ]}
                 onclick={() => choose(item.name)}
             >
-                <span class="flex items-center gap-2 text-base font-semibold">
+                <span class="flex items-center gap-2 text-sm font-semibold">
                     {item.title}
                     {#if selected}<StatusTag text="선택됨" state="theme" />{/if}
-                    {#if pending === item.name}<Loading type="1_0" height="6" width="6" />{/if}
+                    {#if pending === item.name}<span
+                            class="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                            aria-hidden="true"
+                        ></span>{/if}
                 </span>
-                <span class="text-sm opacity-70">{item.description}</span>
+                <span class="text-xs text-text-muted">{item.description}</span>
             </button>
         {/each}
     </div>

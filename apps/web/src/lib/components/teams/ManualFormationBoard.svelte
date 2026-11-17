@@ -1,7 +1,9 @@
 <script lang="ts">
     import { tick } from 'svelte';
-    import { Button, Loading, toast } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
+    import { toast } from '#lib/ui/toast.ts';
     import BracketFormatControl from '#lib/components/bracket/BracketFormatControl.svelte';
     import { bestOfLabel, type BestOf } from '#lib/features/scrims/bracket.ts';
     import {
@@ -146,7 +148,7 @@
 <section
     aria-labelledby="manual-formation"
     aria-busy={pending > 0 || busy}
-    class="manual-board w-full min-w-0 overflow-clip rounded-(--radius-box) border border-border bg-border"
+    class="hex-panel manual-board w-full min-w-0 overflow-clip"
     style:--selection-height={`${selectedId ? selectionHeight : 0}px`}
 >
     <!-- 도구 줄 -->
@@ -162,7 +164,7 @@
                     <StatusTag text="편성 중" state="info" />
                 {/if}
                 {#if pending > 0 || busy}
-                    <Loading type="1_0" height="6" width="6" />
+                    <Spinner />
                 {/if}
             </div>
             <p class="truncate text-sm font-semibold tabular-nums">
@@ -172,10 +174,8 @@
         <div class="flex flex-wrap items-center gap-1.5">
             <!-- 시너지·라인 상대 전적 레일을 펼친다. -->
             <Button
-                fill={details ? 'lineLight' : 'text'}
+                variant={details ? 'secondary' : 'quiet'}
                 size="auto"
-                heightOut="0"
-                heightIn="2"
                 injClass="min-h-11 px-3 text-sm"
                 onclick={() => (details = !details)}
             >
@@ -194,18 +194,15 @@
                 {/if}
                 <ChangeMethodButton disabled={busy || pending > 0} />
                 <Button
-                    fill="text"
+                    variant="quiet"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
                     injClass="min-h-11 px-3 text-sm"
                     disabled={placed === 0 || busy || pending > 0}
                     onclick={reset}>초기화</Button
                 >
                 <Button
+                    variant="primary"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
                     injClass="min-h-11 px-4 text-sm"
                     disabled={Boolean(confirmBlocked) || busy || pending > 0}
                     onclick={confirmFormation}
@@ -235,10 +232,8 @@
                     <span class="text-xs text-text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
                 </span>
                 <Button
-                    fill="text"
+                    variant="quiet"
                     size="auto"
-                    heightOut="0"
-                    heightIn="2"
                     injClass="min-h-11 shrink-0 px-2 text-sm"
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >

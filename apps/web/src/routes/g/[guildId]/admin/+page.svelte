@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { Button, Input, toast } from 'stdf';
-    import type { ActionProps } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
+    import type { MenuAction } from '#lib/components/common/menu.ts';
     import { goto } from '$app/navigation';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
@@ -15,7 +16,8 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { DiscordChannel, GuildDiscordSettingKey } from '#lib/features/guild/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
-    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
+    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { toast } from '#lib/ui/toast.ts';
     import type { PageProps } from './$types';
 
     let { data, form }: PageProps = $props();
@@ -75,7 +77,7 @@
     }
 
     const NONE = '설정 안 함';
-    const CURRENT = { style: 'theme', desc: '현재 설정', disabled: true } as const;
+    const CURRENT = { current: true, desc: '현재 설정', disabled: true } as const;
     const channelName = (channel: DiscordChannel) =>
         `${channel.category ? `${channel.category} / ` : ''}#${channel.name}`;
 
@@ -83,9 +85,9 @@
     function choices<T extends { id: string }>(
         items: T[],
         current: string | null,
-        toAction: (item: T) => ActionProps,
-        none: Partial<ActionProps> = {}
-    ): ActionProps[] {
+        toAction: (item: T) => MenuAction,
+        none: Partial<MenuAction> = {}
+    ): MenuAction[] {
         return [
             { ...none, content: NONE, ...(current === null ? CURRENT : {}) },
             ...items.map((item) => ({ ...toAction(item), ...(item.id === current ? CURRENT : {}) }))
@@ -165,7 +167,7 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-6">
     <h1 class="text-2xl font-semibold">서버 관리</h1>
 
-    <!-- STDF Tab은 탭 역할을 알리지 않으므로 묶음 이름을 붙이고, 선택한 내용은 영역 제목으로 알린다. -->
+    <!-- 탭 묶음에 이름을 붙이고, 선택한 내용은 영역 제목으로 알린다. -->
     <div role="group" aria-label="관리 항목" class="border-b border-border">
         <SelectionTabs labels={TABS.map(({ text }) => ({ text }))} {active} onclickTab={selectTab} />
     </div>
@@ -222,19 +224,16 @@
                 aria-label="멤버 검색"
                 aria-busy={Boolean(navigating.to)}
                 {@attach nonSubmitButtons}
-                {@attach inputLabel('멤버 이름 검색')}
-                class="-mx-2 -my-1"
                 onsubmit={(event) => {
                     event.preventDefault();
                     navigate({ q: query });
                 }}
             >
-                <Input
+                <TextField
+                    label="멤버 이름 검색"
                     type="search"
                     placeholder="멤버 이름 검색"
                     bind:value={query}
-                    clear
-                    onclear={() => navigate({ q: '' })}
                     maxlength={50}
                 />
             </form>
@@ -273,10 +272,8 @@
                                 </span>
                             </span>
                             <Button
-                                fill="lineLight"
+                                variant="secondary"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="2"
                                 injClass="ml-auto min-h-11 px-3 text-sm"
                                 onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
                             >

@@ -1,23 +1,10 @@
 <script lang="ts">
     import { dev } from '$app/env';
     import { resolve } from '$app/paths';
-    import { Steps } from 'stdf';
-    import type { StepsItemProps } from 'stdf';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
-
-    // 진행 상태가 아니라 흐름 설명이다. 회색 '예정' 모양은 읽기 어려워 모든 단계를 완료 모양(테마색)으로 그린다.
-    const FLOW: StepsItemProps[] = [
-        ['모집', 'Discord 모집 글에서 참가 신청을 받아요'],
-        ['팀 편성', '운영자가 직접 나누거나 경매로 팀을 꾸려요'],
-        ['대진', '팀을 준결승·결승 자리에 배치하고 경기 방식을 정해요'],
-        ['ROFL 기록', '리플레이 파일을 올리면 결과와 전적이 바로 쌓여요']
-    ].map(([title, desc], index) => {
-        const step = { title, desc, bar: { type: 'string' as const, content: String(index + 1) } };
-        return { step, finishStep: step };
-    });
 
     // 개발 화면으로 이동하기 위한 임시 경로 값이다.
     const guildId = 'devGuild001';
@@ -91,6 +78,10 @@
             ]
         }
     ];
+    const firstGuild = $derived(data.guilds[0]);
+    const loginHref = `${resolve('/auth/discord')}?returnTo=${encodeURIComponent('/')}`;
+    const CTA_CLASS =
+        'rounded-(--radius-form) inline-flex min-h-12 items-center bg-hex px-6 text-base font-semibold text-hex-ink hover:bg-hex-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hex';
 </script>
 
 <svelte:head>
@@ -98,97 +89,85 @@
     <meta name="description" content="리그 오브 레전드 내전 기록 관리" />
 </svelte:head>
 
-<!-- 로그인·서버 선택은 헤더의 한 조작으로 유지하고, 본문에서는 현재 상태에 맞는 진입 순서를 안내한다. -->
-<div class="grid max-w-6xl gap-10 lg:grid-cols-5 lg:gap-16">
-    <section aria-labelledby="intro" class="min-w-0 lg:col-span-3">
-        <h1 id="intro" class="max-w-3xl text-3xl font-bold text-balance md:text-4xl">
-            디스코드 내전, 모집부터 전적까지
+<div class="mx-auto flex w-full max-w-4xl flex-col gap-10">
+    <section aria-labelledby="intro" class="border-y border-brass-line py-10 md:py-14">
+        <h1 id="intro" class="font-brand text-4xl font-bold tracking-wide text-balance md:text-6xl">
+            {SERVICE_NAME}
         </h1>
-        <p class="mt-4 max-w-3xl text-lg leading-relaxed text-pretty text-text-muted">
-            {SERVICE_NAME}은 디스코드 서버에서 함께하는 리그 오브 레전드 내전을 위한 운영 도구예요.
+        <p class="mt-4 max-w-2xl text-lg leading-relaxed text-pretty text-text-muted">
+            리그 오브 레전드 내전의 모집·팀 편성·대진·기록을 Discord 서버에서 관리하는 도구예요.
         </p>
 
-        <div class="mt-8 border-t border-border pt-6">
-            <h2 class="text-xl font-semibold">내전이 있는 서버에서 시작해요</h2>
-            <p class="mt-3 max-w-prose leading-7 text-pretty">
-                {#if !data.authenticated}
-                    화면 위 <strong>로그인</strong>으로 Discord 계정에 로그인한 뒤,
-                    <strong>서버 선택</strong>에서 함께할 서버를 골라요.
-                {:else if data.guildListError}
-                    화면을 새로고친 뒤 상단 <strong>서버 선택</strong>을 다시 열어 주세요.
-                {:else if !data.guilds.length}
-                    서버 선택에는 봇이 참여 중이고 내가 소속된 Discord 서버가 보여요. 함께할 서버의 운영자에게
-                    이용할 서버를 확인해 주세요.
-                {:else}
-                    상단 <strong>서버 선택</strong>에서 서버를 연 뒤, <strong>내전</strong> 메뉴에서 참가할 모집을
-                    찾아요. 서버 운영자는 같은 목록에서 모집을 만들 수 있어요.
-                {/if}
+        <div class="mt-8 flex flex-wrap items-center gap-4">
+            {#if !data.authenticated}
+                <a
+                    href={loginHref}
+                    data-sveltekit-reload
+                    data-sveltekit-preload-data="false"
+                    class={CTA_CLASS}>Discord로 로그인</a
+                >
+            {:else if firstGuild}
+                <a href={resolve('/g/[guildId]', { guildId: firstGuild.id })} class={CTA_CLASS}>서버로 이동</a
+                >
+            {/if}
+        </div>
+
+        {#if data.guildListError}
+            <p class="mt-4 max-w-prose text-sm leading-6 text-pretty text-error">
+                서버 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
             </p>
+        {:else if data.authenticated && !firstGuild}
             <p class="mt-4 max-w-prose text-sm leading-6 text-pretty text-text-muted">
-                공유받은 서버·내전 주소는 로그인 없이 열어 진행 상황과 전적을 볼 수 있어요.
+                봇이 참여 중이고 내가 소속된 Discord 서버가 없어요. 서버 운영자에게 이용할 서버를 확인해
+                주세요.
             </p>
-        </div>
+        {/if}
     </section>
 
-    <!-- STDF의 세로 Steps로 실제 진행 순서를 유지하고 시작 안내와 운영 흐름을 구분한다. -->
-    <section class="home-flow min-w-0 lg:col-span-2" aria-labelledby="flow-title">
-        <h2 id="flow-title" class="text-lg font-semibold">내전은 이렇게 이어져요</h2>
-        <div class="mt-3">
-            <Steps steps={FLOW} current={FLOW.length + 1} radius="full" vertical />
-        </div>
-    </section>
-</div>
-
-{#if dev}
-    <nav aria-labelledby="dev-shortcuts" class="mt-12 border-t border-border pt-6">
-        <h2 id="dev-shortcuts" class="text-lg font-semibold">개발 바로가기</h2>
-        <div class="mt-6 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-            {#each shortcutGroups as group (group.title)}
-                <section class="min-w-0">
-                    <h3 class="font-semibold">{group.title}</h3>
-                    <ul class="mt-2 flex flex-col gap-1">
-                        {#each group.links as shortcut (shortcut.href)}
-                            <li class="min-w-0">
-                                <a
-                                    href={shortcut.href}
-                                    class="flex min-h-11 flex-col items-start gap-1 rounded-(--radius-small) py-2 focus-visible:outline-2 focus-visible:outline-offset-4"
-                                >
-                                    <span class="underline underline-offset-4">{shortcut.label}</span>
-                                    <code class="max-w-full text-xs leading-5 wrap-anywhere text-text-muted"
-                                        >{#each shortcut.href.split('/') as segment, index (index)}{#if index > 0}/<wbr
-                                                />{/if}{segment}{/each}</code
+    {#if dev}
+        <nav aria-labelledby="dev-shortcuts">
+            <h2 id="dev-shortcuts" class="text-lg font-semibold">개발 바로가기</h2>
+            <div class="mt-6 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+                {#each shortcutGroups as group (group.title)}
+                    <section class="min-w-0">
+                        <h3 class="font-semibold">{group.title}</h3>
+                        <ul class="mt-2 flex flex-col gap-1">
+                            {#each group.links as shortcut (shortcut.href)}
+                                <li class="min-w-0">
+                                    <a
+                                        href={shortcut.href}
+                                        class="flex min-h-11 flex-col items-start gap-1 rounded-(--radius-small) py-2 focus-visible:outline-2 focus-visible:outline-offset-4"
                                     >
-                                </a>
-                            </li>
-                        {/each}
-                    </ul>
-                </section>
-            {/each}
-        </div>
-    </nav>
+                                        <span class="underline underline-offset-4">{shortcut.label}</span>
+                                        <code
+                                            class="max-w-full text-xs leading-5 wrap-anywhere text-text-muted"
+                                            >{#each shortcut.href.split('/') as segment, index (index)}{#if index > 0}/<wbr
+                                                    />{/if}{segment}{/each}</code
+                                        >
+                                    </a>
+                                </li>
+                            {/each}
+                        </ul>
+                    </section>
+                {/each}
+            </div>
+        </nav>
 
-    <nav aria-label="개발 도구" class="mt-8 border-t border-border pt-6">
-        <ul class="flex flex-wrap gap-x-8 gap-y-2">
-            {#each devTools as tool (tool.href)}
-                <li>
-                    <a
-                        href={tool.href}
-                        data-sveltekit-preload-data="false"
-                        class="inline-flex min-h-11 flex-col items-start gap-1 rounded-(--radius-small) py-2 focus-visible:outline-2 focus-visible:outline-offset-4"
-                    >
-                        <span class="underline underline-offset-4">{tool.label}</span>
-                        <code class="text-xs leading-5 text-text-muted">{tool.href}</code>
-                    </a>
-                </li>
-            {/each}
-        </ul>
-    </nav>
-{/if}
-
-<style>
-    /* Steps의 설명은 고정 text-xs라 홈의 흐름 안내에서만 기존 보조 글자 크기로 높인다. */
-    .home-flow :global(.text-xs) {
-        font-size: var(--text-sm);
-        line-height: var(--text-sm--line-height);
-    }
-</style>
+        <nav aria-label="개발 도구" class="border-t border-brass-line pt-6">
+            <ul class="flex flex-wrap gap-x-8 gap-y-2">
+                {#each devTools as tool (tool.href)}
+                    <li>
+                        <a
+                            href={tool.href}
+                            data-sveltekit-preload-data="false"
+                            class="inline-flex min-h-11 flex-col items-start gap-1 rounded-(--radius-small) py-2 focus-visible:outline-2 focus-visible:outline-offset-4"
+                        >
+                            <span class="underline underline-offset-4">{tool.label}</span>
+                            <code class="text-xs leading-5 text-text-muted">{tool.href}</code>
+                        </a>
+                    </li>
+                {/each}
+            </ul>
+        </nav>
+    {/if}
+</div>

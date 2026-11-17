@@ -1,6 +1,7 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import { CONTACT_EMAIL, SERVICE_NAME, SERVICE_URL } from '#lib/branding.ts';
+    import { SERVICE_NAME, SERVICE_URL } from '#lib/branding.ts';
+    import { CONTACT_EMAIL } from '#lib/branding.ts';
 
     const serviceDomain = new URL(SERVICE_URL).hostname;
     const footerLinks = [
@@ -11,17 +12,13 @@
     ] as const;
 </script>
 
-<footer class="border-t border-border">
+<footer class="border-t border-brass-line bg-crown dark:bg-crown">
     <div
-        class="app-frame flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between md:px-10"
+        class="flex flex-col gap-2 px-4 py-3 text-text-primary sm:flex-row sm:items-center sm:justify-between md:px-6 dark:text-text-dark"
     >
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class="font-brand text-xl font-normal no-underline [font-synthesis:none]">
-                {SERVICE_NAME}
-            </span>
-            <span class="text-xs text-text-primary/60 dark:text-text-dark/60">
-                {serviceDomain}
-            </span>
+            <span class="font-brand text-lg font-bold tracking-wide">{SERVICE_NAME}</span>
+            <span class="text-xs text-text-muted">{serviceDomain}</span>
         </div>
 
         <nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-sm">
@@ -30,7 +27,7 @@
                     href={link.href}
                     class={[
                         'inline-flex min-h-11 min-w-11 items-center justify-center px-2 underline-offset-4 hover:underline',
-                        { 'font-semibold': link.href === resolve('/privacy') }
+                        link.href === resolve('/privacy') && 'font-semibold'
                     ]}
                 >
                     {link.label}

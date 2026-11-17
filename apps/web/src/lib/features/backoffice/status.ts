@@ -1,4 +1,4 @@
-import type { TagProps } from 'stdf';
+import type { StatusState } from '#lib/ui/status.ts';
 
 export type ServiceState = 'normal' | 'delayed' | 'down' | 'unconfigured';
 
@@ -18,10 +18,7 @@ export type ServiceStatus = { checkedAt: string; services: ServiceCheck[] };
 export type Probe<T> =
     { ok: true; value: T; latencyMs: number } | { ok: false; reason: 'unconfigured' | 'timeout' | 'error' };
 
-export const SERVICE_STATE_LABEL: Record<
-    ServiceState,
-    { text: string; state: NonNullable<TagProps['state']> }
-> = {
+export const SERVICE_STATE_LABEL: Record<ServiceState, { text: string; state: StatusState }> = {
     normal: { text: '정상', state: 'success' },
     delayed: { text: '지연', state: 'warning' },
     down: { text: '중단', state: 'error' },

@@ -1,16 +1,16 @@
 <script lang="ts">
     import { onMount, untrack } from 'svelte';
-    import { Button, Grid, Grids, Stepper, Switch } from 'stdf';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import Button from '#lib/components/common/Button.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
-    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
     import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
+    import SwitchCell from '#lib/components/common/SwitchCell.svelte';
     import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
     import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
     import LeaderboardTable, { type LeaderboardSortKey } from '#lib/components/stats/LeaderboardTable.svelte';
@@ -20,7 +20,6 @@
     import { fixed, integer } from '#lib/features/players/format.ts';
     import { formatDuration } from '#lib/features/matches/format.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
-    import { stepperLabels } from '#lib/ui/form.ts';
     import {
         normalizeStatsFilters,
         statsRequestKey,
@@ -237,6 +236,14 @@
         if (params.min !== undefined) url.searchParams.set('min', String(params.min));
         goto(url, { reset: false });
     }
+
+    // 증감은 1~50 범위로 제한하고, 값이 그대로면 조회하지 않는다.
+    function changeMin(next: number) {
+        const value = Math.min(50, Math.max(1, next));
+        if (value === minGames) return;
+        minGames = value;
+        navigate({ min: value });
+    }
 </script>
 
 <svelte:head>
@@ -279,29 +286,27 @@
 		]}
         <section aria-labelledby="kpis">
             <h2 id="kpis" class="sr-only">핵심 지표</h2>
-            <Grids cols={desktop.current ? '6' : '2'} gap="2" mx="0" my="0">
+            <div class={['grid gap-2', desktop.current ? 'grid-cols-6' : 'grid-cols-2']}>
                 {#each kpis as [label, value, note, tone, path] (label)}
-                    <Grid>
-                        <StatTile {label} {value} {note} {tone}>
-                            {#snippet icon()}<svg
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"><path d={path} /></svg
-                                >{/snippet}
-                        </StatTile>
-                    </Grid>
+                    <StatTile {label} {value} {note} {tone}>
+                        {#snippet icon()}<svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"><path d={path} /></svg
+                            >{/snippet}
+                    </StatTile>
                 {/each}
-            </Grids>
+            </div>
         </section>
 
         <!-- 포지션 필터는 업적·리더보드·챔피언에 함께 적용한다. -->
         <div class="flex items-center gap-2">
-            <div role="group" aria-label="포지션 필터" class="min-w-0 flex-1 border-b border-border">
+            <div role="group" aria-label="포지션 필터" class="min-w-0 flex-1 border-b border-brass-line">
                 <SelectionTabs
                     labels={FILTERS.map((filter) => ({ text: filter.text }))}
                     active={FILTERS.findIndex((filter) => filter.key === data.position)}
@@ -319,25 +324,17 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 id="achievements" class="text-lg font-semibold">업적</h2>
                         <div class="flex items-center gap-4 text-sm">
-                            <label class="flex min-h-11 cursor-pointer items-center gap-2">
-                                <span
-                                    >최근 10게임만<span class="sr-only"
-                                        >, {data.recent ? '켜짐' : '꺼짐'}</span
-                                    ></span
-                                >
-                                <Switch
+                            <div class="w-52 shrink-0">
+                                <SwitchCell
+                                    title="최근 10게임만"
                                     active={data.recent}
-                                    inside="state"
-                                    radius="full"
                                     onchange={(active) => navigate({ recent: active })}
                                 />
-                            </label>
+                            </div>
                             {#if data.achievements.length}
                                 <Button
-                                    fill="lineLight"
+                                    variant="secondary"
                                     size="auto"
-                                    heightOut="0"
-                                    heightIn="2"
                                     injClass="min-h-11 px-3 text-sm"
                                     onclick={() => (rankingOpen = true)}>업적별 순위</Button
                                 >
@@ -366,18 +363,26 @@
                     <h2 id="leaderboard" class="text-lg font-semibold">리더보드</h2>
                     <div class="flex items-center gap-3 text-sm">
                         <span id="min-games-label" class="opacity-70">최소 게임</span>
-                        <div
-                            role="group"
-                            aria-labelledby="min-games-label"
-                            {@attach stepperLabels('최소 게임')}
-                        >
-                            <Stepper
-                                bind:value={minGames}
-                                min={1}
-                                max={50}
-                                injClassBtn="min-h-11 min-w-11"
-                                onchange={(value) => navigate({ min: Number(value) })}
-                            />
+                        <div role="group" aria-labelledby="min-games-label" class="flex items-center gap-1">
+                            <button
+                                type="button"
+                                aria-label="최소 게임 줄이기"
+                                disabled={minGames <= 1}
+                                class="min-h-11 min-w-11 rounded-(--radius-small) border border-brass-line text-sm font-semibold disabled:opacity-40"
+                                onclick={() => changeMin(minGames - 1)}
+                            >
+                                −
+                            </button>
+                            <span class="min-w-8 text-center font-semibold tabular-nums">{minGames}</span>
+                            <button
+                                type="button"
+                                aria-label="최소 게임 늘리기"
+                                disabled={minGames >= 50}
+                                class="min-h-11 min-w-11 rounded-(--radius-small) border border-brass-line text-sm font-semibold disabled:opacity-40"
+                                onclick={() => changeMin(minGames + 1)}
+                            >
+                                +
+                            </button>
                         </div>
                         <span class="opacity-60 tabular-nums"
                             >{data.leaderboard.length}명 / {data.playerCount}명</span
@@ -406,7 +411,7 @@
                         role="region"
                         aria-labelledby="champion-stats-caption"
                         tabindex="0"
-                        class="relative overflow-x-auto rounded-(--radius-box) border border-border bg-bg-surface dark:bg-bg-surface-dark"
+                        class="hex-panel relative overflow-x-auto"
                     >
                         <table
                             class="w-full min-w-80 text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
@@ -414,8 +419,8 @@
                             <caption id="champion-stats-caption" class="sr-only"
                                 >챔피언별 픽·승률, 픽 많은 순</caption
                             >
-                            <thead class="text-xs opacity-60">
-                                <tr class="border-b border-border">
+                            <thead class="text-xs text-text-muted">
+                                <tr class="border-b border-brass-line">
                                     <th scope="col" class="px-4 py-2 text-left font-medium">챔피언</th>
                                     <th scope="col" class="px-4 py-2 text-right font-medium">픽</th>
                                     <th scope="col" class="px-4 py-2 text-right font-medium">승률</th>
@@ -424,7 +429,7 @@
                             </thead>
                             <tbody>
                                 {#each data.champions.slice((championPage - 1) * CHAMPION_PAGE, championPage * CHAMPION_PAGE) as record (record.champion.id)}
-                                    <tr class="border-b border-border last:border-b-0">
+                                    <tr class="border-b border-brass-line last:border-b-0">
                                         <th scope="row" class="px-4 py-2 text-left font-medium">
                                             <span class="flex items-center gap-3">
                                                 {#if record.champion.iconUrl}<img

@@ -4,7 +4,8 @@
     import { enhance, type SubmitFunction } from '$app/forms';
     import { invalidate } from '$app/navigation';
     import { navigating } from '$app/state';
-    import { Button, Input } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
@@ -15,7 +16,7 @@
         type ChampionPreferenceSelections,
         type MyChampionPreferences
     } from '#lib/features/me/champions.ts';
-    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
+    import { nonSubmitButtons } from '#lib/ui/form.ts';
 
     type Props = {
         value: MyChampionPreferences;
@@ -265,10 +266,10 @@
         <fieldset disabled={locked} class="min-w-0">
             <legend class="sr-only">챔피언 검색 및 추가</legend>
             <search aria-label="선호 챔피언 검색" class="flex min-w-0 flex-col gap-3">
-                <div {@attach inputLabel('챔피언 검색')} {@attach searchInput}>
-                    <Input
+                <div {@attach searchInput}>
+                    <TextField
+                        label="챔피언 검색"
                         type="search"
-                        title="챔피언 검색"
                         placeholder="한글 또는 영문 이름"
                         bind:value={query}
                         disabled={locked || !value.catalog.length}
@@ -279,12 +280,9 @@
                         {#each results.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as champion (champion.championId)}
                             <li class="min-w-0">
                                 <Button
-                                    type="button"
-                                    fill="lineLight"
+                                    variant="secondary"
                                     size="full"
-                                    heightOut="0"
-                                    heightIn="2"
-                                    injClass="min-h-12 justify-start gap-2 px-2 text-sm"
+                                    injClass="min-h-12 justify-start gap-2 px-2 text-sm !whitespace-normal"
                                     disabled={locked || selected.length >= MAX_PREFERRED_CHAMPIONS}
                                     onclick={() => void add(champion.championId)}
                                 >
@@ -350,33 +348,24 @@
                         >
                         <div class="flex shrink-0 gap-1">
                             <Button
-                                type="button"
-                                fill="text"
+                                variant="quiet"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="1"
                                 injClass="min-h-11 min-w-11 px-2 text-sm"
                                 disabled={locked || index === 0}
                                 onclick={() => void move(championId, -1)}
                                 ><span class="sr-only">{name(championId)} </span>위로</Button
                             >
                             <Button
-                                type="button"
-                                fill="text"
+                                variant="quiet"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="1"
                                 injClass="min-h-11 min-w-11 px-2 text-sm"
                                 disabled={locked || index === selected.length - 1}
                                 onclick={() => void move(championId, 1)}
                                 ><span class="sr-only">{name(championId)} </span>아래로</Button
                             >
                             <Button
-                                type="button"
-                                fill="text"
+                                variant="quiet"
                                 size="auto"
-                                heightOut="0"
-                                heightIn="1"
                                 injClass="min-h-11 min-w-11 px-2 text-sm"
                                 disabled={locked}
                                 onclick={() => void remove(championId, index)}
@@ -398,25 +387,21 @@
         {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
         {#if value.catalogError || refreshRequired}
             <Button
-                type="button"
-                fill="lineLight"
+                variant="secondary"
                 size="full"
-                heightOut="0"
-                heightIn="2"
                 injClass="min-h-12 text-base"
                 disabled={busy || reloading}
-                loading={reloading ? {} : null}
+                loading={reloading}
                 onclick={() => void reload()}>목록 다시 불러오기</Button
             >
         {/if}
         <Button
+            variant="primary"
             type="submit"
             size="full"
-            heightOut="0"
-            heightIn="2"
             injClass="min-h-12 text-base"
             disabled={locked || !dirty || (Boolean(value.catalogError) && selected.length > 0)}
-            loading={busy ? {} : null}>{positionName} 선호 챔피언 저장</Button
+            loading={busy}>{positionName} 선호 챔피언 저장</Button
         >
     </form>
 </section>

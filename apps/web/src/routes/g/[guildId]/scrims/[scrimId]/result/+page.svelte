@@ -2,6 +2,7 @@
     import { page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import BracketBoard from '#lib/components/bracket/BracketBoard.svelte';
+    import ScrimSummary from '#lib/components/scrims/ScrimSummary.svelte';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -10,6 +11,8 @@
 <svelte:head>
     <title>{data.scrim.title} · 결과 | {SERVICE_NAME}</title>
 </svelte:head>
+
+<ScrimSummary scrim={data.scrim} />
 
 <BracketBoard
     bracket={data.bracket}

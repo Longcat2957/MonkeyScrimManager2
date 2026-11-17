@@ -1,9 +1,9 @@
-import type { TagProps } from 'stdf';
+import type { StatusState } from '#lib/ui/status.ts';
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import type { MatchStatus } from '#lib/features/matches/types.ts';
 import type { FormationMethod, RegistrationStatus, ScrimStatus } from '#lib/features/scrims/types.ts';
 
-type StatusLabel = { text: string; state: NonNullable<TagProps['state']> };
+type StatusLabel = { text: string; state: StatusState };
 
 // 상태 문구와 Tag 색상의 대응은 docs/web/README.md의 표를 따른다.
 export const SCRIM_STATUS: Record<ScrimStatus, StatusLabel> = {

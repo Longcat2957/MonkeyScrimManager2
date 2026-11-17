@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { Button, toast } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
     import { POSITIONS, REGISTRATION_STATUS } from '#lib/features/labels.ts';
     import type { MyRegistration, RegistrationAccount } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { toast } from '#lib/ui/toast.ts';
     import PositionChips from './PositionChips.svelte';
     import RegistrationDialog from './RegistrationDialog.svelte';
 
@@ -16,7 +17,6 @@
         previousPositions: LolPosition[];
         canRegister: boolean;
         canEdit: boolean;
-        // 신청할 수 없을 때 보여 줄 한 줄이다. 신청했거나 신청할 수 있으면 null이다.
         blockedReason: string | null;
     };
 
@@ -68,76 +68,55 @@
     }
 </script>
 
-<!-- 신규 신청은 한 번에 저장하고, 세부 선택 변경만 팝업에서 받는다. -->
 <section
+    class="hex-panel flex flex-col gap-3 p-4"
     aria-labelledby="my-registration"
     aria-busy={registering || withdrawing}
-    class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3"
 >
-    <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+    <div class="flex items-center justify-between gap-2">
         <h2 id="my-registration" class="text-sm font-semibold">내 신청</h2>
         {#if registration && status}
-            {#if status.state}
-                <StatusTag text={status.text} state={status.state} />
-            {:else}
-                <span class="text-xs opacity-60">{status.text}</span>
-            {/if}
-            <span class="truncate text-sm opacity-70">
-                {registration.riotAccountId ? (account?.riotId ?? '연결이 해제된 계정') : '계정 없이 참가'}
-            </span>
-            <PositionChips positions={registration.positions as LolPosition[]} />
-        {:else if blockedReason}
-            <span class="text-sm opacity-70">{blockedReason}</span>
+            <StatusTag text={status.text} state={status.state ?? 'neutral'} />
         {/if}
     </div>
 
-    {#if registration && canEdit}
-        <div class="ml-auto flex shrink-0 gap-2">
-            <Button
-                fill="textState"
-                state="error"
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="min-h-11 px-3 text-sm"
-                loading={withdrawing ? {} : null}
-                onclick={withdraw}
-            >
-                철회
-            </Button>
-            <Button
-                fill="lineLight"
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="min-h-11 px-3 text-sm"
-                disabled={withdrawing}
-                onclick={() => (dialogOpen = true)}
-            >
-                수정
-            </Button>
-        </div>
+    {#if registration && status}
+        <dl class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-y-2 text-sm">
+            <dt class="text-text-muted">희망 포지션</dt>
+            <dd><PositionChips positions={registration.positions as LolPosition[]} /></dd>
+            <dt class="text-text-muted">Riot 계정</dt>
+            <dd class="truncate font-semibold">
+                {registration.riotAccountId ? (account?.riotId ?? '연결이 해제된 계정') : '계정 없이 참가'}
+            </dd>
+        </dl>
+        {#if canEdit}
+            <div class="flex justify-end gap-2 border-t border-brass-line pt-3">
+                <Button variant="quiet" size="sm" loading={withdrawing} onclick={withdraw}>철회</Button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={withdrawing}
+                    onclick={() => (dialogOpen = true)}
+                >
+                    수정
+                </Button>
+            </div>
+        {/if}
+    {:else if blockedReason}
+        <p class="text-sm text-text-muted">{blockedReason}</p>
     {:else if canRegister}
-        <span class="ml-auto shrink-0">
-            <Button
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="min-h-11 px-4 text-sm"
-                loading={registering ? {} : null}
-                disabled={registering}
-                onclick={register}>신청하기</Button
-            >
-        </span>
+        <Button variant="primary" size="sm" loading={registering} disabled={registering} onclick={register}>
+            신청하기
+        </Button>
     {/if}
 </section>
 
 {#if registration && canEdit}
     <RegistrationDialog
         bind:open={dialogOpen}
-        editing={true}
+        editing
         {accounts}
-        accountId={registration.riotAccountId ?? ''}
-        positions={registration.positions}
+        accountId={registration.riotAccountId ?? primaryAccountId ?? ''}
+        positions={registration.positions as LolPosition[]}
     />
 {/if}

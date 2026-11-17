@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { Button } from 'stdf';
-    import type { Attachment } from 'svelte/attachments';
+    import Button from '#lib/components/common/Button.svelte';
     import type { StatsLiveState } from '#lib/ui/stats-live.ts';
 
     type Props = {
@@ -14,9 +13,6 @@
         onrefresh: () => Promise<void>;
     };
     let { state, automatic, online, moving, receivedAt, notice, onautomatic, onrefresh }: Props = $props();
-    const toggle: Attachment<HTMLSpanElement> = (node) => {
-        node.querySelector('button')?.setAttribute('aria-pressed', String(automatic));
-    };
     const message = $derived(!online ? '인터넷 연결을 확인해 주세요.' : (state.error ?? notice));
     const updatedAt = $derived(state.lastSuccessAt ?? receivedAt);
     const time = new Intl.DateTimeFormat('ko-KR', {
@@ -30,28 +26,23 @@
 
 <div class="flex min-w-0 flex-col gap-2">
     <div role="group" aria-label="통계 갱신" class="flex flex-wrap items-center gap-2">
-        <span class="inline-flex" {@attach toggle}>
-            <Button
-                type="button"
-                fill={automatic ? 'base' : 'lineLight'}
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="min-h-11 gap-2 px-3 text-sm"
-                onclick={() => onautomatic(!automatic)}
-            >
-                자동 갱신<span aria-hidden="true" class="text-xs">{automatic ? '켜짐' : '꺼짐'}</span>
-            </Button>
-        </span>
-        <Button
+        <button
             type="button"
-            fill="lineLight"
+            role="switch"
+            aria-checked={automatic}
+            class="inline-flex min-h-11 items-center gap-2 rounded-(--radius-form) border border-brass-line px-3 text-sm font-semibold text-text-primary hover:bg-bg-highlight dark:text-text-dark dark:hover:bg-bg-highlight-dark"
+            onclick={() => onautomatic(!automatic)}
+        >
+            자동 갱신<span aria-hidden="true" class="text-xs text-text-muted"
+                >{automatic ? '켜짐' : '꺼짐'}</span
+            >
+        </button>
+        <Button
+            variant="secondary"
             size="auto"
-            heightOut="0"
-            heightIn="2"
             injClass="min-h-11 px-3 text-sm"
             disabled={state.busy || !online || moving}
-            loading={state.busy ? {} : null}
+            loading={state.busy}
             onclick={() => void onrefresh()}>새로고침</Button
         >
     </div>

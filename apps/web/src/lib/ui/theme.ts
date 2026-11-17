@@ -1,16 +1,15 @@
-import { getMode, switchMode } from 'stdf/theme';
-
+// 테마 모드는 app.html의 첫 페인트 복원 스크립트와 같은 키·속성을 쓴다.
 export type ThemeMode = 'primary' | 'dark';
 
-// app.html의 첫 페인트 복원 스크립트와 같은 키를 사용한다.
 const STORAGE_KEY = 'theme-mode';
 
 export function currentMode(): ThemeMode {
-    return getMode() === 'dark' ? 'dark' : 'primary';
+    return document.documentElement.dataset.mode === 'dark' ? 'dark' : 'primary';
 }
 
+// html[data-mode]만 바꾼다. 색은 layout.css의 토큰이 mode에 맞춰 다시 계산된다.
 export function setMode(mode: ThemeMode) {
-    switchMode(mode);
+    document.documentElement.dataset.mode = mode;
     try {
         localStorage.setItem(STORAGE_KEY, mode);
     } catch {

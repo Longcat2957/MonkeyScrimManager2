@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { Grid, Grids } from 'stdf';
     import { formatShortDate, POSITIONS } from '#lib/features/labels.ts';
     import {
         formatMmr,
@@ -49,7 +48,7 @@
     role="region"
     aria-label="후보 전적 상세"
     tabindex="0"
-    class="relative flex max-h-[28rem] flex-col gap-4 overflow-y-auto rounded-(--radius-form) bg-bg-highlight/40 p-3 dark:bg-bg-highlight-dark/40"
+    class="hex-panel relative flex max-h-[28rem] flex-col gap-4 overflow-y-auto bg-bg-highlight/40 p-3 dark:bg-bg-highlight-dark/40"
 >
     <section class="flex flex-col gap-2">
         {@render heading(
@@ -57,16 +56,14 @@
             profile.summary.games ? `${profile.summary.wins}승 ${profile.summary.losses}패` : undefined
         )}
         {#if profile.summary.games}
-            <Grids cols="3" gap="1" mx="0" my="0">
+            <div class="grid grid-cols-3 gap-1">
                 {#each [['내전', `${profile.summary.games}게임`], ['승률', winRate(profile.summary.games, profile.summary.wins)], ['주력 포지션', laneText(profile.mainLane)]] as [label, value] (label)}
-                    <Grid>
-                        <div class="rounded-(--radius-small) bg-bg-surface p-2 dark:bg-bg-surface-dark">
-                            <p class="text-[0.6875rem] text-text-muted">{label}</p>
-                            <p class="text-sm font-semibold">{value}</p>
-                        </div>
-                    </Grid>
+                    <div class="rounded-(--radius-small) bg-bg-surface p-2 dark:bg-bg-surface-dark">
+                        <p class="text-[0.6875rem] text-text-muted">{label}</p>
+                        <p class="text-sm font-semibold">{value}</p>
+                    </div>
                 {/each}
-            </Grids>
+            </div>
         {:else}
             <p class="text-sm text-text-muted">이 내전과 같은 시즌의 기록이 없어요.</p>
         {/if}
@@ -171,16 +168,14 @@
     {#if profile.riot}
         <section class="flex flex-col gap-2">
             {@render heading('Riot 전적')}
-            <Grids cols="3" gap="1" mx="0" my="0">
+            <div class="grid grid-cols-3 gap-1">
                 {#each [['솔로 랭크', profile.riot.tier ?? '-'], ['최근', `${profile.riot.games}게임`], ['승률', winRate(profile.riot.games, profile.riot.wins)]] as [label, value] (label)}
-                    <Grid>
-                        <div class="rounded-(--radius-small) bg-bg-surface p-2 dark:bg-bg-surface-dark">
-                            <p class="text-[0.6875rem] text-text-muted">{label}</p>
-                            <p class="truncate text-sm font-semibold">{value}</p>
-                        </div>
-                    </Grid>
+                    <div class="rounded-(--radius-small) bg-bg-surface p-2 dark:bg-bg-surface-dark">
+                        <p class="text-[0.6875rem] text-text-muted">{label}</p>
+                        <p class="truncate text-sm font-semibold">{value}</p>
+                    </div>
                 {/each}
-            </Grids>
+            </div>
             <ul class="flex flex-wrap gap-1">
                 {#each profile.riot.champions as champion (champion.id)}
                     <li

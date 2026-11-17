@@ -1,11 +1,13 @@
 <script lang="ts">
     import { tick, untrack } from 'svelte';
-    import { Button, Input } from 'stdf';
     import { page } from '$app/state';
+    import Button from '#lib/components/common/Button.svelte';
+    import DateField from '#lib/components/common/DateField.svelte';
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
+    import TextField from '#lib/components/common/TextField.svelte';
     import type { RecordSeasonSelection } from '#lib/features/seasons.ts';
     import { parseMatchDateFilters } from '#lib/features/matches/filters.ts';
-    import { inputLabel, nonSubmitButtons } from '#lib/ui/form.ts';
+    import { nonSubmitButtons } from '#lib/ui/form.ts';
 
     type Values = { q: string; from: string; to: string; seasonId: string | null };
     type Props = RecordSeasonSelection & {
@@ -24,8 +26,8 @@
     let season = $state(untrack(() => selectedSeasonId));
     let error = $state(untrack(() => filterError ?? ''));
     let busy = $state(false);
-    let startInput: HTMLInputElement;
-    let endInput: HTMLInputElement;
+    let startInput = $state<HTMLInputElement | null>(null);
+    let endInput = $state<HTMLInputElement | null>(null);
     const locked = $derived(disabled || busy);
     const hasFilters = $derived(Boolean(query || start || end || season));
     const appliedKey = $derived(JSON.stringify([q, from, to, selectedSeasonId, filterError]));
@@ -92,44 +94,34 @@
             <div
                 class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,1.4fr)_minmax(0,1fr)_auto] xl:items-end"
             >
-                <div class="-mx-2 -my-1 min-w-0" {@attach inputLabel('내전·팀 이름 검색', '검색 지우기')}>
-                    <Input
-                        title="내전·팀 이름 검색"
-                        titlePosition="out"
-                        type="search"
-                        placeholder="예: 포로팀"
-                        bind:value={query}
-                        clear
-                        disabled={locked}
-                        maxlength={50}
-                    />
-                </div>
+                <TextField
+                    label="내전·팀 이름 검색"
+                    type="search"
+                    placeholder="예: 포로팀"
+                    bind:value={query}
+                    disabled={locked}
+                    maxlength={50}
+                />
                 <fieldset class="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
                     <legend class="mb-2 text-sm font-medium">경기일 (한국 시간)</legend>
-                    <label class="flex min-w-0 flex-col gap-1.5 text-sm">
-                        시작일
-                        <input
-                            type="date"
-                            name="from"
-                            bind:this={startInput}
-                            bind:value={start}
-                            aria-describedby={`${id}-hint${error ? ` ${id}-error` : ''}`}
-                            aria-invalid={error ? 'true' : undefined}
-                            class="min-h-12 w-full min-w-0 rounded-(--radius-form) border border-border bg-bg-surface px-3 text-base text-text-primary dark:bg-bg-surface-dark dark:text-text-dark"
-                        />
-                    </label>
-                    <label class="flex min-w-0 flex-col gap-1.5 text-sm">
-                        종료일
-                        <input
-                            type="date"
-                            name="to"
-                            bind:this={endInput}
-                            bind:value={end}
-                            aria-describedby={`${id}-hint${error ? ` ${id}-error` : ''}`}
-                            aria-invalid={error ? 'true' : undefined}
-                            class="min-h-12 w-full min-w-0 rounded-(--radius-form) border border-border bg-bg-surface px-3 text-base text-text-primary dark:bg-bg-surface-dark dark:text-text-dark"
-                        />
-                    </label>
+                    <DateField
+                        label="시작일"
+                        name="from"
+                        bind:value={start}
+                        bind:element={startInput}
+                        invalid={Boolean(error)}
+                        describedby={`${id}-hint${error ? ` ${id}-error` : ''}`}
+                        disabled={locked}
+                    />
+                    <DateField
+                        label="종료일"
+                        name="to"
+                        bind:value={end}
+                        bind:element={endInput}
+                        invalid={Boolean(error)}
+                        describedby={`${id}-hint${error ? ` ${id}-error` : ''}`}
+                        disabled={locked}
+                    />
                 </fieldset>
                 {#if seasons.length}
                     <SeasonSelector
@@ -143,19 +135,14 @@
                 <div class="flex items-center justify-end gap-2 md:self-end">
                     <Button
                         type="submit"
-                        size="auto"
-                        heightOut="0"
-                        heightIn="2"
+                        variant="primary"
                         injClass="min-h-12 px-4 text-base"
                         disabled={locked}>조회</Button
                     >
                     {#if hasFilters}
                         <Button
                             type="button"
-                            fill="text"
-                            size="auto"
-                            heightOut="0"
-                            heightIn="2"
+                            variant="quiet"
                             injClass="min-h-12 px-3 text-base"
                             disabled={locked}
                             onclick={reset}>초기화</Button

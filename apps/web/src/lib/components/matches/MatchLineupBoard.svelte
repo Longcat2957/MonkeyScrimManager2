@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from 'stdf';
+    import Button from '#lib/components/common/Button.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { DragState } from '#lib/components/teams/drag.svelte.ts';
@@ -119,61 +119,43 @@
     }}
 />
 
-<section
-    aria-labelledby="lineup-heading"
-    aria-busy={busy}
-    class="overflow-hidden rounded-(--radius-box) border border-border"
->
+<section aria-labelledby="lineup-heading" aria-busy={busy} class="hex-panel overflow-hidden">
     <header
         class="flex flex-wrap items-center justify-between gap-3 bg-bg-surface p-4 dark:bg-bg-surface-dark"
     >
         <div class="flex flex-wrap items-center gap-2">
             <h2 id="lineup-heading" class="font-semibold">출전 라인업</h2>
-            {#if confirmed}<StatusTag text="확정" state="success" />{:else}<span class="text-sm opacity-60"
-                    >{placed}/10 배치</span
+            {#if confirmed}<StatusTag text="확정" state="success" />{:else}<span
+                    class="text-sm text-text-muted">{placed}/10 배치</span
                 >{/if}
         </div>
         {#if operation.can.releaseLineup}
-            <Button
-                fill="lineLight"
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="px-3"
-                loading={busy ? {} : null}
-                onclick={release}>확정 해제</Button
-            >
+            <Button variant="secondary" injClass="px-3" loading={busy} onclick={release}>확정 해제</Button>
         {:else if operation.can.confirmLineup}
-            <Button
-                size="auto"
-                heightOut="0"
-                heightIn="2"
-                injClass="px-4"
-                disabled={!complete}
-                loading={busy ? {} : null}
-                onclick={save}>라인업 확정</Button
+            <Button variant="primary" injClass="px-4" disabled={!complete} loading={busy} onclick={save}
+                >라인업 확정</Button
             >
         {/if}
     </header>
     {#if operation.can.editLineup && !confirmed}
         <div
-            class="flex flex-col gap-3 border-t border-border bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
+            class="flex flex-col gap-3 border-t border-brass-line bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
         >
-            <p class="text-sm opacity-70">
+            <p class="text-sm text-text-muted">
                 선수를 끌어 포지션에 놓으세요. 선수를 누른 뒤 자리 선택도 가능해요.
             </p>
         </div>
     {/if}
-    {#if failure}<p role="alert" class="border-t border-border p-4 text-sm text-error">{failure}</p>{/if}
+    {#if failure}<p role="alert" class="border-t border-brass-line p-4 text-sm text-error">{failure}</p>{/if}
     {#if selected}
         <p
             role="status"
-            class="border-t border-border bg-bg-surface px-4 py-2 text-sm dark:bg-bg-surface-dark"
+            class="border-t border-brass-line bg-bg-surface px-4 py-2 text-sm dark:bg-bg-surface-dark"
         >
             {selected.displayName} 선택됨 · Esc로 취소
         </p>
     {/if}
-    <div class="grid gap-px border-t border-border bg-border md:grid-cols-2">
+    <div class="grid gap-px border-t border-brass-line bg-brass-line md:grid-cols-2">
         {#each operation.teams as team (team.id)}
             <section
                 aria-labelledby={`lineup-team-${team.id}`}
@@ -201,20 +183,18 @@
                             aria-label={`${team.name} ${position.text}`}
                             class={[
                                 'flex min-h-16 items-stretch gap-2 rounded-(--radius-form) border p-1.5',
-                                drag.over === target
-                                    ? 'border-primary ring-2 ring-primary/30 dark:border-dark dark:ring-dark/30'
-                                    : 'border-border'
+                                drag.over === target ? 'border-hex ring-2 ring-hex/30' : 'border-brass-line'
                             ]}
                             ondragover={(event) => drag.enter(event, target)}
                             ondragleave={() => drag.leave(target)}
                             ondrop={(event) => drag.drop(event, target)}
                         >
                             <span
-                                class="flex w-12 shrink-0 flex-col items-center justify-center gap-1 text-xs opacity-70"
+                                class="flex w-12 shrink-0 flex-col items-center justify-center gap-1 text-xs text-text-muted"
                                 ><PositionIcon position={position.key} /><span>{position.text}</span></span
                             >
                             {#if editable}
-                                <!-- 끌기와 선택·배치를 같은 조작 요소에서 제공한다. STDF Button은 drag 이벤트를 전달하지 않는다. -->
+                                <!-- 끌기와 선택·배치를 같은 조작 요소에서 제공한다. 공용 Button은 drag 이벤트를 전달하지 않는다. -->
                                 <button
                                     type="button"
                                     draggable={Boolean(player)}
@@ -223,8 +203,7 @@
                                     class={[
                                         'flex min-w-0 flex-1 items-center justify-between gap-2 rounded-(--radius-small) px-2 text-left',
                                         player && 'cursor-grab active:cursor-grabbing',
-                                        selectedId === player?.participantId &&
-                                            'bg-primary/10 dark:bg-dark/15'
+                                        selectedId === player?.participantId && 'bg-hex/10 text-hex'
                                     ]}
                                     ondragstart={(event) => {
                                         if (player) drag.start(event, player.participantId);
@@ -239,7 +218,7 @@
                                         ><span class="truncate font-medium"
                                             >{player?.displayName ??
                                                 (targeting ? '여기에 배치' : '미배정')}</span
-                                        >{#if player?.riotId}<span class="truncate text-xs opacity-60"
+                                        >{#if player?.riotId}<span class="truncate text-xs text-text-muted"
                                                 >{player.riotId}</span
                                             >{/if}</span
                                     >
@@ -247,10 +226,7 @@
                                 </button>
                                 {#if player && !targeting}
                                     <Button
-                                        fill="text"
-                                        size="auto"
-                                        heightOut="0"
-                                        heightIn="2"
+                                        variant="quiet"
                                         injClass="px-2 text-xs"
                                         onclick={() => move(player.participantId, `${team.id}:pool`)}
                                         ><span class="sr-only">{player.displayName} </span>해제</Button
@@ -260,7 +236,7 @@
                                 <span class="flex min-w-0 flex-1 flex-col justify-center px-2"
                                     ><span class="truncate font-medium"
                                         >{player?.displayName ?? '미배정'}</span
-                                    >{#if player?.riotId}<span class="truncate text-xs opacity-60"
+                                    >{#if player?.riotId}<span class="truncate text-xs text-text-muted"
                                             >{player.riotId}</span
                                         >{/if}</span
                                 >
@@ -274,9 +250,7 @@
                         aria-label={`${team.name} 미배정 선수`}
                         class={[
                             'mt-3 flex min-h-12 flex-wrap items-center gap-2 rounded-(--radius-form) border border-dashed p-2',
-                            drag.over === `${team.id}:pool`
-                                ? 'border-primary dark:border-dark'
-                                : 'border-border'
+                            drag.over === `${team.id}:pool` ? 'border-hex' : 'border-brass-line'
                         ]}
                         ondragover={(event) => drag.enter(event, `${team.id}:pool`)}
                         ondragleave={() => drag.leave(`${team.id}:pool`)}
@@ -290,14 +264,14 @@
                                 class={[
                                     'min-h-10 min-w-0 rounded-(--radius-small) border px-3 py-2 text-sm',
                                     selectedId === player.participantId
-                                        ? 'border-primary bg-primary/10 dark:border-dark dark:bg-dark/15'
-                                        : 'border-border'
+                                        ? 'border-hex bg-hex/10 text-hex'
+                                        : 'border-brass-line'
                                 ]}
                                 ondragstart={(event) => drag.start(event, player.participantId)}
                                 ondragend={() => drag.end()}
                                 onclick={() => choose(player.participantId)}>{player.displayName}</button
                             >
-                        {:else}<span class="text-xs opacity-60">여기에 놓아 배치 해제</span>{/each}
+                        {:else}<span class="text-xs text-text-muted">여기에 놓아 배치 해제</span>{/each}
                     </div>
                 {/if}
             </section>
