@@ -77,7 +77,7 @@ export interface BotPublicationData {
     title: string;
     status: BotScrimStatus;
     scheduledAt: string | null;
-    teamCount: number;
+    teamCount: 2 | 4;
     formationMethod: 'manual' | 'auction' | null;
     hardFearless: boolean;
     selected: number;
@@ -144,7 +144,7 @@ export interface BotCreateScrimInput {
     interactionId: string;
     title: string;
     scheduledAt: string | null;
-    teamCount: number;
+    teamCount: 2 | 4;
     reserveCapacity: number;
     hardFearless: boolean;
 }

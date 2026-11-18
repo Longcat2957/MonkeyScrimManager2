@@ -1,20 +1,13 @@
 import { dev } from '$app/env';
 import { error, fail } from '@sveltejs/kit';
-import {
-    inRange,
-    readScrimSettingsForm,
-    RESERVE_CAPACITY,
-    isAllowedTeamCount,
-    toScrimSettings,
-    validateScrimSettings
-} from '#lib/features/scrims/settings.ts';
+import { readScrimSettingsForm } from '#lib/features/scrims/settings.ts';
 import type { ScrimStatusFilter } from '#lib/features/scrims/types.ts';
 import { createMockScrim, listMockScrims } from '#lib/mocks/scrims.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { listScrims } from '#lib/server/scrims/queries.ts';
 import { createScrim } from '#lib/server/scrims/service.ts';
-import { parseScrimSettings } from '#lib/server/scrims/validation.ts';
+import { parseScrimSettings, validateSettings } from '#lib/server/scrims/validation.ts';
 import { actionFailure } from '#lib/server/actions.ts';
 import { routeError } from '#lib/server/http.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -82,13 +75,12 @@ export const actions: Actions = {
         requireDev();
         if (!findMockGuild(params.guildId)?.isAdmin)
             return fail(403, { message: '내전을 만들 권한이 없어요' });
-        const input = readScrimSettingsForm(await request.formData());
-        const errors = validateScrimSettings(input);
-        if (Object.keys(errors).length) return fail(400, { errors });
-        if (!isAllowedTeamCount(input.teamCount) || !inRange(input.reserveCapacity, RESERVE_CAPACITY)) {
-            return fail(400, { message: '팀 수나 정원을 다시 확인해 주세요' });
+        try {
+            const input = readScrimSettingsForm(await request.formData());
+            const settings = validateSettings(parseScrimSettings(input));
+            return { id: await createMockScrim(params.guildId, settings) };
+        } catch (cause) {
+            return actionFailure(cause, setHeaders);
         }
-        const id = await createMockScrim(params.guildId, toScrimSettings(input));
-        return { id };
     }
 };

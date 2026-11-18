@@ -224,8 +224,6 @@ export async function listGuildMembers(
                     displayName,
                     username: users.username,
                     isAdmin,
-                    auctionSeedPrice: guildMembers.auctionSeedPrice,
-                    auctionOverridePrice: guildMembers.auctionOverridePrice,
                     avatarHash: users.avatarHash,
                     profileVisible: sql<boolean>`${users.publicProfile} and ${users.withdrawnAt} is null`
                 })

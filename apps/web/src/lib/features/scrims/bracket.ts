@@ -70,19 +70,15 @@ export function singleCompletedMatchId(
     return match.status === 'completed' ? match.matchId : null;
 }
 
-/** 팀을 놓을 수 있는 자리 목록. 결승 직행처럼 앞 경기 없이 바로 결승에 놓는 자리도 포함한다. */
+/** 팀을 놓을 수 있는 자리 목록. */
 export function bracketSeats(
     matches: BracketMatch[]
 ): { key: string; label: string; teamId: string | null }[] {
-    const direct = matches.length === 2;
     return matches.flatMap((match) =>
         (['a', 'b'] as const).flatMap((side) => {
             const { seat, teamId } = match[side];
             if (!seat) return [];
-            const label =
-                direct && match.stage === 'final'
-                    ? '결승 직행'
-                    : `${match.label} ${side === 'a' ? '왼쪽' : '오른쪽'}`;
+            const label = `${match.label} ${side === 'a' ? '왼쪽' : '오른쪽'}`;
             return [{ key: seat, label, teamId }];
         })
     );
@@ -127,18 +123,8 @@ const match = (
     matchId: null
 });
 
-/**
- * 팀 수에 맞는 빈 대진 틀. 2팀은 결승, 3팀은 준결승 + 결승 직행, 4팀은 준결승 두 경기 + 결승이다.
- * 결승 직행은 운영자가 정하는 시드이며 자동 승리·점수를 기록하지 않는다.
- */
 export function bracketTemplate(teamCount: number): BracketMatch[] {
     if (teamCount === 2) return [match('final', '결승', 'final', side('final-a'), side('final-b'))];
-    if (teamCount === 3) {
-        return [
-            match('semi', '준결승', 'semi', side('semi-a'), side('semi-b')),
-            match('final', '결승', 'final', side(null, 'semi'), side('final-b'))
-        ];
-    }
     if (teamCount === 4) {
         return [
             match('semi-1', '준결승 A', 'semi', side('semi-1-a'), side('semi-1-b')),

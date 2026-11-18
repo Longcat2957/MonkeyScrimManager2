@@ -82,18 +82,11 @@ test('팀 수에 맞는 대진 틀을 만든다', () => {
         ['결승']
     );
     assert.deepEqual(
-        bracketTemplate(3).map((match) => match.label),
-        ['준결승', '결승']
-    );
-    assert.deepEqual(
         bracketTemplate(4).map((match) => match.label),
         ['준결승 A', '준결승 B', '결승']
     );
-    assert.deepEqual(
-        bracketSeats(bracketTemplate(3)).map((seat) => seat.label),
-        ['준결승 왼쪽', '준결승 오른쪽', '결승 직행']
-    );
-    for (const count of [2, 3, 4]) assert.equal(bracketSeats(bracketTemplate(count)).length, count);
+    for (const count of [2, 4]) assert.equal(bracketSeats(bracketTemplate(count)).length, count);
+    assert.deepEqual(bracketTemplate(3), []);
     assert.deepEqual(bracketTemplate(5), []);
 });
 
@@ -123,23 +116,23 @@ test('팀을 옮기면 원래 자리는 비고 도착 자리의 팀은 풀로 �
     assert.ok(bracketSeats((await view(scrimId)).matches).every((seat) => !seat.teamId));
 });
 
-test('경매 준결승 진영 교환은 두 팀을 보존하고 확정 후 결승 직행 시드는 바꿀 수 없다', async () => {
+test('경매 준결승 진영 교환은 두 팀을 보존하고 확정 후 다른 준결승의 팀을 가져올 수 없다', async () => {
     const id = 'devScrim009';
     await fill(id);
-    const [a, b, bye] = (await view(id)).teams.map((team) => team.id) as [string, string, string];
+    const [a, b, c, d] = (await view(id)).teams.map((team) => team.id) as [string, string, string, string];
     const seeds = async () => bracketSeats((await view(id)).matches).map((seat) => seat.teamId);
-    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-a', b), null);
-    assert.deepEqual(await seeds(), [b, a, bye]);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-1-a', b), null);
+    assert.deepEqual(await seeds(), [b, a, c, d]);
 
-    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-a', bye), null);
-    assert.deepEqual(await seeds(), [bye, a, null]);
-    assert.equal(await placeMockBracketTeam(guildId, id, 'final-b', b), null);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-1-a', c), null);
+    assert.deepEqual(await seeds(), [c, a, null, d]);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-2-a', b), null);
     assert.equal(await confirmMockBracket(guildId, id), null);
-    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-b', b))?.status, 409);
-    assert.equal((await placeMockBracketTeam(guildId, id, 'final-b', a))?.status, 409);
-    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-a', null))?.status, 409);
-    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-b', bye), null);
-    assert.deepEqual(await seeds(), [a, bye, b]);
+    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-1-b', b))?.status, 409);
+    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-2-a', a))?.status, 409);
+    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-1-a', null))?.status, 409);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-1-b', c), null);
+    assert.deepEqual(await seeds(), [a, c, b, d]);
     assert.ok((await view(id)).confirmed);
 });
 

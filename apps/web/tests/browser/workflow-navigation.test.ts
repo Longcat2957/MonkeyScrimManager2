@@ -294,27 +294,27 @@ test(
     }
 );
 
-test('3팀 대진은 준결승 한 경기만 생성되어도 전체 대진에 남는다', { timeout: 60_000 }, async (t) => {
+test('4팀 대진은 준결승 두 경기를 시작해도 전체 대진에 남는다', { timeout: 60_000 }, async (t) => {
     const f = await createBrowserFixture(t, { width: 390, userId: HTTP_IDS.manager });
     const [scrim] = await f.db
         .insert(schema.scrims)
         .values({
             guildId: HTTP_IDS.guild,
-            title: '결승 직행이 있는 대진',
+            title: '준결승 두 경기 대진',
             status: 'ready',
             formationMethod: 'auction',
-            teamCount: 3,
+            teamCount: 4,
             mmrSeasonId: f.season.id
         })
         .returning();
     const teams = await f.db
         .insert(schema.scrimTeams)
-        .values([1, 2, 3].map((ordinal) => ({ scrimId: scrim!.id, ordinal, name: `${ordinal}팀` })))
+        .values([1, 2, 3, 4].map((ordinal) => ({ scrimId: scrim!.id, ordinal, name: `${ordinal}팀` })))
         .returning();
     const participants = await f.db
         .insert(schema.scrimParticipants)
         .values(
-            Array.from({ length: 15 }, (_, index) => ({
+            Array.from({ length: 20 }, (_, index) => ({
                 scrimId: scrim!.id,
                 teamId: teams[Math.floor(index / 5)]!.id,
                 displayName: `경매 참가자 ${index + 1}`
@@ -329,7 +329,7 @@ test('3팀 대진은 준결승 한 경기만 생성되어도 전체 대진에 �
     await f.db.transaction((tx) => createBracketDraft(tx, scrim!));
     const path = `/g/${HTTP_IDS.guild}/scrims/${scrim!.id}/bracket`;
     const manager = await f.session(HTTP_IDS.manager);
-    for (const [index, seat] of ['semi-a', 'semi-b', 'final-b'].entries()) {
+    for (const [index, seat] of ['semi-1-a', 'semi-1-b', 'semi-2-a', 'semi-2-b'].entries()) {
         const [row] = await f.db.select().from(schema.scrims).where(eq(schema.scrims.id, scrim!.id));
         assertAction(
             await f.action(
@@ -351,8 +351,8 @@ test('3팀 대진은 준결승 한 경기만 생성되어도 전체 대진에 �
     await f.page.waitForURL(f.url + path);
     assert.equal(await f.page.getByRole('group', { name: /^결승 1세트 (블루|레드)$/ }).count(), 0);
     const start = f.page.getByRole('button', { name: '내전 시작', exact: true });
-    const semiBlue = f.page.getByRole('group', { name: '준결승 1세트 블루', exact: true });
-    const semiRed = f.page.getByRole('group', { name: '준결승 1세트 레드', exact: true });
+    const semiBlue = f.page.getByRole('group', { name: '준결승 A 1세트 블루', exact: true });
+    const semiRed = f.page.getByRole('group', { name: '준결승 A 1세트 레드', exact: true });
     await semiBlue.getByRole('button', { name: /^1팀/ }).press('Enter');
     await semiRed.getByRole('button').press('Enter');
     await semiBlue.getByRole('button', { name: /^2팀/ }).waitFor();
@@ -362,13 +362,14 @@ test('3팀 대진은 준결승 한 경기만 생성되어도 전체 대진에 �
     await cancel.waitFor();
     await f.page.waitForFunction((node) => node === document.activeElement, await cancel.elementHandle());
     await dialog.getByRole('button', { name: '확인', exact: true }).press('Enter');
-    const semi = f.page.getByRole('article', { name: '준결승', exact: true });
-    await semi.getByRole('link', { name: /^준결승 경기 상세/ }).waitFor();
+    const semi = f.page.getByRole('article', { name: '준결승 A', exact: true });
+    await semi.getByRole('link', { name: /^준결승 A 경기 상세/ }).waitFor();
+    await f.page.getByRole('link', { name: /^준결승 B 경기 상세/ }).waitFor();
     assert.equal(new URL(f.page.url()).pathname, path);
     assert.equal(await f.page.getByRole('article', { name: '결승', exact: true }).isVisible(), true);
-    assert.equal((await f.db.select().from(schema.matches)).length, 1);
+    assert.equal((await f.db.select().from(schema.matches)).length, 2);
     const nodes = await f.db.select().from(schema.scrimBracketNodes);
-    assert.equal(nodes.length, 2);
+    assert.equal(nodes.length, 3);
     assert.equal(nodes.filter((node) => node.matchId === null).length, 1);
     assert.deepEqual(f.errors, []);
 });

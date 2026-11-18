@@ -22,7 +22,7 @@ import {
 import { createFormationFixture, errorCode } from '../../support/domain-fixtures.ts';
 import { createMatchResultFixture } from '../../support/match-fixtures.ts';
 
-async function ready(t: TestContext, count = 2) {
+async function ready(t: TestContext, count: 2 | 4 = 2) {
     const f = await createFormationFixture(t, count);
     await f.fill();
     await confirmManualFormation(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
@@ -111,7 +111,7 @@ test('4팀 대진 확정·내전 시작은 준결승 두 경기와 수동 라인
     assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 20);
 });
 
-for (const count of [2, 3, 4])
+for (const count of [2, 4] as const)
     test(`${count}팀 대진은 양 팀이 정해진 Match만 생성한다`, async (t) => {
         const f = await ready(t, count);
         assert.equal((await f.view()).matches.length, count - 1);
@@ -125,7 +125,7 @@ for (const count of [2, 3, 4])
     });
 
 test('팀 재배치와 초기화는 중복 시드를 없애고 BO 설정을 보존한다', async (t) => {
-    const f = await ready(t, 3);
+    const f = await ready(t, 4);
     await assert.rejects(
         confirmBracket(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
         errorCode('CONFLICT')
@@ -331,59 +331,58 @@ test('중도 종료와 재개는 Match 이전 상태와 Game을 보존한다', a
     assert.equal((await f.db.select().from(schema.games))[0]?.id, game!.id);
 });
 
-for (const count of [3, 4])
-    test(`${count}팀 승자 확정 후 다음 Match 생성은 멱등이며 완료 내전을 재개할 수 있다`, async (t) => {
-        const f = await ready(t, count);
-        await f.start();
-        await assert.rejects(
-            advanceScrim(
-                f.db,
-                f.manager,
-                f.guildId,
-                f.scrimId,
-                { ...(await f.revision()), key: 'complete' },
-                f.access
-            ),
-            errorCode('CONFLICT')
-        );
-        // 결과 등록 서비스는 아직 연결 전이다. 여기서는 완료 Match를 소비하는 대진 함수만 검증한다.
-        for (const match of await f.db.select().from(schema.matches))
-            await f.db
-                .update(schema.matches)
-                .set({ status: 'completed', winnerTeamId: match.teamAId })
-                .where(eq(schema.matches.id, match.id));
-        await f.db.transaction(async (tx) => {
-            const [row] = await tx
-                .select()
-                .from(schema.scrims)
-                .where(eq(schema.scrims.id, f.scrimId))
-                .for('update');
-            assert.equal(await createResolvedMatches(tx, row!), 1);
-            assert.equal(await createResolvedMatches(tx, row!), 0);
-        });
-        const all = await f.db.select().from(schema.matches);
-        assert.equal(all.length, count - 1);
-        const finalId = (await f.view()).matches.find((match) => match.key === 'final')!.matchId;
-        assert.ok(finalId);
-        assert.equal(
-            (await f.db.select().from(schema.matchSetSides).where(eq(schema.matchSetSides.matchId, finalId)))
-                .length,
-            0
-        );
-        for (const match of all)
-            await f.db
-                .update(schema.matches)
-                .set({ status: 'completed', winnerTeamId: match.teamAId })
-                .where(eq(schema.matches.id, match.id));
-        await advanceScrim(
+test('4팀 승자 확정 후 다음 Match 생성은 멱등이며 완료 내전을 재개할 수 있다', async (t) => {
+    const f = await ready(t, 4);
+    await f.start();
+    await assert.rejects(
+        advanceScrim(
             f.db,
             f.manager,
             f.guildId,
             f.scrimId,
             { ...(await f.revision()), key: 'complete' },
             f.access
-        );
-        assert.equal((await f.row()).status, 'completed');
-        await revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
-        assert.equal((await f.row()).status, 'in_progress');
+        ),
+        errorCode('CONFLICT')
+    );
+    // 결과 등록 서비스는 아직 연결 전이다. 여기서는 완료 Match를 소비하는 대진 함수만 검증한다.
+    for (const match of await f.db.select().from(schema.matches))
+        await f.db
+            .update(schema.matches)
+            .set({ status: 'completed', winnerTeamId: match.teamAId })
+            .where(eq(schema.matches.id, match.id));
+    await f.db.transaction(async (tx) => {
+        const [row] = await tx
+            .select()
+            .from(schema.scrims)
+            .where(eq(schema.scrims.id, f.scrimId))
+            .for('update');
+        assert.equal(await createResolvedMatches(tx, row!), 1);
+        assert.equal(await createResolvedMatches(tx, row!), 0);
     });
+    const all = await f.db.select().from(schema.matches);
+    assert.equal(all.length, 3);
+    const finalId = (await f.view()).matches.find((match) => match.key === 'final')!.matchId;
+    assert.ok(finalId);
+    assert.equal(
+        (await f.db.select().from(schema.matchSetSides).where(eq(schema.matchSetSides.matchId, finalId)))
+            .length,
+        0
+    );
+    for (const match of all)
+        await f.db
+            .update(schema.matches)
+            .set({ status: 'completed', winnerTeamId: match.teamAId })
+            .where(eq(schema.matches.id, match.id));
+    await advanceScrim(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), key: 'complete' },
+        f.access
+    );
+    assert.equal((await f.row()).status, 'completed');
+    await revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.row()).status, 'in_progress');
+});

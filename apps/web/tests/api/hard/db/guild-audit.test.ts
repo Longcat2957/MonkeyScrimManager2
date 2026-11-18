@@ -94,6 +94,12 @@ test('감사 목록은 관리자만 읽고 서버 경계·실시간 권한 회�
     for (const name of ['One', 'Two', 'Three'])
         await linkRiotAccount(f.db, f.owner, f.ids.guild, f.ids.member, name + '#KR1', f.dependencies);
     await linkRiotAccount(f.db, f.owner, f.ids.otherGuild, f.ids.member, 'Remote#KR1', f.dependencies);
+    // 이전 버전이 남긴 감사 원장은 보존하되 현재 목록의 페이지 수와 항목에는 포함하지 않는다.
+    await f.pool.query(
+        `INSERT INTO guild_audit_entries (guild_id, kind) VALUES
+         ($1, 'auction_seed_price_changed'), ($1, 'auction_override_price_changed')`,
+        [f.ids.guild]
+    );
     await f.db.update(schema.guildAuditEntries).set({ createdAt: new Date('2026-01-01T00:00:00Z') });
     const all = await listGuildAudit(f.db, f.owner, f.ids.guild, page, f.dependencies);
     assert.equal(all.total, 3);

@@ -1,17 +1,17 @@
 import type {
     FormationMethod,
-    ScrimSettings,
     ScrimSettingsField,
-    ScrimStatus
+    ScrimStatus,
+    TeamCount
 } from '#lib/features/scrims/types.ts';
 
 export const TITLE_MAX = 50;
-export const TEAM_COUNT = { min: 2, max: 4, step: 2 };
+export const TEAM_COUNT = { min: 2, max: 4, step: 2 } as const;
 export const RESERVE_CAPACITY = { min: 0, max: 10 };
 export const PLAYERS_PER_TEAM = 5;
 
-export function isAllowedTeamCount(count: number, current?: number): boolean {
-    return count === TEAM_COUNT.min || count === TEAM_COUNT.max || (count === 3 && current === 3);
+export function isAllowedTeamCount(count: number): count is TeamCount {
+    return count === TEAM_COUNT.min || count === TEAM_COUNT.max;
 }
 
 // 팝업 입력값 그대로의 형태다. 날짜는 YYYY-MM-DD, 시각은 HH:mm 문자열이다.
@@ -26,8 +26,6 @@ export type ScrimSettingsInput = {
 
 export type ScrimSettingsErrors = Partial<Record<'title' | 'date' | 'time', string>>;
 
-// 표시 시간대는 미결정이므로 labels.ts와 같이 한국 시간으로 고정한다.
-const OFFSET = '+09:00';
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -67,23 +65,6 @@ export function validateScrimSettings(input: ScrimSettingsInput): ScrimSettingsE
     if (date && !time) errors.time = '시각도 입력해 주세요';
     if (time && !date) errors.date = '날짜도 골라 주세요';
     return errors;
-}
-
-// 검증을 통과한 입력값을 저장 형태로 바꾼다. 범위를 벗어난 숫자는 서버에서도 거절한다.
-export function toScrimSettings(input: ScrimSettingsInput): ScrimSettings {
-    const date = input.date.trim();
-    const time = input.time.trim();
-    return {
-        title: input.title.trim(),
-        scheduledAt: date && time ? new Date(`${date}T${time}:00${OFFSET}`).toISOString() : null,
-        teamCount: input.teamCount,
-        reserveCapacity: input.reserveCapacity,
-        hardFearless: input.hardFearless
-    };
-}
-
-export function inRange(value: number, range: { min: number; max: number }) {
-    return Number.isInteger(value) && value >= range.min && value <= range.max;
 }
 
 // form action이 받은 FormData를 입력값으로 읽는다. 클라이언트는 enhance 콜백에서 같은 이름으로 넣는다.

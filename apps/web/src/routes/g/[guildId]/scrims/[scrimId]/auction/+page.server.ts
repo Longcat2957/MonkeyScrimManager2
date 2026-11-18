@@ -5,7 +5,7 @@ import { formationPath } from '#lib/features/scrims/paths.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
 import {
     assignMockCurrent,
-    assignMockUnsold,
+    assignMockCandidate,
     awardMockLot,
     confirmMockAuctionFormation,
     drawMockLot,
@@ -32,7 +32,7 @@ import { routeError } from '#lib/server/http.ts';
 import { DomainError } from '#lib/server/errors.ts';
 import {
     assignAuctionCurrent,
-    assignAuctionUnsold,
+    assignAuctionCandidate,
     awardAuctionLot,
     confirmAuctionFormation,
     drawAuctionLot,
@@ -150,7 +150,7 @@ const previewActions: Actions = {
         requireDev();
         const data = await request.formData();
         return failWith(
-            await assignMockUnsold(
+            await assignMockCandidate(
                 params.guildId,
                 params.scrimId,
                 field(data, 'participantId'),
@@ -235,7 +235,7 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
                 await passAuctionLot(db, actor, guildId, scrimId, { ...input, lotId: field(data, 'lotId') });
                 break;
             case 'assign':
-                await assignAuctionUnsold(db, actor, guildId, scrimId, {
+                await assignAuctionCandidate(db, actor, guildId, scrimId, {
                     ...input,
                     participantId: field(data, 'participantId'),
                     teamId: field(data, 'teamId')

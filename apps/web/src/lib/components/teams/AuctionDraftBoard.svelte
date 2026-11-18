@@ -84,8 +84,7 @@
 
     // 후보가 바뀌거나 입찰가가 바뀌면 타이머를 다시 채운다.
     $effect(() => {
-        if (!open) details = false;
-        void open?.participantId;
+        if (!lotKey) details = false;
         void JSON.stringify(bids);
         timerStart = Date.now();
     });
@@ -144,11 +143,14 @@
 
     async function assignCurrent(teamId: string) {
         const target = open?.participantId;
-        if ((await run('assignCurrent', { teamId })) && target) celebrate(teamId, target, '낙찰!');
+        if ((await run('assignCurrent', { teamId })) && target) celebrate(teamId, target, '수동 배치');
     }
 
     async function assign(participantId: string, teamId: string) {
-        if (await run('assign', { participantId, teamId })) celebrate(teamId, participantId, '낙찰!');
+        if (await run('assign', { participantId, teamId })) {
+            listOpen = false;
+            celebrate(teamId, participantId, '수동 배치');
+        }
     }
 
     async function draw() {

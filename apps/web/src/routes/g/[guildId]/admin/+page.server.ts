@@ -8,7 +8,6 @@ import {
     isMockMember,
     listMockGuildAudit,
     listMockMembers,
-    setMockAuctionSeedPrice,
     setMockDiscordSetting
 } from '#lib/mocks/admin.ts';
 import {
@@ -26,7 +25,6 @@ import { linkRiotAccount, setPrimaryRiotAccount, unlinkRiotAccount } from '#lib/
 import { getDb } from '#lib/server/db/index.ts';
 import { DiscordError } from '#lib/server/discord/client.ts';
 import { DomainError } from '#lib/server/errors.ts';
-import { setAuctionDrawPrice } from '#lib/server/guild/auction-draw-price.ts';
 import { listGuildAudit } from '#lib/server/guild/audit.ts';
 import { getGuildDiscordSettings, setGuildDiscordSetting } from '#lib/server/guild/settings.ts';
 import { getGuildSeasons, rotateGuildSeason } from '#lib/server/guild/seasons.ts';
@@ -167,26 +165,6 @@ function requireMockMember(guildId: string, userId: string) {
 }
 
 export const actions: Actions = {
-    auctionSeedPrice: async ({ request, params, locals, setHeaders }) =>
-        runAction(setHeaders, async () => {
-            const mock = isMockGuild(params.guildId);
-            if (mock) requireMockAdmin(params.guildId);
-            else requireUser(locals.actor);
-            const data = await request.formData();
-            const userId = field(data, 'userId');
-            const kind = data.get('kind') ?? 'seed';
-            if (kind !== 'seed' && kind !== 'override')
-                throw new DomainError('INVALID_INPUT', '변경할 경매 가격 종류를 확인해 주세요');
-            const raw = data.get('price');
-            if (typeof raw !== 'string' || (raw !== '' && !/^\d+$/.test(raw)))
-                throw new DomainError('INVALID_INPUT', '금액은 정수로 입력하거나 비워 주세요');
-            const price = raw === '' ? null : Number(raw);
-            if (price !== null && (price < 1 || price > 2_147_483_647))
-                throw new DomainError('INVALID_INPUT', '금액은 1~2,147,483,647P 범위로 입력해 주세요');
-            if (mock) setMockAuctionSeedPrice(params.guildId, userId, price, kind);
-            else await setAuctionDrawPrice(getDb(), locals.actor, params.guildId, userId, kind, price);
-        }),
-
     rotateSeason: async ({ request, params, locals, setHeaders }) => {
         setHeaders({ 'Cache-Control': 'no-store' });
         let name = '';

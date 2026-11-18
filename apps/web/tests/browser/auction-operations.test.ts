@@ -130,6 +130,30 @@ test(
     }
 );
 
+for (const width of [390, 1440]) {
+    test(`후보 목록에서 대기자를 팀에 배치한다: ${width}px`, { timeout: 60_000 }, async (t) => {
+        const f = await createBrowserFixture(t, { width, userId: HTTP_IDS.manager });
+        const a = await prepareHttpAuctionFixture(f);
+        assertAction(await a.setup(), 200);
+        assertAction(await a.action('start'), 200);
+        if (width === 1440) assertAction(await a.action('draw'), 200);
+        await f.page.goto(f.url + a.path, { waitUntil: 'networkidle' });
+        const bid = f.page.getByRole('textbox', { name: '2팀 입찰가', exact: true });
+        if (width === 1440) await bid.fill('25');
+        await f.page.getByRole('button', { name: '후보 목록', exact: true }).press('Enter');
+        const dialog = f.page.getByRole('dialog', { name: '후보 목록' });
+        await dialog
+            .getByRole('button', { name: /^1팀 배치/ })
+            .last()
+            .press('Enter');
+        await dialog.waitFor({ state: 'hidden' });
+        await f.page.getByRole('list', { name: '1팀 팀원' }).getByText('수동', { exact: true }).waitFor();
+        if (width === 1440) assert.equal(await bid.inputValue(), '25');
+        else await f.page.getByText('후보 대기', { exact: true }).waitFor();
+        assert.deepEqual(f.errors, []);
+    });
+}
+
 test(
     '390px 대진의 선택 팀 안내는 아래 배치 자리에서도 보이고 Escape로 해제된다',
     { timeout: 60_000 },

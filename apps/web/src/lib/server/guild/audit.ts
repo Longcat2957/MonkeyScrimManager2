@@ -1,6 +1,11 @@
-import { count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import type { GuildAuditEntry, GuildAuditKind, GuildAuditPage } from '../../features/guild/audit.ts';
+import {
+    guildAuditKinds,
+    type GuildAuditEntry,
+    type GuildAuditKind,
+    type GuildAuditPage
+} from '../../features/guild/audit.ts';
 import type { GuildDiscordSettingKey } from '../../features/guild/types.ts';
 import { requireUser } from '../auth/guards.ts';
 import type { Actor } from '../auth/types.ts';
@@ -20,8 +25,6 @@ type AuditWrite = {
           previousPrimaryAccountId: string | null;
           nextPrimaryAccountId: string | null;
       }
-    | { kind: 'auction_seed_price_changed'; targetUserId: string }
-    | { kind: 'auction_override_price_changed'; targetUserId: string }
     | {
           kind: 'discord_setting_changed';
           key: GuildDiscordSettingKey;
@@ -33,11 +36,6 @@ type AuditWrite = {
 /** 호출자의 업무 트랜잭션에서 성공한 변경과 감사 기록을 함께 저장한다. */
 export async function writeGuildAudit(tx: Transaction, input: AuditWrite): Promise<void> {
     const identity = { guildId: input.guildId, actorUserId: input.actorUserId, kind: input.kind };
-    if (input.kind === 'auction_seed_price_changed' || input.kind === 'auction_override_price_changed') {
-        // 초기값을 해제하거나 탈퇴한 뒤에도 이전 금액이 감사 기록에 남지 않게 한다.
-        await tx.insert(guildAuditEntries).values({ ...identity, targetUserId: input.targetUserId });
-        return;
-    }
     await tx.insert(guildAuditEntries).values(
         input.kind === 'discord_setting_changed'
             ? {
@@ -92,6 +90,10 @@ export async function listGuildAudit(
     return db.transaction(async (tx) => {
         // 상위 화면의 표시 권한만 믿지 않고 실제 조회에서도 현재 권한을 검사한다.
         await assertGuildAccess(tx, user, guildId, true);
+        const where = and(
+            eq(guildAuditEntries.guildId, guildId),
+            inArray(guildAuditEntries.kind, guildAuditKinds)
+        );
         const rows = await tx
             .select({
                 event: guildAuditEntries,
@@ -107,14 +109,11 @@ export async function listGuildAudit(
             .leftJoin(account, eq(account.id, guildAuditEntries.riotAccountId))
             .leftJoin(previousPrimary, eq(previousPrimary.id, guildAuditEntries.previousPrimaryAccountId))
             .leftJoin(nextPrimary, eq(nextPrimary.id, guildAuditEntries.nextPrimaryAccountId))
-            .where(eq(guildAuditEntries.guildId, guildId))
+            .where(where)
             .orderBy(desc(guildAuditEntries.createdAt), desc(guildAuditEntries.id))
             .limit(options.pageSize)
             .offset((options.page - 1) * options.pageSize);
-        const [total] = await tx
-            .select({ value: count() })
-            .from(guildAuditEntries)
-            .where(eq(guildAuditEntries.guildId, guildId));
+        const [total] = await tx.select({ value: count() }).from(guildAuditEntries).where(where);
         const entries: GuildAuditEntry[] = rows.map(({ event, actor, target, account, previous, next }) => ({
             id: event.id,
             occurredAt: event.createdAt.toISOString(),

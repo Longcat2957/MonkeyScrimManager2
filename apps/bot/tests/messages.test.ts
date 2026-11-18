@@ -45,7 +45,7 @@ for (const kind of ['recruitment', 'entry'] as const) {
     });
 }
 
-test('선발 정원이 차도 참가·대기·취소 버튼을 독립적으로 제공하고 마감 후 직접 변경만 막는다', () => {
+test('선발 정원이 차도 신청할 수 있고 모집 마감 후에는 웹 링크만 활성화한다', () => {
     const job = publication();
     job.data.selected = 10;
     const value = renderRecruitment(job, origin);
@@ -80,14 +80,13 @@ test('선발 정원이 차도 참가·대기·취소 버튼을 독립적으로 �
     assert.match(paragraphs[1]!.content!, /선발 10\/10/);
     assert.match(paragraphs[2]!.content!, /대기/);
     job.data.status = 'preparing';
-    const closed = renderRecruitment(job, origin).components[1]!.toJSON();
-    assert.ok('components' in closed);
-    for (const action of ['standby', 'withdraw']) {
-        const button = closed.components.find(
-            (component) =>
-                'custom_id' in component && component.custom_id === `registration-${action}:${job.scrimId}`
-        );
-        assert.ok(button && 'disabled' in button && button.disabled);
+    for (const row of renderRecruitment(job, origin).components.slice(1)) {
+        const closed = row.toJSON();
+        assert.ok('components' in closed);
+        for (const button of closed.components) {
+            if ('custom_id' in button) assert.ok('disabled' in button && button.disabled);
+            else if ('url' in button) assert.ok(!('disabled' in button) || !button.disabled);
+        }
     }
 });
 

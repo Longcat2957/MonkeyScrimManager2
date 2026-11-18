@@ -208,7 +208,7 @@ export async function createScrim(
     db: Database,
     actor: Actor | null,
     guildId: string,
-    input: ScrimSettings & { requestId: string },
+    input: ScrimSettings<number> & { requestId: string },
     access?: ScrimAccessDependencies
 ): Promise<string> {
     const user = requireUser(actor);
@@ -609,7 +609,7 @@ export async function updateScrimSettings(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput & { settings: ScrimSettings },
+    input: RevisionInput & { settings: ScrimSettings<number> },
     access?: ScrimAccessDependencies
 ): Promise<void> {
     const user = requireUser(actor);
@@ -618,7 +618,7 @@ export async function updateScrimSettings(
     await requireGuildAdmin(user, guildId, { ...access, db });
     await db.transaction(async (tx) => {
         const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
-        const settings = validateSettings(input.settings, row.teamCount);
+        const settings = validateSettings(input.settings);
         assertEditableSettings(row.status, settingsFromRow(row), settings);
         assertCapacity(settings, await registrations(tx, row.id));
         await tx

@@ -4,14 +4,12 @@ import type {
     GuildDiscordSettingKey,
     GuildDiscordSettings
 } from '#lib/features/guild/types.ts';
-import { DomainError } from '#lib/server/errors.ts';
 import { listMockRiotAccounts } from './me.ts';
 import type { GuildAuditEntry, GuildAuditKind } from '#lib/features/guild/audit.ts';
 import type { MockFailure } from './scrims.ts';
 import { mockMembers as members, type MockMember } from './members.ts';
 import { mockAuctionPurchaseTotals } from './teams.ts';
 import { mockAvatarUrl } from './avatar.ts';
-import { mockUser } from './session.ts';
 
 type GuildDiscord = { roles: DiscordRole[]; channels: DiscordChannel[]; settings: GuildDiscordSettings };
 
@@ -113,8 +111,6 @@ export function listMockMembers(guildId: string, options: { q: string; page: num
         .map((member) => ({
             userId: member.userId,
             displayName: member.displayName,
-            auctionSeedPrice: member.auctionSeedPrice,
-            auctionOverridePrice: member.auctionOverridePrice,
             isAdmin: isAdmin(member, operatorRoleId)
         }))
         .sort(
@@ -137,29 +133,6 @@ export function listMockMembers(guildId: string, options: { q: string; page: num
         total: filtered.length,
         adminCount: all.filter((member) => isAdmin(member, operatorRoleId)).length
     };
-}
-
-export function setMockAuctionSeedPrice(
-    guildId: string,
-    userId: string,
-    price: number | null,
-    kind: 'seed' | 'override' = 'seed'
-) {
-    const member = members.get(guildId)?.find((member) => member.userId === userId);
-    if (!member) throw new DomainError('NOT_FOUND', '멤버를 찾을 수 없어요');
-    if (price !== null && (!Number.isInteger(price) || price < 1 || price > 2_147_483_647))
-        throw new DomainError('INVALID_INPUT', '금액은 1~2,147,483,647P 범위로 입력해 주세요');
-    const field = kind === 'override' ? 'auctionOverridePrice' : 'auctionSeedPrice';
-    if (member[field] === price) return;
-    member[field] = price;
-    appendAudit(guildId, {
-        kind: kind === 'override' ? 'auction_override_price_changed' : 'auction_seed_price_changed',
-        actor: mockIdentity(guildId, mockUser.userId),
-        target: mockIdentity(guildId, userId),
-        account: null,
-        primary: null,
-        setting: null
-    });
 }
 
 export function getMockDiscord(guildId: string, actorId: string) {

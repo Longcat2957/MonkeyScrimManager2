@@ -54,7 +54,7 @@ test('행위 원장 도입 전의 완료 경매도 포인트와 배정을 유지
     const { path, teams, manager, revision, action, setup } = await prepareHttpAuctionFixture(f);
     assertAction(await setup(), 200);
     assertAction(await action('start'), 200);
-    for (let index = 0; index < 8; index++) {
+    for (let index = 0; index < 7; index++) {
         assertAction(await action('draw'), 200);
         const [lot] = await f.db
             .select()
@@ -65,6 +65,11 @@ test('행위 원장 도입 전의 완료 경매도 포인트와 배정을 유지
             200
         );
     }
+    const [last] = await f.db.select().from(schema.auctionQueueEntries);
+    const participantId = last!.scrimParticipantId;
+    assertAction(await action('assign', { participantId, teamId: teams[0]!.id }), 409);
+    assertAction(await action('assign', { participantId, teamId: teams[1]!.id }), 200);
+    assert.equal((await f.db.select().from(schema.scrims))[0]!.status, 'ready');
     await f.db.delete(schema.auctionActions);
     const purchases = await f.db
         .select()

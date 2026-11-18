@@ -1,0 +1,5 @@
+ALTER TYPE "public"."auction_action_kind" ADD VALUE 'assign_queued' BEFORE 'restore';--> statement-breakpoint
+ALTER TABLE "auction_actions" DROP CONSTRAINT "auction_actions_payload";--> statement-breakpoint
+ALTER TABLE "auction_actions" ADD COLUMN "queue_ordinal" integer;--> statement-breakpoint
+ALTER TABLE "auction_actions" ADD CONSTRAINT "auction_actions_queue_ordinal" CHECK (("auction_actions"."kind"::text = 'assign_queued') = ("auction_actions"."queue_ordinal" is not null) and "auction_actions"."queue_ordinal" > 0);--> statement-breakpoint
+ALTER TABLE "auction_actions" ADD CONSTRAINT "auction_actions_payload" CHECK (("auction_actions"."kind" = 'revert' and "auction_actions"."reverses_id" is not null and "auction_actions"."reverses_id" <> "auction_actions"."id" and "auction_actions"."acquisition_id" is null) or ("auction_actions"."kind" <> 'revert' and "auction_actions"."reverses_id" is null and (("auction_actions"."kind"::text in ('award', 'assign_current', 'assign_unsold', 'assign_queued') and "auction_actions"."acquisition_id" is not null) or ("auction_actions"."kind" in ('draw', 'pass', 'restore') and "auction_actions"."acquisition_id" is null))));

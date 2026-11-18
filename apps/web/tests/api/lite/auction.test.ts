@@ -17,8 +17,8 @@ for (const value of [-1, 1.5, NaN, Infinity, '100', 2_147_483_648, null]) {
         assert.throws(() => auctionPoints(value, 0), domainError('INVALID_INPUT')));
 }
 
-test('2~4팀의 부분 팀장 저장을 허용하며 입력 객체는 공유하지 않는다', () => {
-    for (const size of [2, 3, 4]) {
+test('2팀과 4팀의 부분 팀장 저장을 허용하며 입력 객체는 공유하지 않는다', () => {
+    for (const size of [2, 4]) {
         const input = Array.from({ length: size }, (_, index) => ({
             ...team,
             captainId: index === 0 ? captainId : null
@@ -34,6 +34,7 @@ for (const [name, value] of [
     ['문자열', '[]'],
     ['빈 배열', []],
     ['한 팀', [team]],
+    ['세 팀', [team, team, team]],
     ['다섯 팀', Array.from({ length: 5 }, () => team)],
     ['팀 null', [team, null]],
     ['필드 누락', [team, { captainId: null }]],

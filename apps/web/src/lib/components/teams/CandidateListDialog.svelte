@@ -50,6 +50,19 @@
     </div>
 {/snippet}
 
+{#snippet teamButtons(player: FormationPlayer, blocked: boolean)}
+    {#each auction.teams as team (team.id)}
+        <Button
+            variant="secondary"
+            class="px-2 text-xs"
+            disabled={busy || blocked || team.members.length >= TEAM_SIZE}
+            onclick={() => onassign(player.participantId, team.id)}
+        >
+            {team.name} 배치<span class="sr-only">, {player.displayName}</span>
+        </Button>
+    {/each}
+{/snippet}
+
 <Dialog bind:open title="후보 목록">
     <div class="flex flex-col gap-5">
         <section class="flex flex-col gap-2">
@@ -87,8 +100,13 @@
             {@render group('대기 · 이름순', auction.queue.length, '')}
             <ul class="flex flex-col divide-y divide-line">
                 {#each auction.queue as player (player.participantId)}
-                    <li class="flex items-center gap-2 px-1 py-1.5">
+                    <li class="flex flex-col gap-2 px-1 py-2">
                         {@render row(player)}
+                        {#if controls}
+                            <div class="flex flex-wrap justify-end gap-1">
+                                {@render teamButtons(player, false)}
+                            </div>
+                        {/if}
                     </li>
                 {:else}
                     <li class="rounded-(--radius-small) bg-surface-hover/50 px-3 py-2 text-sm opacity-60">
@@ -108,18 +126,7 @@
                         {@render row(player)}
                         {#if controls}
                             <span class="flex flex-wrap justify-end gap-1">
-                                {#each auction.teams as team (team.id)}
-                                    <Button
-                                        variant="secondary"
-                                        class="px-2 text-xs"
-                                        disabled={busy ||
-                                            Boolean(auction.openLot) ||
-                                            team.members.length >= TEAM_SIZE}
-                                        onclick={() => onassign(player.participantId, team.id)}
-                                    >
-                                        {team.name} 배치<span class="sr-only">, {player.displayName}</span>
-                                    </Button>
-                                {/each}
+                                {@render teamButtons(player, Boolean(auction.openLot))}
                                 <Button
                                     variant="quiet"
                                     class="px-2 text-xs"

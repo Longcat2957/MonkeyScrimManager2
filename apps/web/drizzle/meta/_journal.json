@@ -127,6 +127,27 @@
       "when": 1794992142350,
       "tag": "0017_guild_member_auction_override_price",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795014461497,
+      "tag": "0018_remove_member_auction_prices",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795014806600,
+      "tag": "0019_supported_scrim_team_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795015103108,
+      "tag": "0020_auction_queue_assignment",
+      "breakpoints": true
     }
   ]
 }

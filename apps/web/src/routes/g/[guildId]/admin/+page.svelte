@@ -8,7 +8,6 @@
     import DiscordSettingRow from '#lib/components/admin/DiscordSettingRow.svelte';
     import GuildAuditHistory from '#lib/components/admin/GuildAuditHistory.svelte';
     import GuildSeasonManagement from '#lib/components/admin/GuildSeasonManagement.svelte';
-    import MemberAuctionPriceField from '#lib/components/admin/MemberAuctionPriceField.svelte';
     import MemberRiotAccountsDialog from '#lib/components/admin/MemberRiotAccountsDialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
@@ -235,11 +234,6 @@
                 <span class="font-brand text-lg font-semibold tabular-nums">{data.total}명</span>
                 <span class="text-ui text-muted">관리자 {data.adminCount}명</span>
             </div>
-            <p class="mb-3 max-w-prose text-ui text-muted">
-                추첨에는 보정가, 실제 평균 낙찰가, 초기가 순으로 먼저 있는 값을 써요. 평균은 1P 이상 낙찰된
-                기록으로 계산해요. 가격 설정은 낙찰 기록이나 통계를 바꾸지 않으며, 다음 경매 시작 또는
-                초기화부터 적용돼요. 값을 비우고 저장하면 그 설정만 해제돼요.
-            </p>
             <div class="panel [&>nav]:border-t [&>nav]:border-line [&>nav]:pb-2">
                 <form
                     role="search"
@@ -267,26 +261,16 @@
                     <!-- 관리자 여부는 Discord 역할·권한으로 정해지므로 표시만 한다. -->
                     <div
                         aria-hidden="true"
-                        class="hidden items-center gap-4 border-b border-line px-4 py-2 text-xs font-semibold text-muted md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.85fr)_5.5rem_minmax(18rem,1.85fr)]"
+                        class="hidden items-center gap-4 border-b border-line px-4 py-2 text-xs font-semibold text-muted md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.65fr)_5.5rem]"
                     >
                         <span>멤버</span><span>Riot 계정</span>
-                        <span class="col-start-4">경매 추첨</span>
+                        <span>평균 낙찰가</span>
                     </div>
                     <ul class="divide-y divide-line">
                         {#each data.members as member (`${page.params.guildId}:${member.userId}`)}
                             {@const primary = member.riotAccounts[0]}
-                            {@const basis =
-                                member.auctionOverridePrice ??
-                                member.auctionAveragePrice ??
-                                member.auctionSeedPrice}
-                            {@const source =
-                                member.auctionOverridePrice !== null
-                                    ? '보정가'
-                                    : member.auctionAveragePrice !== null
-                                      ? '실제 평균'
-                                      : '초기가'}
                             <li
-                                class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.85fr)_5.5rem_minmax(18rem,1.85fr)] md:gap-x-4"
+                                class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.65fr)_5.5rem] md:gap-x-4"
                             >
                                 <!-- 좁은 화면에서는 멤버 식별 정보 아래에 연결 계정을 둔다. -->
                                 <span class="flex min-w-0 items-center gap-3">
@@ -312,56 +296,28 @@
                                         ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
                                         : 'Riot 계정 없음'}
                                 </span>
+                                <span
+                                    class="col-start-1 min-w-0 pl-11 text-ui tabular-nums md:col-start-3 md:row-start-1 md:pl-0"
+                                >
+                                    <span class="text-muted md:sr-only">평균 낙찰가</span>
+                                    {#if member.auctionAveragePrice === null}
+                                        기록 없음
+                                    {:else}
+                                        {number.format(member.auctionAveragePrice)} P
+                                        <span class="text-xs text-muted"
+                                            >({number.format(member.auctionPurchaseCount)}건)</span
+                                        >
+                                    {/if}
+                                </span>
                                 <Button
                                     variant="secondary"
-                                    class="col-start-2 row-span-2 row-start-1 justify-self-end md:col-start-3 md:row-span-1"
+                                    class="col-start-2 row-span-2 row-start-1 justify-self-end md:col-start-4 md:row-span-1"
                                     onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
                                 >
                                     Riot 계정<span class="sr-only">
                                         관리, {member.displayName} ({member.userId})</span
                                     >
                                 </Button>
-                                <details
-                                    class="col-span-full mt-2 min-w-0 md:col-span-1 md:col-start-4 md:row-start-1 md:mt-0"
-                                >
-                                    <summary
-                                        class="grid min-h-11 cursor-pointer list-none grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 rounded-form text-ui tabular-nums [&::-webkit-details-marker]:hidden"
-                                    >
-                                        <span class="grid min-w-0 gap-0.5">
-                                            <span class="text-xs text-muted">실제 평균 낙찰가</span>
-                                            <strong class="wrap-anywhere"
-                                                >{member.auctionAveragePrice === null
-                                                    ? '기록 없음'
-                                                    : `${number.format(member.auctionAveragePrice)} P`}</strong
-                                            >
-                                            <span class="text-xs text-muted"
-                                                >낙찰 {number.format(member.auctionPurchaseCount)}건</span
-                                            >
-                                        </span>
-                                        <span class="grid min-w-0 gap-0.5">
-                                            <span class="text-xs text-muted">추첨 기준가</span>
-                                            <strong class="wrap-anywhere"
-                                                >{basis === null
-                                                    ? '미정'
-                                                    : `${number.format(basis)} P`}</strong
-                                            >
-                                            {#if basis !== null}<span class="text-xs text-muted"
-                                                    >{source}</span
-                                                >{/if}
-                                        </span>
-                                        <span
-                                            class="rounded-form border border-line-strong bg-surface-2 px-2.5 py-2 font-semibold text-ink hover:bg-surface-hover"
-                                        >
-                                            가격 설정<span class="sr-only"
-                                                >, {member.displayName} ({member.userId})</span
-                                            >
-                                        </span>
-                                    </summary>
-                                    <div class="mt-2 grid gap-2 border-t border-line pt-2">
-                                        <MemberAuctionPriceField {member} kind="override" />
-                                        <MemberAuctionPriceField {member} kind="seed" />
-                                    </div>
-                                </details>
                             </li>
                         {/each}
                     </ul>

@@ -173,7 +173,7 @@ test('승급은 신청 시각·ID 순서로 빈 자리만 채우고 원본 순�
 for (const [status, change, allowed] of [
     ['recruit', { teamCount: 4 }, true],
     ['preparing', { hardFearless: true }, true],
-    ['preparing', { teamCount: 3 }, false],
+    ['preparing', { teamCount: 4 }, false],
     ['ready', { reserveCapacity: 5 }, false],
     ['in_progress', { hardFearless: true }, false],
     ['in_progress', { title: '새 제목' }, true],

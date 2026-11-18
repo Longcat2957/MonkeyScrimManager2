@@ -36,7 +36,7 @@ export function requireRecruitment(status: ScrimStatus): void {
 }
 
 /** 폼 날짜를 실제 달력과 대조한 다음 한국 시각을 UTC로 바꾼다. */
-export function parseScrimSettings(input: ScrimSettingsInput): ScrimSettings {
+export function parseScrimSettings(input: ScrimSettingsInput): ScrimSettings<number> {
     const date = input.date.trim();
     const time = input.time.trim();
     const errors: Record<string, string> = {};
@@ -67,14 +67,14 @@ export function parseScrimSettings(input: ScrimSettingsInput): ScrimSettings {
 }
 
 /** 서비스는 폼 어댑터를 통과하지 않은 직접 호출도 같은 범위로 제한한다. */
-export function validateSettings(input: ScrimSettings, currentTeamCount?: number): ScrimSettings {
+export function validateSettings(input: ScrimSettings<number>): ScrimSettings {
     const title = typeof input.title === 'string' ? input.title.trim() : '';
     if (!title || title.length > TITLE_MAX) {
         throw new DomainError('INVALID_INPUT', '제목을 다시 확인해 주세요', {
             title: !title ? '제목을 입력해 주세요' : `제목은 ${TITLE_MAX}자까지 쓸 수 있어요`
         });
     }
-    if (!isAllowedTeamCount(input.teamCount, currentTeamCount))
+    if (!isAllowedTeamCount(input.teamCount))
         throw new DomainError('INVALID_INPUT', '팀 수는 2팀(10명) 또는 4팀(20명)으로 정해 주세요');
     if (
         !Number.isInteger(input.reserveCapacity) ||

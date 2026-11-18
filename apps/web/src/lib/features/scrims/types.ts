@@ -4,6 +4,7 @@ import type { LolPosition } from '#lib/features/guild/types.ts';
 export type ScrimStatus = (typeof scrimStatus.enumValues)[number];
 export type FormationMethod = (typeof scrimFormationMethod.enumValues)[number];
 export type RegistrationStatus = (typeof scrimRegistrationStatus.enumValues)[number];
+export type TeamCount = 2 | 4;
 
 export type ManualRegistrationResult =
     | { userId: string; status: 'selected' | 'standby' }
@@ -15,7 +16,7 @@ export type ScrimContext = {
     title: string;
     status: ScrimStatus;
     scheduledAt: string | null;
-    teamCount: number;
+    teamCount: TeamCount;
     formationMethod: FormationMethod | null;
     hardFearless: boolean;
     canManage: boolean;
@@ -39,7 +40,7 @@ export type ScrimListItem = {
     status: ScrimStatus;
     scheduledAt: string | null;
     formationMethod: FormationMethod | null;
-    teamCount: number;
+    teamCount: TeamCount;
     registered: number;
     capacity: number;
     myRegistration: RegistrationStatus | null;
@@ -52,10 +53,10 @@ export type ScrimStatusFilter = 'all' | 'recruit' | 'active' | 'done';
 
 // 모집 생성·내전 설정 수정 팝업이 주고받는 값이다. scheduledAt이 null이면 일정 미정이다.
 // 편성 방식은 설정이 아니라 모집을 마감한 뒤 팀 편성 화면에서 고른다.
-export type ScrimSettings = {
+export type ScrimSettings<Count extends number = TeamCount> = {
     title: string;
     scheduledAt: string | null;
-    teamCount: number;
+    teamCount: Count;
     reserveCapacity: number;
     hardFearless: boolean;
 };

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import test, { type TestContext } from 'node:test';
 import { createTestDatabase } from '../../support/database.ts';
 
@@ -222,6 +223,28 @@ test('세션은 해시·만료를 검증하고 사용자 삭제 시 함께 폐�
     );
 });
 
+test('0019는 3팀 내전이 남아 있으면 기존 행과 제약을 바꾸지 않는다', async (t) => {
+    const { client, createScrim, rejectsSql } = await constraintFixture(t);
+    const id = await createScrim();
+    await client.query(`ALTER TABLE scrims DROP CONSTRAINT scrims_team_count_supported,
+        ADD CONSTRAINT scrims_team_count_range CHECK (team_count BETWEEN 2 AND 4)`);
+    await client.query('UPDATE scrims SET team_count = 3 WHERE id = $1', [id]);
+    const migration = await readFile(
+        new URL('../../../../drizzle/0019_supported_scrim_team_counts.sql', import.meta.url),
+        'utf8'
+    );
+    await rejectsSql(migration, [], '23514', 'scrims_team_count_supported');
+    assert.deepEqual((await client.query('SELECT team_count FROM scrims WHERE id = $1', [id])).rows, [
+        { team_count: 3 }
+    ]);
+    await rejectsSql(
+        'UPDATE scrims SET team_count = 5 WHERE id = $1',
+        [id],
+        '23514',
+        'scrims_team_count_range'
+    );
+});
+
 test('내전 정원·revision·제목은 허용 경계 안에서만 저장한다', async (t) => {
     const { client, rejectsSql, createScrim } = await constraintFixture(t);
     const scrimId = await createScrim();
@@ -234,12 +257,12 @@ test('내전 정원·revision·제목은 허용 경계 안에서만 저장한다
             [teamCount, reserveCapacity, scrimId]
         );
     }
-    for (const value of [1, 5]) {
+    for (const value of [1, 3, 5]) {
         await rejectsSql(
             'UPDATE scrims SET team_count = $1 WHERE id = $2',
             [value, scrimId],
             '23514',
-            'scrims_team_count_range'
+            'scrims_team_count_supported'
         );
     }
     for (const value of [-1, 11]) {

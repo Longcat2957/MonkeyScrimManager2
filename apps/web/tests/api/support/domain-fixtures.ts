@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { TestContext } from 'node:test';
 import { asc, eq } from 'drizzle-orm';
+import type { ScrimSettings, TeamCount } from '../../../src/lib/features/scrims/types.ts';
 import type { Actor } from '../../../src/lib/server/auth/types.ts';
 import type { Database, Transaction } from '../../../src/lib/server/db/types.ts';
 import type { DiscordClient } from '../../../src/lib/server/discord/client.ts';
@@ -16,7 +17,7 @@ import { createTestDatabase } from './database.ts';
 export const errorCode = (code: DomainError['code']) => (error: unknown) =>
     error instanceof DomainError && error.code === code;
 export const champion = (id: string) => ({ id, name: id, iconUrl: null });
-export const settings = {
+export const settings: ScrimSettings = {
     title: '정기 내전',
     scheduledAt: null,
     teamCount: 2,
@@ -125,7 +126,7 @@ export async function createRecruitmentFixture(t: TestContext, overrides: Partia
 
 export async function createFormationFixture(
     t: TestContext,
-    teamCount = 2,
+    teamCount: TeamCount = 2,
     method: 'manual' | 'auction' = 'manual'
 ) {
     const f = await createDomainFixture(t);

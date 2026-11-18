@@ -36,7 +36,7 @@ import { requireUuid } from './validation.ts';
 
 function nodeKey(teamCount: number, round: number, number: number): string {
     if (teamCount === 2 || round === 2) return 'final';
-    return teamCount === 3 ? 'semi' : `semi-${number}`;
+    return `semi-${number}`;
 }
 
 export async function getBracketInTransaction(

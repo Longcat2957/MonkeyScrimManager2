@@ -8,9 +8,7 @@
         riot_account_linked: 'Riot 계정 연결',
         riot_account_unlinked: 'Riot 계정 연결 해제',
         riot_account_primary_changed: '대표 계정 변경',
-        discord_setting_changed: 'Discord 연동 변경',
-        auction_seed_price_changed: '경매 초기가 변경',
-        auction_override_price_changed: '추첨 보정가 변경'
+        discord_setting_changed: 'Discord 연동 변경'
     };
     const settings = {
         operatorRoleId: '운영자 역할',

@@ -113,8 +113,6 @@ erDiagram
         text guild_id PK, FK
         text user_id PK, FK
         text nickname "서버 별명, NULL 허용"
-        integer auction_seed_price "호명용 초기값, NULL 허용"
-        integer auction_override_price "호명용 보정가, NULL 허용"
         boolean is_admin "표시용 동기화 값"
         boolean manage_guild
         text_array role_ids
@@ -356,7 +354,7 @@ erDiagram
 동일 내전에서 사용자·Riot 계정은 중복 참가할 수 없고, 팀별 배정 포지션도 중복되지 않는다.
 
 실출전 정원은 `team_count × 5`, 전체 신청 정원은 여기에 `reserve_capacity`를 더한 값이다.
-신규 모집의 `team_count`는 2 또는 4다. DB는 기존 3팀 내전을 보존하기 위해 2~4를 허용한다. `reserve_capacity`는 기본값 0이며 0~10 범위의 정수다. 예를 들어 `team_count = 2`,
+`team_count`는 2 또는 4만 허용한다. `reserve_capacity`는 기본값 0이며 0~10 범위의 정수다. 예를 들어 `team_count = 2`,
 `reserve_capacity = 2`이면 10명 내전에 최대 12명의 활성 신청을 받아 최종 참가자 10명을 정할 수 있다.
 신청하면 선발 수가 `team_count × 5` 미만일 때 `selected`, 아니면 `standby`가 된다.
 선발자가 철회·제외되거나 팀 수가 늘어 자리가 비면 가장 먼저 신청한 대기자부터 선발한다.
@@ -495,6 +493,7 @@ erDiagram
         uuid auction_id FK
         integer sequence_number
         enum kind
+        integer queue_ordinal "대기 후보 직접 배치의 원래 순서"
         uuid scrim_participant_id FK
         uuid lot_id FK
         uuid acquisition_id FK "NULL 허용"
@@ -531,7 +530,7 @@ erDiagram
 경매는 내전당 하나이므로 한 팀·참가자가 연결되는 경매 팀 행도 각각 최대 하나다.
 열린 경매 후보는 경매당 하나, 무효화되지 않은 영입은 경매·참가자당 하나다.
 낙찰은 구매자·경매 시도·비음수 가격이 필수이고, 수동 배정은 구매자·가격이 `NULL`이다.
-`auction_actions`는 추첨(`draw`)·유찰(`pass`)·낙찰(`award`)·현재 후보 수동 배치(`assign_current`)·유찰자 수동 배치(`assign_unsold`)·유찰자 다시 올리기(`restore`)를 같은 순서로 저장한다. `(auction_id, sequence_number)`는 유일하고 양수이며, 해당 경매의 lot·영입·역행위를 복합 FK로 연결한다. `auction_actions_payload`는 영입 행위의 acquisition 필수 여부와 `revert`의 원본 행위·비자기참조를 검사한다. 같은 원본 행위의 역기록은 하나다.
+`auction_actions`는 추첨(`draw`)·유찰(`pass`)·낙찰(`award`)·수동 배치(`assign_current`, `assign_queued`, `assign_unsold`)·유찰자 다시 올리기(`restore`)를 같은 순서로 저장한다. 대기자 직접 배치(`assign_queued`)만 원래 `queue_ordinal`을 기록한다. `(auction_id, sequence_number)`는 유일하고 양수이며, 해당 경매의 lot·영입·역행위를 복합 FK로 연결한다. `auction_actions_payload`는 영입 행위의 acquisition 필수 여부와 `revert`의 원본 행위·비자기참조를 검사한다. 같은 원본 행위의 역기록은 하나다.
 
 직전 작업 취소는 기존 lot·영입을 무효화하고 필요한 후보를 복원한 뒤 `revert` 행을 남긴다. 역기록 자체가 최신 행위이므로 다음 새 행위 전에는 연속 스택 되감기를 제공하지 않는다. 초기화·팀장 재설정·방식 변경·모집 복귀는 기존 행위를 삭제하지 않고 `invalidated_at` 경계를 남기며, 단순 내전 취소·복구는 그 원장을 보존한다. 이전 lot 이력에서 누락된 행위를 추정해 backfill하지 않는다. 스키마에는 `supersedes_id` 정정 연결도 있지만 현재 경매 서비스는 이 값을 기록하지 않는다.
 아직 등장하지 않은 후보의 순서는 `auction_queue_entries`, 현재 후보는 열린 lot, 영입 결과는 acquisition이 저장 원천이다.
@@ -619,7 +618,7 @@ erDiagram
 `winner_team_id`는 별도 FK가 아니라 A/B 팀 중 하나인지 확인하는 `CHECK`로 제한한다.
 `matches_winner_requires_completion`은 정상 완료의 승자를 필수로 두고 중도 종료에는 현재 점수 우세 또는 동점 null을 허용한다. 다른 상태에서는 승자가 null이어야 한다.
 대진 자리는 직접 지정한 팀 또는 이전 대진의 승자 중 하나를 참조하며 둘 다 미정일 수도 있다.
-2·3·4팀 대진과 라운드별 BO 1·3·5, 활성 팀 순서, 중복 직접 시드에 DB 제약을 둔다.
+2·4팀 대진과 라운드별 BO 1·3·5, 활성 팀 순서, 중복 직접 시드에 DB 제약을 둔다.
 시작 시 양 팀이 정해진 노드만 Match를 만들며, 중도 종료의 복원 필드는 그 동작이 멈춘 Match만 재개하는 데 쓴다. `matches_scrim_end_restore_state`는 `pending`·`in_progress`였던 상태와 중단 상태의 조합을 검사하며 기존 pending→cancelled 복원 근거도 보존한다. 재개 시 원래 종료 시각·사유와 승자 null을 되돌리고 경기 revision을 높인다. 준결승 우세를 새 결승·우승으로 바꾸지 않는다.
 `games`의 `(match_id, game_number)` 고유 인덱스는 `status <> 'cancelled'`인 행에만 적용한다.
 정정한 이전 Game은 취소 상태로 남고 같은 번호의 새 Game을 별도 ID로 등록한다. `rofl_metadata_id`도 취소되지 않은 Game 사이에서만 고유하다. 같은 파일을 복구할 때 원본 메타데이터를 다시 참조하며, 이전 Game의 채택 근거는 유지한다.

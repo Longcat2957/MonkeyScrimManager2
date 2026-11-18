@@ -32,7 +32,8 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
         new ButtonBuilder()
             .setCustomId(`registration:${publication.scrimId}`)
             .setLabel('참가하기')
-            .setStyle(ButtonStyle.Primary),
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(data.status !== 'recruit'),
         new ButtonBuilder()
             .setCustomId(`registration-standby:${publication.scrimId}`)
             .setLabel('대기하기')

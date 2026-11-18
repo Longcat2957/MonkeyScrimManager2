@@ -198,7 +198,7 @@ test('잘못된 BO나 4팀의 단일 경기 시작 요청은 편성을 변경하
     for (const [teamCount, bestOf] of [
         [2, 2],
         [4, 3]
-    ]) {
+    ] as const) {
         const f = await createFormationFixture(t, teamCount);
         await f.fill();
         await assert.rejects(

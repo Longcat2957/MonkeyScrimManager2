@@ -14,7 +14,7 @@
         guildId: string;
         // 앞 경기 이름. 승자 자리를 "준결승 A 승자"처럼 표시한다.
         labelOf: (key: string) => string;
-        // 배치 자리 이름(예: 준결승 A 왼쪽, 결승 직행).
+        // 배치 자리 이름(예: 준결승 A 왼쪽).
         seatLabel: (seat: string) => string;
         // 배치 중이면 자리에 팀을 놓고 빼는 조작을 보여 준다. 확정 후에는 점수와 승자를 보여 준다.
         editing: boolean;
@@ -139,7 +139,7 @@
             <span
                 class="flex flex-1 items-center justify-center rounded-(--radius-small) border border-dashed border-line-strong text-ui text-muted"
             >
-                {label === '결승 직행' ? label : '비어 있음'}
+                비어 있음
             </span>
         {/if}
     </div>

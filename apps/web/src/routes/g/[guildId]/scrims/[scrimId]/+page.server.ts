@@ -4,15 +4,11 @@ import type { LolPosition } from '#lib/features/guild/types.ts';
 import { POSITIONS } from '#lib/features/labels.ts';
 import {
     editableFields,
-    inRange,
-    isAllowedTeamCount,
     readScrimSettingsForm,
     RESERVE_CAPACITY,
     TEAM_COUNT,
     readFormationMethod,
-    playCapacity,
-    toScrimSettings,
-    validateScrimSettings
+    playCapacity
 } from '#lib/features/scrims/settings.ts';
 import type { ManualRegistrationResult, RegistrationAccount } from '#lib/features/scrims/types.ts';
 import { getMockMe } from '#lib/mocks/me.ts';
@@ -57,7 +53,7 @@ import {
     cancelScrim,
     restoreCancelledScrim
 } from '#lib/server/scrims/service.ts';
-import { parseScrimSettings } from '#lib/server/scrims/validation.ts';
+import { parseScrimSettings, validateSettings } from '#lib/server/scrims/validation.ts';
 import {
     advanceScrim,
     chooseFormationMethod,
@@ -342,31 +338,29 @@ const previewActions: Actions = {
         return failWith(await cancelMockScrim(params.guildId, params.scrimId));
     },
 
-    settings: async ({ request, params }) => {
+    settings: async ({ request, params, setHeaders }) => {
         requireDev();
         const denied = requireManager(params.guildId, params.scrimId);
         if (denied) return denied;
         const scrim = findMockScrim(params.guildId, params.scrimId)!;
         const current = getMockScrimSettings(params.guildId, params.scrimId)!;
-        const input = readScrimSettingsForm(await request.formData());
-        const errors = validateScrimSettings(input);
-        if (Object.keys(errors).length) return fail(400, { errors });
-        if (
-            !isAllowedTeamCount(input.teamCount, current.teamCount) ||
-            !inRange(input.reserveCapacity, RESERVE_CAPACITY)
-        ) {
-            return fail(400, { message: '팀 수나 정원을 다시 확인해 주세요' });
+        try {
+            const input = readScrimSettingsForm(await request.formData());
+            const next = validateSettings(parseScrimSettings(input));
+            // 이 단계에서 바꿀 수 없는 값은 요청에 무엇이 오든 현재 값을 유지한다.
+            const editable = editableFields(scrim.status);
+            const merged = Object.fromEntries(
+                Object.entries(current).map(([field, value]) => [
+                    field,
+                    editable.includes(field as keyof typeof current)
+                        ? next[field as keyof typeof next]
+                        : value
+                ])
+            ) as typeof current;
+            return failWith(await updateMockScrimSettings(params.guildId, params.scrimId, merged));
+        } catch (cause) {
+            return actionFailure(cause, setHeaders);
         }
-        // 이 단계에서 바꿀 수 없는 값은 요청에 무엇이 오든 현재 값을 유지한다.
-        const editable = editableFields(scrim.status);
-        const next = toScrimSettings(input);
-        const merged = Object.fromEntries(
-            Object.entries(current).map(([field, value]) => [
-                field,
-                editable.includes(field as keyof typeof current) ? next[field as keyof typeof next] : value
-            ])
-        ) as typeof current;
-        return failWith(await updateMockScrimSettings(params.guildId, params.scrimId, merged));
     }
 };
 

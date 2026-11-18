@@ -21,7 +21,7 @@ import { createFormationFixture } from '../../support/domain-fixtures.ts';
 test('경매 원장은 완료 시각·유효 영입 순서·당시 구매자를 보존하고 모든 역할의 신원을 가린다', async (t) => {
     const { db, guildId, otherGuildId, season, scrimId, teams, participants } = await createFormationFixture(
         t,
-        3,
+        4,
         'auction'
     );
     const at = (seconds: number) => new Date(seconds * 1000);
@@ -35,7 +35,7 @@ test('경매 원장은 완료 시각·유효 영입 순서·당시 구매자를 
     const scope = { scrimId, auctionId: randomUUID() };
     await db.insert(auctions).values({ id: scope.auctionId, scrimId, status: 'in_progress' });
     await db.insert(auctionTeams).values(
-        [1, 3, 6].map((index, team) => ({
+        [1, 3, 6, 10].map((index, team) => ({
             ...scope,
             teamId: teams[team]!.id,
             captainParticipantId: participants[index]!.id,
@@ -194,7 +194,8 @@ test('경매 원장은 완료 시각·유효 영입 순서·당시 구매자를 
                     }
                 ]
             },
-            { id: teams[2]!.id, name: teams[2]!.name, captain: visible(6), budget: 502, signings: [] }
+            { id: teams[2]!.id, name: teams[2]!.name, captain: visible(6), budget: 502, signings: [] },
+            { id: teams[3]!.id, name: teams[3]!.name, captain: visible(10), budget: 503, signings: [] }
         ]
     };
     const olderId = randomUUID();
@@ -217,7 +218,7 @@ test('경매 원장은 완료 시각·유효 영입 순서·당시 구매자를 
     );
     assert.deepEqual(all[0], expected);
     assert.deepEqual(all[1]!.teams[0]!.captain, null);
-    for (const index of [0, 1, 2, 3, 4, 6, 7]) assert.deepEqual(await ledger(user(index)), [expected]);
+    for (const index of [0, 1, 2, 3, 4, 6, 7, 10]) assert.deepEqual(await ledger(user(index)), [expected]);
     for (const index of [5, 8, 9]) assert.deepEqual(await ledger(user(index)), []);
     assert.deepEqual(await ledger(undefined, guildId, null), []);
     assert.deepEqual(await ledger(undefined, guildId, randomUUID()), []);

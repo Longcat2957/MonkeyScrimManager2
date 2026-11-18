@@ -268,27 +268,19 @@ test('3팀으로 생성하거나 변경할 수 없고 기존 내전은 그대로
     assert.deepEqual(await f.db.select().from(schema.scrims), [before]);
 });
 
-test('기존 3팀 모집은 팀 수를 유지하며 수정하거나 4팀으로 바꿀 수 있다', async (t) => {
-    const f = await createDomainFixture(t);
-    const [legacy] = await f.db
-        .insert(schema.scrims)
-        .values({ guildId: f.guildId, mmrSeasonId: f.season.id, title: '기존 3팀 내전', teamCount: 3 })
-        .returning();
-    let expectedRevision = legacy!.revision;
-    for (const teamCount of [3, 4]) {
-        const title = `${teamCount}팀 변경`;
+test('모집 중에는 2팀을 4팀으로 늘리거나 다시 2팀으로 줄일 수 있다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    for (const teamCount of [4, 2]) {
         await updateScrimSettings(
             f.db,
             f.manager,
             f.guildId,
-            legacy!.id,
-            { expectedRevision, settings: { ...settings, title, teamCount } },
+            f.scrimId,
+            { ...(await f.revision()), settings: { ...settings, teamCount } },
             f.access
         );
-        const saved = (await getScrimSettings(f.db, f.manager, f.guildId, legacy!.id, f.access))!;
+        const saved = (await getScrimSettings(f.db, f.manager, f.guildId, f.scrimId, f.access))!;
         assert.equal(saved.teamCount, teamCount);
-        assert.equal(saved.title, title);
-        expectedRevision++;
     }
 });
 

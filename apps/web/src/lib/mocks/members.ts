@@ -9,8 +9,6 @@ export type MockMember = {
     displayName: string;
     roles: string[];
     manageGuild: boolean;
-    auctionSeedPrice: number | null;
-    auctionOverridePrice: number | null;
 };
 
 export const mockMembers = new Map<string, MockMember[]>([
@@ -24,8 +22,6 @@ export const mockMembers = new Map<string, MockMember[]>([
         ].map(({ userId, displayName }) => ({
             userId,
             displayName,
-            auctionSeedPrice: null,
-            auctionOverridePrice: null,
             roles:
                 userId === mockUser.userId
                     ? ['r-ops', 'r-member']

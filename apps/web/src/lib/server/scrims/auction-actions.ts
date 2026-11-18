@@ -29,6 +29,7 @@ export async function recordAuctionAction(
         participantId: string;
         lotId: string;
         acquisitionId?: string;
+        queueOrdinal?: number;
         reversesId?: string;
     }
 ) {
@@ -41,6 +42,7 @@ export async function recordAuctionAction(
         scrimParticipantId: input.participantId,
         lotId: input.lotId,
         acquisitionId: input.acquisitionId ?? null,
+        queueOrdinal: input.queueOrdinal,
         reversesId: input.reversesId ?? null,
         recordedByUserId: userId
     });

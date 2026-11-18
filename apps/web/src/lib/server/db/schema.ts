@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import type { GuildAuditKind } from '../../features/guild/audit.ts';
 import type { GuildDiscordSettingKey } from '../../features/guild/types.ts';
+import type { TeamCount } from '../../features/scrims/types.ts';
 import type { ServiceAdminEventKind, ServiceAdminEventSource } from '../../features/service-admin.ts';
 import {
     bigint,
@@ -149,8 +150,6 @@ export const guildMembers = pgTable(
             .references(() => users.id, { onDelete: 'cascade' }),
         // Discord 서버별 별명이며 전역 프로필 이름과 분리해서 보관한다.
         nickname: text('nickname'),
-        auctionSeedPrice: integer('auction_seed_price'),
-        auctionOverridePrice: integer('auction_override_price'),
         // 해당 길드의 서버 관리자 여부. 웹에서 직접 바꾸지 않고, 봇이 Discord 서버 관리 권한이나
         // guild_discord_settings.operator_role_id 역할 보유 여부로 동기화한다.
         isAdmin: boolean('is_admin').default(false).notNull(),
@@ -166,9 +165,7 @@ export const guildMembers = pgTable(
     },
     (table) => [
         primaryKey({ columns: [table.guildId, table.userId] }),
-        index('guild_members_user_id_idx').on(table.userId),
-        check('guild_members_auction_seed_price_positive', sql`${table.auctionSeedPrice} > 0`),
-        check('guild_members_auction_override_price_positive', sql`${table.auctionOverridePrice} > 0`)
+        index('guild_members_user_id_idx').on(table.userId)
     ]
 );
 
@@ -253,6 +250,7 @@ export const guildAuditEntries = pgTable(
         index('guild_audit_entries_account_idx').on(table.riotAccountId),
         index('guild_audit_entries_previous_primary_idx').on(table.previousPrimaryAccountId),
         index('guild_audit_entries_next_primary_idx').on(table.nextPrimaryAccountId),
+        // 이전 감사 행의 종류도 보존해야 사용자 삭제 시 외래 키 참조만 비울 수 있다.
         check(
             'guild_audit_entries_kind_valid',
             sql`${table.kind} in ('riot_account_linked', 'riot_account_unlinked', 'riot_account_primary_changed', 'discord_setting_changed', 'auction_seed_price_changed', 'auction_override_price_changed')`
@@ -377,7 +375,7 @@ export const scrims = pgTable(
         // 새 Match를 만들 때 사용할 기본값이다. 실제 적용값은 Match에 복사하며 이후 변경을 전파하지 않는다.
         isHardFearless: boolean('is_hard_fearless').default(false).notNull(),
         // 실출전 정원은 팀 수 × 5명이다. 추가 신청 인원은 팀 수나 실출전 정원을 늘리지 않는다.
-        teamCount: integer('team_count').default(2).notNull(),
+        teamCount: integer('team_count').$type<TeamCount>().default(2).notNull(),
         // 전체 신청 정원은 실출전 정원 + 추가 신청 정원이다. 신청 순서대로 실출전 정원까지 선발하고 나머지는 대기다.
         reserveCapacity: integer('reserve_capacity').default(0).notNull(),
         // 모집 때 안내한 예정 시각이며 실제 경기 시작 시각과 구분한다.
@@ -400,7 +398,7 @@ export const scrims = pgTable(
         index('scrims_guild_id_idx').on(table.guildId),
         index('scrims_mmr_season_id_idx').on(table.mmrSeasonId),
         index('scrims_created_by_user_id_idx').on(table.createdByUserId),
-        check('scrims_team_count_range', sql`${table.teamCount} between 2 and 4`),
+        check('scrims_team_count_supported', sql`${table.teamCount} in (2, 4)`),
         check('scrims_reserve_capacity_range', sql`${table.reserveCapacity} between 0 and 10`),
         check('scrims_revision_nonnegative', sql`${table.revision} >= 0`),
         check(
@@ -791,6 +789,7 @@ export const auctionActionKind = pgEnum('auction_action_kind', [
     'award',
     'assign_current',
     'assign_unsold',
+    'assign_queued',
     'restore',
     'revert'
 ]);
@@ -808,6 +807,7 @@ export const auctionActions = pgTable(
         scrimParticipantId: uuid('scrim_participant_id').notNull(),
         lotId: uuid('lot_id').notNull(),
         acquisitionId: uuid('acquisition_id'),
+        queueOrdinal: integer('queue_ordinal'),
         reversesId: uuid('reverses_id'),
         recordedByUserId: text('recorded_by_user_id').references(() => users.id, { onDelete: 'set null' }),
         recordedAt: timestamp('recorded_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
@@ -840,7 +840,11 @@ export const auctionActions = pgTable(
         check('auction_actions_sequence_positive', sql`${table.sequenceNumber} > 0`),
         check(
             'auction_actions_payload',
-            sql`(${table.kind} = 'revert' and ${table.reversesId} is not null and ${table.reversesId} <> ${table.id} and ${table.acquisitionId} is null) or (${table.kind} <> 'revert' and ${table.reversesId} is null and ((${table.kind} in ('award', 'assign_current', 'assign_unsold') and ${table.acquisitionId} is not null) or (${table.kind} in ('draw', 'pass', 'restore') and ${table.acquisitionId} is null)))`
+            sql`(${table.kind} = 'revert' and ${table.reversesId} is not null and ${table.reversesId} <> ${table.id} and ${table.acquisitionId} is null) or (${table.kind} <> 'revert' and ${table.reversesId} is null and ((${table.kind}::text in ('award', 'assign_current', 'assign_unsold', 'assign_queued') and ${table.acquisitionId} is not null) or (${table.kind} in ('draw', 'pass', 'restore') and ${table.acquisitionId} is null)))`
+        ),
+        check(
+            'auction_actions_queue_ordinal',
+            sql`(${table.kind}::text = 'assign_queued') = (${table.queueOrdinal} is not null) and ${table.queueOrdinal} > 0`
         ),
         check('auction_actions_invalidation_time', sql`${table.invalidatedAt} >= ${table.recordedAt}`)
     ]
