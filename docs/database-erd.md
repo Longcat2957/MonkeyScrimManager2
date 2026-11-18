@@ -113,6 +113,8 @@ erDiagram
         text guild_id PK, FK
         text user_id PK, FK
         text nickname "서버 별명, NULL 허용"
+        integer auction_seed_price "호명용 초기값, NULL 허용"
+        integer auction_override_price "호명용 보정가, NULL 허용"
         boolean is_admin "표시용 동기화 값"
         boolean manage_guild
         text_array role_ids
@@ -354,7 +356,7 @@ erDiagram
 동일 내전에서 사용자·Riot 계정은 중복 참가할 수 없고, 팀별 배정 포지션도 중복되지 않는다.
 
 실출전 정원은 `team_count × 5`, 전체 신청 정원은 여기에 `reserve_capacity`를 더한 값이다.
-`team_count`는 2~4, `reserve_capacity`는 기본값 0이며 0~10 범위의 정수다. 예를 들어 `team_count = 2`,
+신규 모집의 `team_count`는 2 또는 4다. DB는 기존 3팀 내전을 보존하기 위해 2~4를 허용한다. `reserve_capacity`는 기본값 0이며 0~10 범위의 정수다. 예를 들어 `team_count = 2`,
 `reserve_capacity = 2`이면 10명 내전에 최대 12명의 활성 신청을 받아 최종 참가자 10명을 정할 수 있다.
 신청하면 선발 수가 `team_count × 5` 미만일 때 `selected`, 아니면 `standby`가 된다.
 선발자가 철회·제외되거나 팀 수가 늘어 자리가 비면 가장 먼저 신청한 대기자부터 선발한다.

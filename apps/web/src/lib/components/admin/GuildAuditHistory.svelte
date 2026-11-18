@@ -8,7 +8,9 @@
         riot_account_linked: 'Riot 계정 연결',
         riot_account_unlinked: 'Riot 계정 연결 해제',
         riot_account_primary_changed: '대표 계정 변경',
-        discord_setting_changed: 'Discord 연동 변경'
+        discord_setting_changed: 'Discord 연동 변경',
+        auction_seed_price_changed: '경매 초기가 변경',
+        auction_override_price_changed: '추첨 보정가 변경'
     };
     const settings = {
         operatorRoleId: '운영자 역할',
@@ -69,7 +71,7 @@
                             <dt class="text-muted">변경 후</dt>
                             <dd class="wrap-anywhere">{entry.primary.after?.riotId ?? '대표 계정 없음'}</dd>
                         </dl>
-                    {:else}
+                    {:else if entry.kind === 'riot_account_linked' || entry.kind === 'riot_account_unlinked'}
                         <p class="text-ui wrap-anywhere">{accountName(entry.account)}</p>
                         {#if entry.kind === 'riot_account_unlinked' && entry.primary && entry.primary.before?.id !== entry.primary.after?.id}
                             <p class="text-sm text-muted wrap-anywhere">

@@ -14,8 +14,6 @@ import {
     resetMockManual
 } from '#lib/mocks/teams.ts';
 import { clearMockFormationMethod } from '#lib/mocks/workflow.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
-import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { actionFailure } from '#lib/server/actions.ts';
@@ -46,12 +44,9 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
 
     let formation;
     try {
-        if (isDemo(params.guildId)) {
-            const version = await latestDataDragonVersion();
-            formation = await getMockManualFormation(params.guildId, params.scrimId, (id) =>
-                championIconUrl(version, id)
-            );
-        } else formation = await getManualFormation(getDb(), locals.actor, params.guildId, params.scrimId);
+        formation = isDemo(params.guildId)
+            ? await getMockManualFormation(params.guildId, params.scrimId)
+            : await getManualFormation(getDb(), locals.actor, params.guildId, params.scrimId);
     } catch (cause) {
         routeError(cause);
     }

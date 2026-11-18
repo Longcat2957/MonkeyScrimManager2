@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { Actor } from '../auth/types.ts';
 import { guildMembers, users } from '../db/schema.ts';
 import type { Transaction } from '../db/types.ts';
+import { discordAvatarUrl } from '../discord/avatar.ts';
 import { isDiscordId } from '../discord/client.ts';
 import { discordDisplayName } from '../discord/display-name.ts';
 import { DomainError } from '../errors.ts';
@@ -45,10 +46,7 @@ export async function readPublicIdentities(
                     identityKey: row.publicId,
                     displayName: visible ? name : row.withdrawnAt ? '탈퇴한 사용자' : '비공개 사용자',
                     ...(guildId && visible ? { currentGuildName: name } : {}),
-                    avatarUrl:
-                        visible && row.avatarHash
-                            ? `https://cdn.discordapp.com/avatars/${row.id}/${row.avatarHash}.webp?size=128`
-                            : null,
+                    avatarUrl: visible ? discordAvatarUrl(row.id, row.avatarHash) : null,
                     profileVisible: visible,
                     showRiotIds: row.withdrawnAt === null && row.publicRiotIds
                 }

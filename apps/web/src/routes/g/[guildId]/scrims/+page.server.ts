@@ -4,14 +4,12 @@ import {
     inRange,
     readScrimSettingsForm,
     RESERVE_CAPACITY,
-    TEAM_COUNT,
+    isAllowedTeamCount,
     toScrimSettings,
     validateScrimSettings
 } from '#lib/features/scrims/settings.ts';
 import type { ScrimStatusFilter } from '#lib/features/scrims/types.ts';
 import { createMockScrim, listMockScrims } from '#lib/mocks/scrims.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
-import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { listScrims } from '#lib/server/scrims/queries.ts';
@@ -56,12 +54,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
         }
     }
 
-    const version = await latestDataDragonVersion();
-    const result = await listMockScrims(
-        params.guildId,
-        { status: statusFilter, page, pageSize: PAGE_SIZE },
-        (championId) => championIconUrl(version, championId)
-    );
+    const result = await listMockScrims(params.guildId, { status: statusFilter, page, pageSize: PAGE_SIZE });
     return {
         ...result,
         page,
@@ -92,7 +85,7 @@ export const actions: Actions = {
         const input = readScrimSettingsForm(await request.formData());
         const errors = validateScrimSettings(input);
         if (Object.keys(errors).length) return fail(400, { errors });
-        if (!inRange(input.teamCount, TEAM_COUNT) || !inRange(input.reserveCapacity, RESERVE_CAPACITY)) {
+        if (!isAllowedTeamCount(input.teamCount) || !inRange(input.reserveCapacity, RESERVE_CAPACITY)) {
             return fail(400, { message: '팀 수나 정원을 다시 확인해 주세요' });
         }
         const id = await createMockScrim(params.guildId, toScrimSettings(input));

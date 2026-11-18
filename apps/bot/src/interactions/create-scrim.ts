@@ -86,6 +86,8 @@ function choice(id: string, title: string, current: string, options: { label: st
     );
 }
 
+const creationTeamCounts = ['2', '4'];
+
 export function creationModal(form: ScrimCreationForm) {
     const title = new TextInputBuilder()
         .setCustomId('title')
@@ -115,9 +117,9 @@ export function creationModal(form: ScrimCreationForm) {
                 'teamCount',
                 '팀 수',
                 form.draft.teamCount,
-                [2, 3, 4].map((count) => ({
-                    label: `${count}팀 · ${count * 5}명`,
-                    value: String(count)
+                creationTeamCounts.map((count) => ({
+                    label: `${count}팀 · ${Number(count) * 5}명`,
+                    value: count
                 }))
             ),
             choice(
@@ -172,7 +174,7 @@ function creationInput(form: ScrimCreationForm) {
     const title = form.draft.title.trim();
     if (!title || title.length > 50) throw new CreationInputError('내전 제목은 1~50자로 입력해 주세요.');
     if (
-        !['2', '3', '4'].includes(form.draft.teamCount) ||
+        !creationTeamCounts.includes(form.draft.teamCount) ||
         !/^(?:[0-9]|10)$/.test(form.draft.reserveCapacity) ||
         !['true', 'false'].includes(form.draft.hardFearless)
     ) {

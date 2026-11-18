@@ -284,7 +284,7 @@ test('표시 DTO는 사용자 프로필·현재 서비스 권한만 반환한다
     assert.deepEqual(sessionUser(user), {
         userId: user.id,
         displayName: 'tester',
-        avatarUrl: null,
+        avatarUrl: 'https://cdn.discordapp.com/embed/avatars/4.png',
         isServiceAdmin: false
     });
     assert.deepEqual(

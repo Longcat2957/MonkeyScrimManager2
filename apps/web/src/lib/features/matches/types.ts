@@ -19,6 +19,7 @@ export type MatchOperationContext = {
             participantId: string;
             userId: string | null;
             displayName: string;
+            iconUrl: string | null;
             riotId: string | null;
             position: LolPosition | null;
         }[];
@@ -49,9 +50,8 @@ export type MatchListItem = {
     status: MatchStatus;
     // 실제 경기 시각을 확인하지 못했으면 null이다. 업로드 시각으로 대신하지 않는다.
     playedAt: string | null;
+    matchedGameId?: string | null;
 };
-
-export type MatchStatusFilter = 'all' | 'in_progress' | 'done';
 
 /** 게임 표의 아이템·주문·룬 아이콘. 카탈로그에서 찾지 못하면 이름이 비고 아이콘이 null이다. */
 export type LoadoutIcon = { id: number; name: string; iconUrl: string | null };

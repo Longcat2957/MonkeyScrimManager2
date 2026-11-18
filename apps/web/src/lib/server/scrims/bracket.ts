@@ -144,15 +144,15 @@ export async function getBracketInTransaction(
             name: team.name,
             members: members
                 .filter((member) => member.teamId === team.id)
-                .map((member) => ({
-                    id: member.id,
-                    position: member.position,
-                    displayName: publicDisplayName(
-                        member.userId ? identities.get(member.userId) : undefined,
-                        member.displayName
-                    ),
-                    iconUrl: null
-                }))
+                .map((member) => {
+                    const identity = member.userId ? identities.get(member.userId) : undefined;
+                    return {
+                        id: member.id,
+                        position: member.position,
+                        displayName: publicDisplayName(identity, member.displayName),
+                        iconUrl: identity?.avatarUrl ?? null
+                    };
+                })
         })),
         matches: resolveWinners(entries),
         bestOf,

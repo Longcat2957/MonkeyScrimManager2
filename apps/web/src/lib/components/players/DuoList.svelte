@@ -1,5 +1,6 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import type { DuoRecord } from '#lib/features/players/types.ts';
 
     // 같은 팀으로 함께한 사람과의 승률. 베스트·워스트가 같은 모양을 쓴다.
@@ -11,7 +12,7 @@
         seasonId = null
     }: {
         title: string;
-        records: DuoRecord[];
+        records: (DuoRecord & { iconUrl: string | null })[];
         guildId: string;
         tone: 'success' | 'error';
         seasonId?: string | null;
@@ -28,7 +29,8 @@
                         href={`${resolve('/g/[guildId]/players/[userId]', { guildId, userId: record.userId })}${seasonId ? `?season=${seasonId}` : ''}`}
                         class="flex min-h-11 items-center justify-between gap-3 px-4 py-2 hover:bg-surface-hover"
                     >
-                        <span class="flex min-w-0 flex-col">
+                        <PlayerFace name={record.displayName} imageUrl={record.iconUrl} size="sm" />
+                        <span class="flex min-w-0 flex-1 flex-col">
                             <span class="text-ui font-semibold wrap-anywhere">{record.displayName}</span>
                             <span class="text-xs text-muted">{record.games}게임 함께</span>
                         </span>

@@ -14,8 +14,7 @@ async function fixture(t: TestContext) {
         queryRankingPage(f.db, null, f.guildId, 'top', {
             offset,
             limit,
-            userId: f.users[5]!.id,
-            championIcon: (id) => `${id}.png`
+            userId: f.users[5]!.id
         });
     return { ...f, game, application, ranking };
 }
@@ -28,7 +27,7 @@ test('순위는 현재 시즌 실적만 세고 페이지 밖 본인 순위를 �
     assert.equal(result?.page.entries[0]?.mmr, 1516);
     assert.equal(result?.page.entries[0]?.games, 1);
     assert.equal(result?.page.entries[0]?.wins, 1);
-    assert.equal(result?.page.entries[0]?.iconUrl, 'Ahri.png');
+    assert.match(result?.page.entries[0]?.iconUrl ?? '', /^https:\/\/cdn\.discordapp\.com\/embed\/avatars\//);
     assert.equal(result?.page.hasMore, true);
     assert.equal(result?.page.me?.rank, 2);
     assert.equal(result?.page.me?.isMe, true);
@@ -112,12 +111,17 @@ for (const mismatch of ['missingPosition', 'missingParticipant', 'adoptedReplay'
         assert.ok(!(await f.ranking())?.page.entries.some((entry) => entry.userId === f.manager.userId));
     });
 
-test('대표 챔피언 동률은 식별자 순서로 정하고 소수 점수를 반올림하지 않는다', async (t) => {
+test('챔피언이 달라도 Discord 프로필 사진을 유지하고 소수 점수를 반올림하지 않는다', async (t) => {
     const f = await fixture(t);
+    const avatarHash = 'a'.repeat(32);
+    await f.db.update(schema.users).set({ avatarHash }).where(eq(schema.users.id, f.manager.userId));
     const next = await f.createGame(f.db, 2, f.match.id, 'a', { champion: 'Aatrox' });
     await f.apply(next.id);
     const result = await f.ranking();
-    assert.equal(result?.page.entries[0]?.iconUrl, 'Aatrox.png');
+    assert.equal(
+        result?.page.entries[0]?.iconUrl,
+        `https://cdn.discordapp.com/avatars/${f.manager.userId}/${avatarHash}.webp?size=128`
+    );
     assert.equal(result?.page.entries[0]?.games, 2);
     assert.ok(!Number.isInteger(result!.page.entries[0]!.mmr));
     assert.equal(result?.page.entries[0]?.mmr, (await f.ratings())[0]!.mmr);

@@ -3,7 +3,7 @@ import { LANES, slotKey, type Assignments, type FormationPlayer } from '../../fe
 import type { LolPosition } from '../../features/guild/types.ts';
 import { isBestOf } from '../../features/scrims/bracket.ts';
 import type { Actor } from '../auth/types.ts';
-import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
+import { publicDisplayName, readPublicIdentities, type PublicIdentity } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import {
     scrimParticipantPreferences,
@@ -51,7 +51,7 @@ export async function formationPlayers(
     tx: Transaction,
     row: ScrimRow,
     selected: Awaited<ReturnType<typeof selectedParticipants>>
-): Promise<FormationPlayer[]> {
+): Promise<Omit<FormationPlayer, 'iconUrl'>[]> {
     const ids = selected.map(({ participant }) => participant.id);
     const userIds = selected
         .map(({ participant }) => participant.userId)
@@ -80,7 +80,6 @@ export async function formationPlayers(
         participantId: participant.id,
         userId: participant.userId,
         displayName: participant.displayName,
-        iconUrl: null,
         positions: preferences
             .filter((preference) => preference.scrimParticipantId === participant.id)
             .map((preference) => preference.position),
@@ -125,9 +124,14 @@ export async function getManualFormation(
                 if (participant.teamId && participant.position)
                     assignments[participant.id] = slotKey(participant.teamId, participant.position);
             const pairs = await formationPairRecords(tx, guildId, row.mmrSeasonId, players);
+            const identities = await readPublicIdentities(
+                tx,
+                players.map((player) => player.userId),
+                guildId
+            );
             return {
                 teams,
-                players: await publicFormationPlayers(tx, players, guildId),
+                players: publicFormationPlayers(players, identities),
                 assignments,
                 confirmed: ['ready', 'in_progress', 'completed', 'ended_early'].includes(row.status),
                 pairs
@@ -138,23 +142,17 @@ export async function getManualFormation(
 }
 
 /** 편성의 실제 사용자·MMR 계산을 끝낸 뒤 공개 표현만 바꾼다. 참가자 UUID와 배정은 유지한다. */
-export async function publicFormationPlayers(
-    tx: Transaction,
-    players: FormationPlayer[],
-    guildId?: string
-): Promise<FormationPlayer[]> {
-    const identities = await readPublicIdentities(
-        tx,
-        players.map((player) => player.userId),
-        guildId
-    );
+export function publicFormationPlayers(
+    players: Omit<FormationPlayer, 'iconUrl'>[],
+    identities: ReadonlyMap<string, PublicIdentity>
+): FormationPlayer[] {
     return players.map((player) => {
         const identity = player.userId ? identities.get(player.userId) : undefined;
         return {
             ...player,
             userId: identity?.userId ?? null,
             displayName: publicDisplayName(identity, player.displayName),
-            iconUrl: identity?.profileVisible ? player.iconUrl : null
+            iconUrl: identity?.avatarUrl ?? null
         };
     });
 }

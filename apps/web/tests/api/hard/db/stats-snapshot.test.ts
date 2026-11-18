@@ -187,6 +187,7 @@ test('개발 샘플만 기존 업적을 유지하며 빈 샘플과 명시 시즌
     assert.ok(!demo.empty);
     assert.equal(demo.showAchievements, true);
     assert.ok(demo.achievements.length > 0);
+    assert.ok(demo.leaderboard.every((row) => row.iconUrl?.startsWith('https://cdn.discordapp.com/')));
     assert.equal(isStatsSnapshot(demo), true);
     assert.deepEqual(demo.seasons, []);
     const empty = await getGuildStatsSnapshot(null, null, 'devGuild002', selected, {

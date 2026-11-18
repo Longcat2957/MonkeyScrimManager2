@@ -450,17 +450,11 @@
                         >{(open ? 1 : 0) + auction.queue.length + auction.unsold.length}명</span
                     >
                 </div>
-                <div class={['grid gap-1', controls ? 'sm:grid-cols-3' : 'grid-cols-1']}>
+                <div class={['grid gap-1', controls && 'sm:grid-cols-2']}>
                     <Button variant="secondary" class="w-full" onclick={() => (listOpen = true)}
                         >후보 목록</Button
                     >
                     {#if controls}
-                        <Button
-                            variant="secondary"
-                            class="w-full"
-                            disabled={busy || auction.queue.length < 2}
-                            onclick={() => run('shuffle')}>순서 섞기</Button
-                        >
                         <Button variant="danger" class="w-full" disabled={busy || !canReset} onclick={reset}
                             >초기화</Button
                         >
@@ -515,9 +509,16 @@
                         {#each auction.history as entry (entry.id)}
                             <tr class={['border-t border-line', entry.voided && 'text-muted']}>
                                 <td class="py-2 text-right text-muted tabular-nums">{entry.order}</td>
-                                <td class={['px-3 py-2 font-semibold', entry.voided && 'line-through']}
-                                    >{entry.displayName}</td
-                                >
+                                <td class={['px-3 py-2 font-semibold', entry.voided && 'line-through']}>
+                                    <span class="flex items-center gap-2">
+                                        <PlayerFace
+                                            name={entry.displayName}
+                                            imageUrl={entry.iconUrl}
+                                            size="sm"
+                                        />
+                                        {entry.displayName}
+                                    </span>
+                                </td>
                                 <td class="px-3 py-2"
                                     >{RESULT[entry.result]}{entry.voided ? ' (되돌림)' : ''}</td
                                 >

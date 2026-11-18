@@ -149,7 +149,7 @@
 {#snippet counter(
     label: string,
     value: number,
-    range: { min: number; max: number },
+    range: { min: number; max: number; step?: number },
     apply: (next: number) => void
 )}
     <fieldset class="min-w-0 border-0 p-0">
@@ -162,7 +162,7 @@
                 class="grid size-9 place-items-center text-base hover:bg-surface-hover focus-visible:-outline-offset-2 disabled:opacity-45 pointer-coarse:size-11"
                 aria-label={`${label} 줄이기`}
                 disabled={value <= range.min}
-                onclick={() => apply(value - 1)}>−</button
+                onclick={() => apply(Math.max(range.min, value - (range.step ?? 1)))}>−</button
             >
             <output class="min-w-7 border-x border-line text-center text-sm font-bold">{value}</output>
             <button
@@ -170,7 +170,7 @@
                 class="grid size-9 place-items-center text-base hover:bg-surface-hover focus-visible:-outline-offset-2 disabled:opacity-45 pointer-coarse:size-11"
                 aria-label={`${label} 늘리기`}
                 disabled={value >= range.max}
-                onclick={() => apply(value + 1)}>+</button
+                onclick={() => apply(Math.min(range.max, value + (range.step ?? 1)))}>+</button
             >
         </div>
     </fieldset>

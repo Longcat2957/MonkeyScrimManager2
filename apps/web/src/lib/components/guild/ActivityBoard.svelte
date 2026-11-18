@@ -27,10 +27,7 @@
     ]);
 </script>
 
-<section
-    aria-labelledby="activity"
-    class="min-w-0 border-t border-line @min-[46rem]:border-s @min-[46rem]:border-t-0"
->
+<section aria-labelledby="activity" class="panel min-w-0 overflow-hidden">
     <div class="panel-bar">
         <h2 id="activity" class="text-base font-semibold">내전 현황</h2>
         <div role="group" aria-label="보기 선택" class="min-w-0">

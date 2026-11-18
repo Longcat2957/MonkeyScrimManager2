@@ -45,24 +45,21 @@ export async function getGuildStatsSnapshot(
         recent: filters.recent,
         minGames: filters.minGames
     };
-    let seasonSelection: RecordSeasonSelection = { seasons: [], selectedSeasonId: null };
-    if (preview) {
-        seasonSelection = mockRecordSeasons(filters.seasonId);
-        if (guildId !== 'devGuild001') return { ...context, ...seasonSelection, empty: true };
-    } else {
-        if (!db) throw new Error('통계 조회 DB가 필요합니다.');
-        await requireGuildView(actor, guildId, { db });
-    }
-    const champion = options.champion ?? (await defaultChampionResolver());
+    let seasonSelection: RecordSeasonSelection;
     let players: GuildPlayerRecords[];
     let allGames: PlayerGame[];
     let recordedGames: { id: string; durationSec: number | null; kills: number | null }[];
     if (preview) {
-        players = listMockGuildPlayers(champion);
+        seasonSelection = mockRecordSeasons(filters.seasonId);
+        if (guildId !== 'devGuild001') return { ...context, ...seasonSelection, empty: true };
+        players = listMockGuildPlayers(options.champion ?? (await defaultChampionResolver()));
         allGames = players.flatMap((player) => player.games);
         recordedGames = [];
     } else {
-        const result = await getGuildRecords(db!, actor, guildId, champion, filters.seasonId);
+        if (!db) throw new Error('통계 조회 DB가 필요합니다.');
+        await requireGuildView(actor, guildId, { db });
+        const champion = options.champion ?? (await defaultChampionResolver());
+        const result = await getGuildRecords(db, actor, guildId, champion, filters.seasonId);
         ({ players, allGames, recordedGames } = result);
         seasonSelection = { seasons: result.seasons, selectedSeasonId: result.selectedSeasonId };
         if (!recordedGames.length) return { ...context, ...seasonSelection, empty: true };

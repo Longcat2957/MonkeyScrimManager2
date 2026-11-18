@@ -12,7 +12,7 @@ import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { listMatches } from '#lib/server/matches/queries.ts';
 import { findNextScrim, listActiveScrims } from '#lib/server/scrims/queries.ts';
-import { championIconUrl, dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
+import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver, randomChampionSplash } from '#lib/server/ddragon/champions.ts';
 import { getRankingPage, latestDataDragonVersion, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
 import { getRecordSeasons, mockRecordSeasons } from '#lib/server/records/seasons.ts';
@@ -26,13 +26,10 @@ const RECENT_MATCH_LIMIT = 5;
 async function loadRanking(
     guildId: string,
     userId: string | null,
-    version: string | null,
     seasonId: string | null
 ): Promise<GuildRanking | null> {
     const pages = await Promise.all(
-        POSITION_KEYS.map((position) =>
-            getRankingPage(guildId, position, { offset: 0, userId, version, seasonId })
-        )
+        POSITION_KEYS.map((position) => getRankingPage(guildId, position, { offset: 0, userId, seasonId }))
     );
     if (pages.some((page) => !page)) return null;
     return {
@@ -66,7 +63,6 @@ export const load: PageServerLoad = async ({ parent, params, url, depends, local
     // 개발 모드에서 ?preview=error로 한 영역의 조회 실패를 재현한다.
     const preview = dev ? url.searchParams.get('preview') : null;
     const version = await latestDataDragonVersion();
-    const icon = (championId: string) => championIconUrl(version, championId);
     const mock = dev && Boolean(findMockGuild(params.guildId));
     let seasonSelection: RecordSeasonSelection;
     try {
@@ -79,20 +75,15 @@ export const load: PageServerLoad = async ({ parent, params, url, depends, local
 
     // 각 조회 영역은 독립적으로 실패를 표시하며, 일반 서버에 목 기록을 섞지 않는다.
     const [next, activeScrims, recentMatches, ranking, achievements] = await Promise.allSettled([
-        mock ? findMockNextScrim(params.guildId, icon) : findNextScrim(getDb(), locals.actor, params.guildId),
+        mock ? findMockNextScrim(params.guildId) : findNextScrim(getDb(), locals.actor, params.guildId),
+        mock ? listMockActiveScrims(params.guildId) : listActiveScrims(getDb(), locals.actor, params.guildId),
         mock
-            ? listMockActiveScrims(params.guildId, icon)
-            : listActiveScrims(getDb(), locals.actor, params.guildId),
-        mock
-            ? listMockRecentMatches(params.guildId, { fail: preview === 'error' }).then((items) =>
-                  items.slice(0, RECENT_MATCH_LIMIT)
-              )
+            ? listMockRecentMatches(params.guildId, { fail: preview === 'error', limit: RECENT_MATCH_LIMIT })
             : listMatches(getDb(), locals.actor, params.guildId, {
-                  status: 'done',
                   page: 1,
                   pageSize: RECENT_MATCH_LIMIT
               }).then((result) => result.matches),
-        loadRanking(params.guildId, user?.userId ?? null, version, seasonSelection.selectedSeasonId),
+        loadRanking(params.guildId, user?.userId ?? null, seasonSelection.selectedSeasonId),
         loadAchievements(params.guildId, version)
     ]);
 

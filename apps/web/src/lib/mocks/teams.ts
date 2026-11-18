@@ -1,3 +1,4 @@
+import type { LedgerAuction, LedgerPerson } from '#lib/features/stats/auction-ledger.ts';
 import {
     LANES,
     moveAssignment,
@@ -16,24 +17,26 @@ import {
     type SlotKey
 } from '#lib/features/scrims/formation.ts';
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
-import { findMockScrimRecord, type IconResolver, type MockFailure, type MockScrim } from './scrims.ts';
+import { byCandidateName, orderAuctionCandidates } from '#lib/server/scrims/auction-order.ts';
+import { mockMembers } from './members.ts';
+import { mockAvatarUrl } from './avatar.ts';
+import { findMockScrimRecord, listMockAuctionScrims, type MockFailure, type MockScrim } from './scrims.ts';
 
 // 수동 편성·경매의 개발용 저장소다. 내전 목(scrims.ts)의 선발 참가자를 대상으로 하며 개발 서버를 재시작하면 처음 상태로 돌아간다.
 
 const LATENCY_MS = 300;
 const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
-const noIcon: IconResolver = () => null;
 
 function selected(scrim: MockScrim) {
     return scrim.participants.filter((participant) => participant.status === 'selected');
 }
 
-function toPlayers(scrim: MockScrim, icon: IconResolver): FormationPlayer[] {
+function toPlayers(scrim: MockScrim): FormationPlayer[] {
     return selected(scrim).map((participant) => ({
         participantId: participant.registrationId,
         userId: participant.userId,
         displayName: participant.displayName,
-        iconUrl: icon(participant.championId),
+        iconUrl: mockAvatarUrl(participant.userId),
         positions: [...participant.positions],
         mmr: { ...participant.mmr }
     }));
@@ -133,15 +136,6 @@ function mockProfile(player: FormationPlayer, champion: (id: string) => Champion
     };
 }
 
-function shuffle<T>(items: T[]): T[] {
-    const copy = [...items];
-    for (let index = copy.length - 1; index > 0; index--) {
-        const swap = Math.floor(Math.random() * (index + 1));
-        [copy[index], copy[swap]] = [copy[swap]!, copy[index]!];
-    }
-    return copy;
-}
-
 // ─── 수동 편성 ───────────────────────────────────────────────
 
 type ManualState = { teams: FormationTeam[]; assignments: Assignments; confirmed: boolean };
@@ -166,13 +160,13 @@ function manualState(scrim: MockScrim): ManualState {
     return state;
 }
 
-export async function getMockManualFormation(guildId: string, scrimId: string, icon: IconResolver = noIcon) {
+export async function getMockManualFormation(guildId: string, scrimId: string) {
     const scrim = findMockScrimRecord(guildId, scrimId);
     if (!scrim) return null;
     const state = manualState(scrim);
     return {
         teams: state.teams.map((team) => ({ ...team })),
-        players: toPlayers(scrim, icon),
+        players: toPlayers(scrim),
         assignments: { ...state.assignments },
         confirmed: state.confirmed,
         pairs: pairRecords(selected(scrim).map((participant) => participant.registrationId))
@@ -320,7 +314,7 @@ function auctionState(scrim: MockScrim): AuctionState {
                 participantId: id,
                 result: index === 7 ? 'manual' : 'sold',
                 teamId: team.id,
-                price: index === 7 ? null : 40 + ((index * 53) % 260),
+                price: index === 7 ? null : index === 5 ? 0 : 40 + ((index * 53) % 260),
                 voided: false
             });
         });
@@ -330,16 +324,60 @@ function auctionState(scrim: MockScrim): AuctionState {
     return state;
 }
 
+export function mockLedgerAuction(scrim: MockScrim): LedgerAuction | null {
+    const state = auctionState(scrim);
+    if (state.status !== 'completed') return null;
+    const people = new Map(
+        scrim.participants.map((p) => [
+            p.registrationId,
+            {
+                id: p.userId,
+                name: p.userId ? p.displayName : '삭제된 사용자',
+                avatarUrl: mockAvatarUrl(p.userId)
+            }
+        ])
+    );
+    const person = (id: string): LedgerPerson =>
+        people.get(id) ?? { id: null, name: '삭제된 사용자', avatarUrl: null };
+    const lots = acquisitions(state);
+    return {
+        id: scrim.id,
+        title: scrim.title,
+        teams: state.teams.map((team) => {
+            const captain = team.captainId ? person(team.captainId) : null;
+            return {
+                id: team.id,
+                name: team.name,
+                captain,
+                budget: team.startPoints,
+                signings: lots.flatMap((lot, index) =>
+                    lot.teamId === team.id
+                        ? [
+                              {
+                                  id: `${scrim.id}-${lot.id}`,
+                                  player: person(lot.participantId),
+                                  buyer: lot.result === 'sold' ? captain : null,
+                                  price: lot.price,
+                                  order: index + 1,
+                                  acquiredAt: null
+                              }
+                          ]
+                        : []
+                )
+            };
+        })
+    };
+}
+
 export async function getMockAuction(
     guildId: string,
     scrimId: string,
-    icon: IconResolver = noIcon,
     champion: (id: string) => ChampionRef = (id) => ({ id, name: id, iconUrl: null })
 ): Promise<AuctionView | null> {
     const scrim = findMockScrimRecord(guildId, scrimId);
     if (!scrim) return null;
     const state = auctionState(scrim);
-    const players = toPlayers(scrim, icon);
+    const players = toPlayers(scrim);
     const byId = new Map(players.map((player) => [player.participantId, player]));
     const pick = (id: string) => byId.get(id)!;
     const teamName = (id: string | null) => state.teams.find((team) => team.id === id)?.name ?? null;
@@ -369,12 +407,13 @@ export async function getMockAuction(
         })),
         openLot: state.open ? pick(state.open) : null,
         openProfile: state.open ? mockProfile(pick(state.open), champion) : null,
-        queue: state.queue.map(pick),
+        queue: state.queue.map(pick).sort(byCandidateName),
         unsold: state.unsold.map(pick),
         history: state.lots.map((lot, index): AuctionHistoryEntry => ({
             id: lot.id,
             order: index + 1,
             displayName: pick(lot.participantId).displayName,
+            iconUrl: pick(lot.participantId).iconUrl,
             result: lot.result,
             teamName: teamName(lot.teamId),
             price: lot.price,
@@ -417,6 +456,38 @@ export async function saveMockAuctionSetup(
     return null;
 }
 
+export function mockAuctionPurchaseTotals(guildId: string) {
+    const totals = new Map<string, { sum: number; count: number }>();
+    for (const past of listMockAuctionScrims(guildId)) {
+        for (const team of mockLedgerAuction(past)?.teams ?? []) {
+            for (const { player, price } of team.signings) {
+                if (!player.id || price === null || price <= 0) continue;
+                const total = totals.get(player.id);
+                if (total) {
+                    total.sum += price;
+                    total.count++;
+                } else totals.set(player.id, { sum: price, count: 1 });
+            }
+        }
+    }
+    return totals;
+}
+
+function newAuctionQueue(scrim: MockScrim, state: AuctionState): string[] {
+    const captains = new Set(state.teams.map((team) => team.captainId));
+    const candidates = selected(scrim).filter((participant) => !captains.has(participant.registrationId));
+    const totals = mockAuctionPurchaseTotals(scrim.guildId);
+    const prices = new Map<string | null, number>();
+    for (const [userId, total] of totals) prices.set(userId, total.sum / total.count);
+    for (const { userId, auctionSeedPrice, auctionOverridePrice } of mockMembers.get(scrim.guildId) ?? []) {
+        if (auctionOverridePrice !== null) prices.set(userId, auctionOverridePrice);
+        else if (auctionSeedPrice !== null && !prices.has(userId)) prices.set(userId, auctionSeedPrice);
+    }
+    return orderAuctionCandidates(candidates, ({ userId }) => prices.get(userId) ?? null).map(
+        ({ registrationId }) => registrationId
+    );
+}
+
 export async function startMockAuction(guildId: string, scrimId: string) {
     await wait();
     const target = auctionTarget(guildId, scrimId, 'setup');
@@ -424,12 +495,7 @@ export async function startMockAuction(guildId: string, scrimId: string) {
     const { state, scrim } = target;
     if (state.teams.some((team) => !team.captainId))
         return { status: 409, message: '모든 팀의 팀장을 정해야 해요' };
-    const captains = new Set(state.teams.map((team) => team.captainId));
-    state.queue = shuffle(
-        selected(scrim)
-            .map((participant) => participant.registrationId)
-            .filter((id) => !captains.has(id))
-    );
+    state.queue = newAuctionQueue(scrim, state);
     state.status = 'in_progress';
     state.lastAction = null;
     return null;
@@ -587,13 +653,8 @@ export async function resetMockAuction(guildId: string, scrimId: string) {
     const target = auctionTarget(guildId, scrimId, 'in_progress');
     if ('status' in target) return target;
     const { state, scrim } = target;
-    const captains = new Set(state.teams.map((team) => team.captainId));
     for (const lot of state.lots) lot.voided = true;
-    state.queue = shuffle(
-        selected(scrim)
-            .map((participant) => participant.registrationId)
-            .filter((id) => !captains.has(id))
-    );
+    state.queue = newAuctionQueue(scrim, state);
     state.open = null;
     state.unsold = [];
     state.lastAction = null;
@@ -636,14 +697,6 @@ export async function assignMockCurrent(guildId: string, scrimId: string, teamId
     };
     state.open = null;
     completeIfFull(scrim, state);
-    return null;
-}
-
-export async function shuffleMockQueue(guildId: string, scrimId: string) {
-    await wait();
-    const target = auctionTarget(guildId, scrimId, 'in_progress');
-    if ('status' in target) return target;
-    target.state.queue = shuffle(target.state.queue);
     return null;
 }
 

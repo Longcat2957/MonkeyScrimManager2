@@ -69,7 +69,7 @@ test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거�
                 ])
             }
         },
-        ...['start', 'draw', 'shuffle', 'revert', 'reset', 'reopenSetup', 'changeMethod'].map((name) => ({
+        ...['start', 'draw', 'revert', 'reset', 'reopenSetup', 'changeMethod'].map((name) => ({
             path: scrimPath + '/auction',
             name,
             fields: revision
@@ -95,6 +95,11 @@ test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거�
             path: guildPath + '/admin',
             name: 'discord',
             fields: { key: 'recruitmentChannelId', value: HTTP_IDS.channel }
+        },
+        {
+            path: guildPath + '/admin',
+            name: 'auctionSeedPrice',
+            fields: { userId: HTTP_IDS.member, price: '250' }
         },
         { path: guildPath + '/admin', name: 'lookup', fields: { riotId: 'HttpPlayer#KR1' } },
         {
@@ -207,6 +212,50 @@ test('HTTP: 본인 신청·수정·철회는 저장되고 다른 계정 신청�
     assertAction(await f.action(path, 'withdraw', {}, member.cookie), 200);
     assert.equal((await f.db.select().from(schema.scrimParticipantRegistrations))[0]!.status, 'withdrawn');
     assert.equal((await f.db.select().from(schema.scrimParticipants)).length, 1);
+});
+
+test('HTTP: 경매 초기가와 보정가를 독립적으로 저장·해제하며 잘못된 요청은 저장값을 보존한다', async (t) => {
+    const f = await createHttpFixture(t);
+    const { cookie } = await f.session(HTTP_IDS.manager);
+    const userId = HTTP_IDS.member;
+    const save = (fields: Record<string, string>) =>
+        f.action(guildPath + '/admin', 'auctionSeedPrice', { userId, ...fields }, cookie);
+    const savedPrice = async () =>
+        (
+            await f.db
+                .select({
+                    seed: schema.guildMembers.auctionSeedPrice,
+                    override: schema.guildMembers.auctionOverridePrice
+                })
+                .from(schema.guildMembers)
+                .where(
+                    and(
+                        eq(schema.guildMembers.guildId, HTTP_IDS.guild),
+                        eq(schema.guildMembers.userId, userId)
+                    )
+                )
+        )[0]!;
+    assertAction(await save({ price: '250' }), 204);
+    assertAction(await save({ kind: 'override', price: '125' }), 204);
+    assertAction(await save({ kind: 'typo', price: '' }), 400);
+    for (const price of ['0', '-1', '2.5', '1e2', '2147483648']) assertAction(await save({ price }), 400);
+    assertAction(await save({}), 400);
+    assert.deepEqual(await savedPrice(), { seed: 250, override: 125 });
+    assertAction(await save({ kind: 'override', price: '' }), 204);
+    assert.deepEqual(await savedPrice(), { seed: 250, override: null });
+    assertAction(await save({ price: '' }), 204);
+    assert.deepEqual(await savedPrice(), { seed: null, override: null });
+    const audit = await f.db
+        .select()
+        .from(schema.guildAuditEntries)
+        .where(eq(schema.guildAuditEntries.kind, 'auction_override_price_changed'));
+    assert.deepEqual(
+        audit.map(({ actorUserId, targetUserId }) => [actorUserId, targetUserId]),
+        [
+            [HTTP_IDS.manager, userId],
+            [HTTP_IDS.manager, userId]
+        ]
+    );
 });
 
 test('HTTP: 서버별 계정 연결·대표 변경·해제가 실제 DB와 개인 페이지에 반영된다', async (t) => {

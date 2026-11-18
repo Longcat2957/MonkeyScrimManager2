@@ -4,34 +4,16 @@ import type {
     GuildDiscordSettingKey,
     GuildDiscordSettings
 } from '#lib/features/guild/types.ts';
+import { DomainError } from '#lib/server/errors.ts';
 import { listMockRiotAccounts } from './me.ts';
 import type { GuildAuditEntry, GuildAuditKind } from '#lib/features/guild/audit.ts';
 import type { MockFailure } from './scrims.ts';
-import { mockPlayers } from './ranking.ts';
+import { mockMembers as members, type MockMember } from './members.ts';
+import { mockAuctionPurchaseTotals } from './teams.ts';
+import { mockAvatarUrl } from './avatar.ts';
 import { mockUser } from './session.ts';
 
-// 서버 관리 화면의 멤버·Discord 연동 설정(가변, 재시작 시 초기화). 서비스에 연결된 멤버만 담는다. Riot 계정은 me.ts 저장소에서 붙인다.
-// roles·manageGuild는 봇이 Discord에서 동기화한다고 가정한 값이다.
-type Member = { userId: string; displayName: string; roles: string[]; manageGuild: boolean };
 type GuildDiscord = { roles: DiscordRole[]; channels: DiscordChannel[]; settings: GuildDiscordSettings };
-
-const members = new Map<string, Member[]>([
-    [
-        'devGuild001',
-        mockPlayers.slice(0, 30).map(({ userId, displayName }) => ({
-            userId,
-            displayName,
-            roles:
-                userId === mockUser.userId
-                    ? ['r-ops', 'r-member']
-                    : userId === 'u03'
-                      ? ['r-staff', 'r-member']
-                      : ['r-member'],
-            // 서버장처럼 Discord의 서버 관리 권한이 있는 멤버
-            manageGuild: userId === 'u02'
-        }))
-    ]
-]);
 
 const discord = new Map<string, GuildDiscord>([
     [
@@ -90,7 +72,7 @@ export async function auditMockAccountChange(
     guildId: string,
     actorId: string,
     userId: string,
-    kind: Exclude<GuildAuditKind, 'discord_setting_changed'>,
+    kind: Extract<GuildAuditKind, `riot_account_${string}`>,
     accountId: string | null,
     run: () => Promise<MockFailure | null | void>
 ) {
@@ -118,7 +100,7 @@ export async function auditMockAccountChange(
 }
 
 // 서버 관리자는 Discord 서버 관리 권한이 있거나 운영자 역할을 가진 멤버다.
-function isAdmin(member: Member, operatorRoleId: string | null) {
+function isAdmin(member: MockMember, operatorRoleId: string | null) {
     return member.manageGuild || (operatorRoleId !== null && member.roles.includes(operatorRoleId));
 }
 
@@ -131,6 +113,8 @@ export function listMockMembers(guildId: string, options: { q: string; page: num
         .map((member) => ({
             userId: member.userId,
             displayName: member.displayName,
+            auctionSeedPrice: member.auctionSeedPrice,
+            auctionOverridePrice: member.auctionOverridePrice,
             isAdmin: isAdmin(member, operatorRoleId)
         }))
         .sort(
@@ -138,13 +122,44 @@ export function listMockMembers(guildId: string, options: { q: string; page: num
                 Number(b.isAdmin) - Number(a.isAdmin) || a.displayName.localeCompare(b.displayName, 'ko')
         );
     const start = (options.page - 1) * options.pageSize;
+    const totals = mockAuctionPurchaseTotals(guildId);
     return {
-        members: filtered
-            .slice(start, start + options.pageSize)
-            .map((member) => ({ ...member, riotAccounts: listMockRiotAccounts(member.userId) })),
+        members: filtered.slice(start, start + options.pageSize).map((member) => {
+            const total = totals.get(member.userId);
+            return {
+                ...member,
+                auctionAveragePrice: total ? total.sum / total.count : null,
+                auctionPurchaseCount: total?.count ?? 0,
+                iconUrl: mockAvatarUrl(member.userId),
+                riotAccounts: listMockRiotAccounts(member.userId)
+            };
+        }),
         total: filtered.length,
         adminCount: all.filter((member) => isAdmin(member, operatorRoleId)).length
     };
+}
+
+export function setMockAuctionSeedPrice(
+    guildId: string,
+    userId: string,
+    price: number | null,
+    kind: 'seed' | 'override' = 'seed'
+) {
+    const member = members.get(guildId)?.find((member) => member.userId === userId);
+    if (!member) throw new DomainError('NOT_FOUND', '멤버를 찾을 수 없어요');
+    if (price !== null && (!Number.isInteger(price) || price < 1 || price > 2_147_483_647))
+        throw new DomainError('INVALID_INPUT', '금액은 1~2,147,483,647P 범위로 입력해 주세요');
+    const field = kind === 'override' ? 'auctionOverridePrice' : 'auctionSeedPrice';
+    if (member[field] === price) return;
+    member[field] = price;
+    appendAudit(guildId, {
+        kind: kind === 'override' ? 'auction_override_price_changed' : 'auction_seed_price_changed',
+        actor: mockIdentity(guildId, mockUser.userId),
+        target: mockIdentity(guildId, userId),
+        account: null,
+        primary: null,
+        setting: null
+    });
 }
 
 export function getMockDiscord(guildId: string, actorId: string) {

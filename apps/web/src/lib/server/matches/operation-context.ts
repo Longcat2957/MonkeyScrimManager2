@@ -99,6 +99,7 @@ export async function getMatchOperationContext(
                                 participantId: participant.id,
                                 userId: identity?.userId ?? null,
                                 displayName: publicDisplayName(identity, participant.displayName),
+                                iconUrl: identity?.avatarUrl ?? null,
                                 riotId:
                                     identity?.showRiotIds && account?.gameName && account.tagLine
                                         ? `${account.gameName}#${account.tagLine}`

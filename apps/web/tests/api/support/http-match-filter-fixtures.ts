@@ -1,12 +1,53 @@
 import { randomBytes } from 'node:crypto';
 import type { TestContext } from 'node:test';
 import * as schema from '../../../src/lib/server/db/schema.ts';
+import type { Database } from '../../../src/lib/server/db/types.ts';
+import { championCatalogUpstream } from './http-champion-preferences-fixtures.ts';
 import { createHttpRecordSeasonsFixture } from './http-record-seasons-fixtures.ts';
 import { HTTP_IDS } from './http.ts';
 
+/** 기간 경계용 DB 자료이며, 앞 시즌의 업로드 fixture와 달리 실제 ROFL 파싱을 거치지 않는다. */
+export async function seedMatchFilterGame(
+    db: Database,
+    match: typeof schema.matches.$inferSelect,
+    gameNumber: number,
+    startedAt: string | null
+) {
+    const [metadata] = await db
+        .insert(schema.roflMetadata)
+        .values({
+            fileSha256: randomBytes(32).toString('hex'),
+            fileSizeBytes: 100,
+            formatVersion: 2,
+            gameVersion: '26.21',
+            projectionVersion: 1
+        })
+        .returning();
+    await db.insert(schema.roflGameDataV1).values({
+        roflMetadataId: metadata!.id,
+        gameLengthMs: 1_200_000,
+        resultStatus: 'consistent',
+        winnerReplayTeamId: 100,
+        teams: [
+            { teamId: 100, win: true },
+            { teamId: 200, win: false }
+        ]
+    });
+    await db.insert(schema.games).values({
+        scrimId: match.scrimId,
+        matchId: match.id,
+        gameNumber,
+        blueTeamSlot: 'a',
+        status: 'completed',
+        winnerSide: 'blue',
+        roflMetadataId: metadata!.id,
+        startedAt: startedAt ? new Date(startedAt) : null
+    });
+}
+
 /** 실제 ROFL 결과와, 시간·페이지 경계를 명시한 별도 조회 fixture를 구분한다. */
 export async function createHttpMatchFiltersFixture(t: TestContext) {
-    const f = await createHttpRecordSeasonsFixture(t, { games: 3 });
+    const f = await createHttpRecordSeasonsFixture(t, { games: 3, upstreams: [championCatalogUpstream] });
     const [scrim] = await f.db
         .insert(schema.scrims)
         .values({
@@ -64,29 +105,8 @@ export async function createHttpMatchFiltersFixture(t: TestContext) {
             })
             .returning();
         cases[spec.key] = match!;
-        for (const [gameIndex, startedAt] of spec.dates.entries()) {
-            // 현재 시즌의 경계 자료는 파싱된 실 ROFL이라고 주장하지 않는 명시적 DB 조회 fixture다.
-            const [metadata] = await f.db
-                .insert(schema.roflMetadata)
-                .values({
-                    fileSha256: randomBytes(32).toString('hex'),
-                    fileSizeBytes: 100,
-                    formatVersion: 2,
-                    gameVersion: '26.21',
-                    projectionVersion: 1
-                })
-                .returning();
-            await f.db.insert(schema.games).values({
-                scrimId: scrim!.id,
-                matchId: match!.id,
-                gameNumber: gameIndex + 1,
-                blueTeamSlot: 'a',
-                status: 'completed',
-                winnerSide: 'blue',
-                roflMetadataId: metadata!.id,
-                startedAt: startedAt ? new Date(startedAt) : null
-            });
-        }
+        for (const [gameIndex, startedAt] of spec.dates.entries())
+            await seedMatchFilterGame(f.db, match!, gameIndex + 1, startedAt);
         if (spec.cancelledDate)
             await f.db.insert(schema.games).values({
                 scrimId: scrim!.id,

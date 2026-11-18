@@ -1,5 +1,4 @@
-import { randomInt } from 'node:crypto';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { TEAM_SIZE, type AuctionView } from '../../features/scrims/formation.ts';
 import type { Actor } from '../auth/types.ts';
 import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
@@ -10,11 +9,14 @@ import {
     auctionQueueEntries,
     auctionTeams,
     auctions,
+    guildMembers,
     scrimParticipants,
     scrims,
     scrimTeams
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { byCandidateName, orderAuctionCandidates } from './auction-order.ts';
+import { readAuctionPriceHistory } from './auction-prices.ts';
 import {
     auctionTargetProfile,
     type AuctionChampionResolver,
@@ -61,15 +63,6 @@ export function auctionSetup(value: unknown): SetupTeam[] {
     if (new Set(captains).size !== captains.length)
         throw new DomainError('INVALID_INPUT', '같은 참가자를 두 팀의 팀장으로 정할 수 없어요');
     return teams;
-}
-
-function shuffled<T>(entries: T[]): T[] {
-    const result = [...entries];
-    for (let index = result.length - 1; index > 0; index--) {
-        const target = randomInt(index + 1);
-        [result[index], result[target]] = [result[target]!, result[index]!];
-    }
-    return result;
 }
 
 async function auctionState(tx: Transaction, row: ScrimRow) {
@@ -142,6 +135,7 @@ async function auctionState(tx: Transaction, row: ScrimRow) {
         acquisitions,
         active,
         queue,
+        queued,
         selected,
         occupied,
         open,
@@ -175,7 +169,6 @@ export async function getAuction(
             if (row.status === 'recruit') return null;
             const state = await auctionState(tx, row);
             const rawPlayers = await formationPlayers(tx, row, state.selected);
-            const players = await publicFormationPlayers(tx, rawPlayers, guildId);
             const participants = await tx
                 .select({
                     id: scrimParticipants.id,
@@ -189,6 +182,7 @@ export async function getAuction(
                 participants.map((entry) => entry.userId),
                 guildId
             );
+            const players = publicFormationPlayers(rawPlayers, identities);
             const pick = (id: string) => players.find((player) => player.participantId === id);
             const openLot = state.open ? (pick(state.open.scrimParticipantId) ?? null) : null;
             return {
@@ -232,9 +226,9 @@ export async function getAuction(
                           preferredChampion
                       )
                     : null,
-                queue: state.queue.flatMap((entry) =>
-                    pick(entry.scrimParticipantId) ? [pick(entry.scrimParticipantId)!] : []
-                ),
+                queue: players
+                    .filter((player) => state.queued.has(player.participantId))
+                    .sort(byCandidateName),
                 unsold: state.unsold.flatMap((id) => (pick(id) ? [pick(id)!] : [])),
                 history: state.lots
                     .filter((lot) => lot.status === 'sold' || lot.status === 'unsold')
@@ -248,6 +242,7 @@ export async function getAuction(
                             id: lot.id,
                             order: lot.sequenceNumber,
                             displayName: publicDisplayName(identity, participant.displayName),
+                            iconUrl: identity?.avatarUrl ?? null,
                             result:
                                 acquisition?.method === 'manual'
                                     ? 'manual'
@@ -322,6 +317,33 @@ async function replaceQueue(tx: Transaction, state: MutableState, participantIds
                 ordinal: index + 1
             }))
         );
+}
+
+async function seedAuctionQueue(tx: Transaction, guildId: string, state: MutableState) {
+    const captains = new Set(state.teams.map((team) => team.captainId));
+    const candidates = state.selected
+        .map(({ participant }) => participant)
+        .filter((participant) => !captains.has(participant.id));
+    const userIds = candidates.flatMap((p) => (p.userId ? [p.userId] : []));
+    const history = await readAuctionPriceHistory(tx, guildId, userIds, state.auction.scrimId);
+    const prices = new Map<string | null, number | null>(
+        history.map((row) => [row.userId, row.auctionAveragePrice])
+    );
+    const settings = await tx
+        .select({
+            userId: guildMembers.userId,
+            seed: guildMembers.auctionSeedPrice,
+            override: guildMembers.auctionOverridePrice
+        })
+        .from(guildMembers)
+        .where(and(eq(guildMembers.guildId, guildId), inArray(guildMembers.userId, userIds)));
+    for (const row of settings) prices.set(row.userId, row.override ?? prices.get(row.userId) ?? row.seed);
+    const ordered = orderAuctionCandidates(candidates, (p) => prices.get(p.userId) ?? null);
+    await replaceQueue(
+        tx,
+        state,
+        ordered.map((p) => p.id)
+    );
 }
 
 function remainingPoints(state: State, teamId: string): number {
@@ -437,15 +459,7 @@ export async function startAuction(
             )
                 throw new DomainError('CONFLICT', '모든 팀의 팀장을 정해야 해요');
             await invalidateAuctionActions(tx, state.auction.id);
-            await replaceQueue(
-                tx,
-                state,
-                shuffled(
-                    state.selected
-                        .map(({ participant }) => participant.id)
-                        .filter((id) => !state.occupied.has(id))
-                )
-            );
+            await seedAuctionQueue(tx, guildId, state);
             await tx
                 .update(auctions)
                 .set({ status: 'in_progress', startedAt: new Date(), endedAt: null })
@@ -713,28 +727,6 @@ export async function restoreAuctionUnsold(
     );
 }
 
-export async function shuffleAuctionQueue(
-    db: Database,
-    actor: Actor | null,
-    guildId: string,
-    scrimId: string,
-    input: RevisionInput,
-    access?: ScrimAccessDependencies
-) {
-    return mutateAuction(
-        db,
-        actor,
-        guildId,
-        scrimId,
-        input,
-        'in_progress',
-        async (tx, _row, _user, state) => {
-            await replaceQueue(tx, state, shuffled(state.queue.map((entry) => entry.scrimParticipantId)));
-        },
-        access
-    );
-}
-
 export async function revertAuctionLot(
     db: Database,
     actor: Actor | null,
@@ -864,16 +856,8 @@ async function clearAuction(
                 .update(scrimParticipants)
                 .set({ teamId: team.id })
                 .where(eq(scrimParticipants.id, team.captainId));
-    const captains = new Set(state.teams.map((team) => team.captainId));
-    await replaceQueue(
-        tx,
-        state,
-        setup
-            ? []
-            : shuffled(
-                  state.selected.map(({ participant }) => participant.id).filter((id) => !captains.has(id))
-              )
-    );
+    if (setup) await replaceQueue(tx, state, []);
+    else await seedAuctionQueue(tx, row.guildId, state);
     await tx
         .update(auctions)
         .set({

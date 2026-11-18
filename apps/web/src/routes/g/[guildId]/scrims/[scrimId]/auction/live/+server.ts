@@ -9,7 +9,6 @@ import {
     getChampionPreferenceCatalog,
     preferredChampionResolver
 } from '#lib/server/ddragon/champion-preferences.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { getAuction } from '#lib/server/scrims/auction.ts';
 import { getScrim } from '#lib/server/scrims/queries.ts';
@@ -34,12 +33,7 @@ export const GET: RequestHandler = async ({ params, locals, setHeaders }) => {
                 preview ? Promise.resolve([]) : getChampionPreferenceCatalog(version).catch(() => [])
             ]);
             auction = preview
-                ? await getMockAuction(
-                      params.guildId,
-                      params.scrimId,
-                      (id) => championIconUrl(version, id),
-                      champion
-                  )
+                ? await getMockAuction(params.guildId, params.scrimId, champion)
                 : await getAuction(
                       getDb(),
                       locals.actor,

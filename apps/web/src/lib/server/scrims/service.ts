@@ -615,10 +615,10 @@ export async function updateScrimSettings(
     const user = requireUser(actor);
     requireUuid(scrimId, '내전');
     const expectedRevision = requireRevision(input.expectedRevision);
-    const settings = validateSettings(input.settings);
     await requireGuildAdmin(user, guildId, { ...access, db });
     await db.transaction(async (tx) => {
         const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
+        const settings = validateSettings(input.settings, row.teamCount);
         assertEditableSettings(row.status, settingsFromRow(row), settings);
         assertCapacity(settings, await registrations(tx, row.id));
         await tx

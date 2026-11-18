@@ -3,7 +3,8 @@ import { error } from '@sveltejs/kit';
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import { achievementBadges, rankAchievements } from '#lib/features/players/achievements.ts';
 import { championRecords, duoRecords, summarize, topPercents } from '#lib/features/players/stats.ts';
-import type { PlayerGame, PlayerSummary } from '#lib/features/players/types.ts';
+import type { DuoRecord, PlayerGame, PlayerSummary } from '#lib/features/players/types.ts';
+import { mockAvatarUrl } from '#lib/mocks/avatar.ts';
 import { findMockPlayer, listMockGuildPlayers } from '#lib/mocks/players.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
@@ -39,12 +40,11 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
         const mock = findMockPlayer(params.guildId, params.userId);
         if (!mock) error(404, '사용자를 찾을 수 없습니다.');
         guildPlayers = listMockGuildPlayers(champion);
-        games = guildPlayers.find((item) => item.userId === mock.userId)!.games;
-        const main = Object.values(mock.records).sort((a, b) => b.games - a.games)[0];
+        games = guildPlayers.find((item) => item.userId === mock.userId)?.games ?? [];
         player = {
             userId: mock.userId,
             displayName: mock.displayName,
-            iconUrl: main ? champion(main.championId).iconUrl : null,
+            iconUrl: mockAvatarUrl(mock.userId),
             riotIds: [`${mock.displayName}#KR1`]
         };
         mmr = POSITIONS.flatMap((position) => {
@@ -94,6 +94,12 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
             : []
     );
 
+    const duos = duoRecords(games);
+    const withAvatar = (duo: DuoRecord) => ({
+        ...duo,
+        iconUrl: guildPlayers.find((item) => item.userId === duo.userId)?.iconUrl ?? null
+    });
+
     return {
         ...seasonSelection,
         player,
@@ -113,7 +119,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
             summary && summary.games >= COMPARE_MIN_GAMES ? topPercents(summary, [...others, summary]) : null,
         badges: badges.get(player.userId) ?? [],
         champions: championRecords(filtered),
-        duos: duoRecords(games),
+        duos: { best: duos.best.map(withAvatar), worst: duos.worst.map(withAvatar) },
         mmr,
         history: filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
         total: filtered.length,

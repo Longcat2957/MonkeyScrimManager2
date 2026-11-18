@@ -14,7 +14,9 @@ import type {
     ScrimStatus,
     ScrimStatusFilter
 } from '#lib/features/scrims/types.ts';
-import { mockMainChampion, mockUser } from './session.ts';
+import { mockAvatarUrl } from './avatar.ts';
+import { mockUser } from './session.ts';
+import { mockScrimPlayers } from './scrim-players.ts';
 import {
     cancelMockAuctionResults,
     getMockAuction,
@@ -30,14 +32,9 @@ const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
 
 export type MockFailure = { status: number; message: string };
 
-// 챔피언 ID를 아이콘 URL로 바꾸는 함수다. Data Dragon 버전은 라우트의 load가 알고 있으므로 넘겨받는다.
-export type IconResolver = (championId: string) => string | null;
-const noIcon: IconResolver = () => null;
-
 // mmr은 현재 시즌의 포지션별 값이다(초기값 1500). 팀 편성·경매 화면이 사용한다.
 export type MockParticipant = Omit<ScrimParticipant, 'iconUrl'> & {
     riotAccountId: string | null;
-    championId: string;
     mmr: Record<LolPosition, number>;
 };
 
@@ -56,50 +53,6 @@ export type MockScrim = ScrimSettings & {
     participants: MockParticipant[];
 };
 
-const NAMES = [
-    '홍길동',
-    '김철수',
-    '박영희',
-    '이몽룡',
-    '성춘향',
-    '장보고',
-    '강감찬',
-    '유관순',
-    '안중근',
-    '정약용',
-    '세종',
-    '이순신',
-    '최무선',
-    '허준',
-    '김유신',
-    '을지문덕',
-    '신사임당',
-    '황진이',
-    '계백',
-    '온달'
-];
-const CHAMPIONS = [
-    'Garen',
-    'LeeSin',
-    'Thresh',
-    'Jinx',
-    'Darius',
-    'Yasuo',
-    'Nautilus',
-    'Ezreal',
-    'Lux',
-    'Khazix',
-    'Leona',
-    'Kaisa',
-    'Camille',
-    'Viego',
-    'Lulu',
-    'Caitlyn',
-    'Sett',
-    'Graves',
-    'Nami',
-    'Orianna'
-];
 const POSITION_SETS: LolPosition[][] = [
     ['mid', 'top'],
     ['jungle'],
@@ -115,11 +68,8 @@ const POSITION_SETS: LolPosition[][] = [
 function participants(scrimId: string, statuses: RegistrationStatus[]): MockParticipant[] {
     return statuses.map((status, index) => ({
         registrationId: `${scrimId}-r${index + 1}`,
-        // 마지막 참가자는 사용자 연결이 사라진 과거 기록을 재현한다.
-        userId: index === 12 ? null : `devPlayer${String(index + 1).padStart(3, '0')}`,
-        displayName: NAMES[index % NAMES.length]!,
-        championId: CHAMPIONS[index % CHAMPIONS.length]!,
-        riotId: index % 3 === 0 ? `${NAMES[index % NAMES.length]}#KR${index + 1}` : null,
+        ...mockScrimPlayers[index]!,
+        riotId: index % 3 === 0 ? `${mockScrimPlayers[index]!.displayName}#KR${index + 1}` : null,
         riotAccountId: `${scrimId}-acc${index + 1}`,
         positions: POSITION_SETS[index % POSITION_SETS.length]!,
         status,
@@ -154,7 +104,6 @@ function withMe(list: MockParticipant[], status: RegistrationStatus): MockPartic
             displayName: mockUser.displayName,
             riotId: 'Hide on bush#KR1',
             riotAccountId: 'acc1',
-            championId: mockMainChampion,
             status
         },
         ...rest
@@ -239,7 +188,7 @@ const scrims: MockScrim[] = [
         hardFearless: true,
         canManage: false,
         createdAt: '2026-10-15T00:00:00Z',
-        participants: withMe(participants('devScrim005', repeat('selected', 20)), 'selected')
+        participants: withMe(participants('devScrim005', repeat('selected', 20)), 'selected').reverse()
     },
     {
         guildId: 'devGuild001',
@@ -303,6 +252,12 @@ const scrims: MockScrim[] = [
         const scheduled = new Date(Date.UTC(2026, 9, 17 - index * 3, 11));
         const status: ScrimStatus = index === 4 ? 'cancelled' : index === 9 ? 'ended_early' : 'completed';
         const id = `devScrimPast${String(index + 1).padStart(2, '0')}`;
+        let roster = participants(
+            id,
+            status === 'cancelled' ? repeat('withdrawn', 4) : repeat('selected', 10)
+        );
+        if (index < 2) roster = withMe(roster, 'selected');
+        if (index === 1) [roster[0], roster[2]] = [roster[2]!, roster[0]!];
         return {
             guildId: 'devGuild001',
             id,
@@ -311,14 +266,11 @@ const scrims: MockScrim[] = [
             scheduledAt: scheduled.toISOString(),
             teamCount: 2,
             reserveCapacity: 0,
-            formationMethod: status === 'cancelled' ? null : 'manual',
+            formationMethod: index < 2 ? 'auction' : status === 'cancelled' ? null : 'manual',
             hardFearless: index % 2 === 0,
             canManage: false,
             createdAt: new Date(scheduled.getTime() - 7 * 86_400_000).toISOString(),
-            participants: participants(
-                id,
-                status === 'cancelled' ? repeat('withdrawn', 4) : repeat('selected', 10)
-            )
+            participants: roster
         };
     })
 ];
@@ -336,6 +288,13 @@ const FILTER: Record<Exclude<ScrimStatusFilter, 'all'>, ScrimStatus[]> = {
 // 팀 편성·경매 목(teams.ts)이 같은 저장소를 고쳐 쓰도록 원본 기록을 돌려준다.
 export function findMockScrimRecord(guildId: string, scrimId: string) {
     return find(guildId, scrimId);
+}
+
+export function listMockAuctionScrims(guildId: string) {
+    return scrims.filter(
+        (scrim) =>
+            scrim.guildId === guildId && scrim.formationMethod === 'auction' && scrim.status !== 'cancelled'
+    );
 }
 
 function find(guildId: string, scrimId: string) {
@@ -398,18 +357,18 @@ const MEMBER_PREVIEW = 5;
 const MEMBER_ORDER: RegistrationStatus[] = ['selected', 'standby'];
 
 // 목록 행의 얼굴 묶음은 선발된 사람부터 보여 준다.
-function members(scrim: MockScrim, icon: IconResolver): ScrimMember[] {
+function members(scrim: MockScrim): ScrimMember[] {
     return activeRegistrations(scrim)
         .toSorted((a, b) => MEMBER_ORDER.indexOf(a.status) - MEMBER_ORDER.indexOf(b.status))
         .slice(0, MEMBER_PREVIEW)
         .map((participant) => ({
             key: participant.registrationId,
             name: participant.displayName,
-            iconUrl: icon(participant.championId)
+            iconUrl: mockAvatarUrl(participant.userId)
         }));
 }
 
-function toListItem(scrim: MockScrim, icon: IconResolver): ScrimListItem {
+function toListItem(scrim: MockScrim): ScrimListItem {
     return {
         id: scrim.id,
         title: scrim.title,
@@ -420,7 +379,7 @@ function toListItem(scrim: MockScrim, icon: IconResolver): ScrimListItem {
         registered: activeRegistrations(scrim).length,
         capacity: capacity(scrim),
         myRegistration: myParticipant(scrim, mockUser.userId)?.status ?? null,
-        members: members(scrim, icon)
+        members: members(scrim)
     };
 }
 
@@ -444,8 +403,7 @@ function byListOrder(now: number) {
 
 export async function listMockScrims(
     guildId: string,
-    options: { status: ScrimStatusFilter; page: number; pageSize: number },
-    icon: IconResolver = noIcon
+    options: { status: ScrimStatusFilter; page: number; pageSize: number }
 ) {
     const inGuild = scrims.filter((scrim) => scrim.guildId === guildId);
     const matches = (filter: ScrimStatusFilter) => (scrim: MockScrim) =>
@@ -453,7 +411,7 @@ export async function listMockScrims(
     const filtered = inGuild.filter(matches(options.status)).sort(byListOrder(Date.now()));
     const start = (options.page - 1) * options.pageSize;
     return {
-        scrims: filtered.slice(start, start + options.pageSize).map((scrim) => toListItem(scrim, icon)),
+        scrims: filtered.slice(start, start + options.pageSize).map(toListItem),
         total: filtered.length,
         counts: {
             all: inGuild.length,
@@ -471,17 +429,14 @@ function activeScrims(guildId: string) {
 }
 
 // 모집부터 진행까지의 내전을 예정 시각이 가까운 순으로, 일정 미정은 뒤에 둔다.
-export async function listMockActiveScrims(
-    guildId: string,
-    icon: IconResolver = noIcon
-): Promise<ScrimListItem[]> {
-    return activeScrims(guildId).map((scrim) => toListItem(scrim, icon));
+export async function listMockActiveScrims(guildId: string): Promise<ScrimListItem[]> {
+    return activeScrims(guildId).map(toListItem);
 }
 
 const MY_PRIORITY: RegistrationStatus[] = ['selected', 'standby'];
 
 // 내가 참여하는 내전(선발 > 대기, 같으면 진행 중 > 가까운 일정)을, 없으면 신청할 수 있는 가장 가까운 모집을 고른다.
-export async function findMockNextScrim(guildId: string, icon: IconResolver = noIcon) {
+export async function findMockNextScrim(guildId: string) {
     const active = activeScrims(guildId).map((scrim) => ({
         scrim,
         mine: myParticipant(scrim, mockUser.userId)?.status ?? null
@@ -502,7 +457,7 @@ export async function findMockNextScrim(guildId: string, icon: IconResolver = no
     if (!picked) return null;
     return {
         kind: mine ? ('mine' as const) : ('open' as const),
-        scrim: toListItem(picked, icon),
+        scrim: toListItem(picked),
         hardFearless: picked.hardFearless
     };
 }
@@ -540,12 +495,7 @@ function fillSelected(scrim: MockScrim) {
     }
 }
 
-export async function getMockScrimDetail(
-    guildId: string,
-    scrimId: string,
-    userId: string | null,
-    icon: IconResolver = noIcon
-) {
+export async function getMockScrimDetail(guildId: string, scrimId: string, userId: string | null) {
     await wait();
     const scrim = find(guildId, scrimId);
     if (!scrim) return null;
@@ -560,9 +510,9 @@ export async function getMockScrimDetail(
         : null;
     return {
         participants: latestRegistrations(scrim).map(
-            ({ riotAccountId: _, championId, mmr: __, ...participant }): ScrimParticipant => ({
+            ({ riotAccountId: _, mmr: __, ...participant }): ScrimParticipant => ({
                 ...participant,
-                iconUrl: icon(championId)
+                iconUrl: mockAvatarUrl(participant.userId)
             })
         ),
         counts: counts(scrim),
@@ -635,7 +585,6 @@ export async function registerMock(
         registrationId: `${scrimId}-r${Date.now().toString(36)}`,
         userId: input.userId,
         displayName: input.displayName,
-        championId: mockMainChampion,
         riotId: input.riotId,
         riotAccountId: input.riotAccountId,
         positions: input.positions,

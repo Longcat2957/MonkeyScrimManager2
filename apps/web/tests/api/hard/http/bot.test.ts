@@ -154,11 +154,13 @@ test('HTTP 봇: 모집 생성은 현재 관리자와 활성 시즌을 요구하�
         interactionId: interactionId(),
         title: '단일 모집',
         scheduledAt: null,
-        teamCount: 3,
+        teamCount: 4,
         reserveCapacity: 2,
         hardFearless: false
     };
     const path = guildPath() + '/scrims';
+    const unsupported = await requestBot(f, path, 'POST', { ...input, teamCount: 3 });
+    assert.equal(unsupported.status, 400);
     const denied = await requestBot(f, path, 'POST', { ...input, actorId: HTTP_IDS.member });
     assert.equal(denied.status, 403);
     const noSeason = await requestBot(f, guildPath(HTTP_IDS.otherGuild) + '/scrims', 'POST', {

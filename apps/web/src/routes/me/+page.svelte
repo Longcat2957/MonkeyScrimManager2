@@ -1,5 +1,6 @@
 <script lang="ts">
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import RiotAccountList from '#lib/components/me/RiotAccountList.svelte';
     import PrivacySettings from '#lib/components/me/PrivacySettings.svelte';
     import ChampionPreferences from '#lib/components/me/ChampionPreferences.svelte';
@@ -18,22 +19,7 @@
     >
         <div class="flex min-w-0 items-center gap-3">
             <!-- 프로필 수정은 Discord에서 하므로 동작 없는 식별 정보로만 표시한다. -->
-            {#if data.me.avatarUrl}
-                <img
-                    src={data.me.avatarUrl}
-                    alt=""
-                    width="40"
-                    height="40"
-                    class="size-12 shrink-0 rounded-box object-cover"
-                />
-            {:else}
-                <span
-                    class="flex size-12 shrink-0 items-center justify-center rounded-box border border-line bg-surface-2 text-lg font-bold text-nexus"
-                    aria-hidden="true"
-                >
-                    {data.me.displayName.slice(0, 1)}
-                </span>
-            {/if}
+            <PlayerFace name={data.me.displayName} imageUrl={data.me.avatarUrl} size="lg" />
             <div class="min-w-0">
                 <h1 class="text-title font-bold">내 정보</h1>
                 <p class="flex flex-wrap items-baseline gap-x-2 text-ui">

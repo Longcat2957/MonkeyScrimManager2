@@ -6,9 +6,13 @@ import type {
 } from '#lib/features/scrims/types.ts';
 
 export const TITLE_MAX = 50;
-export const TEAM_COUNT = { min: 2, max: 4 };
+export const TEAM_COUNT = { min: 2, max: 4, step: 2 };
 export const RESERVE_CAPACITY = { min: 0, max: 10 };
 export const PLAYERS_PER_TEAM = 5;
+
+export function isAllowedTeamCount(count: number, current?: number): boolean {
+    return count === TEAM_COUNT.min || count === TEAM_COUNT.max || (count === 3 && current === 3);
+}
 
 // 팝업 입력값 그대로의 형태다. 날짜는 YYYY-MM-DD, 시각은 HH:mm 문자열이다.
 export type ScrimSettingsInput = {

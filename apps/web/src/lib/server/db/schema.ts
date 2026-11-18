@@ -149,6 +149,8 @@ export const guildMembers = pgTable(
             .references(() => users.id, { onDelete: 'cascade' }),
         // Discord 서버별 별명이며 전역 프로필 이름과 분리해서 보관한다.
         nickname: text('nickname'),
+        auctionSeedPrice: integer('auction_seed_price'),
+        auctionOverridePrice: integer('auction_override_price'),
         // 해당 길드의 서버 관리자 여부. 웹에서 직접 바꾸지 않고, 봇이 Discord 서버 관리 권한이나
         // guild_discord_settings.operator_role_id 역할 보유 여부로 동기화한다.
         isAdmin: boolean('is_admin').default(false).notNull(),
@@ -164,7 +166,9 @@ export const guildMembers = pgTable(
     },
     (table) => [
         primaryKey({ columns: [table.guildId, table.userId] }),
-        index('guild_members_user_id_idx').on(table.userId)
+        index('guild_members_user_id_idx').on(table.userId),
+        check('guild_members_auction_seed_price_positive', sql`${table.auctionSeedPrice} > 0`),
+        check('guild_members_auction_override_price_positive', sql`${table.auctionOverridePrice} > 0`)
     ]
 );
 
@@ -251,7 +255,7 @@ export const guildAuditEntries = pgTable(
         index('guild_audit_entries_next_primary_idx').on(table.nextPrimaryAccountId),
         check(
             'guild_audit_entries_kind_valid',
-            sql`${table.kind} in ('riot_account_linked', 'riot_account_unlinked', 'riot_account_primary_changed', 'discord_setting_changed')`
+            sql`${table.kind} in ('riot_account_linked', 'riot_account_unlinked', 'riot_account_primary_changed', 'discord_setting_changed', 'auction_seed_price_changed', 'auction_override_price_changed')`
         ),
         check(
             'guild_audit_entries_setting_valid',
@@ -696,7 +700,7 @@ export const auctionAcquisitionMethod = pgEnum('auction_acquisition_method', ['a
 // 낙찰·수동 영입의 원장이다. 실제 구매 팀장과 값을 입력한 운영자를 구분한다.
 // 금액·대상·구매자 정정은 이전 행을 무효화하고 새 행으로 연결하며 원래 거래값을 덮어쓰지 않는다.
 // 이전 행의 무효 여부·정정 순환·팀장 일치·예산·팀 정원과 팀 배정의 동시 변경은 서비스에서 검사한다.
-// 기본 가격 통계는 완료된 경매의 유효 auction 행만 집계한다. 수동 배정과 팀장 편입은 낙찰 건수가 아니다.
+// 가격 통계는 완료된 경매의 유효한 유상 낙찰(method = 'auction', price > 0)만 집계한다.
 export const auctionAcquisitions = pgTable(
     'auction_acquisitions',
     {

@@ -27,4 +27,6 @@
 | 목록 조작 | `SelectionTabs`, `SeasonSelector`, `PageNav` |
 | 사용자·포지션 | `PlayerFace`, `PlayerName`, `AvatarStack`, `PositionIcon`. 내전의 포지션 칩·분포는 [scrims](../../apps/web/src/lib/components/scrims/)의 `PositionChips`, `LaneMatrix` |
 
+선수를 나타내는 사진은 `PlayerFace`에 Discord 전역 아바타를 전달한다. 공개 프로필에 커스텀 사진이 없으면 Discord 기본 아바타를 사용한다. 비공개·탈퇴·삭제 사용자에게는 사진 URL을 전달하지 않으며, 이미지 로드에 실패하면 표시 이름의 첫 글자를 사용한다. 챔피언 초상화는 챔피언을 나타낼 때만 사용한다.
+
 셸과 메뉴의 접근 조건은 [라우팅](routing.md), 폼·오류·키보드와 완료 기준은 [화면 패턴](patterns.md)을 따른다.

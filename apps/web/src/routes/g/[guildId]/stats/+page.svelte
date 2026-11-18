@@ -310,7 +310,9 @@
                 {/each}
             </dl>
         </section>
+    {/if}
 
+    {#if !data.empty}
         <!-- 포지션 필터는 업적·리더보드·챔피언에 함께 적용한다. -->
         <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <div role="group" aria-label="포지션 필터" class="min-w-0 max-w-full">

@@ -2,7 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { dev } from '$app/env';
 import { findMockGuild, mockUser } from '#lib/mocks/session.ts';
 import type { LolPosition } from '#lib/features/guild/types.ts';
-import { getRankingPage, latestDataDragonVersion, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
+import { getRankingPage, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
 import { routeError } from '#lib/server/http.ts';
 import type { RequestHandler } from './$types';
 
@@ -17,8 +17,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
         const result = await getRankingPage(params.guildId, position, {
             offset,
             seasonId: url.searchParams.get('season'),
-            userId: dev && findMockGuild(params.guildId) ? mockUser.userId : (locals.actor?.userId ?? null),
-            version: await latestDataDragonVersion()
+            userId: dev && findMockGuild(params.guildId) ? mockUser.userId : (locals.actor?.userId ?? null)
         });
         if (!result) error(404, '진행 중인 시즌이 없습니다.');
         return json(result.page);

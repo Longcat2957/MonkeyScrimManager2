@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { LolPosition, RankingEntry, RankingPage } from '../../features/guild/types.ts';
 import type { Actor } from '../auth/types.ts';
 import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
@@ -11,7 +11,6 @@ import {
     lolPosition,
     matches,
     mmrLedgerEntries,
-    roflParticipantDataV1,
     scrimParticipants,
     scrims,
     userPositionMmr,
@@ -31,7 +30,6 @@ export async function queryRankingPage(
         offset: number;
         limit: number;
         userId: string | null;
-        championIcon?: (championId: string) => string | null;
         seasonId?: string | null;
     }
 ): Promise<{ seasonName: string; page: RankingPage } | null> {
@@ -54,9 +52,6 @@ export async function queryRankingPage(
             tx
                 .select({
                     userId: users.id,
-                    displayName: sql<string>`coalesce(${users.globalName}, ${users.username})`.as(
-                        'display_name'
-                    ),
                     mmr: userPositionMmr.mmr,
                     rank: sql<number>`row_number() over (order by ${userPositionMmr.mmr} desc, ${users.id} asc)::integer`.as(
                         'rank'
@@ -135,71 +130,27 @@ export async function queryRankingPage(
         const mine = options.userId
             ? await tx.with(ranked).select().from(ranked).where(eq(ranked.userId, options.userId)).limit(1)
             : [];
-        const selectedUsers = [
-            ...new Set([...rows.slice(0, options.limit), ...mine].map((row) => row.userId))
-        ];
-        // 대표 챔피언은 현재 시즌·실제 포지션의 정상 기록에서 최다 사용, 동률이면 식별자 순으로 고른다.
-        const championCounts = selectedUsers.length
-            ? await tx
-                  .select({
-                      userId: scrimParticipants.userId,
-                      champion: roflParticipantDataV1.champion,
-                      games: count()
-                  })
-                  .from(gameParticipants)
-                  .innerJoin(scrimParticipants, eq(scrimParticipants.id, gameParticipants.scrimParticipantId))
-                  .innerJoin(
-                      games,
-                      and(
-                          eq(games.id, gameParticipants.gameId),
-                          eq(games.roflMetadataId, gameParticipants.roflMetadataId),
-                          eq(games.status, 'completed')
-                      )
-                  )
-                  .innerJoin(matches, and(eq(matches.id, games.matchId), ne(matches.status, 'cancelled')))
-                  .innerJoin(
-                      scrims,
-                      and(
-                          eq(scrims.id, games.scrimId),
-                          eq(scrims.guildId, guildId),
-                          eq(scrims.mmrSeasonId, season.id),
-                          ne(scrims.status, 'cancelled')
-                      )
-                  )
-                  .innerJoin(
-                      roflParticipantDataV1,
-                      and(
-                          eq(roflParticipantDataV1.roflMetadataId, gameParticipants.roflMetadataId),
-                          eq(roflParticipantDataV1.participantIndex, gameParticipants.roflParticipantIndex)
-                      )
-                  )
-                  .where(
-                      and(
-                          inArray(scrimParticipants.userId, selectedUsers),
-                          eq(gameParticipants.position, position),
-                          isNotNull(roflParticipantDataV1.champion)
-                      )
-                  )
-                  .groupBy(scrimParticipants.userId, roflParticipantDataV1.champion)
-                  .orderBy(desc(count()), asc(roflParticipantDataV1.champion))
-            : [];
-        const identities = await readPublicIdentities(tx, selectedUsers, guildId);
+        const entries = rows.slice(0, options.limit);
+        const identities = await readPublicIdentities(
+            tx,
+            [...entries, ...mine].map((row) => row.userId),
+            guildId
+        );
         const entry = (row: (typeof rows)[number]): RankingEntry => {
-            const championId = championCounts.find((champion) => champion.userId === row.userId)?.champion;
             const identity = identities.get(row.userId)!;
             return {
                 ...row,
                 userId: identity.userId,
                 identityKey: identity.identityKey,
                 displayName: publicDisplayName(identity),
-                iconUrl: championId ? (options.championIcon?.(championId) ?? null) : null,
+                iconUrl: identity.avatarUrl,
                 isMe: row.userId === options.userId
             };
         };
         return {
             seasonName: season.name,
             page: {
-                entries: rows.slice(0, options.limit).map(entry),
+                entries: entries.map(entry),
                 hasMore: rows.length > options.limit,
                 me: mine[0] ? entry(mine[0]) : null
             }

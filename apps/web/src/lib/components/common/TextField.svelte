@@ -3,6 +3,8 @@
 
     type Props = {
         label: string;
+        name?: string;
+        list?: string;
         value?: string;
         type?: HTMLInputTypeAttribute;
         placeholder?: string;
@@ -21,6 +23,8 @@
 
     let {
         label,
+        name,
+        list,
         value = $bindable(''),
         type = 'text',
         placeholder = '',
@@ -44,6 +48,8 @@
     <label for={`${id}-input`} class="text-xs font-semibold text-ink-2">{label}</label>
     <input
         id={`${id}-input`}
+        {name}
+        {list}
         {type}
         bind:value
         {placeholder}

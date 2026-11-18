@@ -105,6 +105,7 @@ export type AuctionHistoryEntry = {
     id: string;
     order: number;
     displayName: string;
+    iconUrl: string | null;
     result: 'sold' | 'unsold' | 'manual';
     teamName: string | null;
     price: number | null;
@@ -120,6 +121,7 @@ export type AuctionView = {
     players: FormationPlayer[];
     openLot: FormationPlayer | null;
     openLotId?: string | null;
+    // 열람용 이름순 명단이다. 실제 호명 순서는 서버에만 보관한다.
     queue: FormationPlayer[];
     unsold: FormationPlayer[];
     history: AuctionHistoryEntry[];

@@ -37,7 +37,7 @@ test('완료된 단일 실제 경기만 결과 상세로 보내고 여러 경기
 });
 
 // 팀 편성이 끝난(대진 준비) 내전을 만든다. 참가자는 devScrim008에서 빌린다.
-async function readyScrim(teamCount: number, method: 'manual' | 'auction' = 'manual') {
+async function readyScrim(teamCount: 2 | 4) {
     const scrimId = await createMockScrim(guildId, {
         title: `대진 테스트 ${teamCount}팀`,
         scheduledAt: null,
@@ -46,7 +46,7 @@ async function readyScrim(teamCount: number, method: 'manual' | 'auction' = 'man
         hardFearless: false
     });
     const scrim = findMockScrimRecord(guildId, scrimId)!;
-    scrim.formationMethod = method;
+    scrim.formationMethod = 'manual';
     scrim.status = 'ready';
     scrim.participants = findMockScrimRecord(guildId, 'devScrim008')!
         .participants.slice(0, teamCount * 5)
@@ -115,7 +115,7 @@ test('팀을 옮기면 원래 자리는 비고 도착 자리의 팀은 풀로 �
 });
 
 test('경매 준결승 진영 교환은 두 팀을 보존하고 확정 후 결승 직행 시드는 바꿀 수 없다', async () => {
-    const id = await readyScrim(3, 'auction');
+    const id = 'devScrim009';
     await fill(id);
     const [a, b, bye] = (await view(id)).teams.map((team) => team.id) as [string, string, string];
     const seeds = async () => bracketSeats((await view(id)).matches).map((seat) => seat.teamId);
@@ -148,7 +148,7 @@ test('잘못된 입력은 거절하고 초기화는 경기 방식을 유지한�
 });
 
 test('모든 자리를 채워야 확정되고 확정 후에는 다시 편성해야 바꿀 수 있다', async () => {
-    const scrimId = await readyScrim(3);
+    const scrimId = await readyScrim(4);
     assert.equal((await confirmMockBracket(guildId, scrimId))?.status, 409);
     await fill(scrimId);
     assert.equal(await confirmMockBracket(guildId, scrimId), null);

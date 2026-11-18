@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { SessionUser } from '#lib/features/guild/types.ts';
+import { discordAvatarUrl } from '../discord/avatar.ts';
 
 export const SESSION_LIFETIME_SECONDS = 30 * 24 * 60 * 60;
 
@@ -35,9 +36,7 @@ export function sessionUser(user: {
     return {
         userId: user.id,
         displayName: user.globalName || user.username,
-        avatarUrl: user.avatarHash
-            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatarHash}.webp?size=128`
-            : null,
+        avatarUrl: discordAvatarUrl(user.id, user.avatarHash),
         isServiceAdmin: user.isServiceAdmin
     };
 }

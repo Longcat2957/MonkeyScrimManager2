@@ -246,6 +246,52 @@ test('생성 재요청은 동일 내전을 반환하고 별도 연결에서도 �
     }
 });
 
+test('3팀으로 생성하거나 변경할 수 없고 기존 내전은 그대로 남는다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    const before = await f.row();
+    const invalid = { ...settings, teamCount: 3 };
+    await assert.rejects(
+        createScrim(f.db, f.manager, f.guildId, { ...invalid, requestId: randomUUID() }, f.access),
+        errorCode('INVALID_INPUT')
+    );
+    await assert.rejects(
+        updateScrimSettings(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { expectedRevision: before.revision, settings: invalid },
+            f.access
+        ),
+        errorCode('INVALID_INPUT')
+    );
+    assert.deepEqual(await f.db.select().from(schema.scrims), [before]);
+});
+
+test('기존 3팀 모집은 팀 수를 유지하며 수정하거나 4팀으로 바꿀 수 있다', async (t) => {
+    const f = await createDomainFixture(t);
+    const [legacy] = await f.db
+        .insert(schema.scrims)
+        .values({ guildId: f.guildId, mmrSeasonId: f.season.id, title: '기존 3팀 내전', teamCount: 3 })
+        .returning();
+    let expectedRevision = legacy!.revision;
+    for (const teamCount of [3, 4]) {
+        const title = `${teamCount}팀 변경`;
+        await updateScrimSettings(
+            f.db,
+            f.manager,
+            f.guildId,
+            legacy!.id,
+            { expectedRevision, settings: { ...settings, title, teamCount } },
+            f.access
+        );
+        const saved = (await getScrimSettings(f.db, f.manager, f.guildId, legacy!.id, f.access))!;
+        assert.equal(saved.teamCount, teamCount);
+        assert.equal(saved.title, title);
+        expectedRevision++;
+    }
+});
+
 test('공개 조회는 본인 신청과 운영 권한을 다른 실행자에게 노출하지 않는다', async (t) => {
     const f = await createRecruitmentFixture(t);
     await join(f, 0);

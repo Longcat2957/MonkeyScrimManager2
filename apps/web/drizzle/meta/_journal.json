@@ -113,6 +113,20 @@
       "when": 1794975163136,
       "tag": "0015_match_set_sides",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794991394941,
+      "tag": "0016_guild_member_auction_seed_price",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794992142350,
+      "tag": "0017_guild_member_auction_override_price",
+      "breakpoints": true
     }
   ]
 }

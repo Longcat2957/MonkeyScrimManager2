@@ -1,5 +1,6 @@
 <script lang="ts">
     import Button from '#lib/components/common/Button.svelte';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { DragState } from '#lib/components/teams/drag.svelte.ts';
@@ -113,6 +114,17 @@
     }
 </script>
 
+{#snippet lineupPlayer(
+    player: MatchOperationContext['teams'][number]['players'][number] | undefined,
+    empty: string
+)}
+    {#if player}<PlayerFace name={player.displayName} imageUrl={player.iconUrl} size="xs" />{/if}
+    <span class="flex min-w-0 flex-1 flex-col">
+        <span class="truncate font-medium">{player?.displayName ?? empty}</span>
+        {#if player?.riotId}<span class="truncate text-xs text-muted">{player.riotId}</span>{/if}
+    </span>
+{/snippet}
+
 <svelte:window
     onkeydown={(event) => {
         if (event.key === 'Escape') selectedId = null;
@@ -202,14 +214,7 @@
                                         else if (player) choose(player.participantId);
                                     }}
                                 >
-                                    <span class="flex min-w-0 flex-col"
-                                        ><span class="truncate font-medium"
-                                            >{player?.displayName ??
-                                                (targeting ? '여기에 배치' : '미배정')}</span
-                                        >{#if player?.riotId}<span class="truncate text-xs text-muted"
-                                                >{player.riotId}</span
-                                            >{/if}</span
-                                    >
+                                    {@render lineupPlayer(player, targeting ? '여기에 배치' : '미배정')}
                                     {#if targeting && player}<span class="shrink-0 text-xs">교환</span>{/if}
                                 </button>
                                 {#if player && !targeting}
@@ -221,13 +226,9 @@
                                     >
                                 {/if}
                             {:else}
-                                <span class="flex min-w-0 flex-1 flex-col justify-center px-2 text-ui"
-                                    ><span class="truncate font-medium"
-                                        >{player?.displayName ?? '미배정'}</span
-                                    >{#if player?.riotId}<span class="truncate text-xs text-muted"
-                                            >{player.riotId}</span
-                                        >{/if}</span
-                                >
+                                <span class="flex min-w-0 flex-1 items-center gap-2 px-2 text-ui">
+                                    {@render lineupPlayer(player, '미배정')}
+                                </span>
                             {/if}
                         </li>
                     {/each}
@@ -250,15 +251,18 @@
                                 draggable="true"
                                 aria-pressed={selectedId === player.participantId}
                                 class={[
-                                    'min-h-9 min-w-0 rounded-(--radius-small) border px-2.5 py-1 text-ui pointer-coarse:min-h-11',
+                                    'inline-flex min-h-9 min-w-0 items-center gap-2 rounded-(--radius-small) border px-2.5 py-1 text-ui pointer-coarse:min-h-11',
                                     selectedId === player.participantId
                                         ? 'border-nexus bg-nexus/10 text-nexus'
                                         : 'border-line'
                                 ]}
                                 ondragstart={(event) => drag.start(event, player.participantId)}
                                 ondragend={() => drag.end()}
-                                onclick={() => choose(player.participantId)}>{player.displayName}</button
+                                onclick={() => choose(player.participantId)}
                             >
+                                <PlayerFace name={player.displayName} imageUrl={player.iconUrl} size="xs" />
+                                <span class="min-w-0 truncate">{player.displayName}</span>
+                            </button>
                         {:else}<span class="text-xs text-muted">여기에 놓아 배치 해제</span>{/each}
                     </div>
                 {/if}

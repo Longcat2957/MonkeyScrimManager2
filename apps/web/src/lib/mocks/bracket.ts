@@ -12,7 +12,7 @@ import {
     type BracketView
 } from '#lib/features/scrims/bracket.ts';
 import { parseSlot } from '#lib/features/scrims/formation.ts';
-import { findMockScrimRecord, type IconResolver, type MockFailure, type MockScrim } from './scrims.ts';
+import { findMockScrimRecord, type MockFailure, type MockScrim } from './scrims.ts';
 import { cancelMockMatchResults, createMockMatch, setMockMatchStatus } from './matches.ts';
 import { getMockAuction, getMockManualFormation } from './teams.ts';
 
@@ -27,7 +27,6 @@ type BracketState = {
 const states = new Map<string, BracketState>();
 const cancelledStates = new Map<string, BracketState[]>();
 const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
-const noIcon: IconResolver = () => null;
 
 // 이미 진행·종료된 조회용 내전의 경기 결과. 자리 순서대로 팀을 놓은 뒤 적용한다.
 const RESULTS: Record<string, Record<string, Partial<BracketMatch>>> = {
@@ -44,9 +43,9 @@ const teamsConfirmed = (scrim: MockScrim) =>
     !(scrim.status === 'ended_early' && scrim.endedEarlyFromStatus === 'preparing') &&
     ['ready', 'in_progress', 'completed', 'ended_early'].includes(scrim.status);
 
-async function scrimTeams(scrim: MockScrim, icon: IconResolver): Promise<BracketTeam[]> {
+async function scrimTeams(scrim: MockScrim): Promise<BracketTeam[]> {
     if (scrim.formationMethod === 'auction') {
-        const auction = await getMockAuction(scrim.guildId, scrim.id, icon);
+        const auction = await getMockAuction(scrim.guildId, scrim.id);
         // 경매 팀은 포지션을 정하지 않으므로 희망 포지션을 배정 결과처럼 보여 주지 않는다.
         return (auction?.teams ?? []).map((team) => ({
             id: team.id,
@@ -59,7 +58,7 @@ async function scrimTeams(scrim: MockScrim, icon: IconResolver): Promise<Bracket
             }))
         }));
     }
-    const formation = await getMockManualFormation(scrim.guildId, scrim.id, icon);
+    const formation = await getMockManualFormation(scrim.guildId, scrim.id);
     if (!formation) return [];
     return formation.teams.map((team) => ({
         id: team.id,
@@ -92,10 +91,10 @@ function initialState(scrim: MockScrim, teams: BracketTeam[]): BracketState {
     return state;
 }
 
-async function load(guildId: string, scrimId: string, icon: IconResolver) {
+async function load(guildId: string, scrimId: string) {
     const scrim = findMockScrimRecord(guildId, scrimId);
     if (!scrim) return null;
-    const teams = teamsConfirmed(scrim) ? await scrimTeams(scrim, icon) : [];
+    const teams = teamsConfirmed(scrim) ? await scrimTeams(scrim) : [];
     const key = `${guildId}/${scrimId}`;
     let state = states.get(key);
     if (!state && teams.length) {
@@ -121,12 +120,8 @@ function placeTeam(
 }
 
 /** 대진 화면 데이터. 팀 편성이 끝나지 않았으면 null이다. */
-export async function getMockBracket(
-    guildId: string,
-    scrimId: string,
-    icon: IconResolver = noIcon
-): Promise<BracketView | null> {
-    const target = await load(guildId, scrimId, icon);
+export async function getMockBracket(guildId: string, scrimId: string): Promise<BracketView | null> {
+    const target = await load(guildId, scrimId);
     if (!target?.state) return null;
     const { scrim, teams, state } = target;
     const manage = scrim.canManage && scrim.status === 'ready';
@@ -146,7 +141,7 @@ async function mutate(
     locked: boolean | 'either' = false
 ) {
     await wait();
-    const target = await load(guildId, scrimId, noIcon);
+    const target = await load(guildId, scrimId);
     if (!target) return { status: 404, message: '내전을 찾을 수 없어요' };
     if (!target.scrim.canManage) return { status: 403, message: '대진을 바꿀 권한이 없어요' };
     if (!target.state) return { status: 409, message: '팀 편성이 끝나면 대진을 만들 수 있어요' };
@@ -286,7 +281,7 @@ export async function syncMockBracketResult(
     scoreB: number,
     status: BracketMatch['status']
 ) {
-    const target = await load(guildId, scrimId, noIcon);
+    const target = await load(guildId, scrimId);
     if (!target?.state || target.scrim.status !== 'in_progress') return;
     const match = target.state.matches.find((item) => item.matchId === matchId);
     if (!match) return;
@@ -305,7 +300,7 @@ export async function startMockManualMatch(
     bestOf: BestOf,
     blueTeamId: string
 ): Promise<MockFailure | null> {
-    const target = await load(guildId, scrimId, noIcon);
+    const target = await load(guildId, scrimId);
     if (!target?.state || target.teams.length !== 2)
         return { status: 409, message: '2팀 수동 편성을 먼저 확정해 주세요' };
     bracketSeats(target.state.matches).forEach((seat, index) =>
@@ -317,7 +312,7 @@ export async function startMockManualMatch(
 
 /** 내전 단계 판단에 쓰는 대진 요약. 대진이 없으면 null이다. */
 export async function getMockBracketProgress(guildId: string, scrimId: string) {
-    const target = await load(guildId, scrimId, noIcon);
+    const target = await load(guildId, scrimId);
     if (!target?.state) return null;
     const matches = target.state.matches;
     return {
@@ -331,7 +326,7 @@ export async function getMockBracketProgress(guildId: string, scrimId: string) {
 
 /** 과거 대진은 보관하고 다음 편성에 재사용하지 않는다. */
 export async function cancelMockBracketResults(guildId: string, scrimId: string) {
-    const target = await load(guildId, scrimId, noIcon);
+    const target = await load(guildId, scrimId);
     if (!target?.state) return 0;
     const key = `${guildId}/${scrimId}`;
     const previous = cancelledStates.get(key) ?? [];
@@ -344,7 +339,7 @@ export async function cancelMockBracketResults(guildId: string, scrimId: string)
 
 /** 중도 종료의 실제 점수 우세 팀만 기록하며, 재개는 바꾼 경기의 상태·승자를 그대로 복원한다. */
 export async function setMockBracketEnded(guildId: string, scrimId: string, ended: boolean) {
-    const target = await load(guildId, scrimId, noIcon);
+    const target = await load(guildId, scrimId);
     if (!target?.state) return;
     if (ended) {
         target.state.interrupted = [];

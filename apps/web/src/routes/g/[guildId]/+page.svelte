@@ -21,13 +21,25 @@
 <h1 class="page-head text-title font-bold wrap-anywhere">{data.guild.name}</h1>
 
 <div class="@container mt-4 grid min-w-0 gap-8">
-    <div
-        class="panel grid min-w-0 overflow-hidden @min-[46rem]:grid-cols-[minmax(16rem,.85fr)_minmax(0,1.65fr)]"
-    >
-        <NextScrimBrief
-            next={data.nextScrim}
-            href={data.nextScrim &&
-                resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: data.nextScrim.scrim.id })}
+    <NextScrimBrief
+        next={data.nextScrim}
+        href={data.nextScrim &&
+            resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: data.nextScrim.scrim.id })}
+    />
+
+    {#if data.achievements.length}
+        <section aria-labelledby="achievements" class="min-w-0 border-t border-line">
+            <h2 id="achievements" class="py-3 text-base font-semibold">업적</h2>
+            <AchievementCarousel items={data.achievements} />
+        </section>
+    {/if}
+    <div class="grid min-w-0 items-start gap-6 @min-[50rem]:grid-cols-[minmax(0,1.65fr)_minmax(17rem,1fr)]">
+        <RankingBoard
+            {guildId}
+            ranking={data.ranking}
+            seasons={data.seasons}
+            selectedSeasonId={data.selectedSeasonId}
+            onretry={retry}
         />
         <ActivityBoard
             {guildId}
@@ -36,26 +48,5 @@
             nextShown={Boolean(data.nextScrim)}
             onretry={retry}
         />
-    </div>
-
-    <div
-        class={[
-            'grid min-w-0 items-start gap-6',
-            data.achievements.length && '@min-[46rem]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]'
-        ]}
-    >
-        <RankingBoard
-            {guildId}
-            ranking={data.ranking}
-            seasons={data.seasons}
-            selectedSeasonId={data.selectedSeasonId}
-            onretry={retry}
-        />
-        {#if data.achievements.length}
-            <section aria-labelledby="achievements" class="min-w-0 border-t border-line">
-                <h2 id="achievements" class="py-3 text-base font-semibold">업적</h2>
-                <AchievementCarousel items={data.achievements} />
-            </section>
-        {/if}
     </div>
 </div>

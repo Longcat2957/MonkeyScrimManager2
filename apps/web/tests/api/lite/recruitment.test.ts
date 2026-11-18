@@ -63,6 +63,7 @@ for (const time of ['24:00', '20:60', '8:00', '']) {
 
 for (const [name, change] of [
     ['팀 1개', { teamCount: 1 }],
+    ['팀 3개', { teamCount: 3 }],
     ['팀 5개', { teamCount: 5 }],
     ['소수 팀', { teamCount: 2.5 }],
     ['NaN 팀', { teamCount: NaN }],

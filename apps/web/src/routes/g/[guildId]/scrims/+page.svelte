@@ -22,13 +22,13 @@
         { key: 'active', text: '진행 중' },
         { key: 'done', text: '종료' }
     ];
-    const NEW_SCRIM: ScrimSettings = {
+    let newScrim = $state<ScrimSettings>({
         title: '',
         scheduledAt: null,
         teamCount: TEAM_COUNT.min,
         reserveCapacity: 2,
         hardFearless: false
-    };
+    });
     // 새 모집은 모집 단계이므로 모든 설정을 입력받는다.
     const CREATE_FIELDS = editableFields('recruit');
 
@@ -63,6 +63,11 @@
 
     let creating = $state(false);
 
+    function openRecruitment() {
+        newScrim.scheduledAt = new Date(Date.now() + 30 * 60_000).toISOString();
+        creating = true;
+    }
+
     function navigate(params: { status?: ScrimStatusFilter; page?: number }) {
         const url = new URL(page.url.href);
         if (params.status !== undefined) {
@@ -92,7 +97,7 @@
         <h1 class="text-title font-bold">내전</h1>
         {#if data.can.createScrim}
             <span class="shrink-0">
-                <Button variant="primary" onclick={() => (creating = true)}>모집 만들기</Button>
+                <Button variant="primary" onclick={openRecruitment}>모집 만들기</Button>
             </span>
         {/if}
     </header>
@@ -168,7 +173,7 @@
         title="모집 만들기"
         submitText="만들기"
         action="create"
-        initial={NEW_SCRIM}
+        initial={newScrim}
         editable={CREATE_FIELDS}
         onsaved={created}
     />

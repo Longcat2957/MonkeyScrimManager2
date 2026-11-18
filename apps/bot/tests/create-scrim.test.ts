@@ -87,6 +87,10 @@ test('내전모집은 즉시 네이티브 입력창을 열고 팀·대기·피�
     );
     const choices = fields.filter((field) => field.type === ComponentType.StringSelect);
     assert.deepEqual(
+        choices[0]!.options.map((option) => option.value),
+        ['2', '4']
+    );
+    assert.deepEqual(
         choices.map((field) =>
             field.options.filter((option) => option.default).map((option) => option.value)
         ),
@@ -153,6 +157,10 @@ test('입력 오류와 일시적 API 오류 뒤 초안을 수정해도 같은 �
     const command = interaction('command');
     await handler(command.value);
     const customId = command.modals[0]!.data.custom_id!;
+    const unsupported = interaction('modal', customId, { ...draft, teamCount: '3' });
+    await handler(unsupported.value);
+    assert.equal(calls.length, 0);
+    assert.match(JSON.stringify(unsupported.replies), /팀 수/);
     const invalid = interaction('modal', customId, { ...draft, scheduledAt: '2026-02-29 20:00' });
     await handler(invalid.value);
     assert.equal(calls.length, 0);

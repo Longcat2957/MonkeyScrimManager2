@@ -1,10 +1,11 @@
 import type { GuildContext, GuildSummary, SessionUser } from '#lib/features/guild/types.ts';
+import { mockAvatarUrl } from './avatar.ts';
 
 // 인증이 연결되기 전 개발 모드에서만 사용하는 로그인 사용자와 접근 가능한 서버다.
 export const mockUser: SessionUser = {
     userId: 'devUser001',
     displayName: '개발자',
-    avatarUrl: null,
+    avatarUrl: mockAvatarUrl('devUser001'),
     isServiceAdmin: true
 };
 
@@ -18,6 +19,3 @@ export const mockGuilds: GuildSummary[] = guilds.map(({ id, name }) => ({ id, na
 export function findMockGuild(guildId: string) {
     return guilds.find((guild) => guild.id === guildId) ?? null;
 }
-
-// 서버 홈 배경 아트에 쓸 로그인 사용자의 주 챔피언(Data Dragon ID).
-export const mockMainChampion = 'Ahri';

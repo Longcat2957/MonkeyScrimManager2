@@ -12,7 +12,7 @@
     ] as const;
 </script>
 
-<footer class="border-t border-line bg-rail">
+<footer class="border-t border-line bg-rail lg:grid lg:min-h-(--account-height) lg:items-center">
     <div
         class="flex flex-col gap-1 px-4 py-2 text-ink-2 sm:flex-row sm:items-center sm:justify-between md:px-6"
     >

@@ -12,37 +12,64 @@ import { createMatchResultFixture } from '../../support/match-fixtures.ts';
 const icon = (id: number | null) => (id === null ? null : { id, name: `아이콘 ${id}`, iconUrl: null });
 const resolvers: GameResolvers = { champion, item: icon, spell: icon, rune: icon, splash: () => null };
 
-test('경기 목록은 서버·상태·페이지를 구분하고 검색의 SQL 와일드카드를 문자로 취급한다', async (t) => {
+test('기록은 취소되지 않은 내전에서 확정 승자가 ROFL 세트 과반을 얻은 정상 종료 경기만 센다', async (t) => {
     const f = await createGameFixture(t);
-    await f.db.update(schema.scrims).set({ title: '100%_내전' }).where(eq(schema.scrims.id, f.scrimId));
-    await f.db.insert(schema.matches).values({ ...f.matchValues, status: 'cancelled' });
-    await f.createGame(f.db, 1, f.match.id, 'a', { startedAt: new Date('2026-10-01T10:00:00Z') });
-    const all = await listMatches(f.db, null, f.guildId, { status: 'all', page: 1, pageSize: 20 });
-    assert.equal(all.total, 2);
-    assert.equal(all.matches.find((match) => match.id === f.match.id)?.scoreA, 1);
-    assert.equal(all.matches.find((match) => match.id === f.match.id)?.playedAt, '2026-10-01T10:00:00.000Z');
-    assert.equal(
-        (await listMatches(f.db, null, f.guildId, { status: 'in_progress', q: '%_', page: 1, pageSize: 20 }))
-            .total,
-        1
+    const page = { page: 1, pageSize: 1 };
+    const read = () => listMatches(f.db, null, f.guildId, page);
+    const completed = { ...f.matchValues, status: 'completed' as const, winnerTeamId: f.match.teamAId };
+    const excluded = await f.db
+        .insert(schema.matches)
+        .values([
+            ...(['pending', 'in_progress', 'ended_early', 'cancelled'] as const).map((status) => ({
+                ...f.matchValues,
+                bestOf: 1,
+                status
+            })),
+            { ...completed, bestOf: 1, winnerTeamId: f.match.teamBId },
+            { ...completed, bestOf: 5 }
+        ])
+        .returning();
+    for (const match of excluded) await f.createGame(f.db, 1, match.id);
+    await f.db.insert(schema.matches).values({ ...completed, bestOf: 1 });
+
+    // 실제 세트 없이 승자만 지정한 대진이나, 일부 세트만 있는 BO5는 빈 기록을 채우지 않는다.
+    const empty = await read();
+    assert.equal(empty.empty, true);
+    assert.equal(empty.total, 0);
+    assert.deepEqual(empty.matches, []);
+
+    await f.db
+        .update(schema.matches)
+        .set({ status: 'completed', winnerTeamId: f.match.teamBId })
+        .where(eq(schema.matches.id, f.match.id));
+    await f.createGame(f.db, 1, f.match.id, 'b', { startedAt: new Date('2026-10-01T10:00:00Z') });
+    await f.createGame(f.db, 2, f.match.id, 'a', { winnerSide: 'red' });
+    const finalGame = await f.createGame(f.db, 3, f.match.id, 'b');
+    const all = await read();
+    assert.equal(all.total, 1);
+    assert.equal(all.empty, false);
+    assert.deepEqual(
+        all.matches.map(({ id, scoreA, scoreB, playedAt }) => ({ id, scoreA, scoreB, playedAt })),
+        [{ id: f.match.id, scoreA: 0, scoreB: 3, playedAt: '2026-10-01T10:00:00.000Z' }]
     );
-    assert.equal(
-        (await listMatches(f.db, null, f.guildId, { status: 'done', page: 1, pageSize: 20 })).total,
-        1
-    );
-    assert.equal(
-        (await listMatches(f.db, null, f.guildId, { status: 'all', page: 2, pageSize: 1 })).matches.length,
-        1
-    );
-    assert.equal(
-        (await listMatches(f.db, null, f.otherGuildId, { status: 'all', page: 1, pageSize: 20 })).total,
-        0
-    );
+    assert.equal((await listMatches(f.db, null, f.guildId, { ...page, bestOf: 5 })).total, 1);
+    assert.equal((await listMatches(f.db, null, f.guildId, { ...page, page: 2 })).matches.length, 0);
+    assert.equal((await listMatches(f.db, null, f.otherGuildId, page)).total, 0);
     assert.equal(await getMatch(f.db, null, f.otherGuildId, f.match.id, null, resolvers), null);
-    await assert.rejects(
-        listMatches(f.db, null, f.guildId, { status: 'all', page: 0, pageSize: 20 }),
-        errorCode('INVALID_INPUT')
-    );
+    for (const change of [{ page: 0 }, { bestOf: 2 }])
+        await assert.rejects(
+            listMatches(f.db, null, f.guildId, { ...page, ...change }),
+            errorCode('INVALID_INPUT')
+        );
+
+    await f.db.update(schema.scrims).set({ status: 'cancelled' }).where(eq(schema.scrims.id, f.scrimId));
+    assert.equal((await read()).empty, true);
+    await f.db.update(schema.scrims).set({ status: 'in_progress' }).where(eq(schema.scrims.id, f.scrimId));
+    await f.db
+        .update(schema.roflGameDataV1)
+        .set({ resultStatus: 'conflicting', winnerReplayTeamId: null })
+        .where(eq(schema.roflGameDataV1.roflMetadataId, finalGame.roflMetadataId!));
+    assert.equal((await read()).empty, true);
 });
 
 test('경기 상세는 당시 표시값·실제 0·누락 null과 공통 피어리스를 보존한다', async (t) => {

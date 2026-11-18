@@ -1,11 +1,9 @@
 import type { LolPosition, RankingEntry } from '#lib/features/guild/types.ts';
+import { mockAvatarUrl } from './avatar.ts';
 
-// 서버 순위 목 데이터. 아이콘 주소는 서버가 Data Dragon 버전으로 만들도록 챔피언 ID만 둔다.
 // 무한 스크롤을 확인할 수 있도록 고정 인원 뒤에 이름을 조합한 인원을 덧붙인다.
 type MockRecord = { mmr: number; games: number; wins: number; championId: string };
 type MockPlayer = { userId: string; displayName: string; records: Partial<Record<LolPosition, MockRecord>> };
-
-export type MockRankingEntry = Omit<RankingEntry, 'iconUrl'> & { championId: string };
 
 const SEASON_NAME = '2026 시즌 2';
 const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
@@ -137,14 +135,21 @@ const players = [...fixedPlayers, ...generatedPlayers];
 export const mockPlayers: readonly MockPlayer[] = players;
 export type { MockPlayer };
 
-function rankPosition(position: LolPosition, userId: string | null): MockRankingEntry[] {
+function rankPosition(position: LolPosition, userId: string | null): RankingEntry[] {
     return players
         .flatMap((player) => {
             const record = player.records[position];
-            return record ? [{ userId: player.userId, displayName: player.displayName, ...record }] : [];
+            if (!record) return [];
+            const { mmr, games, wins } = record;
+            return [{ userId: player.userId, displayName: player.displayName, mmr, games, wins }];
         })
         .sort((a, b) => b.mmr - a.mmr)
-        .map((entry, index) => ({ ...entry, rank: index + 1, isMe: entry.userId === userId }));
+        .map((entry, index) => ({
+            ...entry,
+            rank: index + 1,
+            iconUrl: mockAvatarUrl(entry.userId),
+            isMe: entry.userId === userId
+        }));
 }
 
 export async function getMockRankingPage(
@@ -156,8 +161,10 @@ export async function getMockRankingPage(
     const ranked = rankPosition(position, userId);
     return {
         seasonName: SEASON_NAME,
-        entries: ranked.slice(offset, offset + limit),
-        hasMore: offset + limit < ranked.length,
-        me: ranked.find((entry) => entry.isMe) ?? null
+        page: {
+            entries: ranked.slice(offset, offset + limit),
+            hasMore: offset + limit < ranked.length,
+            me: ranked.find((entry) => entry.isMe) ?? null
+        }
     };
 }

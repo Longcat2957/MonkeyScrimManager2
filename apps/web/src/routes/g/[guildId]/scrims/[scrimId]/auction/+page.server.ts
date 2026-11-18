@@ -15,11 +15,9 @@ import {
     restoreMockUnsold,
     revertMockLot,
     saveMockAuctionSetup,
-    shuffleMockQueue,
     startMockAuction
 } from '#lib/mocks/teams.ts';
 import { clearMockFormationMethod } from '#lib/mocks/workflow.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
 import {
     getChampionPreferenceCatalog,
@@ -43,7 +41,6 @@ import {
     restoreAuctionUnsold,
     revertAuctionLot,
     saveAuctionSetup,
-    shuffleAuctionQueue,
     startAuction
 } from '#lib/server/scrims/auction.ts';
 import { chooseFormationMethod } from '#lib/server/scrims/workflow.ts';
@@ -94,12 +91,7 @@ export const load: PageServerLoad = async ({ parent, params, depends, locals }) 
     }
 
     const version = await latestDataDragonVersion();
-    const auction = await getMockAuction(
-        params.guildId,
-        params.scrimId,
-        (id) => championIconUrl(version, id),
-        await championResolver(version)
-    );
+    const auction = await getMockAuction(params.guildId, params.scrimId, await championResolver(version));
     if (!auction) error(404, '내전을 찾을 수 없습니다.');
     return { scrim, auction, can: { manage: scrim.canManage } };
 };
@@ -162,10 +154,6 @@ const previewActions: Actions = {
         return failWith(
             await assignMockCurrent(params.guildId, params.scrimId, field(await request.formData(), 'teamId'))
         );
-    },
-    shuffle: async ({ params }) => {
-        requireDev();
-        return failWith(await shuffleMockQueue(params.guildId, params.scrimId));
     },
     restore: async ({ request, params }) => {
         requireDev();
@@ -247,9 +235,6 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
                     lotId: field(data, 'lotId'),
                     teamId: field(data, 'teamId')
                 });
-                break;
-            case 'shuffle':
-                await shuffleAuctionQueue(db, actor, guildId, scrimId, input);
                 break;
             case 'restore':
                 await restoreAuctionUnsold(db, actor, guildId, scrimId, {

@@ -3,6 +3,7 @@
 
     type Props = {
         label: string;
+        name?: string;
         value?: string;
         options: (Option | string)[];
         hint?: string;
@@ -10,7 +11,15 @@
         disabled?: boolean;
     };
 
-    let { label, value = $bindable(''), options, hint = '', error = '', disabled = false }: Props = $props();
+    let {
+        label,
+        name,
+        value = $bindable(''),
+        options,
+        hint = '',
+        error = '',
+        disabled = false
+    }: Props = $props();
 
     const id = $props.id();
     const normalized = $derived(
@@ -22,6 +31,7 @@
     <label for={`${id}-select`} class="text-xs font-semibold text-ink-2">{label}</label>
     <select
         id={`${id}-select`}
+        {name}
         bind:value
         {disabled}
         aria-invalid={error ? 'true' : undefined}

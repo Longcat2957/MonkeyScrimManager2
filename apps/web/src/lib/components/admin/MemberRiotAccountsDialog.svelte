@@ -12,7 +12,12 @@
     import { preventComposingSubmit } from '#lib/ui/form.ts';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 
-    type Member = { userId: string; displayName: string; riotAccounts: RiotAccount[] };
+    type Member = {
+        userId: string;
+        displayName: string;
+        iconUrl: string | null;
+        riotAccounts: RiotAccount[];
+    };
 
     // 운영자가 멤버의 Riot 계정을 연결·해제하고 대표 계정을 정한다. 연결은 조회 → 확인 두 단계다.
     let { open = $bindable(false), member }: { open: boolean; member: Member | null } = $props();
@@ -142,7 +147,7 @@
     <div bind:this={panel} aria-busy={busy} class="grid min-w-0 gap-4">
         {#if member}
             <div class="flex min-w-0 items-center gap-3">
-                <PlayerFace name={member.displayName} imageUrl={null} />
+                <PlayerFace name={member.displayName} imageUrl={member.iconUrl} />
                 <div class="min-w-0">
                     <p class="font-bold wrap-anywhere">{member.displayName}</p>
                     <p class="text-xs text-muted tabular-nums wrap-anywhere">{member.userId}</p>

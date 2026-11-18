@@ -1,13 +1,16 @@
 import type { TestContext } from 'node:test';
 import type { BotSeasonSnapshot } from '../../../../../shared/bot-api.js';
 import * as schema from '../../../src/lib/server/db/schema.ts';
-import { assertAction, HTTP_BOT_TOKEN, HTTP_IDS } from './http.ts';
+import { assertAction, HTTP_BOT_TOKEN, HTTP_IDS, type UpstreamRule } from './http.ts';
 import { createHttpMatchResultFixture } from './http-match-fixtures.ts';
 import { replayBytes, replayPlayer } from './rofl-fixtures.ts';
 
 /** 실제 정상 ROFL 결과와 시즌 전환 action으로 공개 전적의 두 시즌을 준비한다. */
-export async function createHttpRecordSeasonsFixture(t: TestContext, options: { games?: 1 | 3 } = {}) {
-    const f = await createHttpMatchResultFixture(t);
+export async function createHttpRecordSeasonsFixture(
+    t: TestContext,
+    options: { games?: 1 | 3; upstreams?: UpstreamRule[] } = {}
+) {
+    const f = await createHttpMatchResultFixture(t, options.upstreams);
     assertAction(
         await f.action(f.path, 'upload', { ...(await f.confirm()), file: f.file() }, f.participant.cookie),
         200

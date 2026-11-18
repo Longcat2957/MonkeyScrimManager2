@@ -1,0 +1,4 @@
+ALTER TABLE "guild_audit_entries" DROP CONSTRAINT "guild_audit_entries_kind_valid";--> statement-breakpoint
+ALTER TABLE "guild_members" ADD COLUMN "auction_override_price" integer;--> statement-breakpoint
+ALTER TABLE "guild_audit_entries" ADD CONSTRAINT "guild_audit_entries_kind_valid" CHECK ("guild_audit_entries"."kind" in ('riot_account_linked', 'riot_account_unlinked', 'riot_account_primary_changed', 'discord_setting_changed', 'auction_seed_price_changed', 'auction_override_price_changed'));--> statement-breakpoint
+ALTER TABLE "guild_members" ADD CONSTRAINT "guild_members_auction_override_price_positive" CHECK ("guild_members"."auction_override_price" > 0);

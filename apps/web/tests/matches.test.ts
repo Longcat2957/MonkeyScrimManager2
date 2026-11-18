@@ -21,25 +21,40 @@ const resolvers: GameResolvers = {
     splash: () => null
 };
 
-test('검색·상태 필터·쪽 나눔으로 경기를 고른다', async () => {
-    const all = await listMockMatches(guildId, { status: 'all', q: '', page: 1, pageSize: 20 });
-    assert.equal(all.matches.length, 20);
-    assert.equal(all.counts.all, all.counts.in_progress + all.counts.done);
-    const searched = await listMockMatches(guildId, { status: 'all', q: '칼바람', page: 1, pageSize: 20 });
-    assert.deepEqual(
-        searched.matches.map((match) => match.id),
-        ['devMatch001']
-    );
-    const live = await listMockMatches(guildId, { status: 'in_progress', q: '', page: 1, pageSize: 20 });
-    assert.ok(live.matches.every((match) => match.status === 'in_progress'));
+test('시리즈 승부를 확정한 기록만 검색·집계하고 쪽을 나눈다', async () => {
+    const options = { page: 1, pageSize: 20 };
+    const first = await listMockMatches(guildId, options);
+    const second = await listMockMatches(guildId, { ...options, page: 2 });
+    const ids = [...first.matches, ...second.matches].map((match) => match.id);
+    assert.equal(first.matches.length, 20);
+    assert.equal(new Set(ids).size, first.total);
+    assert.ok(ids.includes('devMatch003'));
+    for (const id of ['devMatch001', 'devMatch004', 'devMatch005', 'devMatchOld8'])
+        assert.ok(!ids.includes(id));
+
+    const query = {
+        ...options,
+        q: '3주차 10월',
+        player: '개발자',
+        champion: '레넥톤',
+        championIds: ['Renekton'],
+        bestOf: 3
+    };
+    const { matches } = await listMockMatches(guildId, query);
+    assert.equal(matches.find((match) => match.id === 'devMatch002')?.matchedGameId, 'devMatch002-g1');
+    assert.ok(matches.every((match) => match.bestOf === 3 && match.scrimTitle.includes('3주차')));
+    assert.equal((await listMockMatches(guildId, { ...query, champion: 'Sylas', championIds: [] })).total, 0);
+    assert.ok((await listMockMatches(guildId, { ...options, champion: 'syLaS' })).total > 0);
+    assert.equal((await listMockMatches(guildId, { ...options, q: '칼날부리팀' })).total, 0);
+    assert.equal((await listMockMatches(guildId, { ...options, q: '칼바람' })).total, 0);
 });
 
 test('개발 경기의 날짜는 한국 날짜로 걸러 표시하고 시즌 귀속이나 미확인 날짜를 만들지 않는다', async () => {
-    const options = { status: 'all' as const, q: '', page: 1, pageSize: 100 };
+    const options = { page: 1, pageSize: 100 };
     const all = await listMockMatches(guildId, options);
     assert.deepEqual(all.seasons, []);
     assert.equal(all.selectedSeasonId, null);
-    assert.equal(all.matches.at(-1)!.id, 'devMatch005');
+    assert.equal(all.matches.at(-1)!.id, 'devMatchOld22');
     assert.equal(all.matches.at(-1)!.playedAt, null);
     const day = await listMockMatches(guildId, { ...options, from: '2026-10-24', to: '2026-10-24' });
     assert.deepEqual(

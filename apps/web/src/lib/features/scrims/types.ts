@@ -25,7 +25,7 @@ export type ScrimContext = {
     endedEarlyFromStatus?: ScrimStatus | null;
 };
 
-// 목록 행에 얼굴로 보여 줄 참가자다. iconUrl은 주 챔피언 아이콘이고 없으면 이름 첫 글자로 대신한다.
+// 목록 행에는 참가자의 공개 Discord 아바타를 표시한다.
 export type ScrimMember = {
     key: string;
     name: string;
@@ -67,7 +67,7 @@ export type ScrimParticipant = {
     registrationId: string;
     userId: string | null;
     displayName: string;
-    // 주 챔피언 아이콘. 없으면 이름 첫 글자로 대신한다.
+    // 공개 Discord 아바타가 없으면 이름 첫 글자로 대신한다.
     iconUrl: string | null;
     // 참가에 쓴 Riot 계정. 계정 없이 참가했으면 null이다.
     riotId: string | null;

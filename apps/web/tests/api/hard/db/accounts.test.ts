@@ -221,6 +221,30 @@ test('개인 조회는 서버별 연결을 묶고 관리자 조회는 해당 서
     await assert.rejects(listMyRiotAccounts(f.db, null), domain('UNAUTHENTICATED'));
 });
 
+test('관리자 명부의 프로필 사진도 공개 설정을 따른다', async (t) => {
+    const f = await createAccessFixture(t);
+    const avatarHash = 'a'.repeat(32);
+    const member = async () => {
+        const list = await listGuildMembers(
+            f.db,
+            f.owner,
+            f.ids.guild,
+            { q: '', page: 1, pageSize: 20 },
+            f.dependencies
+        );
+        return list.members.find((row) => row.userId === f.member.userId)!;
+    };
+    await f.db.update(schema.users).set({ avatarHash }).where(eq(schema.users.id, f.member.userId));
+    assert.equal(
+        (await member()).iconUrl,
+        `https://cdn.discordapp.com/avatars/${f.member.userId}/${avatarHash}.webp?size=128`
+    );
+    await f.db.update(schema.users).set({ publicProfile: false }).where(eq(schema.users.id, f.member.userId));
+    const hidden = await member();
+    assert.equal(hidden.iconUrl, null);
+    assert.ok(!JSON.stringify(hidden).includes(avatarHash));
+});
+
 test('동시에 같은 계정을 연결해도 하나의 식별 행과 대표 연결만 남는다', async (t) => {
     const f = await createAccessFixture(t);
     let release!: () => void;

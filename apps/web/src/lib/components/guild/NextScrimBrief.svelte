@@ -63,9 +63,21 @@
     });
 </script>
 
-<section aria-labelledby="next-scrim" class="flex min-w-0 flex-col bg-surface-2">
+<section
+    aria-labelledby="next-scrim"
+    class="panel grid min-w-0 items-center gap-3 px-4 py-3 @min-[46rem]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]"
+>
     {#if next && scrim && href}
-        <div class="flex items-start justify-between gap-4 p-4 sm:p-5">
+        <div class="flex min-w-0 items-center gap-3">
+            {#if next.artUrl}
+                <img
+                    src={next.artUrl}
+                    alt=""
+                    width="48"
+                    height="48"
+                    class="size-12 shrink-0 rounded-small object-cover object-[64%_20%]"
+                />
+            {/if}
             <div class="min-w-0">
                 <h2 id="next-scrim" class="text-xl font-bold wrap-anywhere">{scrim.title}</h2>
                 <p class="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-2">
@@ -76,18 +88,9 @@
                     />
                 </p>
             </div>
-            {#if next.artUrl}
-                <img
-                    src={next.artUrl}
-                    alt=""
-                    width="76"
-                    height="76"
-                    class="size-16 shrink-0 rounded-small object-cover object-[64%_20%] sm:size-19"
-                />
-            {/if}
         </div>
-        <div class="mx-4 border-y border-line py-4 sm:mx-5">
-            <p class="text-lg font-semibold tabular-nums">
+        <div class="min-w-0">
+            <p class="text-ui font-semibold tabular-nums">
                 {#if scrim.scheduledAt}
                     <time datetime={scrim.scheduledAt}>{formatSchedule(scrim.scheduledAt)}</time>
                 {:else}
@@ -107,7 +110,7 @@
                 </p>
             {/if}
         </div>
-        <div class="flex flex-col gap-4 p-4 sm:p-5">
+        <div class="flex flex-wrap items-center gap-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <Button {href} variant="primary">{cta}</Button>
                 {#if mine}
@@ -136,7 +139,7 @@
             {/if}
         </div>
     {:else}
-        <div class="p-5">
+        <div class="col-span-full">
             <h2 id="next-scrim" class="font-semibold">지금 참가할 내전이 없어요</h2>
             <p class="mt-2 text-sm text-muted">새 모집이 열리면 여기에 가장 먼저 보여요.</p>
         </div>

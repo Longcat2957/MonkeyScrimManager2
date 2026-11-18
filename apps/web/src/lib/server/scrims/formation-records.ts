@@ -9,7 +9,7 @@ export async function formationPairRecords(
     tx: Transaction,
     guildId: string,
     seasonId: string | null,
-    players: FormationPlayer[]
+    players: Pick<FormationPlayer, 'userId' | 'participantId'>[]
 ): Promise<Record<string, PairRecord>> {
     const people = new Map(
         players.flatMap((player) => (player.userId ? [[player.userId, player] as const] : []))

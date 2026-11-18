@@ -17,6 +17,7 @@
 | `…/scrims/[scrimId]/bracket`, `…/scrims/[scrimId]/result` | 대진·결과. 종료·중도 종료는 결과로, 미종료는 대진으로 이동. 정상 종료한 단일 경기 결과는 경기 상세로 이동 |
 | `…/matches`, `…/matches/[matchId]` | 경기 기록, 시리즈·세트·ROFL 등록 |
 | `…/players/[userId]`, `…/stats` | 사용자 전적·서버 통계. 사용자 링크는 공개 설정에 맞는 식별자를 사용 |
+| `…/players/[userId]/auction`, `…/stats/auction` | 개인 경매 이력·서버 거래 장부. 게임 기록과 같은 공개 정책과 시즌 적용 |
 | `…/admin` | 현재 서버 관리자만 이용하는 관리 화면 |
 
 서버 목록은 로그인한 사용자의 소속 서버만 담는다. OAuth가 명시한 복귀 경로를 존중하며, `/`의 기본 서버 이동은 실제 세션에만 적용한다. `mock=1` 개발 미리보기는 운영 인증이 아니다.
@@ -27,10 +28,11 @@
 | --- | --- | --- |
 | 서버 홈 순위 | `season` | 활성 시즌. 다음 내전·최근 경기는 바뀌지 않음 |
 | 내전 목록 | `status=all\|recruit\|active\|done`, `page` | 전체, 1쪽. 20개씩 |
-| 경기 기록 | `q`, `from`, `to`, `season`, `page` | 전체 시즌·전체 기간. 쪽 번호는 종료 목록에만 적용 |
+| 경기 기록 | `player`, `champion`, `q`, `bo`, `from`, `to`, `season`, `page` | 정상 종료한 시리즈만 표시. 출전 선수·챔피언 픽과 내전명(`q`)·형식·시즌·기간을 함께 검색 |
 | 경기 상세 | `game` | 유효한 ID가 없으면 기록된 마지막 세트 |
 | 사용자 전적 | `season`, `position`, `page` | 활성 시즌, 전체 포지션, 1쪽 |
 | 서버 통계 | `season`, `position`, `min`, `recent=1` | 활성 시즌, 전체 포지션, 최소 5게임(1~50). 최근 필터는 개발용 업적 전용 |
+| 경매 기록 | `season`; 서버 장부의 `q`, `player`, `page`, `archive`, `auction` | 선수 이름 검색과 펼친 선수, 선수·완료 경매 쪽을 보존한다. `auction`은 같은 시즌의 내전 ID, `#signing-…`은 복기에서 강조할 영입이다 |
 | 서버 관리 | `tab=members\|discord\|audit\|seasons`, `q`, `page` | 멤버, 빈 검색어, 1쪽. 탭을 바꾸면 검색·쪽 초기화 |
 | 백오피스 | `page` | 서비스 운영자 변경 이력의 쪽 번호 |
 

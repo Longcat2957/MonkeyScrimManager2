@@ -1,3 +1,20 @@
+export type MatchArchiveFilters = {
+    q?: string;
+    player?: string;
+    champion?: string;
+    championIds?: string[];
+    bestOf?: number | null;
+    seasonId?: string | null;
+    from?: string;
+    to?: string;
+    page: number;
+    pageSize: number;
+};
+
+export function matchSearchTerms(q = ''): string[] {
+    return q.trim().slice(0, 50).split(/\s+/u).filter(Boolean);
+}
+
 export type MatchDateFilters = {
     from: string;
     to: string;

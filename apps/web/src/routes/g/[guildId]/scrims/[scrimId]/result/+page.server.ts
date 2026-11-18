@@ -4,8 +4,6 @@ import { resolve } from '$app/paths';
 import { singleCompletedMatchId, type BracketView } from '#lib/features/scrims/bracket.ts';
 import { bracketPath, hasResult } from '#lib/features/scrims/paths.ts';
 import { getMockBracket } from '#lib/mocks/bracket.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
-import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { getBracket } from '#lib/server/scrims/bracket.ts';
@@ -19,14 +17,10 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
     if (!hasResult(scrim.status)) redirect(307, bracketPath(params, scrim.status));
     let bracket: BracketView | null;
     try {
-        if (!(dev && findMockGuild(params.guildId)))
-            bracket = await getBracket(getDb(), locals.actor, params.guildId, params.scrimId);
-        else {
-            const version = await latestDataDragonVersion();
-            bracket = await getMockBracket(params.guildId, params.scrimId, (id) =>
-                championIconUrl(version, id)
-            );
-        }
+        bracket =
+            dev && findMockGuild(params.guildId)
+                ? await getMockBracket(params.guildId, params.scrimId)
+                : await getBracket(getDb(), locals.actor, params.guildId, params.scrimId);
     } catch (cause) {
         routeError(cause);
     }

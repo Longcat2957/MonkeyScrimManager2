@@ -5,6 +5,7 @@ import { POSITIONS } from '#lib/features/labels.ts';
 import {
     editableFields,
     inRange,
+    isAllowedTeamCount,
     readScrimSettingsForm,
     RESERVE_CAPACITY,
     TEAM_COUNT,
@@ -64,8 +65,6 @@ import {
     endScrimEarly,
     getScrimOperations
 } from '#lib/server/scrims/workflow.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
-import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 const DONE = ['completed', 'ended_early', 'cancelled'];
@@ -139,13 +138,7 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
             routeError(cause);
         }
     }
-    const version = await latestDataDragonVersion();
-    const detail = await getMockScrimDetail(
-        params.guildId,
-        params.scrimId,
-        user?.userId ?? null,
-        (championId) => championIconUrl(version, championId)
-    );
+    const detail = await getMockScrimDetail(params.guildId, params.scrimId, user?.userId ?? null);
     if (!detail) error(404, '내전을 찾을 수 없습니다.');
     const operations = await getMockScrimOperations(params.guildId, params.scrimId);
 
@@ -356,7 +349,10 @@ const previewActions: Actions = {
         const input = readScrimSettingsForm(await request.formData());
         const errors = validateScrimSettings(input);
         if (Object.keys(errors).length) return fail(400, { errors });
-        if (!inRange(input.teamCount, TEAM_COUNT) || !inRange(input.reserveCapacity, RESERVE_CAPACITY)) {
+        if (
+            !isAllowedTeamCount(input.teamCount, current.teamCount) ||
+            !inRange(input.reserveCapacity, RESERVE_CAPACITY)
+        ) {
             return fail(400, { message: '팀 수나 정원을 다시 확인해 주세요' });
         }
         // 이 단계에서 바꿀 수 없는 값은 요청에 무엇이 오든 현재 값을 유지한다.
@@ -469,6 +465,7 @@ export const actions: Actions = {
                     members: result.members.map((member) => ({
                         userId: member.userId,
                         displayName: member.displayName,
+                        iconUrl: member.iconUrl,
                         username:
                             'username' in member && typeof member.username === 'string'
                                 ? member.username

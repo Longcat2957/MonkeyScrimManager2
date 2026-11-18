@@ -1,6 +1,8 @@
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import type { ChampionRef, PlayerGame } from '#lib/features/players/types.ts';
+import { mockAvatarUrl } from './avatar.ts';
 import { CHAMPIONS, mockPlayers, type MockPlayer } from './ranking.ts';
+import { listMockAuctionScrims } from './scrims.ts';
 
 // 순위 목 데이터의 사용자별 포지션 기록(게임 수·승수·주 챔피언)에 맞춰 게임 기록을 만든다.
 // 사용자마다 고정 시드를 써서 새로고침해도 같은 기록이 나온다.
@@ -83,9 +85,15 @@ function buildGames(player: MockPlayer, champion: (id: string) => ChampionRef): 
     });
 }
 
-export function findMockPlayer(guildId: string, userId: string) {
+export function findMockPlayer(guildId: string, userId: string): MockPlayer | null {
     if (guildId !== 'devGuild001') return null;
-    return mockPlayers.find((player) => player.userId === userId) ?? null;
+    const ranked = mockPlayers.find((player) => player.userId === userId);
+    if (ranked) return ranked;
+    for (const scrim of listMockAuctionScrims(guildId)) {
+        const participant = scrim.participants.find((person) => person.userId === userId);
+        if (participant) return { userId, displayName: participant.displayName, records: {} };
+    }
+    return null;
 }
 
 /** 사용자의 전체 게임 기록(최근 순). 챔피언 이름·아이콘은 서버가 넘겨준 함수로 채운다. */
@@ -93,7 +101,7 @@ export function listMockPlayerGames(player: MockPlayer, champion: (id: string) =
     return buildGames(player, champion);
 }
 
-/** 서버 전체 사용자의 게임 기록. 얼굴은 가장 많이 뛴 포지션의 주 챔피언이다. */
+/** 서버 전체 사용자의 게임 기록과 업적 배경에 쓸 주 챔피언이다. */
 export function listMockGuildPlayers(champion: (id: string) => ChampionRef) {
     return mockPlayers.map((player) => {
         const main = Object.values(player.records).sort((a, b) => b.games - a.games)[0];
@@ -101,7 +109,7 @@ export function listMockGuildPlayers(champion: (id: string) => ChampionRef) {
             userId: player.userId,
             displayName: player.displayName,
             championId: main?.championId ?? null,
-            iconUrl: main ? champion(main.championId).iconUrl : null,
+            iconUrl: mockAvatarUrl(player.userId),
             games: buildGames(player, champion)
         };
     });

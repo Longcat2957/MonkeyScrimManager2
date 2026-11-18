@@ -10,6 +10,7 @@
     import MenuButton from './MenuButton.svelte';
     import { guildNavItems, type NavItem } from './navigation.ts';
 
+    let { accountHeight = $bindable(0) }: { accountHeight?: number } = $props();
     let mode: ThemeMode = $state('dark');
     let menuOpen = $state(false);
 
@@ -199,14 +200,17 @@
 {#if desktop.current}
     <!-- 좌측 서버 레일: 목업의 사이드 내비게이션. 현재 서버·메뉴·계정을 한 곳에 둔다. -->
     <aside
-        class="sticky top-0 z-40 flex h-dvh w-56 shrink-0 flex-col gap-4.5 border-r border-line bg-rail px-3.5 py-4.5 text-ink"
+        class="sticky top-0 z-40 flex h-dvh w-56 shrink-0 flex-col gap-4.5 border-r border-line bg-rail px-3.5 pt-4.5 text-ink"
     >
         {@render brand(true)}
         {@render guildSwitcher(true)}
         {#if guildItems.length}
             <ContextNav items={guildItems} label="서버 메뉴" />
         {/if}
-        <div class="mt-auto flex flex-col gap-2 border-t border-line pt-3">
+        <div
+            bind:offsetHeight={accountHeight}
+            class="-mx-3.5 mt-auto flex min-h-16 shrink-0 flex-col justify-center gap-2 border-t border-line px-3.5 py-2"
+        >
             {#if user}
                 {@render accountMenu()}
             {:else}

@@ -1,11 +1,9 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import Button from '#lib/components/common/Button.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
-    import SectionState from '#lib/components/common/SectionState.svelte';
     import Spinner from '#lib/components/common/Spinner.svelte';
     import MatchTable from '#lib/components/matches/MatchTable.svelte';
     import MatchFilters from '#lib/components/matches/MatchFilters.svelte';
@@ -18,29 +16,16 @@
     // 같은 목록의 검색·쪽만 바뀌는 동안에는 이전 결과를 흐리게 둔다.
     const changing = $derived(navigating.to?.route.id === page.route.id);
 
-    const hrefFor = (match: MatchListItem) =>
-        resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id });
+    function hrefFor(match: MatchListItem) {
+        const path = resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id });
+        return match.matchedGameId ? `${path}?game=${encodeURIComponent(match.matchedGameId)}` : path;
+    }
 
-    async function navigate(params: {
-        page?: number;
-        q?: string;
-        from?: string;
-        to?: string;
-        seasonId?: string | null;
-    }) {
-        if (changing) return;
+    function hrefForPage(current: number) {
         const url = new URL(page.url.href);
-        const set = (key: string, value: string | null) =>
-            value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
-        if (params.q !== undefined) {
-            url.searchParams.delete('page');
-            set('q', params.q.trim() || null);
-            set('from', params.from || null);
-            set('to', params.to || null);
-            set('season', params.seasonId || null);
-        }
-        if (params.page !== undefined) set('page', params.page === 1 ? null : String(params.page));
-        await goto(url, { reset: false });
+        if (current === 1) url.searchParams.delete('page');
+        else url.searchParams.set('page', String(current));
+        return url.pathname + url.search;
     }
 </script>
 
@@ -48,7 +33,7 @@
     <title>경기 기록 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="@container/index flex min-w-0 flex-col gap-4">
+<div class="flex min-w-0 flex-col gap-4">
     <div class="page-head">
         <h1 class="flex items-center gap-2 text-title font-bold">
             경기 기록
@@ -56,80 +41,46 @@
         </h1>
     </div>
 
-    <div
-        class={[
-            'grid min-w-0 items-start gap-4',
-            !data.empty && !data.filterError && '@min-[58rem]/index:grid-cols-[15rem_minmax(0,1fr)]'
-        ]}
-    >
-        {#if !data.empty || data.filterError}
-            <MatchFilters
-                q={data.q}
-                from={data.from}
-                to={data.to}
-                seasons={data.seasons}
-                selectedSeasonId={data.selectedSeasonId}
-                filterError={data.filterError}
-                disabled={changing}
-                onapply={navigate}
-            />
-        {/if}
+    {#key JSON.stringify( [data.player, data.champion, data.q, data.bestOf, data.from, data.to, data.selectedSeasonId, data.filterError] )}
+        <MatchFilters
+            q={data.q}
+            player={data.player}
+            champion={data.champion}
+            championSuggestions={data.championSuggestions}
+            bestOf={data.bestOf}
+            from={data.from}
+            to={data.to}
+            seasons={data.seasons}
+            selectedSeasonId={data.selectedSeasonId}
+            filterError={data.filterError}
+            disabled={changing}
+        />
+    {/key}
 
-        {#if data.filterError}
-            <!-- 잘못된 기간은 필터 폼에서 수정하며 조회하지 않은 결과를 빈 기록으로 표시하지 않는다. -->
-        {:else if data.empty}
-            <SectionState state="empty" message="아직 기록된 경기가 없어요" />
-        {:else}
-            <div
-                aria-busy={changing}
-                class={['grid min-w-0 gap-6 transition-opacity', changing && 'opacity-50']}
-            >
-                <!-- 진행 중인 경기가 없으면 빈 표를 두지 않는다. -->
-                {#if data.live.length}
-                    <MatchTable
-                        id="live-matches"
-                        title="진행 중"
-                        count={data.live.length}
-                        matches={data.live}
-                        emptyMessage=""
-                        {hrefFor}
-                    />
-                {/if}
-                <MatchTable
-                    id="done-matches"
-                    title="종료"
-                    count={data.doneTotal}
-                    matches={data.done}
-                    emptyMessage={data.doneTotal > 0
-                        ? '이 페이지에는 경기가 없어요. 다른 페이지를 선택해 주세요.'
-                        : data.q || data.from || data.to || data.selectedSeasonId
-                          ? '조건에 맞는 경기가 없어요'
-                          : '아직 끝난 경기가 없어요'}
-                    {hrefFor}
-                >
-                    {#snippet footer()}
-                        {#if data.doneTotal > data.pageSize}
-                            <div class="border-t border-line py-2">
-                                <PageNav
-                                    total={data.doneTotal}
-                                    pageSize={data.pageSize}
-                                    current={data.page}
-                                    onchange={(current) => navigate({ page: current })}
-                                />
-                            </div>
-                        {:else if data.doneTotal > 0 && data.page > 1}
-                            <div class="flex justify-center border-t border-line py-2">
-                                <Button
-                                    type="button"
-                                    variant="quiet"
-                                    class="min-h-12 px-3"
-                                    onclick={() => navigate({ page: 1 })}>첫 페이지로</Button
-                                >
-                            </div>
-                        {/if}
-                    {/snippet}
-                </MatchTable>
-            </div>
-        {/if}
-    </div>
+    {#if !data.filterError}
+        <div aria-busy={changing} class={['min-w-0 transition-opacity', changing && 'opacity-50']}>
+            <MatchTable
+                count={data.total}
+                matches={data.matches}
+                emptyMessage={data.empty
+                    ? '아직 기록된 경기가 없어요'
+                    : data.total > 0
+                      ? '이 페이지에는 경기가 없어요. 다른 페이지를 선택해 주세요.'
+                      : '조건에 맞는 경기가 없어요. 검색어나 필터를 바꿔 보세요.'}
+                {hrefFor}
+            />
+            {#if data.total > data.pageSize}
+                <PageNav
+                    total={data.total}
+                    pageSize={data.pageSize}
+                    current={data.page}
+                    hrefFor={hrefForPage}
+                />
+            {:else if data.page > 1 && data.total > 0}
+                <div class="flex justify-center py-2">
+                    <Button href={hrefForPage(1)} variant="quiet">첫 페이지로</Button>
+                </div>
+            {/if}
+        </div>
+    {/if}
 </div>

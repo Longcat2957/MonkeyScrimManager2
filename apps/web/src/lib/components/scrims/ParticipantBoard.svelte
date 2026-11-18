@@ -2,6 +2,7 @@
     import { tick } from 'svelte';
     import { resolve } from '$app/paths';
     import Button from '#lib/components/common/Button.svelte';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
@@ -199,10 +200,11 @@
                             {/if}
                             <td>
                                 <span class="flex min-w-0 items-center gap-2.5">
-                                    <span
-                                        class="grid size-7 shrink-0 place-items-center rounded-form border border-line-strong bg-surface-2 text-xs font-bold text-nexus"
-                                        aria-hidden="true">{participant.displayName.slice(0, 1)}</span
-                                    >
+                                    <PlayerFace
+                                        name={participant.displayName}
+                                        imageUrl={participant.iconUrl}
+                                        size="sm"
+                                    />
                                     <span
                                         class="flex min-w-0 flex-col gap-x-4 sm:flex-row sm:flex-wrap sm:items-baseline"
                                     >

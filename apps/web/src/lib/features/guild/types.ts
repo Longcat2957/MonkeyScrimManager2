@@ -38,7 +38,7 @@ export type RankingEntry = {
     mmr: number;
     games: number;
     wins: number;
-    // 해당 포지션에서 가장 많이 쓴 챔피언 아이콘. 없으면 이름 첫 글자로 대신한다.
+    // 공개 Discord 프로필 사진. 비공개·탈퇴 사용자는 사진을 보내지 않는다.
     iconUrl: string | null;
     isMe: boolean;
 };

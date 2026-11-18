@@ -1,13 +1,31 @@
-import { and, asc, count, eq, gte, ilike, inArray, isNull, lt, min, or, sql } from 'drizzle-orm';
+import {
+    and,
+    asc,
+    count,
+    eq,
+    gte,
+    ilike,
+    inArray,
+    isNotNull,
+    isNull,
+    lt,
+    min,
+    ne,
+    or,
+    sql
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { parseMatchDateFilters } from '../../features/matches/filters.ts';
+import {
+    matchSearchTerms,
+    parseMatchDateFilters,
+    type MatchArchiveFilters
+} from '../../features/matches/filters.ts';
 import type {
     GameDetail,
     GamePlayer,
     GameResolvers,
     MatchDetail,
-    MatchListItem,
-    MatchStatusFilter
+    MatchListItem
 } from '../../features/matches/types.ts';
 import type { Actor } from '../auth/types.ts';
 import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
@@ -22,7 +40,8 @@ import {
     roflParticipantDataV1,
     scrimParticipants,
     scrimTeams,
-    scrims
+    scrims,
+    users
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { selectRecordSeason } from '../records/seasons.ts';
@@ -32,7 +51,10 @@ import { requireUuid } from '../scrims/validation.ts';
 const teamA = alias(scrimTeams, 'match_team_a');
 const teamB = alias(scrimTeams, 'match_team_b');
 const baseColumns = { match: matches, scrimTitle: scrims.title, teamA: teamA.name, teamB: teamB.name };
-const doneStatuses = ['completed', 'ended_early', 'cancelled'] as const;
+
+function literalPattern(text: string) {
+    return `%${text.replace(/[\\%_]/g, '\\$&')}%`;
+}
 
 export function winnerSlot(
     game: Pick<typeof games.$inferSelect, 'winnerSide' | 'blueTeamSlot'>
@@ -54,18 +76,10 @@ export async function listMatches(
     db: Database,
     actor: Actor | null,
     guildId: string,
-    options: {
-        status: MatchStatusFilter;
-        q?: string;
-        page: number;
-        pageSize: number;
-        seasonId?: string | null;
-        from?: string;
-        to?: string;
-    }
+    options: MatchArchiveFilters
 ) {
     if (
-        !['all', 'in_progress', 'done'].includes(options.status) ||
+        (options.bestOf != null && ![1, 3, 5].includes(options.bestOf)) ||
         !Number.isInteger(options.page) ||
         options.page < 1 ||
         options.page > 100_000 ||
@@ -79,100 +93,149 @@ export async function listMatches(
     return readGuild(db, actor, guildId, async (tx) => {
         const selection = await selectRecordSeason(tx, guildId, options.seasonId);
         const selectedSeasonId = options.seasonId == null ? null : selection.selectedSeasonId;
-        // 표시할 시리즈 시각을 먼저 집계해야 기간 필터와 쪽 이동도 같은 기준을 사용한다.
-        const recordedTimes = tx
-            .select({ matchId: games.matchId, playedAt: min(games.startedAt).as('played_at') })
-            .from(games)
-            .innerJoin(scrims, eq(scrims.id, games.scrimId))
+        // ROFL 팀 번호가 아니라 등록 시 검증한 진영과 블루 팀 슬롯으로 시리즈 점수를 계산한다.
+        const wonA = sql`((${games.winnerSide} = 'blue') = (${games.blueTeamSlot} = 'a'))`;
+        const scoreA = sql<number>`count(*) filter (where ${wonA})`.mapWith(Number);
+        const scoreB = sql<number>`count(*) filter (where not ${wonA})`.mapWith(Number);
+        const needed = sql`(${matches.bestOf} / 2 + 1)`;
+        const player = options.player?.trim().slice(0, 50);
+        const champion = options.champion?.trim().slice(0, 50);
+        // 상세와 같은 공개 표시 이름을 사용한다. 실제 출전 한 행에서 이름과 픽을 함께 찾는다.
+        const publicName = sql`coalesce(nullif(${gameParticipants.displayName}, ''), nullif(trim(${users.globalName}), ''), ${users.username})`;
+        const matchedGame =
+            player || champion
+                ? tx
+                      .select({ id: games.id })
+                      .from(games)
+                      .innerJoin(
+                          gameParticipants,
+                          and(
+                              eq(gameParticipants.gameId, games.id),
+                              eq(gameParticipants.roflMetadataId, games.roflMetadataId)
+                          )
+                      )
+                      .leftJoin(
+                          scrimParticipants,
+                          eq(scrimParticipants.id, gameParticipants.scrimParticipantId)
+                      )
+                      .leftJoin(users, eq(users.id, scrimParticipants.userId))
+                      .leftJoin(
+                          roflParticipantDataV1,
+                          and(
+                              eq(roflParticipantDataV1.roflMetadataId, gameParticipants.roflMetadataId),
+                              eq(
+                                  roflParticipantDataV1.participantIndex,
+                                  gameParticipants.roflParticipantIndex
+                              )
+                          )
+                      )
+                      .where(
+                          and(
+                              eq(games.matchId, matches.id),
+                              eq(games.status, 'completed'),
+                              player
+                                  ? and(
+                                        eq(users.publicProfile, true),
+                                        isNull(users.withdrawnAt),
+                                        ilike(publicName, literalPattern(player))
+                                    )
+                                  : undefined,
+                              champion
+                                  ? or(
+                                        ilike(roflParticipantDataV1.champion, literalPattern(champion)),
+                                        options.championIds?.length
+                                            ? inArray(
+                                                  sql`lower(${roflParticipantDataV1.champion})`,
+                                                  options.championIds.map((id) => id.toLowerCase())
+                                              )
+                                            : undefined
+                                    )
+                                  : undefined
+                          )
+                      )
+                      .orderBy(asc(games.gameNumber), asc(games.id))
+                      .limit(1)
+                : null;
+        const archive = tx
+            .select({
+                matchedGameId: sql<string | null>`${matchedGame ?? sql`null::uuid`}`.as('matched_game_id'),
+                id: matches.id,
+                scrimTitle: scrims.title,
+                seasonId: scrims.mmrSeasonId,
+                teamA: sql<string>`${teamA.name}`.as('team_a'),
+                teamB: sql<string>`${teamB.name}`.as('team_b'),
+                bestOf: matches.bestOf,
+                status: matches.status,
+                playedAt: min(games.startedAt).as('played_at'),
+                scoreA: scoreA.as('score_a'),
+                scoreB: scoreB.as('score_b')
+            })
+            .from(matches)
+            .innerJoin(scrims, eq(scrims.id, matches.scrimId))
+            .innerJoin(teamA, eq(teamA.id, matches.teamAId))
+            .innerJoin(teamB, eq(teamB.id, matches.teamBId))
+            .innerJoin(games, and(eq(games.matchId, matches.id), eq(games.status, 'completed')))
+            .leftJoin(
+                roflGameDataV1,
+                and(
+                    eq(roflGameDataV1.roflMetadataId, games.roflMetadataId),
+                    eq(roflGameDataV1.resultStatus, 'consistent')
+                )
+            )
             .where(
                 and(
                     eq(scrims.guildId, guildId),
-                    selectedSeasonId ? eq(scrims.mmrSeasonId, selectedSeasonId) : undefined,
-                    eq(games.status, 'completed')
+                    ne(scrims.status, 'cancelled'),
+                    eq(matches.status, 'completed')
                 )
             )
-            .groupBy(games.matchId)
-            .as('match_recorded_times');
-        const text = (options.q ?? '')
-            .trim()
-            .slice(0, 50)
-            .replaceAll('\\', '\\\\')
-            .replaceAll('%', '\\%')
-            .replaceAll('_', '\\_');
+            .groupBy(matches.id, scrims.id, teamA.id, teamB.id)
+            .having(
+                and(
+                    // 완료 세트 하나라도 검증된 ROFL 결과가 없으면 부분 점수를 기록으로 공개하지 않는다.
+                    sql`count(*) = count(${roflGameDataV1.roflMetadataId})`,
+                    or(
+                        and(
+                            eq(matches.winnerTeamId, matches.teamAId),
+                            eq(scoreA, needed),
+                            lt(scoreB, needed)
+                        ),
+                        and(eq(matches.winnerTeamId, matches.teamBId), eq(scoreB, needed), lt(scoreA, needed))
+                    )
+                )
+            )
+            .as('match_archive');
         const condition = and(
-            eq(scrims.guildId, guildId),
-            selectedSeasonId ? eq(scrims.mmrSeasonId, selectedSeasonId) : undefined,
-            dates.fromInclusive ? gte(recordedTimes.playedAt, dates.fromInclusive) : undefined,
-            dates.toExclusive ? lt(recordedTimes.playedAt, dates.toExclusive) : undefined,
-            options.status === 'done'
-                ? inArray(matches.status, [...doneStatuses])
-                : options.status === 'in_progress'
-                  ? inArray(matches.status, ['pending', 'in_progress'])
-                  : undefined,
-            text
-                ? or(
-                      ilike(scrims.title, `%${text}%`),
-                      ilike(teamA.name, `%${text}%`),
-                      ilike(teamB.name, `%${text}%`)
-                  )
-                : undefined
+            selectedSeasonId ? eq(archive.seasonId, selectedSeasonId) : undefined,
+            options.bestOf != null ? eq(archive.bestOf, options.bestOf) : undefined,
+            dates.fromInclusive ? gte(archive.playedAt, dates.fromInclusive) : undefined,
+            dates.toExclusive ? lt(archive.playedAt, dates.toExclusive) : undefined,
+            matchedGame ? isNotNull(archive.matchedGameId) : undefined,
+            ...matchSearchTerms(options.q).map((term) => ilike(archive.scrimTitle, literalPattern(term)))
         );
-        const rows = await tx
-            .select({ ...baseColumns, playedAt: recordedTimes.playedAt })
-            .from(matches)
-            .innerJoin(scrims, eq(scrims.id, matches.scrimId))
-            .innerJoin(teamA, eq(teamA.id, matches.teamAId))
-            .innerJoin(teamB, eq(teamB.id, matches.teamBId))
-            .leftJoin(recordedTimes, eq(recordedTimes.matchId, matches.id))
-            .where(condition)
-            .orderBy(sql`${recordedTimes.playedAt} desc nulls last`, asc(matches.id))
-            .limit(options.pageSize)
-            .offset((options.page - 1) * options.pageSize);
-        const [total] = await tx
-            .select({ value: count() })
-            .from(matches)
-            .innerJoin(scrims, eq(scrims.id, matches.scrimId))
-            .innerJoin(teamA, eq(teamA.id, matches.teamAId))
-            .innerJoin(teamB, eq(teamB.id, matches.teamBId))
-            .leftJoin(recordedTimes, eq(recordedTimes.matchId, matches.id))
-            .where(condition);
-        const [all] = await tx
-            .select({ value: count() })
-            .from(matches)
-            .innerJoin(scrims, eq(scrims.id, matches.scrimId))
-            .where(eq(scrims.guildId, guildId));
-        const recorded = rows.length
-            ? await tx
-                  .select()
-                  .from(games)
-                  .where(
-                      and(
-                          inArray(
-                              games.matchId,
-                              rows.map((row) => row.match.id)
-                          ),
-                          eq(games.status, 'completed')
-                      )
-                  )
-            : [];
-        const items: MatchListItem[] = rows.map((row) => {
-            const list = recorded.filter((game) => game.matchId === row.match.id);
-            return {
-                id: row.match.id,
-                scrimTitle: row.scrimTitle,
-                teamA: row.teamA,
-                teamB: row.teamB,
-                scoreA: list.filter((game) => winnerSlot(game) === 'a').length,
-                scoreB: list.filter((game) => winnerSlot(game) === 'b').length,
-                bestOf: row.match.bestOf,
-                status: row.match.status,
-                playedAt: row.playedAt?.toISOString() ?? null
-            };
-        });
+        const [{ value: total }] = await tx.select({ value: count() }).from(archive).where(condition);
+        const offset = (options.page - 1) * options.pageSize;
+        const rows =
+            total > offset
+                ? await tx
+                      .select()
+                      .from(archive)
+                      .where(condition)
+                      .orderBy(sql`${archive.playedAt} desc nulls last`, asc(archive.id))
+                      .limit(options.pageSize)
+                      .offset(offset)
+                : [];
+        const empty =
+            total === 0 &&
+            (!condition || !(await tx.select({ id: archive.id }).from(archive).limit(1)).length);
+        const items: MatchListItem[] = rows.map(({ seasonId: _seasonId, playedAt, ...row }) => ({
+            ...row,
+            playedAt: playedAt?.toISOString() ?? null
+        }));
         return {
             matches: items,
-            total: total.value,
-            empty: all.value === 0,
+            total,
+            empty,
             seasons: selection.seasons,
             selectedSeasonId,
             from: dates.from,
@@ -229,8 +292,7 @@ export async function getMatch(
             : [];
         const identities = await readPublicIdentities(
             tx,
-            players.map((entry) => entry.userId),
-            guildId
+            players.map((entry) => entry.userId)
         );
         const selected = recorded.find((item) => item.game.id === gameId) ?? recorded.at(-1);
         const match: MatchDetail = {

@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { flip } from 'svelte/animate';
+    import { prefersReducedMotion } from 'svelte/motion';
+    import { cubicOut } from 'svelte/easing';
     import { resolve } from '$app/paths';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
@@ -141,7 +144,10 @@
         class="grid min-h-12 grid-cols-[1.75rem_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-sm hover:bg-surface-hover focus-visible:-outline-offset-2 @min-[34rem]:gap-3"
     >
         <span
-            class={['font-brand text-center font-bold tabular-nums', MEDAL[entry.rank - 1] ?? 'text-muted']}
+            class={[
+                'font-brand text-center text-xl font-bold tabular-nums',
+                MEDAL[entry.rank - 1] ?? 'text-muted'
+            ]}
         >
             <span class="sr-only">순위 </span>{entry.rank}
         </span>
@@ -157,15 +163,15 @@
                 >{entry.games}전 {entry.wins}승 · 승률 {winRate(entry)}%</span
             >
         </span>
-        <span class="font-semibold tabular-nums"
+        <span class="font-brand text-lg font-semibold tabular-nums"
             ><span class="sr-only">MMR </span>{Math.round(entry.mmr).toLocaleString('ko-KR')}</span
         >
     </a>
 {/snippet}
 
-<section aria-labelledby="ranking" class="@container min-w-0 border-t border-line">
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
-        <h2 id="ranking" class="text-base font-semibold">서버 순위</h2>
+<section aria-labelledby="ranking" class="@container min-w-0">
+    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-3">
+        <h2 id="ranking" class="text-2xl font-bold">서버 순위</h2>
         {#if seasons.length}
             <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
                 <span class="text-xs text-muted">포지션별 MMR</span>
@@ -191,10 +197,17 @@
             </div>
             {#if board && board.entries.length}
                 <!-- 카드 안에서 스크롤하며 다음 순위를 불러온다. 페이지 전체 길이는 늘어나지 않는다. -->
-                <div bind:this={scroller} class="relative max-h-72 overflow-y-auto overscroll-contain">
+                <div bind:this={scroller} class="relative max-h-96 overflow-y-auto overscroll-contain">
                     <ul aria-label={`${position.text} 순위`} class="divide-y divide-line">
                         {#each board.entries as entry (identityKey(entry))}
-                            <li>{@render row(entry)}</li>
+                            <li
+                                animate:flip={{
+                                    duration: prefersReducedMotion.current ? 0 : 240,
+                                    easing: cubicOut
+                                }}
+                            >
+                                {@render row(entry)}
+                            </li>
                         {/each}
                     </ul>
                     <div

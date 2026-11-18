@@ -1,15 +1,18 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
 
     type Props = {
         total: number;
         pageSize: number;
         current: number;
-        onchange: (page: number) => void;
         label?: string;
-    };
+    } & (
+        | { onchange: (page: number) => void; hrefFor?: never }
+        | { hrefFor: (page: number) => string; onchange?: never }
+    );
 
-    let { total, pageSize, current, onchange, label = '쪽 이동' }: Props = $props();
+    let { total, pageSize, current, onchange, hrefFor, label = '쪽 이동' }: Props = $props();
 
     const pages = $derived(Math.max(1, Math.ceil(total / pageSize)));
     // 현재 쪽 주변만 보여 주고 첫·마지막 쪽은 항상 남긴다.
@@ -31,15 +34,35 @@
         'border-line-strong bg-surface text-ink-2 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-45';
 </script>
 
-{#if total > pageSize}
-    <nav aria-label={label} class="flex flex-wrap items-center justify-center gap-1 pt-2">
+{#snippet pageControl(target: number, content: Snippet, name?: string, selected = false)}
+    {@const disabled = target < 1 || target > pages}
+    {@const style = [control, selected ? 'border-nexus bg-selected text-ink' : quiet]}
+    {#if hrefFor && !disabled}
+        <a
+            href={hrefFor(target)}
+            class={style}
+            aria-label={name}
+            aria-current={selected ? 'page' : undefined}
+        >
+            {@render content()}
+        </a>
+    {:else}
         <button
             type="button"
-            class={[control, quiet]}
-            disabled={current <= 1}
-            aria-label="이전 쪽"
-            onclick={() => onchange(current - 1)}
+            class={style}
+            {disabled}
+            aria-label={name}
+            aria-current={selected ? 'page' : undefined}
+            onclick={() => onchange?.(target)}
         >
+            {@render content()}
+        </button>
+    {/if}
+{/snippet}
+
+{#if total > pageSize}
+    <nav aria-label={label} class="flex flex-wrap items-center justify-center gap-1 pt-2">
+        {#snippet previous()}
             <svg
                 aria-hidden="true"
                 viewBox="0 0 16 16"
@@ -48,28 +71,17 @@
                 stroke="currentColor"
                 stroke-width="1.5"><path d="m10 3-5 5 5 5" /></svg
             >
-        </button>
+        {/snippet}
+        {@render pageControl(current - 1, previous, '이전 쪽')}
         {#each visible as page, index (index)}
             {#if page === -1}
                 <span class="px-0.5 text-ui text-muted" aria-hidden="true">…</span>
             {:else}
-                <button
-                    type="button"
-                    class={[control, page === current ? 'border-nexus bg-selected text-ink' : quiet]}
-                    aria-current={page === current ? 'page' : undefined}
-                    onclick={() => onchange(page)}
-                >
-                    {page}
-                </button>
+                {#snippet number()}{page}{/snippet}
+                {@render pageControl(page, number, undefined, page === current)}
             {/if}
         {/each}
-        <button
-            type="button"
-            class={[control, quiet]}
-            disabled={current >= Math.ceil(total / pageSize)}
-            onclick={() => onchange(current + 1)}
-        >
-            <span class="sr-only">다음 쪽</span>
+        {#snippet next()}
             <svg
                 aria-hidden="true"
                 viewBox="0 0 16 16"
@@ -78,6 +90,7 @@
                 stroke="currentColor"
                 stroke-width="1.5"><path d="m6 3 5 5-5 5" /></svg
             >
-        </button>
+        {/snippet}
+        {@render pageControl(current + 1, next, '다음 쪽')}
     </nav>
 {/if}

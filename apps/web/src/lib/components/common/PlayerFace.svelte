@@ -13,10 +13,18 @@
         lg: 'size-14 text-xl'
     };
     const crest = 'shrink-0 rounded-(--radius-form) border border-line-strong bg-surface-2';
+    let failedUrl = $state<string | null>(null);
 </script>
 
-{#if imageUrl}
-    <img src={imageUrl} alt="" loading="lazy" class={[crest, 'object-cover', SIZE[size]]} />
+{#if imageUrl && imageUrl !== failedUrl}
+    <img
+        src={imageUrl}
+        alt=""
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        class={[crest, 'object-cover', SIZE[size]]}
+        onerror={(event) => (failedUrl = event.currentTarget.getAttribute('src'))}
+    />
 {:else}
     <span
         aria-hidden="true"

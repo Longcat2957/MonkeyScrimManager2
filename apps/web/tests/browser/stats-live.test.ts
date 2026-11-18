@@ -82,7 +82,16 @@ function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
     if (snapshot.empty) throw new Error('UI 보존 표본은 실제 기록이 있는 응답을 사용한다.');
     if (version === 4) {
         const { guildId, requestKey, seasons, selectedSeasonId, position, recent, minGames } = snapshot;
-        return { guildId, requestKey, seasons, selectedSeasonId, position, recent, minGames, empty: true };
+        return {
+            guildId,
+            requestKey,
+            seasons,
+            selectedSeasonId,
+            position,
+            recent,
+            minGames,
+            empty: true
+        };
     }
     const base = snapshot.leaderboard[0]!;
     const row = (index: number) => ({

@@ -84,14 +84,10 @@
         </section>
 
         <section class="flex flex-col gap-2">
-            {@render group('대기', auction.queue.length, '')}
-            <!-- 다음 후보는 이 순서대로 뽑힌다. -->
-            <ol class="flex flex-col divide-y divide-line">
-                {#each auction.queue as player, index (player.participantId)}
+            {@render group('대기 · 이름순', auction.queue.length, '')}
+            <ul class="flex flex-col divide-y divide-line">
+                {#each auction.queue as player (player.participantId)}
                     <li class="flex items-center gap-2 px-1 py-1.5">
-                        <span class="w-5 shrink-0 text-right text-xs text-muted tabular-nums"
-                            >{index + 1}</span
-                        >
                         {@render row(player)}
                     </li>
                 {:else}
@@ -99,7 +95,7 @@
                         대기 후보 없음
                     </li>
                 {/each}
-            </ol>
+            </ul>
         </section>
 
         <section class="flex flex-col gap-2">

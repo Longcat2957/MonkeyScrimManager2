@@ -16,10 +16,12 @@ import {
     users
 } from '../db/schema.ts';
 import type { DiscordClient } from '../discord/client.ts';
+import { discordAvatarUrl } from '../discord/avatar.ts';
 import { DomainError } from '../errors.ts';
 import { assertGuildAccess, requireGuildAdmin } from '../guild/access.ts';
 import { RiotError } from '../riot/errors.ts';
 import { PLATFORM_ROUTINGS } from '../riot/transport.ts';
+import { readAuctionPriceHistory } from '../scrims/auction-prices.ts';
 
 export type AccountDependencies = {
     discord?: DiscordClient;
@@ -217,7 +219,16 @@ export async function listGuildMembers(
                     : undefined
             );
             const members = await tx
-                .select({ userId: users.id, displayName, username: users.username, isAdmin })
+                .select({
+                    userId: users.id,
+                    displayName,
+                    username: users.username,
+                    isAdmin,
+                    auctionSeedPrice: guildMembers.auctionSeedPrice,
+                    auctionOverridePrice: guildMembers.auctionOverridePrice,
+                    avatarHash: users.avatarHash,
+                    profileVisible: sql<boolean>`${users.publicProfile} and ${users.withdrawnAt} is null`
+                })
                 .from(guildMembers)
                 .innerJoin(users, eq(users.id, guildMembers.userId))
                 .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, guildMembers.guildId))
@@ -235,14 +246,16 @@ export async function listGuildMembers(
                 .from(guildMembers)
                 .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, guildMembers.guildId))
                 .where(and(eq(guildMembers.guildId, guildId), isAdmin));
-            const accounts = await readAccounts(
-                tx,
-                members.map((member) => member.userId),
-                guildId
-            );
+            const userIds = members.map((member) => member.userId);
+            const accounts = await readAccounts(tx, userIds, guildId);
+            const history = await readAuctionPriceHistory(tx, guildId, userIds);
+            const prices = new Map(history.map((row) => [row.userId, row]));
             return {
-                members: members.map((member) => ({
+                members: members.map(({ avatarHash, profileVisible, ...member }) => ({
                     ...member,
+                    auctionAveragePrice: prices.get(member.userId)?.auctionAveragePrice ?? null,
+                    auctionPurchaseCount: prices.get(member.userId)?.auctionPurchaseCount ?? 0,
+                    iconUrl: profileVisible ? discordAvatarUrl(member.userId, avatarHash) : null,
                     riotAccounts: accounts
                         .filter((row) => row.userId === member.userId)
                         .map((row) => row.account)

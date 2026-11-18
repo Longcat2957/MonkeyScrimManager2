@@ -130,14 +130,14 @@ async function listItems(tx: Transaction, rows: ScrimRow[], user: Actor | null):
             myRegistration: user
                 ? (registered.find((registration) => registration.userId === user.userId)?.status ?? null)
                 : null,
-            members: registered.slice(0, 5).map((registration) => ({
-                key: registration.id,
-                name: publicDisplayName(
-                    registration.userId ? identities.get(registration.userId) : undefined,
-                    registration.name
-                ),
-                iconUrl: null
-            }))
+            members: registered.slice(0, 5).map((registration) => {
+                const identity = registration.userId ? identities.get(registration.userId) : undefined;
+                return {
+                    key: registration.id,
+                    name: publicDisplayName(identity, registration.name),
+                    iconUrl: identity?.avatarUrl ?? null
+                };
+            })
         };
     });
 }
@@ -344,7 +344,7 @@ export async function getScrimDetail(
                     participantId: entry.participantId,
                     userId: identity?.userId ?? null,
                     displayName: publicDisplayName(identity, entry.displayName),
-                    iconUrl: null,
+                    iconUrl: identity?.avatarUrl ?? null,
                     riotId:
                         identity?.showRiotIds && entry.gameName && entry.tagLine
                             ? `${entry.gameName}#${entry.tagLine}`

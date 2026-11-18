@@ -3,15 +3,18 @@ import type {
     GamePlayer,
     LoadoutIcon,
     MatchDetail,
-    MatchListItem,
-    MatchStatusFilter
+    MatchListItem
 } from '#lib/features/matches/types.ts';
-import { parseMatchDateFilters } from '#lib/features/matches/filters.ts';
+import {
+    matchSearchTerms,
+    parseMatchDateFilters,
+    type MatchArchiveFilters
+} from '#lib/features/matches/filters.ts';
 import { DomainError } from '#lib/server/errors.ts';
 import { mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import sample from './fixtures/rofl-sample.json' with { type: 'json' };
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
-import { findMockScrim, type MockFailure } from './scrims.ts';
+import { findMockScrim, findMockScrimRecord, type MockFailure } from './scrims.ts';
 import { syncMockBracketResult } from './bracket.ts';
 
 /** ROFL 투영에서 게임 화면에 필요한 값만 남긴 형태. 업로드한 파일도 같은 형태로 저장한다. */
@@ -191,29 +194,24 @@ const matches: StoredMatch[] = [
         ),
         fixedScore: [3, 2]
     },
-    // 목록의 검색·필터·쪽 나눔을 확인하기 위한 지난 경기다. 게임 기록은 점수만 둔다.
+    // 지난 시리즈에도 최종 승부를 결정한 세트를 두어 목록과 상세가 같은 점수를 보여 준다.
     ...Array.from({ length: 22 }, (_, index): StoredMatch => {
         const week = Math.floor(index / 2);
         const played = new Date(Date.UTC(2026, 9, 10 - week * 7, 11 + (index % 2) * 2)).toISOString();
-        return {
-            ...base(
-                `devMatchOld${index + 1}`,
-                'devScrim005',
-                `${9 - Math.floor(week / 4)}월 ${(week % 4) + 1}주차 정기 내전`,
-                TEAM_NAMES[(index % 2) * 2]!,
-                TEAM_NAMES[(index % 2) * 2 + 1]!,
-                index % 3 === 0 ? 5 : 3,
-                index === 7 ? 'cancelled' : 'completed',
-                played,
-                []
-            ),
-            fixedScore:
-                index === 7
-                    ? [0, 0]
-                    : index % 3 === 0
-                      ? [3, index % 2 ? 1 : 2]
-                      : [index % 2 ? 0 : 2, index % 2 ? 2 : 1]
-        };
+        const bestOf = [5, 3, 1][index % 3]!;
+        const winners: ('a' | 'b')[] =
+            bestOf === 5 ? ['a', 'b', 'a', 'b', 'a'] : bestOf === 3 ? ['b', 'a', 'b'] : ['a'];
+        return base(
+            `devMatchOld${index + 1}`,
+            'devScrim005',
+            `${9 - Math.floor(week / 4)}월 ${(week % 4) + 1}주차 정기 내전`,
+            TEAM_NAMES[(index % 2) * 2]!,
+            TEAM_NAMES[(index % 2) * 2 + 1]!,
+            bestOf,
+            index === 7 ? 'cancelled' : 'completed',
+            index === 21 ? null : played,
+            index === 7 ? [] : winners
+        );
     })
 ];
 
@@ -247,56 +245,63 @@ function toListItem(match: StoredMatch): MatchListItem {
     return { id, scrimTitle, teamA, teamB, scoreA, scoreB, bestOf, status, playedAt };
 }
 
-const DONE: MatchListItem['status'][] = ['completed', 'ended_early', 'cancelled'];
 const byPlayed = (a: MatchListItem, b: MatchListItem) =>
     (b.playedAt ?? '').localeCompare(a.playedAt ?? '') || a.id.localeCompare(b.id);
 
 export async function listMockRecentMatches(
     guildId: string,
-    { fail = false } = {}
+    { fail = false, limit = 5 } = {}
 ): Promise<MatchListItem[]> {
     if (fail) throw new Error('목 데이터: 최근 경기 조회 실패 재현');
-    return matches
-        .filter((match) => match.guildId === guildId)
-        .slice(0, 5)
-        .map((match) => toListItem(match));
+    return (await listMockMatches(guildId, { page: 1, pageSize: limit })).matches;
 }
 
-export async function listMockMatches(
-    guildId: string,
-    options: {
-        status: MatchStatusFilter;
-        q?: string;
-        page: number;
-        pageSize: number;
-        seasonId?: string | null;
-        from?: string;
-        to?: string;
-    }
-) {
+export async function listMockMatches(guildId: string, options: MatchArchiveFilters) {
     const seasons = mockRecordSeasons(options.seasonId);
     const dates = parseMatchDateFilters(options);
     if (dates.error) throw new DomainError('INVALID_INPUT', dates.error);
-    const q = (options.q ?? '').trim().toLowerCase();
-    const inGuild = matches.filter((match) => match.guildId === guildId).map(toListItem);
-    const searched = inGuild.filter((match) => {
-        if (q && ![match.scrimTitle, match.teamA, match.teamB].some((text) => text.toLowerCase().includes(q)))
-            return false;
-        if (!dates.fromInclusive && !dates.toExclusive) return true;
-        if (!match.playedAt) return false;
-        const playedAt = new Date(match.playedAt);
-        return (
-            (!dates.fromInclusive || playedAt >= dates.fromInclusive) &&
-            (!dates.toExclusive || playedAt < dates.toExclusive)
-        );
+    const terms = matchSearchTerms(options.q).map((term) => term.toLowerCase());
+    const player = options.player?.trim().toLowerCase();
+    const champion = options.champion?.trim().toLowerCase();
+    const archive = matches.flatMap((match) => {
+        if (match.guildId !== guildId || match.status !== 'completed' || !match.games.length) return [];
+        const scrim = findMockScrimRecord(guildId, match.scrimId);
+        if (!scrim || scrim.status === 'cancelled') return [];
+        const item = toListItem(match);
+        const target = Math.floor(match.bestOf / 2) + 1;
+        return Math.max(item.scoreA, item.scoreB) === target && Math.min(item.scoreA, item.scoreB) < target
+            ? [{ item, games: match.games }]
+            : [];
     });
-    const of = (filter: MatchStatusFilter) =>
-        searched.filter(
-            (match) =>
-                filter === 'all' ||
-                (filter === 'done' ? DONE.includes(match.status) : !DONE.includes(match.status))
-        );
-    const filtered = of(options.status).sort(byPlayed);
+    const filtered = archive
+        .filter(({ item: match, games }) => {
+            if (options.bestOf && match.bestOf !== options.bestOf) return false;
+            if (!terms.every((term) => match.scrimTitle.toLowerCase().includes(term))) return false;
+            if (player || champion) {
+                const set = games.find((game) =>
+                    game.raw.participants.some(
+                        (pick) =>
+                            (!player ||
+                                (pick.userId && pick.riotId.gameName?.toLowerCase().includes(player))) &&
+                            (!champion ||
+                                (pick.champion &&
+                                    (pick.champion.toLowerCase().includes(champion) ||
+                                        options.championIds?.includes(pick.champion))))
+                    )
+                );
+                if (!set) return false;
+                match.matchedGameId = set.id;
+            }
+            if (!dates.fromInclusive && !dates.toExclusive) return true;
+            if (!match.playedAt) return false;
+            const playedAt = new Date(match.playedAt);
+            return (
+                (!dates.fromInclusive || playedAt >= dates.fromInclusive) &&
+                (!dates.toExclusive || playedAt < dates.toExclusive)
+            );
+        })
+        .map(({ item }) => item)
+        .sort(byPlayed);
     const start = (options.page - 1) * options.pageSize;
     return {
         ...seasons,
@@ -304,12 +309,7 @@ export async function listMockMatches(
         to: dates.to,
         matches: filtered.slice(start, start + options.pageSize),
         total: filtered.length,
-        counts: {
-            all: of('all').length,
-            in_progress: of('in_progress').length,
-            done: of('done').length
-        } satisfies Record<MatchStatusFilter, number>,
-        empty: inGuild.length === 0
+        empty: archive.length === 0
     };
 }
 

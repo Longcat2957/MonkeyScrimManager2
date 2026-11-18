@@ -5,6 +5,7 @@ import {
     createMockScrim,
     findMockScrimRecord,
     getMockScrimDetail,
+    listMockActiveScrims,
     registerMock,
     setMockParticipantStatus,
     updateMockRegistration,
@@ -62,6 +63,28 @@ const register = (scrimId: string, key: string) =>
 
 const statusOf = (scrimId: string, userId: string) =>
     findMockScrimRecord(guildId, scrimId)!.participants.find((item) => item.userId === userId)?.status;
+
+test('개발 내전 명부·경매·대진은 같은 Discord 아바타를 쓰고 사용자 연결이 없으면 사진을 숨긴다', async () => {
+    const scrimId = 'devScrim009';
+    const [detail, list, auction, bracket] = await Promise.all([
+        getMockScrimDetail(guildId, scrimId, null),
+        listMockActiveScrims(guildId),
+        getMockAuction(guildId, scrimId),
+        getMockBracket(guildId, scrimId)
+    ]);
+    const preview = list.find((scrim) => scrim.id === scrimId)!.members[0]!;
+    const visible = detail!.participants.find((p) => p.registrationId === preview.key)!;
+    const missing = detail!.participants.find((p) => p.userId === null)!;
+    assert.match(visible.iconUrl ?? '', /^https:\/\/cdn\.discordapp\.com\/embed\/avatars\/[0-5]\.png$/);
+    assert.equal(preview.iconUrl, visible.iconUrl);
+    assert.equal(missing.iconUrl, null);
+    const members = bracket!.teams.flatMap((team) => team.members);
+    for (const p of [visible, missing]) {
+        const player = auction!.players.find((player) => player.participantId === p.registrationId);
+        assert.equal(player?.iconUrl, p.iconUrl);
+        assert.equal(members.find((member) => member.id === p.registrationId)?.iconUrl, p.iconUrl);
+    }
+});
 
 test('Riot 계정 없는 여러 참가자도 신청하고 계정 없이 수정·철회할 수 있다', async () => {
     const scrimId = await createMockScrim(guildId, {

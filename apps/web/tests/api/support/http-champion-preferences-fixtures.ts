@@ -51,22 +51,23 @@ export async function postChampionPreferenceForm(
     return { response, result };
 }
 
+export const championCatalogUpstream: UpstreamRule = {
+    method: 'GET',
+    url: CHAMPION_PREFERENCES_CATALOG_URL,
+    body: {
+        type: 'champion',
+        version: '26.21.1',
+        data: Object.fromEntries(
+            championPreferenceCatalog.map(({ id, championId, name }) => [
+                id,
+                { id, key: String(championId), name, image: { full: id + '.png' } }
+            ])
+        )
+    }
+};
+
 export async function createHttpChampionPreferencesFixture(t: TestContext, overrides: UpstreamRule[] = []) {
-    const catalog: UpstreamRule = {
-        method: 'GET',
-        url: CHAMPION_PREFERENCES_CATALOG_URL,
-        body: {
-            type: 'champion',
-            version: '26.21.1',
-            data: Object.fromEntries(
-                championPreferenceCatalog.map(({ id, championId, name }) => [
-                    id,
-                    { id, key: String(championId), name, image: { full: id + '.png' } }
-                ])
-            )
-        }
-    };
-    const fixture = await createHttpMatchResultFixture(t, [...overrides, catalog]);
+    const fixture = await createHttpMatchResultFixture(t, [...overrides, championCatalogUpstream]);
     return {
         ...fixture,
         catalog: championPreferenceCatalog,

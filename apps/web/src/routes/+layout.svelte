@@ -10,6 +10,7 @@
     import type { LayoutProps } from './$types';
 
     let { children }: LayoutProps = $props();
+    let accountHeight = $state(0);
 
     onMount(markHydrated);
 </script>
@@ -26,8 +27,8 @@
     >
         본문으로 건너뛰기
     </a>
-    <AppHeader />
-    <div class="flex min-h-dvh min-w-0 flex-col">
+    <AppHeader bind:accountHeight />
+    <div class="flex min-h-dvh min-w-0 flex-col" style:--account-height={`${accountHeight}px`}>
         <main
             id="main-content"
             tabindex="-1"

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test, { type TestContext } from 'node:test';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import type { AuctionView } from '../../../../src/lib/features/scrims/formation.ts';
+import { listGuildMembers } from '../../../../src/lib/server/accounts/queries.ts';
 import {
     assignAuctionCurrent,
     assignAuctionUnsold,
@@ -16,7 +17,6 @@ import {
     restoreAuctionUnsold,
     revertAuctionLot,
     saveAuctionSetup,
-    shuffleAuctionQueue,
     startAuction
 } from '../../../../src/lib/server/scrims/auction.ts';
 import { chooseFormationMethod, revertScrim } from '../../../../src/lib/server/scrims/workflow.ts';
@@ -95,16 +95,9 @@ test('경매 조회는 공개이며 부분 팀장 저장과 관리자 권한을 
     assertPartition(await f.view());
 });
 
-test('대기열 섞기는 후보를 유실·중복하지 않고 조회가 순서를 바꾸지 않는다', async (t) => {
+test('진행 중에는 팀장과 예산을 다시 설정할 수 없다', async (t) => {
     const f = await fixture(t);
     await f.start();
-    const before = await f.view();
-    assert.deepEqual((await f.view()).queue, before.queue);
-    await shuffleAuctionQueue(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
-    assert.deepEqual(
-        new Set((await f.view()).queue.map((player) => player.participantId)),
-        new Set(before.queue.map((player) => player.participantId))
-    );
     await assert.rejects(
         saveAuctionSetup(
             f.db,
@@ -117,6 +110,227 @@ test('대기열 섞기는 후보를 유실·중복하지 않고 조회가 순서
         errorCode('CONFLICT')
     );
     assertPartition(await f.view());
+});
+
+test('후보 순서는 보정가·서버 유상 낙찰 평균·초기값 순으로 정하고 공개 대기 명단은 이름순이다', async (t) => {
+    const f = await fixture(t);
+    const [oldSeason] = await f.db
+        .insert(schema.mmrSeasons)
+        .values({
+            guildId: f.guildId,
+            name: '이전 시즌',
+            startedAt: new Date(-2000),
+            endedAt: new Date(-1000)
+        })
+        .returning();
+    const at = new Date();
+    async function history(
+        sales: [number, number | null][],
+        {
+            guildId = f.guildId,
+            seasonId = oldSeason!.id as string | null,
+            completed = true,
+            cancelled = false,
+            activeTeam = true,
+            voidedPlayer = -1
+        } = {}
+    ) {
+        const scrimId = randomUUID();
+        const auctionId = randomUUID();
+        const teamId = randomUUID();
+        await f.db.insert(schema.scrims).values({
+            id: scrimId,
+            guildId,
+            mmrSeasonId: seasonId,
+            title: '과거 경매',
+            status: cancelled ? 'cancelled' : 'ready',
+            formationMethod: 'auction'
+        });
+        await f.db.insert(schema.auctions).values({
+            id: auctionId,
+            scrimId,
+            status: completed ? 'completed' : 'in_progress'
+        });
+        await f.db.insert(schema.scrimTeams).values({
+            id: teamId,
+            scrimId,
+            ordinal: 1,
+            name: '과거 팀',
+            isActive: activeTeam
+        });
+        const participants = [0, ...sales.map(([index]) => index)].map((index) => ({
+            scrimId,
+            id: randomUUID(),
+            userId: f.users[index]!.id,
+            displayName: '당시 이름'
+        }));
+        await f.db.insert(schema.scrimParticipants).values(participants);
+        const scope = { scrimId, auctionId };
+        const buyer = participants[0]!.id;
+        await f.db.insert(schema.auctionTeams).values({
+            ...scope,
+            teamId,
+            captainParticipantId: buyer,
+            initialPoints: 1000
+        });
+        const lots = sales.map((_, i) => ({
+            ...scope,
+            id: randomUUID(),
+            sequenceNumber: i + 1,
+            scrimParticipantId: participants[i + 1]!.id,
+            status: 'sold' as const,
+            openedAt: at,
+            closedAt: at
+        }));
+        await f.db.insert(schema.auctionLots).values(lots);
+        await f.db.insert(schema.auctionAcquisitions).values(
+            sales.map(([index, price], i) => ({
+                ...scope,
+                teamId,
+                scrimParticipantId: lots[i]!.scrimParticipantId,
+                lotId: lots[i]!.id,
+                buyerParticipantId: price === null ? null : buyer,
+                price,
+                method: price === null ? ('manual' as const) : ('auction' as const),
+                acquiredAt: at,
+                voidedAt: index === voidedPlayer ? at : null,
+                voidReason: index === voidedPlayer ? '정정' : null
+            }))
+        );
+    }
+    await history(
+        [
+            [2, 1000],
+            [4, 30],
+            [5, 35],
+            [6, 5],
+            [7, 70],
+            [8, 149],
+            [9, 80]
+        ],
+        { voidedPlayer: 2 }
+    );
+    await history(
+        [
+            [6, 122],
+            [7, null],
+            [8, 1],
+            [9, 0]
+        ],
+        { seasonId: f.season.id }
+    );
+    await history([[2, 1000]], { guildId: f.otherGuildId, seasonId: null });
+    await history([[2, 1000]], { completed: false });
+    await history([[2, 1000]], { cancelled: true });
+    await history([[2, 1000]], { activeTeam: false });
+    const setPrices = (
+        index: number,
+        prices: { auctionSeedPrice?: number | null; auctionOverridePrice?: number | null }
+    ) =>
+        f.db
+            .update(schema.guildMembers)
+            .set(prices)
+            .where(
+                and(
+                    eq(schema.guildMembers.guildId, f.guildId),
+                    eq(schema.guildMembers.userId, f.users[index]!.id)
+                )
+            );
+    await setPrices(2, { auctionSeedPrice: 65 }); // 유효한 낙찰 이력이 없으므로 초기값을 쓴다.
+    await setPrices(5, { auctionSeedPrice: 999 }); // 유상 낙찰가 35가 우선한다.
+    await setPrices(6, { auctionSeedPrice: 200, auctionOverridePrice: 90 });
+    await f.db.insert(schema.guildMembers).values({
+        guildId: f.otherGuildId,
+        userId: f.users[3]!.id,
+        auctionSeedPrice: 999,
+        auctionOverridePrice: 999
+    });
+    async function memberPrices(index: number) {
+        const user = f.users[index]!;
+        const result = await listGuildMembers(
+            f.db,
+            f.manager,
+            f.guildId,
+            { q: user.username, page: 1, pageSize: 20 },
+            f.access
+        );
+        const member = result.members.find((row) => row.userId === user.id)!;
+        return {
+            average: member.auctionAveragePrice,
+            count: member.auctionPurchaseCount,
+            seed: member.auctionSeedPrice,
+            override: member.auctionOverridePrice
+        };
+    }
+    assert.deepEqual(await memberPrices(2), { average: null, count: 0, seed: 65, override: null });
+    assert.deepEqual(await memberPrices(6), { average: 63.5, count: 2, seed: 200, override: 90 });
+    assert.deepEqual(await memberPrices(7), { average: 70, count: 1, seed: null, override: null });
+    assert.deepEqual(await memberPrices(9), { average: 80, count: 1, seed: null, override: null });
+    const privatePlayers = [2, 3, 9];
+    await f.db
+        .update(schema.users)
+        .set({ publicProfile: false })
+        .where(
+            inArray(
+                schema.users.id,
+                privatePlayers.map((i) => f.users[i]!.id)
+            )
+        );
+    await f.start();
+    const stored = async () => {
+        const entries = await f.db
+            .select({ id: schema.auctionQueueEntries.scrimParticipantId })
+            .from(schema.auctionQueueEntries)
+            .where(eq(schema.auctionQueueEntries.scrimId, f.scrimId))
+            .orderBy(asc(schema.auctionQueueEntries.ordinal));
+        return entries.map(({ id }) => id);
+    };
+    const order = await stored();
+    function assertGroups(queue: string[], groups: number[][]) {
+        for (const [group, indexes] of groups.entries()) {
+            assert.deepEqual(
+                new Set(queue.slice(group * 2, group * 2 + 2)),
+                new Set(indexes.map((i) => f.participants[i]!.id))
+            );
+        }
+    }
+    assertGroups(order, [
+        [6, 9],
+        [8, 7],
+        [2, 5],
+        [4, 3]
+    ]);
+    await setPrices(6, { auctionOverridePrice: null });
+    await setPrices(2, { auctionSeedPrice: null });
+    await setPrices(3, { auctionSeedPrice: 1000 });
+    assert.deepEqual(await memberPrices(6), { average: 63.5, count: 2, seed: 200, override: null });
+    const expected = [
+        ...privatePlayers.map((i) => f.participants[i]!.id).sort(),
+        ...f.participants.slice(4, 9).map((p) => p.id)
+    ];
+    const managerView = await getAuction(f.db, f.manager, f.guildId, f.scrimId, f.access);
+    for (const view of [await f.view(), managerView!]) {
+        assert.doesNotMatch(JSON.stringify(view), /"auction(?:Seed|Override)Price":/);
+        assert.deepEqual(
+            view.queue.map((p) => p.participantId),
+            expected
+        );
+    }
+    assert.deepEqual(await stored(), order);
+    await f.draw();
+    const view = await f.view();
+    assert.equal(view.openLot?.participantId, order[0]);
+    assert.deepEqual(
+        view.queue.map((p) => p.participantId),
+        expected.filter((id) => id !== order[0])
+    );
+    await resetAuction(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assertGroups(await stored(), [
+        [3, 9],
+        [8, 7],
+        [6, 5],
+        [4, 2]
+    ]);
 });
 
 test('잘못된 lot와 예산 초과 낙찰은 후보·포인트·revision을 바꾸지 않는다', async (t) => {
@@ -207,7 +421,9 @@ test('낙찰 후 다음 추첨을 되돌리면 낙찰과 포인트를 유지한�
     await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     const state = await f.view();
     assert.equal(state.openLot, null);
-    assert.equal(state.queue[0]?.participantId, next);
+    assert.ok(state.queue.some((player) => player.participantId === next));
+    await f.draw();
+    assert.equal((await f.view()).openLot?.participantId, next);
     assert.equal(state.teams[0]?.remainingPoints, 90);
     assert.ok(state.teams[0]!.members.some((entry) => entry.player.participantId === previous));
     assertPartition(state);

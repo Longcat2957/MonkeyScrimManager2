@@ -4,7 +4,7 @@ import {
     editableFields,
     playCapacity,
     RESERVE_CAPACITY,
-    TEAM_COUNT,
+    isAllowedTeamCount,
     TITLE_MAX,
     type ScrimSettingsInput
 } from '../../features/scrims/settings.ts';
@@ -57,21 +57,26 @@ export function parseScrimSettings(input: ScrimSettingsInput): ScrimSettings {
     }
     if (Object.keys(errors).length)
         throw new DomainError('INVALID_INPUT', '일정을 다시 확인해 주세요', errors);
-    return validateSettings({ ...input, scheduledAt });
+    return {
+        title: input.title.trim(),
+        scheduledAt,
+        teamCount: input.teamCount,
+        reserveCapacity: input.reserveCapacity,
+        hardFearless: input.hardFearless
+    };
 }
 
 /** 서비스는 폼 어댑터를 통과하지 않은 직접 호출도 같은 범위로 제한한다. */
-export function validateSettings(input: ScrimSettings): ScrimSettings {
+export function validateSettings(input: ScrimSettings, currentTeamCount?: number): ScrimSettings {
     const title = typeof input.title === 'string' ? input.title.trim() : '';
     if (!title || title.length > TITLE_MAX) {
         throw new DomainError('INVALID_INPUT', '제목을 다시 확인해 주세요', {
             title: !title ? '제목을 입력해 주세요' : `제목은 ${TITLE_MAX}자까지 쓸 수 있어요`
         });
     }
+    if (!isAllowedTeamCount(input.teamCount, currentTeamCount))
+        throw new DomainError('INVALID_INPUT', '팀 수는 2팀(10명) 또는 4팀(20명)으로 정해 주세요');
     if (
-        !Number.isInteger(input.teamCount) ||
-        input.teamCount < TEAM_COUNT.min ||
-        input.teamCount > TEAM_COUNT.max ||
         !Number.isInteger(input.reserveCapacity) ||
         input.reserveCapacity < RESERVE_CAPACITY.min ||
         input.reserveCapacity > RESERVE_CAPACITY.max

@@ -13,8 +13,6 @@ import {
     startMockBracket
 } from '#lib/mocks/bracket.ts';
 import type { MockFailure } from '#lib/mocks/scrims.ts';
-import { championIconUrl } from '#lib/server/ddragon/assets.ts';
-import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { actionFailure } from '#lib/server/actions.ts';
@@ -43,12 +41,9 @@ export const load: PageServerLoad = async ({ parent, params, locals }) => {
                 scrim,
                 bracket: await getBracket(getDb(), locals.actor, params.guildId, params.scrimId)
             };
-        const version = await latestDataDragonVersion();
         return {
             scrim,
-            bracket: await getMockBracket(params.guildId, params.scrimId, (id) =>
-                championIconUrl(version, id)
-            )
+            bracket: await getMockBracket(params.guildId, params.scrimId)
         };
     } catch (cause) {
         routeError(cause);

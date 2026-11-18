@@ -5,13 +5,19 @@
     import Button from '#lib/components/common/Button.svelte';
     import Dialog from '#lib/components/common/Dialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import Spinner from '#lib/components/common/Spinner.svelte';
     import TextField from '#lib/components/common/TextField.svelte';
     import type { ManualRegistrationResult, ScrimParticipant } from '#lib/features/scrims/types.ts';
     import { playCapacity, RESERVE_CAPACITY, TEAM_COUNT } from '#lib/features/scrims/settings.ts';
     import { toast } from '#lib/ui/toast.ts';
 
-    type MemberOption = { userId: string; displayName: string; username: string | null };
+    type MemberOption = {
+        userId: string;
+        displayName: string;
+        iconUrl: string | null;
+        username: string | null;
+    };
     type Options = { members: MemberOption[]; total: number; page: number };
     type MemberResult = { member: MemberOption; result: ManualRegistrationResult };
     let { open = $bindable(false), participants }: { open: boolean; participants: ScrimParticipant[] } =
@@ -216,7 +222,8 @@
                         class="divide-y divide-line rounded-form border border-line bg-surface-2"
                     >
                         {#each results as { member, result } (member.userId)}
-                            <li class="flex flex-wrap items-baseline gap-x-2 px-3 py-2 text-ui">
+                            <li class="flex flex-wrap items-center gap-x-2 px-3 py-2 text-ui">
+                                <PlayerFace name={member.displayName} imageUrl={member.iconUrl} size="sm" />
                                 <span class="font-medium wrap-anywhere">{member.displayName}</span>
                                 {#if member.username !== member.displayName}
                                     <span class="text-muted">
@@ -264,6 +271,7 @@
                                         );
                                     }}
                                 />
+                                <PlayerFace name={member.displayName} imageUrl={member.iconUrl} size="sm" />
                                 <span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 text-left">
                                     <span class="font-semibold wrap-anywhere">{member.displayName}</span>
                                     {#if member.username && member.username !== member.displayName}

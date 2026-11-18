@@ -10,9 +10,19 @@ test('HTTP: 실제 서버의 모집·경기·전적·통계를 로그인 없이 
         .insert(schema.scrims)
         .values({ guildId: HTTP_IDS.guild, title: '공개 HTTP 내전', mmrSeasonId: f.season.id })
         .returning();
+    const avatarHash = 'abcdef0123456789abcdef0123456789';
+    const avatar = `https://cdn.discordapp.com/avatars/${HTTP_IDS.member}/${avatarHash}.webp?size=128`;
+    const [person] = await f.db
+        .insert(schema.scrimParticipants)
+        .values({ scrimId: scrim!.id, userId: HTTP_IDS.member, displayName: '공개 전적 사용자' })
+        .returning();
+    await f.db.insert(schema.scrimParticipantRegistrations).values({
+        scrimParticipantId: person!.id,
+        status: 'selected'
+    });
     await f.db
         .update(schema.users)
-        .set({ globalName: '공개 전적 사용자' })
+        .set({ globalName: '공개 전적 사용자', avatarHash })
         .where(eq(schema.users.id, HTTP_IDS.member));
     for (const path of [
         '/g/' + HTTP_IDS.guild,
@@ -30,8 +40,16 @@ test('HTTP: 실제 서버의 모집·경기·전적·통계를 로그인 없이 
             assert.doesNotMatch(html, /Internal Error|fixture-bot-token|fixture-oauth-secret/);
             if (path.includes('/scrims')) assert.match(html, /공개 HTTP 내전/);
             if (path.includes('/players/')) assert.match(html, /공개 전적 사용자/);
+            if (path.includes('/scrims') || path.includes('/players/'))
+                assert.ok(html.includes(`src="${avatar}"`), `${path}: 공개 선수 사진이 표시되어야 한다`);
         });
     }
+    await f.db.update(schema.users).set({ publicProfile: false }).where(eq(schema.users.id, HTTP_IDS.member));
+    const privateRoster = await f.request(`/g/${HTTP_IDS.guild}/scrims/${scrim!.id}`);
+    assert.equal(privateRoster.status, 200);
+    const privateHtml = await privateRoster.text();
+    assert.match(privateHtml, /비공개 사용자/);
+    assert.ok(!privateHtml.includes(avatarHash));
 });
 
 test('HTTP: 다른 서버의 내전 ID와 운영 빌드의 개발 샘플은 404다', async (t) => {

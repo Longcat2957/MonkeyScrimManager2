@@ -58,6 +58,7 @@ test('공개 기본 ID를 보존하고 두 공개 설정을 독립 적용하며 
     const [user] = await f.db.select().from(schema.users).where(eq(schema.users.id, f.manager.userId));
     assert.equal(before.player.userId, f.manager.userId);
     assert.ok(before.player.iconUrl?.includes(f.manager.userId));
+    assert.equal(initialRank.iconUrl, before.player.iconUrl);
     assert.equal(initialRank.identityKey, user!.publicId);
     await setMyPrivacy(f.db, f.manager, { publicProfile: false, publicRiotIds: true });
     const privateProfile = await getPlayerRecords(f.db, null, f.guildId, user!.publicId, champion);
@@ -67,6 +68,7 @@ test('공개 기본 ID를 보존하고 두 공개 설정을 독립 적용하며 
     assert.deepEqual(privateProfile.player.riotIds, before.player.riotIds);
     const privateRank = (await ranking())!.page.entries[0]!;
     assert.equal(privateRank.userId, user!.publicId);
+    assert.equal(privateRank.iconUrl, null);
     assert.equal(privateRank.identityKey, initialRank.identityKey);
     assert.equal(privateRank.isMe, true);
     assert.equal(privateRank.rank, initialRank.rank);
@@ -141,6 +143,9 @@ test('공개 참가자·편성·대진·경기 운영 DTO와 Discord 게시에�
         f.dependencies
     );
     const target = f.users[2]!;
+    const visible = f.users[3]!;
+    const hash = 'c'.repeat(32);
+    await f.db.update(schema.users).set({ avatarHash: hash }).where(eq(schema.users.id, visible.id));
     const beforePairs = (await getManualFormation(f.db, null, f.guildId, f.scrimId))!.pairs;
     const beforeScores = await f.db.select().from(schema.userPositionMmr);
     const beforeGame = await f.db.select().from(schema.games);
@@ -171,6 +176,31 @@ test('공개 참가자·편성·대진·경기 운영 DTO와 Discord 게시에�
     });
     const views = { detail, list, manual, bracket, game, operation, records, profile, teammate, notices };
     hidden(views, [target.id, target.username, f.accounts[2]!.gameName!]);
+    for (const [index, expected] of [
+        [2, null],
+        [3, `https://cdn.discordapp.com/avatars/${visible.id}/${hash}.webp?size=128`]
+    ] as const) {
+        const registrationId = f.registrations[index]!.id;
+        const participantId = f.participants[index]!.id;
+        assert.equal(
+            detail!.participants.find((p) => p.registrationId === registrationId)?.iconUrl,
+            expected
+        );
+        assert.equal(
+            list.scrims.flatMap((s) => s.members).find((m) => m.key === registrationId)?.iconUrl,
+            expected
+        );
+        assert.equal(manual!.players.find((p) => p.participantId === participantId)?.iconUrl, expected);
+        assert.equal(
+            bracket!.teams.flatMap((team) => team.members).find((m) => m.id === participantId)?.iconUrl,
+            expected
+        );
+        assert.equal(
+            operation.teams.flatMap((team) => team.players).find((p) => p.participantId === participantId)
+                ?.iconUrl,
+            expected
+        );
+    }
     assert.equal(
         detail!.participants.find((person) => person.userId === user!.publicId)!.displayName,
         '비공개 사용자'
@@ -255,6 +285,10 @@ test('비공개 경매 후보도 내부 사용자로 과거 전적을 읽고 낙
     const read = () => getAuction(f.db, null, f.guildId, scrim!.id, undefined, champion);
     const before = (await read())!;
     const targetId = before.openLot!.userId!;
+    assert.match(
+        before.openLot!.iconUrl ?? '',
+        /^https:\/\/cdn\.discordapp\.com\/embed\/avatars\/[0-5]\.png$/
+    );
     const [target] = await f.db.select().from(schema.users).where(eq(schema.users.id, targetId));
     await setMyPrivacy(
         f.db,
@@ -264,6 +298,7 @@ test('비공개 경매 후보도 내부 사용자로 과거 전적을 읽고 낙
     const after = (await read())!;
     assert.equal(after.openLot!.userId, target!.publicId);
     assert.equal(after.openLot!.displayName, '비공개 사용자');
+    assert.equal(after.openLot!.iconUrl, null);
     assert.deepEqual(after.openProfile, before.openProfile);
     assert.equal(after.openProfile!.summary.games, 1);
     await awardAuctionLot(
@@ -277,6 +312,7 @@ test('비공개 경매 후보도 내부 사용자로 과거 전적을 읽고 낙
     const recorded = (await read())!;
     hidden(recorded, [targetId, target!.username]);
     assert.equal(recorded.history.at(-1)!.displayName, '비공개 사용자');
+    assert.equal(recorded.history.at(-1)!.iconUrl, null);
 });
 
 test('비공개 Discord 경로는 익명404·본인허용·실효 관리자만 허용하며 UUID와 서버 경계를 구분한다', async (t) => {

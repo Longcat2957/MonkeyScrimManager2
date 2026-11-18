@@ -14,12 +14,14 @@ type AuditWrite = {
     actorUserId: string;
 } & (
     | {
-          kind: Exclude<GuildAuditKind, 'discord_setting_changed'>;
+          kind: Extract<GuildAuditKind, `riot_account_${string}`>;
           targetUserId: string;
           riotAccountId: string;
           previousPrimaryAccountId: string | null;
           nextPrimaryAccountId: string | null;
       }
+    | { kind: 'auction_seed_price_changed'; targetUserId: string }
+    | { kind: 'auction_override_price_changed'; targetUserId: string }
     | {
           kind: 'discord_setting_changed';
           key: GuildDiscordSettingKey;
@@ -31,6 +33,11 @@ type AuditWrite = {
 /** 호출자의 업무 트랜잭션에서 성공한 변경과 감사 기록을 함께 저장한다. */
 export async function writeGuildAudit(tx: Transaction, input: AuditWrite): Promise<void> {
     const identity = { guildId: input.guildId, actorUserId: input.actorUserId, kind: input.kind };
+    if (input.kind === 'auction_seed_price_changed' || input.kind === 'auction_override_price_changed') {
+        // 초기값을 해제하거나 탈퇴한 뒤에도 이전 금액이 감사 기록에 남지 않게 한다.
+        await tx.insert(guildAuditEntries).values({ ...identity, targetUserId: input.targetUserId });
+        return;
+    }
     await tx.insert(guildAuditEntries).values(
         input.kind === 'discord_setting_changed'
             ? {
@@ -123,25 +130,23 @@ export async function listGuildAudit(
                           userId: event.targetUserId,
                           displayName: target?.globalName ?? target?.username ?? '삭제된 사용자'
                       },
-            account:
-                event.kind === 'discord_setting_changed'
-                    ? null
-                    : {
-                          id: event.riotAccountId,
-                          gameName: account?.gameName ?? null,
-                          tagLine: account?.tagLine ?? null
-                      },
-            primary:
-                event.kind === 'discord_setting_changed'
-                    ? null
-                    : {
-                          before: event.previousPrimaryWasSet
-                              ? { id: event.previousPrimaryAccountId, riotId: riotId(previous) }
-                              : null,
-                          after: event.nextPrimaryWasSet
-                              ? { id: event.nextPrimaryAccountId, riotId: riotId(next) }
-                              : null
-                      },
+            account: !event.kind.startsWith('riot_account_')
+                ? null
+                : {
+                      id: event.riotAccountId,
+                      gameName: account?.gameName ?? null,
+                      tagLine: account?.tagLine ?? null
+                  },
+            primary: !event.kind.startsWith('riot_account_')
+                ? null
+                : {
+                      before: event.previousPrimaryWasSet
+                          ? { id: event.previousPrimaryAccountId, riotId: riotId(previous) }
+                          : null,
+                      after: event.nextPrimaryWasSet
+                          ? { id: event.nextPrimaryAccountId, riotId: riotId(next) }
+                          : null
+                  },
             setting: event.settingKey
                 ? {
                       key: event.settingKey,
