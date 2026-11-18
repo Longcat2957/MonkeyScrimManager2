@@ -143,11 +143,11 @@
         subTitle={`${entry.games}전 ${entry.wins}승 · 승률 ${winRate(entry)}%`}
     >
         {#snippet leftChild()}
-            <span class="flex items-center gap-3">
+            <span class="flex items-center gap-2">
                 <span
                     class={[
-                        'flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold tabular-nums',
-                        entry.rank <= 3 ? [MEDAL[entry.rank - 1], 'text-bg-base-dark'] : 'text-text-muted'
+                        'flex h-5 min-w-6 items-center justify-center rounded-(--radius-small) px-1 text-xs font-bold tabular-nums',
+                        entry.rank <= 3 ? [MEDAL[entry.rank - 1], 'text-ground'] : 'text-muted'
                     ]}
                 >
                     <span class="sr-only">순위 </span>{entry.rank}
@@ -156,14 +156,14 @@
                     <img
                         src={entry.iconUrl}
                         alt=""
-                        width="36"
-                        height="36"
+                        width="28"
+                        height="28"
                         loading="lazy"
-                        class="size-9 rounded-full"
+                        class="size-7 rounded-(--radius-small)"
                     />
                 {:else}
                     <span
-                        class="flex size-9 items-center justify-center rounded-full bg-bg-highlight text-sm font-semibold dark:bg-bg-highlight-dark"
+                        class="flex size-7 items-center justify-center rounded-(--radius-small) bg-surface-2 text-ui font-semibold"
                         aria-hidden="true"
                     >
                         {entry.displayName.slice(0, 1)}
@@ -175,7 +175,7 @@
             <span class="flex items-center gap-2">
                 {#if entry.isMe}
                     <span
-                        class="rounded-(--radius-small) bg-hex px-1.5 py-0.5 text-[0.6875rem] font-semibold text-hex-ink"
+                        class="rounded-(--radius-small) bg-nexus px-1.5 py-0.5 text-[0.6875rem] font-semibold text-nexus-ink"
                     >
                         나
                     </span>
@@ -186,16 +186,16 @@
     </LinkCell>
 {/snippet}
 
-<section aria-labelledby="ranking" class="flex flex-col gap-3">
-    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <h2 id="ranking" class="text-lg font-semibold">서버 순위</h2>
+<section aria-labelledby="ranking" class="panel min-w-0">
+    <div class="panel-bar">
+        <h2 id="ranking" class="text-base font-semibold">서버 순위</h2>
         {#if seasons.length}
             <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-                <span class="text-xs text-text-muted">포지션별 MMR</span>
+                <span class="text-xs text-muted">포지션별 MMR</span>
                 <SeasonSelector {seasons} {selectedSeasonId} />
             </div>
         {:else if ranking.ok && ranking.value}
-            <span class="text-xs text-text-muted">{ranking.value.seasonName} · 포지션별 MMR</span>
+            <span class="text-xs text-muted">{ranking.value.seasonName} · 포지션별 MMR</span>
         {/if}
     </div>
 
@@ -204,25 +204,25 @@
     {:else if !ranking.value}
         <SectionState state="empty" message="조회할 시즌의 순위가 아직 없어요" />
     {:else}
-        <div class="hex-panel overflow-hidden">
-            <div role="group" aria-label="포지션 선택" class="border-b border-brass-line px-1">
+        <div class="overflow-hidden rounded-b-(--radius-box)">
+            <div role="group" aria-label="포지션 선택" class="border-b border-line px-3 py-2">
                 <SelectionTabs
-                    labels={POSITIONS.map(({ text }) => ({ text }))}
+                    labels={POSITIONS.map(({ text }) => text)}
                     {active}
-                    onclickTab={selectPosition}
+                    onchange={selectPosition}
                 />
             </div>
             {#if board && board.entries.length}
                 <!-- 카드 안에서 스크롤하며 다음 순위를 불러온다. 페이지 전체 길이는 늘어나지 않는다. -->
                 <div bind:this={scroller} class="relative max-h-[26rem] overflow-y-auto overscroll-contain">
-                    <ul aria-label={`${position.text} 순위`} class="divide-y divide-brass-line">
+                    <ul aria-label={`${position.text} 순위`} class="divide-y divide-line">
                         {#each board.entries as entry (identityKey(entry))}
                             <li>{@render row(entry, false)}</li>
                         {/each}
                     </ul>
                     <div
                         bind:this={sentinel}
-                        class="px-3 py-3 text-center text-xs text-text-muted"
+                        class="px-3 py-3 text-center text-xs text-muted"
                         aria-live="polite"
                     >
                         {#if failed}
@@ -241,12 +241,12 @@
                     </div>
                 </div>
                 {#if pinnedMe}
-                    <div class="border-t border-brass-line">
+                    <div class="border-t border-line bg-selected">
                         {@render row(pinnedMe, false)}
                     </div>
                 {/if}
             {:else}
-                <p class="px-3 py-8 text-center text-sm text-text-muted">
+                <p class="px-3 py-8 text-center text-sm text-muted">
                     {position.text} 기록이 아직 없어요
                 </p>
             {/if}

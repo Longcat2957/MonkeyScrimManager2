@@ -31,15 +31,11 @@
     const rowOf = (lane: string) => LANES.indexOf(lane as (typeof LANES)[number]) + 1;
 </script>
 
-<aside aria-label={`${team.name} 시너지`} class="flex min-w-0 flex-col bg-bg-surface dark:bg-bg-surface-dark">
-    <p class={['flex items-center text-xs font-semibold opacity-70', compact ? 'px-3 py-3' : 'h-14 px-2']}>
+<aside aria-label={`${team.name} 시너지`} class="flex min-w-0 flex-col bg-surface">
+    <p class={['flex items-center text-xs font-semibold text-muted', compact ? 'px-3 py-2' : 'h-11 px-2']}>
         {team.name} 시너지
     </p>
-    <ol
-        class={compact
-            ? 'grid grid-cols-3 gap-2 px-3 pb-3'
-            : 'grid grid-rows-[repeat(5,4.75rem)] gap-1.5 px-2 pb-2'}
-    >
+    <ol class={compact ? 'grid grid-cols-3 gap-1 px-3 pb-3' : 'formation-lanes'}>
         {#each SYNERGY_PAIRS as [laneA, laneB] (`${laneA}-${laneB}`)}
             {@const a = at(laneA)}
             {@const b = at(laneB)}
@@ -48,9 +44,9 @@
             <li
                 style:grid-row={compact ? undefined : rowOf(laneA)}
                 class={[
-                    'flex flex-col justify-center gap-0.5 self-end rounded-(--radius-small) border px-2 py-1.5 text-center',
+                    'flex flex-col justify-center self-end rounded-(--radius-small) border px-1 py-0.5 text-center',
                     !record || !record.plays
-                        ? 'border-border'
+                        ? 'border-line'
                         : record.wins * 2 >= record.plays
                           ? 'border-success/40 bg-success/5'
                           : 'border-error/40 bg-error/5'

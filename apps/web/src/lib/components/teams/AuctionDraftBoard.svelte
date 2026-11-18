@@ -191,38 +191,35 @@
     class="auction-board flex w-full min-w-0 flex-col gap-2"
     style:--candidate-height={`${open ? candidateHeight : 0}px`}
 >
-    <div class="flex min-h-8 flex-wrap items-center justify-between gap-x-3">
+    <header class="page-head border-b border-line pb-2">
         <div class="flex shrink-0 items-center gap-2">
-            <h2 id="auction-board" class="text-base font-semibold">경매</h2>
+            <h2 id="auction-board" class="text-base font-bold">경매</h2>
             <StatusTag text={STATUS[auction.status].text} state={STATUS[auction.status].state} />
             {#if busy || refreshing}<Spinner />{/if}
         </div>
-        {@render refreshAction?.()}
-        {#if controls}
-            <!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 기존 경매 기록은 무효화해 보존한다. -->
-            <div class="-mr-3 flex flex-wrap justify-end">
-                <Button
-                    variant="quiet"
-                    size="auto"
-                    injClass="min-h-11 px-3 text-sm"
-                    disabled={busy}
-                    onclick={reopenSetup}>팀장 다시 정하기</Button
+        <div class="flex flex-wrap items-center gap-1">
+            {@render refreshAction?.()}
+            {#if controls}
+                <!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 기존 경매 기록은 무효화해 보존한다. -->
+                <Button variant="quiet" class="px-3 text-ui" disabled={busy} onclick={reopenSetup}
+                    >팀장 다시 정하기</Button
                 >
                 <ChangeMethodButton disabled={busy} />
-            </div>
-        {/if}
-    </div>
+            {/if}
+        </div>
+    </header>
 
     {#if controls && open}
-        <p class="text-sm text-text-muted">입찰가를 바꾸면 10초를 다시 세며, 낙찰·유찰은 직접 결정해요.</p>
+        <p class="text-ui text-muted">입찰가를 바꾸면 10초를 다시 세며, 낙찰·유찰은 직접 결정해요.</p>
     {/if}
 
     <!-- 작업판: 왼쪽 현재 매물·후보 현황, 오른쪽 팀 패널. 1px 경계로 붙는다. -->
     <div
         class={[
-            'hex-panel overflow-clip',
+            'panel overflow-clip xl:bg-line',
             live &&
-                'grid gap-px xl:h-[52rem] xl:grid-cols-[minmax(22rem,30rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto]'
+                'grid gap-px xl:grid-cols-[minmax(19rem,23rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto]',
+            live && (auction.teams.length > 2 ? 'xl:h-[52rem]' : 'xl:h-[clamp(32rem,70svh,40rem)]')
         ]}
     >
         {#if live}
@@ -230,10 +227,10 @@
                 <!-- 현재 매물 -->
                 <section
                     aria-labelledby="open-lot"
-                    class="contents xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:bg-bg-surface xl:dark:bg-bg-surface-dark"
+                    class="contents xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:bg-surface"
                 >
                     <div
-                        class="flex items-center justify-between gap-2 border-b border-border bg-bg-surface px-3 py-2 dark:bg-bg-surface-dark"
+                        class="flex flex-wrap items-center justify-between gap-1 border-b border-line bg-surface px-3 py-2"
                     >
                         <div class="flex items-center gap-2">
                             <h3 id="open-lot" class="text-base font-semibold">현재 매물</h3>
@@ -244,8 +241,7 @@
                             {#if controls && canRevert}
                                 <Button
                                     variant="quiet"
-                                    size="auto"
-                                    injClass="min-h-11 px-2 text-sm text-warning"
+                                    class="px-2 text-ui text-warning"
                                     disabled={busy}
                                     onclick={revert}>되돌리기</Button
                                 >
@@ -253,16 +249,14 @@
                             {#if open && profile}
                                 <Button
                                     variant={details ? 'secondary' : 'quiet'}
-                                    size="auto"
-                                    injClass="min-h-11 px-2 text-sm"
+                                    class="px-2 text-ui"
                                     onclick={() => (details = !details)}>상세보기</Button
                                 >
                             {/if}
                             {#if controls}
                                 <Button
-                                    variant="quiet"
-                                    size="auto"
-                                    injClass="min-h-11 px-2 text-sm"
+                                    variant={!open && auction.queue.length > 0 ? 'primary' : 'quiet'}
+                                    class="px-2 text-ui"
                                     disabled={busy || Boolean(open) || auction.queue.length === 0}
                                     onclick={draw}>다음 후보</Button
                                 >
@@ -271,7 +265,7 @@
                     </div>
 
                     <div
-                        class="contents xl:flex xl:min-h-0 xl:flex-1 xl:flex-col xl:gap-3 xl:overflow-y-auto xl:p-3"
+                        class="contents xl:flex xl:min-h-0 xl:flex-1 xl:flex-col xl:gap-2 xl:overflow-y-auto xl:p-2"
                     >
                         {#if open}
                             <!-- 운영자는 이 카드를 팀 패널로 끌어 가격 없이 배치할 수 있다. -->
@@ -281,26 +275,26 @@
                                 aria-label={`현재 매물 ${open.displayName}`}
                                 draggable={controls}
                                 class={[
-                                    'hex-panel sticky top-(--app-header-height) z-20 isolate mx-3 flex shrink-0 flex-col overflow-hidden px-4 py-3 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:py-5',
-                                    details ? 'gap-3' : 'justify-between gap-4 xl:min-h-[24rem] xl:gap-5',
+                                    'panel sticky top-(--app-header-height) z-20 isolate mx-2 flex shrink-0 flex-col overflow-hidden px-3 py-2 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:p-3',
+                                    details ? 'gap-2' : 'justify-between gap-2 xl:min-h-[15rem] xl:gap-3',
                                     controls && 'cursor-grab active:cursor-grabbing',
                                     drag.id === open.participantId
-                                        ? 'border-primary/60 bg-primary/10 opacity-70'
-                                        : 'border-primary/30 xl:bg-bg-highlight/30 xl:dark:bg-bg-highlight-dark/30'
+                                        ? 'border-nexus bg-selected opacity-70'
+                                        : 'border-line-strong bg-surface-2'
                                 ]}
                                 ondragstart={(event) => drag.start(event, open.participantId)}
                                 ondragend={() => drag.end()}
                             >
                                 {#if !details && mainLane}
                                     <span
-                                        class="pointer-events-none absolute top-5 right-5 opacity-15"
+                                        class="pointer-events-none absolute top-3 right-3 opacity-15"
                                         aria-hidden="true"
-                                        ><PositionIcon position={mainLane} size="lg" /></span
+                                        ><PositionIcon position={mainLane} size="md" /></span
                                     >
                                 {/if}
                                 <div class="flex items-start justify-between gap-3">
                                     <span
-                                        class="inline-flex items-center gap-1 border border-primary/25 bg-primary/10 px-2 py-1 text-sm font-semibold dark:border-dark/30 dark:bg-dark/15"
+                                        class="inline-flex items-center gap-1 rounded-sm border border-line px-1.5 py-0.5 text-xs font-semibold text-role-gold"
                                     >
                                         {#if mainLane}
                                             <PositionIcon position={mainLane} size="sm" />{open.positions
@@ -314,7 +308,7 @@
                                     </span>
                                     {#if profile?.riot?.tier}
                                         <span
-                                            class="border border-warning/30 bg-warning/10 px-2 py-1 text-sm font-semibold text-warning"
+                                            class="rounded-sm border border-line px-1.5 py-0.5 text-xs font-semibold text-role-gold"
                                             >{profile.riot.tier}</span
                                         >
                                     {/if}
@@ -325,29 +319,22 @@
                                         details ? 'flex-row' : 'xl:flex-col xl:text-center'
                                     ]}
                                 >
-                                    <PlayerFace name={open.displayName} imageUrl={open.iconUrl} size="lg" />
+                                    <PlayerFace name={open.displayName} imageUrl={open.iconUrl} size="md" />
                                     <div class="min-w-0">
-                                        <p
-                                            class={[
-                                                'text-xl wrap-anywhere font-semibold',
-                                                details ? 'xl:text-2xl' : 'xl:text-3xl'
-                                            ]}
-                                        >
+                                        <p class="text-lg font-bold wrap-anywhere xl:text-title">
                                             {open.displayName}
                                         </p>
-                                        <p class="mt-1 text-base font-semibold opacity-70 tabular-nums">
+                                        <p class="text-ui font-medium text-muted tabular-nums">
                                             MMR {formatMmr(mainLane ? open.mmr[mainLane] : null)}
                                         </p>
                                     </div>
                                 </div>
                                 {#if profile && !details && profile.summary.games}
-                                    <div class="grid grid-cols-3 gap-px bg-border">
+                                    <div class="grid grid-cols-3 gap-px bg-line">
                                         {#each [['승률', winRate(profile.summary.games, profile.summary.wins)], ['승패', `${profile.summary.wins}-${profile.summary.losses}`], [profile.recentChronologyKnown === false ? '표시 기록' : '최근', `${recentWins}승 ${profile.recentGames.length - recentWins}패`]] as [label, value] (label)}
-                                            <div
-                                                class="bg-bg-surface px-3 py-2 text-center dark:bg-bg-surface-dark"
-                                            >
-                                                <p class="text-[0.6875rem] opacity-60">{label}</p>
-                                                <p class="mt-1 text-base font-semibold">{value}</p>
+                                            <div class="bg-surface px-2 py-1 text-center">
+                                                <p class="text-micro text-muted">{label}</p>
+                                                <p class="text-ui font-semibold tabular-nums">{value}</p>
                                             </div>
                                         {/each}
                                     </div>
@@ -359,7 +346,7 @@
                                         seconds >= 7 ? 'success' : seconds >= 3 ? 'warning' : 'error'}
                                     <div
                                         aria-hidden="true"
-                                        class="relative h-7 w-full overflow-hidden rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark"
+                                        class="relative h-6 w-full overflow-hidden rounded-(--radius-small) bg-surface-hover"
                                     >
                                         <div
                                             class={[
@@ -374,7 +361,7 @@
                                         ></div>
                                         <span
                                             class={[
-                                                'absolute inset-y-0 right-0 flex items-center bg-bg-highlight px-3 text-sm font-bold tabular-nums dark:bg-bg-highlight-dark',
+                                                'absolute inset-y-0 right-0 flex items-center bg-surface-hover px-3 text-sm font-bold tabular-nums',
                                                 seconds > 0 && tone === 'error' && 'text-error'
                                             ]}>{seconds > 0 ? `${seconds}초` : '조정 시간 종료'}</span
                                         >
@@ -382,16 +369,16 @@
                                 {/if}
                             </div>
                             {#if details && profile}
-                                <div class="bg-bg-surface p-3 xl:contents dark:bg-bg-surface-dark">
+                                <div class="bg-surface p-3 xl:contents">
                                     <AuctionTargetProfile player={open} {profile} />
                                 </div>
                             {/if}
                         {:else}
                             <div
-                                class="hex-panel flex min-h-80 flex-1 flex-col items-center justify-center gap-1 border-dashed px-4 text-center"
+                                class="flex min-h-36 flex-1 flex-col items-center justify-center gap-1 border border-dashed border-line bg-surface px-4 py-4 text-center"
                             >
-                                <p class="font-semibold text-text-muted">후보 대기</p>
-                                <p class="text-sm text-text-muted">
+                                <p class="font-semibold text-muted">후보 대기</p>
+                                <p class="text-sm text-muted">
                                     {auction.queue.length
                                         ? controls
                                             ? '다음 후보를 뽑아 입찰을 시작해요'
@@ -405,11 +392,10 @@
                     </div>
                     {#if controls && open}
                         <!-- 유찰은 현재 매물 칸 하단에 고정해 카드 길이와 상관없이 같은 자리에 둔다. -->
-                        <div class="flex justify-end bg-bg-surface px-3 pb-3 dark:bg-bg-surface-dark">
+                        <div class="flex justify-end bg-surface px-3 pb-3">
                             <Button
                                 variant="quiet"
-                                size="auto"
-                                injClass="min-h-11 px-2 text-sm text-warning"
+                                class="px-2 text-ui text-warning"
                                 disabled={busy}
                                 onclick={() => run('pass')}>유찰</Button
                             >
@@ -443,7 +429,7 @@
             <!-- 후보 현황 -->
             <section
                 aria-labelledby="candidates"
-                class="flex flex-col gap-3 bg-bg-surface p-3 xl:col-start-1 xl:row-start-2 dark:bg-bg-surface-dark"
+                class="flex flex-col gap-2 bg-surface p-3 xl:col-start-1 xl:row-start-2"
             >
                 <div class="flex items-center justify-between">
                     <h3 id="candidates" class="text-base font-semibold">후보 현황</h3>
@@ -451,27 +437,27 @@
                         >{(open ? 1 : 0) + auction.queue.length + auction.unsold.length}명</span
                     >
                 </div>
-                <div class={['grid gap-1.5', controls ? 'sm:grid-cols-3' : 'grid-cols-1']}>
-                    <Button variant="secondary" size="full" onclick={() => (listOpen = true)}
+                <div class={['grid gap-1', controls ? 'sm:grid-cols-3' : 'grid-cols-1']}>
+                    <Button variant="secondary" class="w-full" onclick={() => (listOpen = true)}
                         >후보 목록</Button
                     >
                     {#if controls}
                         <Button
                             variant="secondary"
-                            size="full"
+                            class="w-full"
                             disabled={busy || auction.queue.length < 2}
                             onclick={() => run('shuffle')}>순서 섞기</Button
                         >
-                        <Button variant="danger" size="full" disabled={busy || !canReset} onclick={reset}
+                        <Button variant="danger" class="w-full" disabled={busy || !canReset} onclick={reset}
                             >초기화</Button
                         >
                     {/if}
                 </div>
-                <div class="grid grid-cols-3 gap-px bg-border text-center">
-                    {#each [['현재', open ? 1 : 0, 'text-primary dark:text-dark'], ['대기', auction.queue.length, ''], ['유찰 후보', auction.unsold.length, 'text-warning']] as [label, value, tone] (label)}
-                        <div class="bg-bg-surface p-2 dark:bg-bg-surface-dark">
-                            <p class="text-[0.6875rem] opacity-60">{label}</p>
-                            <p class={['mt-1 text-sm font-semibold tabular-nums', tone]}>{value}</p>
+                <div class="grid grid-cols-3 gap-px bg-line text-center">
+                    {#each [['현재', open ? 1 : 0, 'text-nexus'], ['대기', auction.queue.length, ''], ['유찰 후보', auction.unsold.length, 'text-warning']] as [label, value, tone] (label)}
+                        <div class="bg-surface px-2 py-1">
+                            <p class="text-micro text-muted">{label}</p>
+                            <p class={['text-ui font-semibold tabular-nums', tone]}>{value}</p>
                         </div>
                     {/each}
                 </div>
@@ -480,8 +466,8 @@
     </div>
 
     {#if stories.length}
-        <div class="hex-panel px-4 py-3" role="region" aria-label="경매 이야기">
-            <p class="text-xs font-semibold text-text-muted">경매 이야기</p>
+        <div class="panel px-3 py-2" role="region" aria-label="경매 이야기">
+            <p class="text-xs font-semibold text-muted">경매 이야기</p>
             <ul class="mt-1 flex flex-col gap-0.5 text-sm">
                 {#each stories as story (story)}<li>{story}</li>{/each}
             </ul>
@@ -489,20 +475,26 @@
     {/if}
 
     {#if auction.history.length}
-        <details class="hex-panel group">
+        <details class="panel group overflow-hidden">
             <summary
-                class="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 text-sm font-semibold marker:content-none"
+                class="flex min-h-9 cursor-pointer list-none items-center gap-2 px-3 text-ui font-semibold marker:content-none pointer-coarse:min-h-11"
             >
-                <span
+                <svg
                     aria-hidden="true"
-                    class="text-xs text-text-muted transition-transform group-open:rotate-90">▸</span
+                    viewBox="0 0 16 16"
+                    class="size-4 text-muted transition-transform group-open:rotate-90"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
                 >
+                    <path d="m6 4 4 4-4 4" />
+                </svg>
                 경매 기록 ({auction.history.length})
             </summary>
-            <div class="overflow-x-auto border-t border-brass-line px-4 pb-3">
-                <table class="w-full text-sm">
+            <div class="overflow-x-auto border-t border-line">
+                <table class="data-table">
                     <caption class="sr-only">경매 기록</caption>
-                    <thead class="text-xs opacity-70">
+                    <thead>
                         <tr>
                             <th scope="col" class="py-2 text-right font-medium">순서</th>
                             <th scope="col" class="px-3 py-2 text-left font-medium">후보</th>
@@ -513,7 +505,7 @@
                     </thead>
                     <tbody>
                         {#each auction.history as entry (entry.id)}
-                            <tr class={['border-t border-brass-line', entry.voided && 'opacity-50']}>
+                            <tr class={['border-t border-line', entry.voided && 'opacity-50']}>
                                 <td class="py-2 text-right tabular-nums">{entry.order}</td>
                                 <td class={['px-3 py-2', entry.voided && 'line-through']}
                                     >{entry.displayName}</td

@@ -2,7 +2,12 @@
 version: 1
 slug: "src-routes-g-guildid-scrims-scrimid-page-svelte"
 primary_target: "src/routes/g/[guildId]/scrims/[scrimId]/+page.svelte"
-related_targets: []
+related_targets:
+  - "src/routes/g/[guildId]/scrims/[scrimId]/manual/+page.svelte"
+  - "src/routes/g/[guildId]/scrims/[scrimId]/auction/+page.svelte"
+  - "src/routes/g/[guildId]/scrims/[scrimId]/bracket/+page.svelte"
+  - "src/routes/g/[guildId]/scrims/[scrimId]/result/+page.svelte"
+  - "src/routes/g/[guildId]/matches/[matchId]/+page.svelte"
 ---
 
 ## Direction contract
@@ -18,5 +23,7 @@ related_targets: []
 **FIRST VIEWPORT:** 왼쪽 224px 전술 레일(로고·Oxanium 워드마크·서버 선택·서버 메뉴 5종·하단 계정). 작업 영역은 우상단에서 옅게 번지는 시안 그라데이션 위에 제목 행(제목·모집 중·일정·2팀·하드 피어리스 각인·운영 메뉴), 이어지는 4칸 단계 바(현재 칸에 `모집 마감`), 그 아래 `1fr + 336px` 2열. 왼쪽은 5라인 전력 띠와 소환사 명부 표, 오른쪽은 편성 방식과 내 신청.
 
 **FORM:** 1번 소환사의 협곡 전술 상황판(`rift-tactical.html`). 사용자 재선택으로 3번에서 전환. seed:249c1bf3170b15dd
+
+수동 편성과 경매는 기존 배정 방식과 작업 순서를 유지한다. 새 매트릭스나 팀별 탭으로 바꾸지 않고, 명부 행·포지션·조작부의 크기와 여백을 기준 목업에 맞춘다.
 
 **FINISH:** unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

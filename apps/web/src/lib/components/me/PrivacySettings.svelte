@@ -5,7 +5,7 @@
     import type { MyPrivacy, PrivacyPreferences } from '#lib/features/me/privacy.ts';
     import SwitchCell from '#lib/components/common/SwitchCell.svelte';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     type Props = {
         privacy: MyPrivacy;
@@ -125,20 +125,20 @@
     };
 </script>
 
-<section aria-labelledby={`${id}-privacy`} class="flex flex-col gap-4">
-    <h2 id={`${id}-privacy`} class="text-lg font-semibold">공개 설정</h2>
+<section aria-labelledby={`${id}-privacy`} class="panel">
+    <h2 id={`${id}-privacy`} class="panel-bar font-bold">공개 설정</h2>
     <form
         method="POST"
         action={action('privacy')}
         use:enhance={save}
-        {@attach nonSubmitButtons}
+        {@attach preventComposingSubmit}
         aria-label="공개 설정 저장"
         aria-busy={busy === 'privacy'}
-        class="flex flex-col gap-4"
+        class="min-w-0"
     >
         <input type="hidden" name="publicProfile" value={String(publicProfile)} />
         <input type="hidden" name="publicRiotIds" value={String(publicRiotIds)} />
-        <fieldset disabled={locked} class="overflow-hidden rounded-(--radius-box) border border-border">
+        <fieldset disabled={locked} class="min-w-0">
             <legend class="sr-only">공개할 정보</legend>
             <SwitchCell
                 title="프로필 정보 공개"
@@ -149,29 +149,31 @@
             />
             <SwitchCell title="Riot ID 공개" bind:active={publicRiotIds} disabled={locked} />
         </fieldset>
-        <p class="text-sm leading-6 text-text-muted">
-            경기 결과·MMR은 계속 공개되며, 탈퇴해도 보존돼요. 서버 관리자는 계정 운영에 필요한 정보를 계속 볼
-            수 있어요.
-        </p>
-        {#if error}<p role="alert" class="text-sm text-error">{error}</p>{/if}
-        {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
-        <Button
-            variant="primary"
-            type="submit"
-            size="full"
-            injClass="min-h-12 text-base"
-            disabled={locked || !dirty}
-            loading={busy === 'privacy'}>공개 설정 저장</Button
-        >
+        <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line px-4 py-3">
+            <p class="min-w-[min(100%,16rem)] flex-1 text-ui text-muted">
+                경기 결과·MMR은 계속 공개되며, 탈퇴해도 보존돼요. 서버 관리자는 계정 운영에 필요한 정보를 계속
+                볼 수 있어요.
+            </p>
+            {#if error}<p role="alert" class="basis-full text-ui text-error">{error}</p>{/if}
+            {#if notice}<p role="status" class="basis-full text-ui text-success">{notice}</p>{/if}
+            <Button variant="primary" type="submit" disabled={locked || !dirty} loading={busy === 'privacy'}
+                >공개 설정 저장</Button
+            >
+        </div>
     </form>
 </section>
 
-<section aria-labelledby={`${id}-withdraw`} class="flex flex-col gap-4">
-    <h2 id={`${id}-withdraw`} class="text-lg font-semibold">서비스 탈퇴</h2>
-    {#if privacy.withdrawalBlock}<p class="text-sm leading-6 text-text-muted">
-            {privacy.withdrawalBlock}
-        </p>{/if}
-    {#if withdrawError}<p role="alert" class="text-sm text-error">{withdrawError}</p>{/if}
+<section
+    aria-labelledby={`${id}-withdraw`}
+    class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-1 py-3"
+>
+    <div class="min-w-[min(100%,12rem)] flex-1">
+        <h2 id={`${id}-withdraw`} class="text-sm font-semibold">서비스 탈퇴</h2>
+        {#if privacy.withdrawalBlock}<p class="mt-1 text-ui text-muted">
+                {privacy.withdrawalBlock}
+            </p>{/if}
+        {#if withdrawError}<p role="alert" class="text-ui text-error">{withdrawError}</p>{/if}
+    </div>
     <form
         method="POST"
         action={action('withdraw')}
@@ -183,8 +185,6 @@
         <Button
             variant="danger"
             type="submit"
-            size="auto"
-            injClass="min-h-12 px-4 text-base"
             disabled={locked || Boolean(privacy.withdrawalBlock)}
             loading={busy === 'withdraw'}>서비스 탈퇴</Button
         >

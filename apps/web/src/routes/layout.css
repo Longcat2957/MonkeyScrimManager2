@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-@custom-variant dark (&:where([data-mode=dark], [data-mode=dark] *):not(:where([data-mode=primary], [data-mode=primary] *):not([data-mode=dark], [data-mode=dark] *)));
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
 
 /* 소환사의 협곡 전술 상황판: 전장 슬레이트 · 넥서스 시안 · 포지션 금장.
  * 기준 목업은 apps/web/.impeccable/mocks/decision/rift-tactical.html이다.
@@ -10,47 +10,25 @@
         'Noto Sans KR', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-brand: 'Oxanium', 'Noto Sans KR', sans-serif;
 
-    /* 라이트: 전장 석회암 용지와 남청 잉크 */
-    --color-bg-base: #eaeff5;
-    --color-bg-surface: #ffffff;
-    --color-bg-overlay: #f2f6fa;
-    --color-bg-highlight: #e5edf5;
-    --color-bg-base-dark: #080c12;
-    --color-bg-surface-dark: #0e151f;
-    --color-bg-overlay-dark: #141e2c;
-    --color-bg-highlight-dark: #192638;
+    --text-title: 1.375rem;
+    --text-ui: 0.8125rem;
+    --text-micro: 0.6875rem;
 
-    --color-text-primary: #0b1420;
-    --color-text-dark: #eaf2fa;
-    --color-text-muted: #4b5f75;
-    --color-text-on-primary: #ffffff;
-    --color-text-on-dark: #041017;
-
-    --color-border: #cfdbe7;
-    --color-border-strong: #687e96;
-
-    --color-primary: #007396;
-    --color-primary-50: #eaf6f9;
-    --color-primary-100: #cbe9f0;
-    --color-primary-200: #9ad3e0;
-    --color-primary-300: #63b8cc;
-    --color-primary-400: #2f97b1;
-    --color-primary-500: #0b7c97;
-    --color-primary-700: #005f7c;
-    --color-primary-800: #004b63;
-    --color-primary-900: #003b4f;
-    --color-primary-950: #002a38;
-    --color-dark: #0b1420;
-    --color-dark-500: #192638;
-    --color-dark-700: #33ddff;
-
-    /* 협곡 전술 확장 토큰 */
-    --color-brass: #8c6622;
-    --color-brass-line: #cfdbe7;
-    --color-crown: #dfe7f0;
-    --color-hex: #007396;
-    --color-hex-hover: #005f7c;
-    --color-hex-ink: #ffffff;
+    /* 표면과 잉크는 현재 테마에서 같은 역할을 유지한다. */
+    --color-ground: #eaeff5;
+    --color-rail: #dfe7f0;
+    --color-surface: #ffffff;
+    --color-surface-2: #f2f6fa;
+    --color-surface-hover: #e5edf5;
+    --color-selected: #dff1f8;
+    --color-line: #cfdbe7;
+    --color-line-strong: #687e96;
+    --color-ink: #0b1420;
+    --color-ink-2: #24364b;
+    --color-muted: #4b5f75;
+    --color-nexus: #007396;
+    --color-nexus-hover: #005f7c;
+    --color-nexus-ink: #ffffff;
     --color-role-gold: #8c6622;
     --color-role-dim: rgb(140 102 34 / 30%);
 
@@ -72,30 +50,39 @@
 @layer base {
     html {
         --app-header-height: 3.375rem;
-        --app-header-width: 96rem;
-        --app-content-width: 84rem;
+        font-size: 100%;
+        font-variant-numeric: tabular-nums;
+        accent-color: var(--color-nexus);
+        scrollbar-color: var(--color-line-strong) var(--color-ground);
         font-family: var(--font-sans);
         color-scheme: light;
         scroll-padding-top: calc(var(--app-header-height) + 1rem);
         word-break: keep-all;
         overflow-wrap: anywhere;
-        @apply bg-bg-base text-text-primary dark:bg-bg-base-dark dark:text-text-dark;
+        @apply bg-ground text-ink;
     }
 
-    html[data-mode='dark'] {
-        --color-text-muted: #8ea4be;
-        --color-border: #1f2e42;
-        --color-border-strong: #3c5470;
-        --color-primary: #00d4ff;
-        --color-primary-700: #33ddff;
-        --color-brass: #d4b375;
-        --color-brass-line: #1f2e42;
-        --color-crown: #05080d;
-        --color-hex: #00d4ff;
-        --color-hex-hover: #33ddff;
-        --color-hex-ink: #041017;
-        --color-dark: #00d4ff;
-        --color-dark-500: #33ddff;
+    body {
+        font-size: var(--text-sm);
+        line-height: 1.45;
+    }
+
+    html[data-mode='dark'],
+    .inverse-surface {
+        --color-ground: #080c12;
+        --color-rail: #05080d;
+        --color-surface: #0e151f;
+        --color-surface-2: #141e2c;
+        --color-surface-hover: #192638;
+        --color-selected: #132a3a;
+        --color-line: #1f2e42;
+        --color-line-strong: #59718b;
+        --color-ink: #eaf2fa;
+        --color-ink-2: #c3d3e4;
+        --color-muted: #8ea4be;
+        --color-nexus: #00d4ff;
+        --color-nexus-hover: #33ddff;
+        --color-nexus-ink: #041017;
         --color-role-gold: #d4b375;
         --color-role-dim: rgb(212 179 117 / 35%);
         --color-success: #2ce59b;
@@ -110,23 +97,44 @@
         color-scheme: dark;
     }
 
-    html[data-mode='dark'],
-    .inverse-surface {
-        --color-success: #2ce59b;
-        --color-warning: #f5b841;
-        --color-error: #ff647d;
-        --color-info: #5eb4ff;
+    ::selection {
+        color: var(--color-nexus-ink);
+        background: var(--color-nexus);
     }
 }
 
 @layer components {
-    .hex-panel {
-        background: var(--color-bg-surface);
-        border: 1px solid var(--color-brass-line);
-        border-radius: var(--radius-box);
+    .panel {
+        @apply min-w-0 rounded-box border border-line bg-surface;
     }
-    html[data-mode='dark'] .hex-panel {
-        background: var(--color-bg-surface-dark);
+
+    .page-head,
+    .panel-bar {
+        @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-2;
+    }
+
+    .panel-bar {
+        @apply border-b border-line px-4 py-2.5;
+    }
+
+    .data-table {
+        @apply w-full border-collapse text-left text-sm;
+    }
+
+    .data-table thead {
+        @apply bg-surface-2 text-xs text-muted;
+    }
+
+    .data-table :is(th, td) {
+        @apply px-3 py-2;
+    }
+
+    .data-table tbody tr {
+        @apply h-[2.875rem] border-t border-line;
+    }
+
+    .data-table tbody tr:hover {
+        @apply bg-surface-hover;
     }
 
     /* 목업의 작업 영역처럼 우상단에서 옅게 번지는 넥서스 시안. */
@@ -134,35 +142,24 @@
         background:
             radial-gradient(
                 circle at 82% 8%,
-                color-mix(in oklab, var(--color-hex) 16%, transparent),
+                color-mix(in oklab, var(--color-nexus) 16%, transparent),
                 transparent 36%
             ),
-            var(--color-bg-base);
+            var(--color-ground);
     }
     html[data-mode='dark'] .app-main {
         background:
             radial-gradient(
                 circle at 82% 8%,
-                color-mix(in oklab, var(--color-hex) 22%, transparent),
+                color-mix(in oklab, var(--color-nexus) 22%, transparent),
                 transparent 36%
             ),
-            var(--color-bg-base-dark);
-    }
-
-    .app-frame {
-        width: min(calc(100% - 3rem), var(--app-content-width));
-        margin-inline: auto;
-        border-inline: 1px solid var(--color-border);
-    }
-
-    @media (width < 48rem) {
-        .app-frame {
-            width: calc(100% - 0.5rem);
-        }
+            var(--color-ground);
     }
 
     .doc {
         max-width: 48rem;
+        font-size: var(--text-base);
         line-height: 1.75;
     }
     .doc h1 {
@@ -198,13 +195,13 @@
 
 @layer base {
     :focus-visible {
-        outline: 2px solid currentColor;
+        outline: 2px solid var(--color-nexus);
         outline-offset: 2px;
     }
 
     input::placeholder,
     textarea::placeholder {
-        color: var(--color-text-muted);
+        color: var(--color-muted);
         opacity: 1;
     }
 }

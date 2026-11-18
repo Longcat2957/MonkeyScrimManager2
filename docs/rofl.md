@@ -134,19 +134,7 @@ UTF-8, JSON, `statsJson` 참가자 배열을 검증하고, 요약 함수가 추�
 
 `apps/web/tests/rofl*.test.ts`는 직접 만든 합성 파일로 메타데이터, 두 청크 헤더,
 Zstd 손상·크기 제한, 패킷 플래그 조합·부호 있는 증분·잘린 본문을 검사한다.
-실제 파일은 [공개 16.5 ROFL2 샘플](https://github.com/Danmoreng/league-replay-analyzer/blob/955974a68adc0d08b26cca7d4e9411d6219d786c/replays/EUW1-7779216102.rofl)로 별도 확인했다.
-공개 `16.5.752.7101` 파일의 98개 청크·1,674,057개 패킷과
-사용자 `16.21.829.8620` 파일의 697개 청크·1,795,343개 패킷을 끝까지 읽었다.
-두 파일의 10명 참가자 요약·원본 메타데이터 보존도 확인했다.
-실제 파일과 참가자 데이터는 저장소에 넣지 않으며, 로컬 파일과 분석 결과는 `samples/`에 보관한다.
-
-파일 구조와 필드 의미는 [ROFL-X의 포맷 조사](https://github.com/Toastaspiring/ROFL-X/blob/88954be66da506f188fbd134944fdfd8334ad846/docs/ROFL_FORMAT.md),
-[RoflLens 컨테이너 파서](https://github.com/ss26367098/rofllens/blob/62a475a8f05e7dfa94df5990758be2156c892496/src/rofllens/container.py),
-[roflxd.cs 메타데이터 모델](https://github.com/fraxiinus/roflxd.cs/blob/9921136947155ed7a162738d20e6107070813e1c/Rofl.Extract.Data/Models/Rofl2/PlayerStats2.cs)을 참고했다.
-Riot이 공개한 바이너리 표준으로 간주하지 않으며 새 패치의 실제 파일로 호환성을 확인해야 한다.
-
-구조 차이·실측 수치·미확정 사항·후속 연구 순서는 [ROFL 연구 기록](rofl-research.md)에 정리한다.
-다음 연구는 보존한 패킷의 분포와 종료 통계를 비교하고, 같은 빌드의 다른 ROFL에서 의미 가설을 검증하는 것이다.
+두 실제 빌드에서 확인한 경계, 원시 바이트와 패킷 인덱스의 대조 결과, 해석하지 못한 값은 [ROFL 연구 기록](rofl-research.md)에 있다. 같은 빌드의 다른 경기에서도 가설을 검증하기 전에는 패킷 ID를 특정 행동으로 해석하지 않는다. 공개 구현은 Riot의 공식 바이너리 규격이 아니며 새 패치의 호환성은 실제 표본으로 확인한다.
 실제 서버의 경기 상세 `upload` action은 권한·확정 라인업·Riot 계정·팀·포지션을 검증한 뒤
 ROFL 선별 자료·Game·실출전·MMR·승자 진출·게시 예약을 같은 DB 트랜잭션에 저장한다.
 명시적 개발 샘플 경로만 `projectRoflGame`과 메모리 저장소를 사용한다.

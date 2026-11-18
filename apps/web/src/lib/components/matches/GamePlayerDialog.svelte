@@ -50,26 +50,26 @@
 
 <Dialog bind:open title="선수 상세">
     {#if player}
-        <div class="flex flex-col gap-5">
-            <header class="flex items-center gap-3">
+        <div class="flex flex-col gap-4">
+            <header class="flex items-center gap-3 border-b border-line pb-3">
                 {#if player.champion.iconUrl}<img
                         src={player.champion.iconUrl}
                         alt=""
-                        class="size-12 rounded-(--radius-form)"
+                        class="size-10 rounded-(--radius-form)"
                     />{/if}
                 <div class="flex min-w-0 flex-1 flex-col">
                     <h3 class="text-base font-semibold break-words">{player.displayName}</h3>
-                    <span class="truncate text-sm text-text-muted"
+                    <span class="break-words text-ui text-muted"
                         >{player.champion.name}{player.level !== null ? ` · 레벨 ${player.level}` : ''}</span
                     >
                 </div>
             </header>
-            <section class="flex flex-col gap-2">
-                <h4 class="text-xs font-semibold text-text-muted">최종 세팅</h4>
-                <ul class="flex flex-col gap-1.5 text-sm">
+            <section>
+                <h4 class="mb-1 text-sm font-bold">최종 세팅</h4>
+                <ul class="divide-y divide-line text-ui">
                     {#each [['주문', player.spells], ['룬', [player.keystone, player.secondaryStyle]], ['아이템', player.items.filter(Boolean)]] as const as [label, icons] (label)}
-                        <li class="flex items-start gap-3">
-                            <span class="w-12 shrink-0 pt-1 text-text-muted">{label}</span>
+                        <li class="flex items-start gap-2 py-2">
+                            <span class="w-10 shrink-0 text-muted">{label}</span>
                             <span class="flex flex-wrap gap-x-3 gap-y-1.5">
                                 {#each icons as icon, index (index)}
                                     <span class="flex items-center gap-1.5"
@@ -83,12 +83,12 @@
                     {/each}
                 </ul>
             </section>
-            <section class="flex flex-col gap-2">
-                <h4 class="text-xs font-semibold text-text-muted">세부 지표</h4>
-                <dl class="divide-y divide-brass-line text-sm">
+            <section>
+                <h4 class="mb-1 text-sm font-bold">세부 지표</h4>
+                <dl class="divide-y divide-line border-t border-line text-ui">
                     {#each rows as [label, value] (label)}
                         <div class="flex justify-between gap-4 py-2">
-                            <dt class="text-text-muted">{label}</dt>
+                            <dt class="text-muted">{label}</dt>
                             <dd class="text-right font-semibold tabular-nums">{value}</dd>
                         </div>
                     {/each}

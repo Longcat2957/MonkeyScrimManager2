@@ -24,29 +24,26 @@
     });
 </script>
 
-<div class="flex min-w-0 flex-col gap-2">
+<div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
     <div role="group" aria-label="통계 갱신" class="flex flex-wrap items-center gap-2">
         <button
             type="button"
             role="switch"
             aria-checked={automatic}
-            class="inline-flex min-h-11 items-center gap-2 rounded-(--radius-form) border border-brass-line px-3 text-sm font-semibold text-text-primary hover:bg-bg-highlight dark:text-text-dark dark:hover:bg-bg-highlight-dark"
+            class="inline-flex min-h-9 items-center gap-2 rounded-(--radius-form) border border-line bg-surface px-3 text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
             onclick={() => onautomatic(!automatic)}
         >
-            자동 갱신<span aria-hidden="true" class="text-xs text-text-muted"
-                >{automatic ? '켜짐' : '꺼짐'}</span
-            >
+            자동 갱신<span aria-hidden="true" class="text-xs text-muted">{automatic ? '켜짐' : '꺼짐'}</span>
         </button>
         <Button
             variant="secondary"
-            size="auto"
-            injClass="min-h-11 px-3 text-sm"
+            class="px-3 text-ui"
             disabled={state.busy || !online || moving}
             loading={state.busy}
             onclick={() => void onrefresh()}>새로고침</Button
         >
     </div>
-    <p class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-text-muted">
+    <p class="flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted">
         {#if updatedAt !== null}<span
                 >화면 갱신 <time datetime={new Date(updatedAt).toISOString()} class="tabular-nums"
                     >{time.format(new Date(updatedAt))}</time
@@ -54,5 +51,5 @@
             >{/if}
         {#if automatic && online && !state.error}<span>30초 간격</span>{/if}
     </p>
-    <p role="status" class={['text-sm', state.error ? 'text-error' : 'text-text-muted']}>{message}</p>
+    <p role="status" class={['text-ui', state.error ? 'text-error' : 'text-muted']}>{message}</p>
 </div>

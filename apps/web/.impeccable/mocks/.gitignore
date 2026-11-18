@@ -1,0 +1,5 @@
+# 확정된 디자인 기준만 보관하고 나머지 로컬 시안은 제외한다.
+*
+!/.gitignore
+!/decision/
+!/decision/rift-tactical.html

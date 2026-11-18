@@ -100,8 +100,8 @@
 <svelte:window {onkeydown} />
 
 {#if !bracket}
-    <section aria-labelledby="bracket-board" class="flex flex-col gap-4">
-        <h2 id="bracket-board" class="text-xl font-semibold">{title}</h2>
+    <section aria-labelledby="bracket-board" class="flex flex-col gap-3">
+        <h2 id="bracket-board" class="text-lg font-bold">{title}</h2>
         <SectionState state="empty" message={emptyMessage} />
     </section>
 {:else}
@@ -109,15 +109,13 @@
     <section
         aria-labelledby="bracket-board"
         aria-busy={busy}
-        class="bracket-board hex-panel w-full min-w-0 overflow-clip bg-brass-line"
+        class="bracket-board panel @container w-full min-w-0 overflow-clip"
         style:--selection-height={`${selectedId ? selectionHeight : 0}px`}
     >
-        <div
-            class="flex flex-col gap-2 bg-bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between dark:bg-bg-surface-dark"
-        >
-            <div class="flex min-w-0 flex-col">
+        <div class="panel-bar">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
                 <div class="flex items-center gap-2">
-                    <h2 id="bracket-board" class="text-xl font-semibold">{title}</h2>
+                    <h2 id="bracket-board" class="text-lg font-bold">{title}</h2>
                     {#if bracket.confirmed && bracket.can.unlock}<StatusTag
                             text="확정"
                             state="success"
@@ -125,7 +123,7 @@
                     {#if busy}<Spinner label="대진 처리 중" />{/if}
                 </div>
                 {#if editing}
-                    <p class="text-sm text-text-muted tabular-nums">{placed}/{seats.length} 배치</p>
+                    <p class="text-ui text-muted tabular-nums">{placed}/{seats.length} 배치</p>
                 {/if}
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
@@ -133,29 +131,25 @@
                     <Button
                         variant="quiet"
                         size="sm"
-                        injClass="min-h-11"
+                        class="min-h-11"
                         disabled={busy || placed === 0}
                         onclick={reset}>초기화</Button
                     >
                     <Button
                         variant="primary"
                         size="sm"
-                        injClass="min-h-11 px-4"
+                        class="min-h-11 px-4"
                         disabled={busy || pool.length > 0}
                         onclick={confirmBracket}>대진 확정·내전 시작</Button
                     >
                 {:else if bracket.can.unlock}
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        injClass="min-h-11 px-4"
-                        disabled={busy}
-                        onclick={start}>내전 시작</Button
+                    <Button variant="primary" size="sm" class="min-h-11 px-4" disabled={busy} onclick={start}
+                        >내전 시작</Button
                     >
                     <Button
                         variant="secondary"
                         size="sm"
-                        injClass="min-h-11 px-4"
+                        class="min-h-11 px-4"
                         disabled={busy}
                         onclick={() => run('unlock')}>다시 편성</Button
                     >
@@ -166,42 +160,52 @@
         {#if editing && selectedId}
             <p
                 bind:clientHeight={selectionHeight}
-                class="sticky top-(--app-header-height) z-20 flex min-h-10 items-center gap-2 border-b border-brass-line bg-bg-surface px-4 py-1 text-sm dark:bg-bg-surface-dark"
+                class="sticky top-(--app-header-height) z-20 flex min-h-11 items-center gap-3 border-b border-line bg-selected px-4 py-1.5 text-ui lg:top-0"
                 aria-live="polite"
             >
                 <span class="min-w-0 flex-1">
                     <strong>{selectedName}</strong> 선택됨
-                    <span class="block text-xs text-text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
+                    <span class="block text-xs text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
                 </span>
                 <Button
                     variant="quiet"
                     size="sm"
-                    injClass="min-h-11 shrink-0 px-2"
+                    class="min-h-11 shrink-0 px-2"
                     onclick={() => (selectedId = null)}>선택 취소</Button
                 >
             </p>
         {:else if editing && pool.length}
-            <p class="bg-bg-surface px-4 pb-3 text-sm text-text-muted dark:bg-bg-surface-dark">
+            <p class="border-b border-line px-4 py-2 text-ui text-muted">
                 팀을 고른 뒤 대진의 빈 자리를 눌러 배치하세요.
             </p>
         {/if}
 
-        <div class={['grid gap-px pt-px', editing && 'lg:grid-cols-[18rem_minmax(0,1fr)]']}>
+        <div
+            class={[
+                'grid gap-px bg-line',
+                editing && '@min-[48rem]:grid-cols-[minmax(12rem,1fr)_minmax(0,3fr)]'
+            ]}
+        >
             {#if editing}
                 <!-- 팀 풀: 끌어서 자리에 놓거나 누른 뒤 자리를 누른다. 배치된 팀을 여기로 끌면 배치 해제다. -->
                 <section
                     aria-labelledby="bracket-pool"
                     class={[
-                        'flex flex-col bg-bg-surface transition dark:bg-bg-surface-dark',
-                        drag.over === 'pool' && 'ring-2 ring-hex/40 ring-inset'
+                        'flex min-w-0 flex-col bg-surface transition',
+                        drag.over === 'pool' && 'ring-2 ring-nexus/40 ring-inset'
                     ]}
                     ondragover={(event) => drag.enter(event, 'pool')}
                     ondragleave={() => drag.leave('pool')}
                     ondrop={(event) => drag.drop(event, 'pool')}
                 >
-                    <h3 id="bracket-pool" class="px-3 py-2.5 text-sm font-semibold">배치할 팀</h3>
+                    <h3
+                        id="bracket-pool"
+                        class="border-b border-line bg-surface-2 px-4 py-2 text-ui font-bold"
+                    >
+                        배치할 팀
+                    </h3>
                     {#if pool.length}
-                        <ul class="flex flex-col gap-1.5 px-2 pb-2">
+                        <ul class="divide-y divide-line">
                             {#each pool as team (team.id)}
                                 <li>
                                     <button
@@ -210,11 +214,11 @@
                                         disabled={busy}
                                         aria-pressed={selectedId === team.id}
                                         class={[
-                                            'flex min-h-14 w-full cursor-grab items-center rounded-(--radius-small) border px-3 py-2 active:cursor-grabbing',
+                                            'flex min-h-12 w-full cursor-grab items-center px-4 py-2 active:cursor-grabbing',
                                             drag.id === team.id && 'opacity-50',
                                             selectedId === team.id
-                                                ? 'border-hex bg-hex/10 ring-2 ring-hex/30'
-                                                : 'border-warning/20 bg-warning/5 hover:border-warning/40 hover:bg-warning/10'
+                                                ? 'bg-selected text-nexus ring-1 ring-inset ring-nexus'
+                                                : 'hover:bg-surface-hover'
                                         ]}
                                         ondragstart={(event) => drag.start(event, team.id)}
                                         ondragend={() => drag.end()}
@@ -226,21 +230,26 @@
                             {/each}
                         </ul>
                     {:else}
-                        <p class="px-3 pb-5 text-center text-sm text-text-muted">모든 팀을 배치했어요</p>
+                        <p class="px-4 py-4 text-ui text-muted">모든 팀을 배치했어요</p>
                     {/if}
                 </section>
             {/if}
 
             <!-- 라운드 열: 준결승 → 결승. 좁은 화면에서는 세로로 쌓는다. -->
-            <div class="bg-bg-surface dark:bg-bg-surface-dark">
-                <div class={['grid gap-6 p-4', stages.length > 1 ? 'md:grid-cols-2' : 'max-w-xl']}>
+            <div class="min-w-0 bg-ground">
+                <div
+                    class={[
+                        'grid gap-4 p-3 sm:p-4',
+                        stages.length > 1 ? '@min-[38rem]:grid-cols-2' : 'max-w-2xl'
+                    ]}
+                >
                     {#each stages as { stage, matches } (stage)}
                         {@const bestOf = bracket.bestOf[stage as BracketStage]!}
-                        <section aria-labelledby={`stage-${stage}`} class="flex min-w-0 flex-col gap-3">
+                        <section aria-labelledby={`stage-${stage}`} class="flex min-w-0 flex-col gap-2">
                             <header
-                                class="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-brass-line pb-2"
+                                class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line-strong pb-2"
                             >
-                                <h3 id={`stage-${stage}`} class="font-semibold">{STAGE_LABEL[stage]}</h3>
+                                <h3 id={`stage-${stage}`} class="text-sm font-bold">{STAGE_LABEL[stage]}</h3>
                                 {#if editing}
                                     <BracketFormatControl
                                         label={STAGE_LABEL[stage]}
@@ -250,10 +259,10 @@
                                             void (await run('bestOf', { stage, bestOf: String(value) }))}
                                     />
                                 {:else}
-                                    <span class="text-xs text-text-muted">{bestOfLabel(bestOf)}</span>
+                                    <span class="text-xs text-muted">{bestOfLabel(bestOf)}</span>
                                 {/if}
                             </header>
-                            <div class="flex flex-1 flex-col justify-around gap-4">
+                            <div class="flex flex-1 flex-col justify-around gap-3">
                                 {#each matches as match (match.key)}
                                     <BracketMatchBox
                                         {match}

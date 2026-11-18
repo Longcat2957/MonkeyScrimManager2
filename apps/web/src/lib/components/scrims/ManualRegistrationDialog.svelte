@@ -178,11 +178,8 @@
 </script>
 
 <!-- 추가 중에는 닫기·Escape·바깥 클릭을 막고, 끝나면 네이티브 dialog가 이전 포커스로 돌려보낸다. -->
-<Dialog bind:open title="참가자 추가" dismissible={false}>
-    <div class="flex flex-col gap-4" {@attach escapeClose}>
-        <div class="flex justify-end">
-            <Button variant="quiet" type="button" size="sm" disabled={adding} onclick={close}>닫기</Button>
-        </div>
+<Dialog bind:open title="참가자 추가" dismissible={false} oncancel={close}>
+    <div class="flex flex-col gap-3">
         <form
             method="POST"
             action="?/participantOptions"
@@ -202,11 +199,9 @@
                     disabled={busy}
                 />
             </div>
-            <Button variant="secondary" type="submit" injClass="shrink-0" disabled={busy} {loading}
-                >검색</Button
-            >
+            <Button variant="secondary" type="submit" class="shrink-0" disabled={busy} {loading}>검색</Button>
         </form>
-        <p class="text-sm text-text-muted">
+        <p class="text-xs text-muted">
             Riot 계정이 있으면 대표 계정을 사용하고, 희망 포지션은 무관으로 추가해요.
         </p>
         {#if loading}
@@ -216,12 +211,15 @@
             <section bind:this={feedback} tabindex="-1" aria-label="참가자 추가 결과" class="text-sm">
                 {#if error}<p role="alert" class="text-error">{error}</p>{/if}
                 {#if results.length}
-                    <ul aria-label="추가 결과" class="space-y-2">
+                    <ul
+                        aria-label="추가 결과"
+                        class="divide-y divide-line rounded-form border border-line bg-surface-2"
+                    >
                         {#each results as { member, result } (member.userId)}
-                            <li>
+                            <li class="flex flex-wrap items-baseline gap-x-2 px-3 py-2 text-ui">
                                 <span class="font-medium wrap-anywhere">{member.displayName}</span>
                                 {#if member.username !== member.displayName}
-                                    <span class="text-text-muted">
+                                    <span class="text-muted">
                                         ({member.username ? `@${member.username}` : member.userId})</span
                                     >
                                 {/if}
@@ -240,21 +238,21 @@
         {/if}
         {#if options.members.length}
             <fieldset disabled={busy || refreshRequired} aria-label="추가할 서버 멤버">
-                <ul data-member-options class="divide-y divide-brass-line">
+                <ul data-member-options class="divide-y divide-line border-y border-line">
                     {#each options.members as member (member.userId)}
                         <li>
                             <!-- 행 전체가 하나의 체크박스 조작 영역이다. -->
                             <label
                                 class={[
-                                    'flex min-h-16 w-full items-start gap-3 py-3',
+                                    'flex min-h-11 w-full items-center gap-3 px-2.5 py-2',
                                     joined.has(member.userId) || busy || refreshRequired
-                                        ? 'cursor-not-allowed opacity-45'
-                                        : 'cursor-pointer'
+                                        ? 'cursor-not-allowed opacity-60'
+                                        : 'cursor-pointer hover:bg-surface-hover has-checked:bg-selected'
                                 ]}
                             >
                                 <input
                                     type="checkbox"
-                                    class="mt-1 size-4 shrink-0 accent-[var(--color-hex)]"
+                                    class="size-4 shrink-0 accent-[var(--color-nexus)]"
                                     checked={pending.some((value) => value.userId === member.userId)}
                                     aria-checked={pending.some((value) => value.userId === member.userId)}
                                     disabled={busy || refreshRequired || joined.has(member.userId)}
@@ -266,18 +264,17 @@
                                         );
                                     }}
                                 />
-                                <span class="block min-w-0 text-left">
-                                    <span class="block font-medium wrap-anywhere">{member.displayName}</span>
+                                <span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 text-left">
+                                    <span class="font-semibold wrap-anywhere">{member.displayName}</span>
                                     {#if member.username && member.username !== member.displayName}
-                                        <span class="block text-sm text-text-muted wrap-anywhere"
+                                        <span class="text-xs text-muted wrap-anywhere"
                                             >@{member.username}</span
                                         >
                                     {/if}
-                                    {#if !member.username}<span
-                                            class="block text-sm text-text-muted wrap-anywhere"
+                                    {#if !member.username}<span class="text-xs text-muted wrap-anywhere"
                                             >{member.userId}</span
                                         >{/if}
-                                    {#if joined.has(member.userId)}<span class="block text-sm text-text-muted"
+                                    {#if joined.has(member.userId)}<span class="ml-auto text-xs text-muted"
                                             >참가 중</span
                                         >{/if}
                                 </span>
@@ -287,7 +284,7 @@
                 </ul>
             </fieldset>
         {:else if !loading && !error}
-            <p class="py-6 text-center text-sm text-text-muted">
+            <p class="py-6 text-center text-sm text-muted">
                 {appliedQuery
                     ? `'${appliedQuery}'에 맞는 멤버가 없어요`
                     : '등록된 서버 멤버가 없어요. Discord에서 /초기설정을 실행해 주세요.'}
@@ -307,13 +304,15 @@
     </div>
 
     {#snippet footer()}
-        <Button
-            variant="primary"
-            type="button"
-            size="full"
-            disabled={busy || (!refreshRequired && !pending.length)}
-            loading={adding}
-            onclick={submit}>{submitText}</Button
-        >
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="quiet" type="button" disabled={adding} onclick={close}>닫기</Button>
+            <Button
+                variant="primary"
+                type="button"
+                disabled={busy || (!refreshRequired && !pending.length)}
+                loading={adding}
+                onclick={submit}>{submitText}</Button
+            >
+        </div>
     {/snippet}
 </Dialog>

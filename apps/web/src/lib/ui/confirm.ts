@@ -17,7 +17,7 @@ export function settleConfirmation(confirmed: boolean) {
     resolve?.(confirmed);
 }
 
-/** 기존 호출부의 Promise 계약을 유지하며 STDF Dialog 호스트에 확인을 요청한다. */
+/** 공통 확인창을 열고 사용자가 고른 결과를 반환한다. */
 export function confirm(content: string, title = '확인'): Promise<boolean> {
     // 이미 열린 확인창의 요청을 덮어쓰거나 서버 렌더링 중 공유 상태를 만들지 않는다.
     if (typeof document === 'undefined' || resolvePending) return Promise.resolve(false);

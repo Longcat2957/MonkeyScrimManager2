@@ -7,11 +7,11 @@
     let { groups }: { groups: GuildRiotAccounts[] } = $props();
 </script>
 
-<section aria-labelledby="riot-accounts" class="flex flex-col gap-3">
-    <div class="flex flex-col gap-1">
-        <h2 id="riot-accounts" class="text-lg font-semibold">Riot 계정</h2>
+<section aria-labelledby="riot-accounts">
+    <div class="px-4 py-3">
+        <h2 id="riot-accounts" class="font-bold">Riot 계정</h2>
         {#if groups.length}
-            <p class="text-sm opacity-70">
+            <p class="mt-1 text-ui text-muted">
                 서버별로 연결된 계정이에요. 계정 수정이나 대표 계정 변경은 해당 서버 운영자에게 요청해 주세요.
             </p>
         {/if}
@@ -19,18 +19,19 @@
 
     {#if groups.length}
         {#each groups as group (group.guildId)}
-            <div class="flex flex-col gap-2">
-                <h3 class="font-semibold">{group.guildName}</h3>
+            <div class="min-w-0">
+                <h3 class="border-y border-line bg-surface-2 px-4 py-1.5 text-ui font-semibold wrap-anywhere">
+                    {group.guildName}
+                </h3>
                 <!-- 동작이 없는 목록이라 Cell(버튼) 대신 같은 모양의 목록으로 둔다. -->
-                <ul
-                    class="divide-y divide-text-primary/5 rounded-(--radius-box) bg-bg-surface dark:divide-text-dark/5 dark:bg-bg-surface-dark"
-                >
+                <ul class="divide-y divide-line">
                     {#each group.riotAccounts as account (account.id)}
-                        <li class="flex items-center justify-between gap-4 px-3 py-4">
-                            <span class="flex min-w-0 flex-col">
-                                <span class="font-medium">{account.gameName}</span>
-                                <span class="text-xs opacity-60"
-                                    >#{account.tagLine} · {account.region} 서버</span
+                        <li class="flex min-h-11 items-center justify-between gap-2 px-4 py-2">
+                            <span class="min-w-0 text-sm font-medium wrap-anywhere">
+                                {account.gameName}<span class="font-normal text-muted"
+                                    >#{account.tagLine}</span
+                                >
+                                <span class="block text-xs font-normal text-muted">{account.region} 서버</span
                                 >
                             </span>
                             {#if account.isPrimary}<StatusTag text="대표" state="theme" />{/if}

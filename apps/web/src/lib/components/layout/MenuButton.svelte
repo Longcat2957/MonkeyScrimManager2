@@ -30,12 +30,13 @@
     let open = $state(false);
 </script>
 
-<span class="relative inline-flex" data-menu-trigger>
+<span class="relative inline-flex min-w-0 max-w-full">
     <Button
         variant={triggerVariant}
-        size="sm"
-        injClass={`min-h-9 px-3 text-sm font-semibold ${triggerClass}`}
+        class={triggerClass}
         ariaLabel={label}
+        aria-expanded={open}
+        aria-haspopup="menu"
         onclick={() => (open = !open)}
     >
         {@render children()}

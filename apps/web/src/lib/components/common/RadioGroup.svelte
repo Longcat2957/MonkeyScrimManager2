@@ -14,21 +14,21 @@
     const id = $props.id();
 </script>
 
-<fieldset class="flex flex-col gap-2" aria-describedby={error ? `${id}-error` : undefined}>
-    <legend class="mb-1 text-xs font-semibold text-text-muted">{legend}</legend>
+<fieldset class="flex min-w-0 flex-col gap-1" aria-describedby={error ? `${id}-error` : undefined}>
+    <legend class="mb-1 text-xs font-semibold text-ink-2">{legend}</legend>
     {#each options as option (option.value)}
-        <label class="flex items-start gap-2 text-sm">
+        <label class="inline-flex min-h-6 items-center gap-2 text-ui pointer-coarse:min-h-11">
             <input
                 type="radio"
                 {name}
                 value={option.value}
                 bind:group={value}
                 {disabled}
-                class="mt-0.5 size-4 shrink-0 accent-[var(--color-hex)] disabled:opacity-45"
+                class="size-4 shrink-0 accent-nexus disabled:opacity-45"
             />
             <span class="flex flex-col gap-0.5">
                 <span class="font-medium">{option.label}</span>
-                {#if option.hint}<span class="text-xs text-text-muted">{option.hint}</span>{/if}
+                {#if option.hint}<span class="text-xs text-muted">{option.hint}</span>{/if}
             </span>
         </label>
     {/each}

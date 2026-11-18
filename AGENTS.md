@@ -7,7 +7,7 @@
 - `docs/web/routing.md`: Routes, layout hierarchy, header/navigation, URL state.
 - `docs/web/design-system.md`: 소환사의 협곡 전술 상황판 토큰·타이포그래피·네이티브 프리미티브 선택표·셸·테마 규칙. UI를 쓰기 전에 읽는다.
 - `docs/web/patterns.md`: State, form, overlay, list, responsive, and accessibility patterns plus the UI completion checklist.
-- `docs/web/pages/*.md`: Per-page purpose, data, wireframe, component composition, states, and open decisions.
+- `docs/web/pages/*.md`: Page-specific actions, permissions, state transitions, recovery rules, and open decisions.
 
 Consult the relevant documents when making product,
 feature, or architectural decisions.

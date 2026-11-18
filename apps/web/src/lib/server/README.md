@@ -42,7 +42,3 @@ Riot·ROFL 오류와 `Retry-After` 등 기존 응답 계약을 이 어댑터에 
 생성·조회·수정·삭제 책임을 구분하되 취소·철회·이력 무효화는 상태 수정으로 처리한다.
 현재 form action을 유지하며 실제 독립 소비자가 없는 HTTP API, 범용 CRUD 계층, 목 데이터로의 운영 fallback은 추가하지 않는다.
 권한·서버별 계정·MSM1 준용 정책은 [계획의 정책 항목](../../../../../docs/backend-plan.md#9-확정-정책과-후속-결정)을 따른다. 실제 Discord 로그인·명령 등록·발송을 통한 운영 검증은 별도 단계다.
-
-포지션별 선호 챔피언은 [accounts/champions.ts](accounts/champions.ts)가 본인 활성 사용자 검사와 `NO KEY UPDATE` 잠금 뒤 한 포지션의 최대 10개를 입력 순서대로 교체한다. 같은 값은 쓰지 않고 실패하면 삭제·삽입을 함께 롤백한다. [카탈로그](ddragon/champion-preferences.ts)는 기존 Data Dragon에서 숫자 `key`와 canonical ID·한국어 이름·이미지를 검증한다. 장애에도 본인 저장값은 읽으며 비어 있지 않은 저장은503, 빈 목록 해제는 허용한다. 기존 미확인 ID는 같은 포지션에서 보존·순서 이동·삭제할 수 있다.
-
-[경매 후보 조회](scrims/auction-profile.ts)는 희망 포지션의 첫 항목, 없으면 실제 주력 포지션에 해당하는 선호를 읽는다. `publicProfile=true`이고 탈퇴하지 않은 후보의 실제 카탈로그 항목만 공개하며 경기 출전·MMR·경매 상태는 바꾸지 않는다. `0013`의 순서 backfill·DB 제약과 관련 검사 94개, 운영 DB 미적용 범위는 [백엔드 계획](../../../../../docs/backend-plan.md#본인-선호-챔피언)에 기록한다.

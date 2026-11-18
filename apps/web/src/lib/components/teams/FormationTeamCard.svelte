@@ -51,20 +51,17 @@
 </script>
 
 <!-- 팀 한 열: 머리 + 포지션 다섯 자리. 작업판 안에서 다른 열과 1px 경계로 붙는다. -->
-<section
-    aria-labelledby={`team-${team.id}`}
-    class="flex min-w-0 flex-col bg-bg-surface dark:bg-bg-surface-dark"
->
-    <header class="flex h-14 items-center px-3">
+<section aria-labelledby={`team-${team.id}`} class="flex min-w-0 flex-col bg-surface">
+    <header class="flex h-11 items-center px-3">
         <div class="flex min-w-0 flex-col">
             <h3 id={`team-${team.id}`} class="truncate text-sm font-semibold">{team.name}</h3>
             {#if details}
-                <span class="text-[0.6875rem] text-text-muted tabular-nums">평균 {formatMmr(average)}</span>
+                <span class="text-[0.6875rem] text-muted tabular-nums">평균 {formatMmr(average)}</span>
             {/if}
         </div>
     </header>
 
-    <ol class="grid grid-rows-[repeat(5,4.75rem)] gap-1.5 px-2 pb-2">
+    <ol class="formation-lanes">
         {#each LANES as lane (lane)}
             {@const slot = slotKey(team.id, lane)}
             {@const player = playerOf(occupantOf(assignments, slot))}
@@ -74,33 +71,30 @@
                 role="group"
                 aria-label={`${team.name} ${laneText(lane)} 자리`}
                 class={[
-                    'grid min-h-0 items-stretch gap-2 border p-1.5 transition',
+                    'grid min-h-0 items-stretch gap-1 border p-1 transition',
                     interactive && !targeting
-                        ? 'grid-cols-[3rem_minmax(0,1fr)_2.75rem]'
-                        : 'grid-cols-[3rem_minmax(0,1fr)]',
+                        ? 'grid-cols-[1.75rem_minmax(0,1fr)_2.25rem] pointer-coarse:grid-cols-[1.75rem_minmax(0,1fr)_2.75rem]'
+                        : 'grid-cols-[1.75rem_minmax(0,1fr)]',
                     drag.over === slot
-                        ? 'rounded-(--radius-form) border-primary/70 bg-primary/10 ring-1 ring-primary/40 dark:border-dark/70 dark:bg-dark/15'
+                        ? 'rounded-(--radius-form) border-nexus/70 bg-nexus/10 ring-1 ring-nexus/40 dark:bg-nexus/15'
                         : player
-                          ? 'rounded-(--radius-form) border-border bg-bg-highlight/40 dark:bg-bg-highlight-dark/40'
-                          : 'rounded-(--radius-small) border-dashed border-border'
+                          ? 'rounded-(--radius-form) border-line bg-surface-hover/40'
+                          : 'rounded-(--radius-small) border-dashed border-line'
                 ]}
                 ondragover={(event) => drag.enter(event, slot)}
                 ondragleave={() => drag.leave(slot)}
                 ondrop={(event) => drag.drop(event, slot)}
             >
-                <span
-                    class="flex items-center justify-center rounded-(--radius-small) bg-text-primary/5 dark:bg-text-dark/5"
-                    title={laneText(lane)}
-                >
-                    <PositionIcon position={lane} size="lg" />
+                <span class="flex items-center justify-center" title={laneText(lane)}>
+                    <PositionIcon position={lane} size="sm" />
                     <span class="sr-only">{laneText(lane)}</span>
                 </span>
 
                 {#snippet occupant(item: FormationPlayer)}
-                    <PlayerFace name={item.displayName} imageUrl={item.iconUrl} size="md" />
+                    <PlayerFace name={item.displayName} imageUrl={item.iconUrl} size="sm" />
                     <span class="flex min-w-0 flex-1 flex-col text-left">
-                        <span class="truncate text-sm font-semibold">{item.displayName}</span>
-                        <span class="text-[0.6875rem] leading-4 text-text-muted tabular-nums dark:text-dark">
+                        <span class="truncate text-ui font-semibold">{item.displayName}</span>
+                        <span class="text-micro leading-4 text-muted tabular-nums">
                             MMR {formatMmr(item.mmr[lane])}
                             {#if offLane}<span class="text-warning"> · 희망 외</span>{/if}
                         </span>
@@ -110,18 +104,14 @@
                 {#if targeting}
                     <button
                         type="button"
-                        class="flex min-w-0 items-center gap-2 rounded-(--radius-small) border border-dashed border-primary/60 px-2 text-sm hover:bg-primary/5 dark:border-dark/60 dark:hover:bg-dark/10"
+                        class="flex min-w-0 items-center gap-2 rounded-(--radius-small) border border-dashed border-nexus/60 px-2 text-sm hover:bg-nexus/5 dark:hover:bg-nexus/10"
                         onclick={() => onplace(slot)}
                     >
                         {#if player}
                             {@render occupant(player)}
-                            <span class="shrink-0 text-xs font-semibold text-primary dark:text-dark"
-                                >교환</span
-                            >
+                            <span class="shrink-0 text-xs font-semibold text-nexus">교환</span>
                         {:else}
-                            <span class="flex-1 text-center font-semibold text-primary dark:text-dark"
-                                >여기에 배치</span
-                            >
+                            <span class="flex-1 text-center font-semibold text-nexus">여기에 배치</span>
                         {/if}
                         <span class="sr-only">, {selectedName} 배치 위치 {team.name} {laneText(lane)}</span>
                     </button>
@@ -134,8 +124,8 @@
                             'flex min-w-0 cursor-grab items-center gap-2 rounded-(--radius-small) px-2 active:cursor-grabbing',
                             drag.id === player.participantId && 'opacity-50',
                             selectedId === player.participantId
-                                ? 'bg-primary/10 ring-2 ring-primary/40 dark:bg-dark/15 dark:ring-dark/40'
-                                : 'bg-bg-surface hover:bg-bg-highlight dark:bg-bg-surface-dark dark:hover:bg-bg-highlight-dark'
+                                ? 'bg-nexus/10 ring-2 ring-nexus/40 dark:bg-nexus/15'
+                                : 'bg-surface hover:bg-surface-hover'
                         ]}
                         ondragstart={(event) => drag.start(event, player.participantId)}
                         ondragend={() => drag.end()}
@@ -144,15 +134,11 @@
                         {@render occupant(player)}
                     </button>
                 {:else if player}
-                    <span
-                        class="flex min-w-0 items-center gap-2 rounded-(--radius-small) bg-bg-surface px-2 dark:bg-bg-surface-dark"
-                    >
+                    <span class="flex min-w-0 items-center gap-2 rounded-(--radius-small) bg-surface px-2">
                         {@render occupant(player)}
                     </span>
                 {:else}
-                    <span class="flex items-center justify-center text-sm text-text-muted italic"
-                        >비어 있음</span
-                    >
+                    <span class="flex items-center justify-center text-sm text-muted italic">비어 있음</span>
                 {/if}
 
                 {#if interactive && !targeting}
@@ -160,11 +146,19 @@
                         {#if player}
                             <Button
                                 variant="quiet"
-                                size="auto"
-                                injClass="min-h-11 min-w-11 h-full w-full"
+                                class="h-full w-full"
                                 onclick={() => onremove(player.participantId)}
                             >
-                                <span aria-hidden="true" class="text-xl leading-none opacity-60">×</span>
+                                <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 16 16"
+                                    class="size-4 text-muted"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                >
+                                    <path d="m4 4 8 8m0-8-8 8" />
+                                </svg>
                                 <span class="sr-only">{player.displayName} 배정 해제</span>
                             </Button>
                         {/if}

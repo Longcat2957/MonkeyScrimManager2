@@ -19,16 +19,17 @@
 </script>
 
 <!-- 선택지가 많아 Radio 대신 현재 값 버튼으로 메뉴를 연다. -->
-<li class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-    <span class="flex basis-full flex-col sm:basis-auto sm:flex-1">
-        <span class="font-medium">{label}</span>
-        <span class="text-xs opacity-60">{description}</span>
+<li class="grid min-w-0 items-center gap-x-4 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,15rem)]">
+    <span class="flex min-w-0 flex-col gap-0.5">
+        <span class="text-sm font-semibold">{label}</span>
+        <span class="text-ui text-muted">{description}</span>
     </span>
-    <span data-menu-trigger class="relative inline-flex min-w-0 max-w-full sm:ml-auto">
+    <span class="relative inline-flex w-full min-w-0 max-w-full sm:w-auto sm:justify-self-end">
         <Button
             variant="secondary"
-            size="auto"
-            injClass="min-h-11 max-w-full gap-1.5 px-3 text-sm"
+            aria-expanded={open}
+            aria-haspopup="menu"
+            class="w-full max-w-full justify-between gap-1.5 whitespace-normal"
             loading={busy}
             {disabled}
             onclick={() => {

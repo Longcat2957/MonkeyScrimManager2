@@ -18,7 +18,7 @@
         title={icon.name}
         loading="lazy"
         class={[
-            'max-w-none shrink-0 bg-bg-highlight object-cover dark:bg-bg-highlight-dark',
+            'max-w-none shrink-0 bg-surface-hover object-cover',
             SIZE[size],
             round ? 'rounded-full' : 'rounded-(--radius-small)'
         ]}
@@ -27,16 +27,11 @@
     <span
         title={icon.name}
         class={[
-            'flex shrink-0 items-center justify-center rounded-(--radius-small) bg-bg-highlight text-[0.5rem] dark:bg-bg-highlight-dark',
+            'flex shrink-0 items-center justify-center rounded-(--radius-small) bg-surface-hover text-[0.5rem]',
             SIZE[size]
         ]}>{icon.name.slice(0, 2)}</span
     >
 {:else}
-    <span
-        aria-hidden="true"
-        class={[
-            'shrink-0 rounded-(--radius-small) bg-bg-highlight/60 dark:bg-bg-highlight-dark/60',
-            SIZE[size]
-        ]}
+    <span aria-hidden="true" class={['shrink-0 rounded-(--radius-small) bg-surface-hover/60', SIZE[size]]}
     ></span>
 {/if}

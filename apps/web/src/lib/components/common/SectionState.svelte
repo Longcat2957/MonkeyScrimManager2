@@ -31,16 +31,11 @@
         <Skeleton rows={props.lines ?? 3} />
     </div>
 {:else if props.state === 'empty'}
-    <p
-        class="rounded-(--radius-box) border border-dashed border-brass-line px-4 py-8 text-center text-sm text-text-muted"
-    >
+    <p class="px-4 py-6 text-center text-sm text-muted">
         {props.message}
     </p>
 {:else}
-    <div
-        role="alert"
-        class="flex flex-col items-center gap-3 rounded-(--radius-box) border border-dashed border-brass-line px-4 py-6 text-center"
-    >
+    <div role="alert" class="flex flex-col items-center gap-2 px-4 py-5 text-center">
         <p class="text-sm text-error">{retryError || props.message}</p>
         <Button variant="secondary" size="sm" loading={retrying} onclick={retry}>다시 시도</Button>
     </div>

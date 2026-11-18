@@ -123,28 +123,20 @@
 
 {#snippet refreshAction()}
     {#if viewing && data.scrim.status === 'preparing' && auction && ['setup', 'in_progress'].includes(auction.status)}
-        <Button
-            variant="quiet"
-            size="auto"
-            injClass="min-h-11 px-2 text-sm"
-            disabled={refreshing}
-            onclick={() => toggleAutomatic()}>{automatic ? '자동 갱신 끄기' : '자동 갱신 켜기'}</Button
+        <Button variant="quiet" class="px-2 text-ui" disabled={refreshing} onclick={() => toggleAutomatic()}
+            >{automatic ? '자동 갱신 끄기' : '자동 갱신 켜기'}</Button
         >
-        <Button
-            variant="quiet"
-            size="auto"
-            injClass="min-h-11 px-2 text-sm"
-            disabled={refreshing}
-            onclick={() => refresh()}>새로고침</Button
+        <Button variant="quiet" class="px-2 text-ui" disabled={refreshing} onclick={() => refresh()}
+            >새로고침</Button
         >
     {/if}
 {/snippet}
 
-{#if refreshError}<p role="status" class="mb-3 text-sm text-text-muted">{refreshError}</p>{/if}
+{#if refreshError}<p role="status" class="mb-3 text-sm text-muted">{refreshError}</p>{/if}
 
 {#if !auction}
-    <section aria-labelledby="auction-board" class="flex flex-col gap-4">
-        <h2 id="auction-board" class="text-xl font-semibold">경매</h2>
+    <section aria-labelledby="auction-board" class="flex flex-col gap-2">
+        <h2 id="auction-board" class="page-head border-b border-line pb-2 text-base font-bold">경매</h2>
         <SectionState state="empty" message="모집이 마감되면 선발된 참가자로 경매를 준비할 수 있어요" />
     </section>
 {:else if auction.status === 'setup'}

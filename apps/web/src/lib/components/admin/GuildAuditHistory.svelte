@@ -33,53 +33,54 @@
         message={total > 0 ? '이 쪽에는 변경 이력이 없어요' : '아직 기록된 관리 변경이 없어요'}
     />
 {:else}
-    <ol
-        role="list"
-        class="divide-y divide-border overflow-hidden rounded-(--radius-box) bg-bg-surface dark:bg-bg-surface-dark"
-    >
+    <ol role="list" class="divide-y divide-line">
         {#each entries as entry (entry.id)}
-            <li class="flex min-w-0 flex-col gap-3 px-4 py-5">
+            <li class="flex min-w-0 flex-col gap-1.5 px-4 py-3">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <h3 class="min-w-0 font-semibold wrap-anywhere">
+                    <h3 class="min-w-0 text-sm font-semibold wrap-anywhere">
                         {entry.target
                             ? `${entry.target.displayName}${entry.target.userId ? ` (${entry.target.userId})` : ''} · `
                             : ''}{titles[entry.kind]}
                     </h3>
-                    <time datetime={entry.occurredAt} class="shrink-0 text-sm text-text-muted tabular-nums"
+                    <time datetime={entry.occurredAt} class="shrink-0 text-xs text-muted tabular-nums"
                         >{date.format(new Date(entry.occurredAt))}</time
                     >
                 </div>
                 {#if entry.setting}
-                    <dl class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
-                        <dt class="text-text-muted">항목</dt>
+                    <dl
+                        class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-ui sm:grid-cols-[auto_1fr_auto_1fr_auto_1fr]"
+                    >
+                        <dt class="text-muted">항목</dt>
                         <dd>{settings[entry.setting.key]}</dd>
-                        <dt class="text-text-muted">변경 전</dt>
+                        <dt class="text-muted">변경 전</dt>
                         <dd class="wrap-anywhere">
                             {entry.setting.before?.name ?? entry.setting.before?.id ?? '설정 안 함'}
                         </dd>
-                        <dt class="text-text-muted">변경 후</dt>
+                        <dt class="text-muted">변경 후</dt>
                         <dd class="wrap-anywhere">
                             {entry.setting.after?.name ?? entry.setting.after?.id ?? '설정 안 함'}
                         </dd>
                     </dl>
                 {:else if entry.kind === 'riot_account_primary_changed' && entry.primary}
-                    <dl class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
-                        <dt class="text-text-muted">변경 전</dt>
+                    <dl
+                        class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-ui sm:grid-cols-[auto_1fr_auto_1fr]"
+                    >
+                        <dt class="text-muted">변경 전</dt>
                         <dd class="wrap-anywhere">{entry.primary.before?.riotId ?? '대표 계정 없음'}</dd>
-                        <dt class="text-text-muted">변경 후</dt>
+                        <dt class="text-muted">변경 후</dt>
                         <dd class="wrap-anywhere">{entry.primary.after?.riotId ?? '대표 계정 없음'}</dd>
                     </dl>
                 {:else}
-                    <p class="wrap-anywhere">{accountName(entry.account)}</p>
+                    <p class="text-ui wrap-anywhere">{accountName(entry.account)}</p>
                     {#if entry.kind === 'riot_account_unlinked' && entry.primary && entry.primary.before?.id !== entry.primary.after?.id}
-                        <p class="text-sm text-text-muted wrap-anywhere">
+                        <p class="text-sm text-muted wrap-anywhere">
                             {entry.primary.after
                                 ? `새 대표 계정: ${entry.primary.after.riotId ?? '이름을 확인할 수 없는 계정'}`
                                 : '남은 대표 계정 없음'}
                         </p>
                     {/if}
                 {/if}
-                <p class="text-sm text-text-muted wrap-anywhere">
+                <p class="text-xs text-muted wrap-anywhere">
                     담당: {entry.actor.displayName}{entry.actor.userId ? ` (${entry.actor.userId})` : ''}
                 </p>
             </li>

@@ -17,7 +17,7 @@
 </script>
 
 {#if parts.length}
-    <p role="status" class="flex flex-wrap items-center gap-x-2 text-xs text-text-muted">
+    <p role="status" class="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-muted">
         <span class="font-semibold">참가 안내</span>
         <span>{parts.join(' · ')}</span>
         {#if notifications?.blocked || notifications?.uncertain}

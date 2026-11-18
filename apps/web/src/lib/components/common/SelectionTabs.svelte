@@ -1,39 +1,32 @@
 <script lang="ts">
     // 필터·보기 전환은 한 가지 탭 어휘로 통일한다.
     let {
-        labels = [],
+        labels,
         active = $bindable(0),
-        tabInjClass = '',
-        onclickTab,
-        showNum: _showNum
+        onchange
     }: {
-        labels: (string | { text: string })[];
+        labels: string[];
         active?: number;
-        tabInjClass?: string;
-        onclickTab?: (index: number) => void;
-        showNum?: number;
+        onchange?: (index: number) => void;
     } = $props();
-
-    // 이전 호출부는 { text } 항목을 넘기고, 새 화면은 문자열을 넘긴다.
-    const items = $derived(labels.map((label) => (typeof label === 'string' ? label : label.text)));
 </script>
 
-<div class="flex min-w-0 gap-1 overflow-x-auto" role="tablist">
-    {#each items as label, index (label)}
+<div
+    class="flex w-fit max-w-full min-w-0 gap-0.75 overflow-x-auto rounded-form border border-line bg-surface-2 p-1"
+>
+    {#each labels as label, index (label)}
         <button
             type="button"
-            role="tab"
-            aria-selected={active === index}
+            aria-pressed={active === index}
             class={[
-                'min-h-11 whitespace-nowrap rounded-(--radius-small) px-3 text-sm font-semibold',
+                'min-h-7 whitespace-nowrap rounded-small border px-2.5 text-xs font-semibold focus-visible:-outline-offset-2 pointer-coarse:min-h-11',
                 active === index
-                    ? 'bg-hex/15 text-hex'
-                    : 'text-text-muted hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark',
-                tabInjClass
+                    ? 'border-nexus bg-selected text-ink'
+                    : 'border-transparent text-muted hover:bg-surface-hover hover:text-ink'
             ]}
             onclick={() => {
                 active = index;
-                onclickTab?.(index);
+                onchange?.(index);
             }}
         >
             {label}

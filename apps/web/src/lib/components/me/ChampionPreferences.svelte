@@ -16,7 +16,7 @@
         type ChampionPreferenceSelections,
         type MyChampionPreferences
     } from '#lib/features/me/champions.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     type Props = {
         value: MyChampionPreferences;
@@ -232,9 +232,9 @@
     };
 </script>
 
-<section aria-labelledby={`${id}-title`} class="flex min-w-0 flex-col gap-4">
-    <h2 id={`${id}-title`} class="text-lg font-semibold">선호 챔피언</h2>
-    <p class="text-sm leading-6 text-text-muted">
+<section aria-labelledby={`${id}-title`} class="panel @container min-w-0">
+    <h2 id={`${id}-title`} class="panel-bar font-bold">선호 챔피언</h2>
+    <p class="px-4 pt-3 text-ui text-muted">
         포지션마다 최대 {MAX_PREFERRED_CHAMPIONS}개를 원하는 순서로 저장해요. 프로필 정보를 공개하면 경매의
         포지션 참고 정보로 표시돼요.
     </p>
@@ -243,10 +243,10 @@
         method="POST"
         action={preview ? '?mock=1&/champions' : '?/champions'}
         use:enhance={submit}
-        {@attach nonSubmitButtons}
+        {@attach preventComposingSubmit}
         aria-label="선호 챔피언 저장"
         aria-busy={busy}
-        class="flex min-w-0 flex-col gap-5"
+        class="grid min-w-0 gap-x-4 gap-y-3 p-4 @2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]"
     >
         <input type="hidden" name="position" value={position} />
         {#each selected as championId (championId)}<input
@@ -254,14 +254,9 @@
                 name="championIds"
                 value={championId}
             />{/each}
-        <fieldset disabled={locked} class="min-w-0">
+        <fieldset disabled={locked} class="col-span-full min-w-0 border-b border-line">
             <legend class="sr-only">선호 포지션</legend>
-            <SelectionTabs
-                labels={POSITIONS.map(({ text }) => ({ text }))}
-                {active}
-                showNum={5}
-                onclickTab={choosePosition}
-            />
+            <SelectionTabs labels={POSITIONS.map(({ text }) => text)} {active} onchange={choosePosition} />
         </fieldset>
         <fieldset disabled={locked} class="min-w-0">
             <legend class="sr-only">챔피언 검색 및 추가</legend>
@@ -276,13 +271,15 @@
                     />
                 </div>
                 {#if value.catalog.length}
-                    <ul aria-label="추가할 챔피언" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <ul
+                        aria-label="추가할 챔피언"
+                        class="grid grid-cols-2 gap-1.5 @md:grid-cols-3 @2xl:grid-cols-2 @4xl:grid-cols-3"
+                    >
                         {#each results.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as champion (champion.championId)}
                             <li class="min-w-0">
                                 <Button
                                     variant="secondary"
-                                    size="full"
-                                    injClass="min-h-12 justify-start gap-2 px-2 text-sm !whitespace-normal"
+                                    class="w-full justify-start gap-2 px-2 text-ui !whitespace-normal"
                                     disabled={locked || selected.length >= MAX_PREFERRED_CHAMPIONS}
                                     onclick={() => void add(champion.championId)}
                                 >
@@ -300,7 +297,7 @@
                                 </Button>
                             </li>
                         {:else}
-                            <li class="col-span-full py-3 text-sm text-text-muted">
+                            <li class="col-span-full py-3 text-sm text-muted">
                                 {query.trim()
                                     ? '일치하는 미선택 챔피언이 없어요.'
                                     : '추가할 챔피언이 없어요.'}
@@ -319,20 +316,22 @@
                 {/if}
             </search>
         </fieldset>
-        <div class="flex flex-col gap-3">
+        <div
+            class="flex min-w-0 flex-col gap-1.5 border-t border-line pt-3 @2xl:border-t-0 @2xl:border-l @2xl:pt-0 @2xl:pl-4"
+        >
             <div class="flex items-baseline justify-between gap-3">
-                <h3 class="font-semibold">{positionName} 선택 순서</h3>
-                <span class="text-sm text-text-muted tabular-nums"
+                <h3 class="text-sm font-semibold">{positionName} 선택 순서</h3>
+                <span class="text-ui text-muted tabular-nums"
                     >{selected.length} / {MAX_PREFERRED_CHAMPIONS}</span
                 >
             </div>
-            <ol aria-label={`${positionName} 선택한 챔피언`} class="flex flex-col divide-y divide-border">
+            <ol aria-label={`${positionName} 선택한 챔피언`} class="flex flex-col divide-y divide-line">
                 {#each selected as championId, index (championId)}
                     <li
                         data-champion-id={championId}
-                        class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 py-2"
+                        class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-1"
                     >
-                        <span class="w-5 shrink-0 text-center text-sm text-text-muted tabular-nums"
+                        <span class="w-5 shrink-0 text-center text-sm text-muted tabular-nums"
                             >{index + 1}</span
                         >
                         {#if catalog.get(championId)?.iconUrl}<img
@@ -349,24 +348,21 @@
                         <div class="flex shrink-0 gap-1">
                             <Button
                                 variant="quiet"
-                                size="auto"
-                                injClass="min-h-11 min-w-11 px-2 text-sm"
+                                class="px-2 text-ui"
                                 disabled={locked || index === 0}
                                 onclick={() => void move(championId, -1)}
                                 ><span class="sr-only">{name(championId)} </span>위로</Button
                             >
                             <Button
                                 variant="quiet"
-                                size="auto"
-                                injClass="min-h-11 min-w-11 px-2 text-sm"
+                                class="px-2 text-ui"
                                 disabled={locked || index === selected.length - 1}
                                 onclick={() => void move(championId, 1)}
                                 ><span class="sr-only">{name(championId)} </span>아래로</Button
                             >
                             <Button
                                 variant="quiet"
-                                size="auto"
-                                injClass="min-h-11 min-w-11 px-2 text-sm"
+                                class="px-2 text-ui"
                                 disabled={locked}
                                 onclick={() => void remove(championId, index)}
                                 ><span class="sr-only">{name(championId)} </span>제거</Button
@@ -374,7 +370,7 @@
                         </div>
                     </li>
                 {:else}
-                    <li class="py-3 text-sm text-text-muted">
+                    <li class="py-3 text-sm text-muted">
                         {value.catalogError
                             ? '선택한 챔피언이 없어요.'
                             : '아직 선택하지 않았어요. 검색 목록에서 챔피언을 추가해 주세요.'}
@@ -383,25 +379,23 @@
             </ol>
         </div>
         <p role="status" class="sr-only">{orderNotice}</p>
-        {#if displayError}<p role="alert" class="text-sm text-error">{displayError}</p>{/if}
-        {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
-        {#if value.catalogError || refreshRequired}
+        {#if displayError}<p role="alert" class="col-span-full text-ui text-error">{displayError}</p>{/if}
+        {#if notice}<p role="status" class="col-span-full text-ui text-success">{notice}</p>{/if}
+        <div class="col-span-full flex flex-wrap justify-end gap-2 border-t border-line pt-3">
+            {#if value.catalogError || refreshRequired}
+                <Button
+                    variant="secondary"
+                    disabled={busy || reloading}
+                    loading={reloading}
+                    onclick={() => void reload()}>목록 다시 불러오기</Button
+                >
+            {/if}
             <Button
-                variant="secondary"
-                size="full"
-                injClass="min-h-12 text-base"
-                disabled={busy || reloading}
-                loading={reloading}
-                onclick={() => void reload()}>목록 다시 불러오기</Button
+                variant="primary"
+                type="submit"
+                disabled={locked || !dirty || (Boolean(value.catalogError) && selected.length > 0)}
+                loading={busy}>{positionName} 선호 챔피언 저장</Button
             >
-        {/if}
-        <Button
-            variant="primary"
-            type="submit"
-            size="full"
-            injClass="min-h-12 text-base"
-            disabled={locked || !dirty || (Boolean(value.catalogError) && selected.length > 0)}
-            loading={busy}>{positionName} 선호 챔피언 저장</Button
-        >
+        </div>
     </form>
 </section>

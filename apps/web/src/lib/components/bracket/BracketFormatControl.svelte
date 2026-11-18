@@ -2,7 +2,7 @@
     import { untrack } from 'svelte';
     import RadioGroup from '#lib/components/common/RadioGroup.svelte';
     import type { BestOf } from '#lib/features/scrims/bracket.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     let {
         label,
@@ -39,10 +39,10 @@
     }
 </script>
 
-<form onsubmit={(event) => event.preventDefault()} {@attach nonSubmitButtons}>
+<form onsubmit={(event) => event.preventDefault()} {@attach preventComposingSubmit}>
     <!-- 좁은 단계 머리에 맞춰 선택지를 한 줄로 펼치고, 단계 이름과 겹치지 않게 범례는 숨긴다. -->
     <div
-        class="text-xs [&_fieldset]:flex-row [&_fieldset]:flex-wrap [&_fieldset]:items-center [&_fieldset]:gap-3 [&_legend]:sr-only"
+        class="[&_fieldset]:flex-row [&_fieldset]:flex-wrap [&_fieldset]:items-center [&_fieldset]:gap-x-2 [&_fieldset]:gap-y-0 [&_label]:min-h-9 [&_label]:items-center [&_label]:text-xs [&_input]:mt-0 [&_legend]:sr-only pointer-coarse:[&_label]:min-h-11"
         onchange={(event) => void change((event.target as HTMLInputElement).value)}
     >
         <RadioGroup legend={`${label} 경기 방식`} name="bestOf" options={formats} bind:value {disabled} />

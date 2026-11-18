@@ -9,7 +9,7 @@
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
-    import StatTile, { type StatTone } from '#lib/components/common/StatTile.svelte';
+    import StatTile from '#lib/components/common/StatTile.svelte';
     import SwitchCell from '#lib/components/common/SwitchCell.svelte';
     import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
     import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
@@ -19,7 +19,6 @@
     import { POSITIONS } from '#lib/features/labels.ts';
     import { fixed, integer } from '#lib/features/players/format.ts';
     import { formatDuration } from '#lib/features/matches/format.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
     import {
         normalizeStatsFilters,
         statsRequestKey,
@@ -250,9 +249,9 @@
     <title>통계 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col gap-8">
-    <header class="flex flex-wrap items-center justify-between gap-4">
-        <h1 class="text-2xl font-semibold">통계</h1>
+<div class="flex min-w-0 flex-col gap-5">
+    <header class="page-head">
+        <h1 class="text-title font-bold">통계</h1>
         <SeasonSelector seasons={data.seasons} selectedSeasonId={data.selectedSeasonId} />
     </header>
 
@@ -276,99 +275,47 @@
             message={data.selectedSeasonId ? '이 시즌에는 기록된 게임이 없어요' : '아직 기록된 게임이 없어요'}
         />
     {:else}
-        {@const kpis: [string, string, string | null, StatTone, string][] = [
-			['총 게임', String(data.kpis.games), null, 'info', 'm14.5 17.5-11-11V3h3.5l11 11m-5 5 6-6m-3 3 4 4m1-1-2 2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4m-2-1-3 3m-1-1 2 2'],
-			['참가자', String(data.kpis.players), '한 게임 이상 뛴 사람', 'neutral', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.87m-3-12a4 4 0 0 1 0 7.75'],
-			['평균 게임 시간', formatDuration(data.kpis.averageDurationSec), null, 'info', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-16v6l4 2'],
-			['분당 킬', fixed(data.kpis.killsPerMinute, 2), null, 'success', 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22m7-7.34V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z'],
-			['평균 KDA', fixed(data.kpis.kda, 2), '(킬+어시스트) / 데스', 'warning', 'M13 2 3 14h9l-1 8 10-12h-9z'],
-			['사용한 챔피언', integer(data.kpis.champions), null, 'error', 'M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z']
-		]}
+        {@const kpis = [
+            ['총 게임', String(data.kpis.games), null],
+            ['참가자', String(data.kpis.players), '한 게임 이상 뛴 사람'],
+            ['평균 게임 시간', formatDuration(data.kpis.averageDurationSec), null],
+            ['분당 킬', fixed(data.kpis.killsPerMinute, 2), null],
+            ['평균 KDA', fixed(data.kpis.kda, 2), '(킬+어시스트) / 데스'],
+            ['사용한 챔피언', integer(data.kpis.champions), null]
+        ] as const}
         <section aria-labelledby="kpis">
             <h2 id="kpis" class="sr-only">핵심 지표</h2>
-            <div class={['grid gap-2', desktop.current ? 'grid-cols-6' : 'grid-cols-2']}>
-                {#each kpis as [label, value, note, tone, path] (label)}
-                    <StatTile {label} {value} {note} {tone}>
-                        {#snippet icon()}<svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"><path d={path} /></svg
-                            >{/snippet}
-                    </StatTile>
+            <div class="panel grid grid-cols-2 gap-px overflow-hidden bg-line sm:grid-cols-3 xl:grid-cols-6">
+                {#each kpis as [label, value, note] (label)}
+                    <StatTile {label} {value} {note} />
                 {/each}
             </div>
         </section>
 
         <!-- 포지션 필터는 업적·리더보드·챔피언에 함께 적용한다. -->
-        <div class="flex items-center gap-2">
-            <div role="group" aria-label="포지션 필터" class="min-w-0 flex-1 border-b border-brass-line">
-                <SelectionTabs
-                    labels={FILTERS.map((filter) => ({ text: filter.text }))}
-                    active={FILTERS.findIndex((filter) => filter.key === data.position)}
-                    onclickTab={(index) => navigate({ position: FILTERS[index]!.key })}
-                />
-            </div>
+        <div role="group" aria-label="포지션 필터" class="min-w-0 border-b border-line pb-3">
+            <SelectionTabs
+                labels={FILTERS.map((filter) => filter.text)}
+                active={FILTERS.findIndex((filter) => filter.key === data.position)}
+                onchange={(index) => navigate({ position: FILTERS[index]!.key })}
+            />
         </div>
 
         <div
             aria-busy={changing}
-            class={['flex flex-col gap-8 transition-opacity', changing && 'opacity-50']}
+            class={['flex min-w-0 flex-col gap-5 transition-opacity', changing && 'opacity-50']}
         >
-            {#if data.showAchievements}
-                <section aria-labelledby="achievements" class="flex flex-col gap-3">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 id="achievements" class="text-lg font-semibold">업적</h2>
-                        <div class="flex items-center gap-4 text-sm">
-                            <div class="w-52 shrink-0">
-                                <SwitchCell
-                                    title="최근 10게임만"
-                                    active={data.recent}
-                                    onchange={(active) => navigate({ recent: active })}
-                                />
-                            </div>
-                            {#if data.achievements.length}
-                                <Button
-                                    variant="secondary"
-                                    size="auto"
-                                    injClass="min-h-11 px-3 text-sm"
-                                    onclick={() => (rankingOpen = true)}>업적별 순위</Button
-                                >
-                            {/if}
-                        </div>
-                    </div>
-                    {#if data.achievements.length}
-                        <AchievementCarousel
-                            items={data.achievements}
-                            bind:current={() => achievementIndex, selectAchievement}
-                        />
-                        <p class="text-center text-xs opacity-60">
-                            {data.achievementMinGames}게임 이상 뛴 사람부터 집계해요
-                        </p>
-                    {:else}
-                        <SectionState
-                            state="empty"
-                            message={`${data.achievementMinGames}게임 이상 뛴 사람이 없어요`}
-                        />
-                    {/if}
-                </section>
-            {/if}
-
-            <section aria-labelledby="leaderboard" class="flex flex-col gap-3">
-                <div class="flex flex-wrap items-end justify-between gap-3">
-                    <h2 id="leaderboard" class="text-lg font-semibold">리더보드</h2>
-                    <div class="flex items-center gap-3 text-sm">
-                        <span id="min-games-label" class="opacity-70">최소 게임</span>
+            <section aria-labelledby="leaderboard" class="panel min-w-0">
+                <div class="panel-bar">
+                    <h2 id="leaderboard" class="text-base font-semibold">리더보드</h2>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-ui">
+                        <span id="min-games-label" class="text-muted">최소 게임</span>
                         <div role="group" aria-labelledby="min-games-label" class="flex items-center gap-1">
                             <button
                                 type="button"
                                 aria-label="최소 게임 줄이기"
                                 disabled={minGames <= 1}
-                                class="min-h-11 min-w-11 rounded-(--radius-small) border border-brass-line text-sm font-semibold disabled:opacity-40"
+                                class="min-h-9 min-w-9 rounded-(--radius-small) border border-line text-sm font-semibold hover:bg-surface-hover disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
                                 onclick={() => changeMin(minGames - 1)}
                             >
                                 −
@@ -378,13 +325,13 @@
                                 type="button"
                                 aria-label="최소 게임 늘리기"
                                 disabled={minGames >= 50}
-                                class="min-h-11 min-w-11 rounded-(--radius-small) border border-brass-line text-sm font-semibold disabled:opacity-40"
+                                class="min-h-9 min-w-9 rounded-(--radius-small) border border-line text-sm font-semibold hover:bg-surface-hover disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
                                 onclick={() => changeMin(minGames + 1)}
                             >
                                 +
                             </button>
                         </div>
-                        <span class="opacity-60 tabular-nums"
+                        <span class="text-xs text-muted tabular-nums"
                             >{data.leaderboard.length}명 / {data.playerCount}명</span
                         >
                     </div>
@@ -403,24 +350,24 @@
                 {/if}
             </section>
 
-            <section aria-labelledby="champion-stats" class="flex flex-col gap-3">
-                <h2 id="champion-stats" class="text-lg font-semibold">챔피언</h2>
+            <section aria-labelledby="champion-stats" class="panel min-w-0 overflow-hidden">
+                <div class="panel-bar">
+                    <h2 id="champion-stats" class="text-base font-semibold">챔피언</h2>
+                </div>
                 {#if data.champions.length}
                     <!-- svelte-ignore a11y_no_noninteractive_tabindex (좁은 표의 가로 스크롤에 키보드 진입점을 제공한다.) -->
                     <div
                         role="region"
                         aria-labelledby="champion-stats-caption"
                         tabindex="0"
-                        class="hex-panel relative overflow-x-auto"
+                        class="relative overflow-x-auto"
                     >
-                        <table
-                            class="w-full min-w-80 text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
-                        >
+                        <table class="data-table min-w-80 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
                             <caption id="champion-stats-caption" class="sr-only"
                                 >챔피언별 픽·승률, 픽 많은 순</caption
                             >
-                            <thead class="text-xs text-text-muted">
-                                <tr class="border-b border-brass-line">
+                            <thead class="text-xs text-muted">
+                                <tr class="border-b border-line">
                                     <th scope="col" class="px-4 py-2 text-left font-medium">챔피언</th>
                                     <th scope="col" class="px-4 py-2 text-right font-medium">픽</th>
                                     <th scope="col" class="px-4 py-2 text-right font-medium">승률</th>
@@ -429,7 +376,7 @@
                             </thead>
                             <tbody>
                                 {#each data.champions.slice((championPage - 1) * CHAMPION_PAGE, championPage * CHAMPION_PAGE) as record (record.champion.id)}
-                                    <tr class="border-b border-brass-line last:border-b-0">
+                                    <tr class="border-b border-line last:border-b-0">
                                         <th scope="row" class="px-4 py-2 text-left font-medium">
                                             <span class="flex items-center gap-3">
                                                 {#if record.champion.iconUrl}<img
@@ -466,6 +413,43 @@
                     <SectionState state="empty" message="이 조건에는 챔피언 기록이 없어요" />
                 {/if}
             </section>
+            {#if data.showAchievements}
+                <section aria-labelledby="achievements" class="flex flex-col gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h2 id="achievements" class="text-base font-semibold">업적</h2>
+                        <div class="flex min-w-0 flex-wrap items-center gap-2 text-ui">
+                            <div class="w-44 max-w-full">
+                                <SwitchCell
+                                    title="최근 10게임만"
+                                    active={data.recent}
+                                    onchange={(active) => navigate({ recent: active })}
+                                />
+                            </div>
+                            {#if data.achievements.length}
+                                <Button
+                                    variant="secondary"
+                                    class="min-h-11 px-3 text-sm"
+                                    onclick={() => (rankingOpen = true)}>업적별 순위</Button
+                                >
+                            {/if}
+                        </div>
+                    </div>
+                    {#if data.achievements.length}
+                        <AchievementCarousel
+                            items={data.achievements}
+                            bind:current={() => achievementIndex, selectAchievement}
+                        />
+                        <p class="text-xs text-muted">
+                            {data.achievementMinGames}게임 이상 뛴 사람부터 집계해요
+                        </p>
+                    {:else}
+                        <SectionState
+                            state="empty"
+                            message={`${data.achievementMinGames}게임 이상 뛴 사람이 없어요`}
+                        />
+                    {/if}
+                </section>
+            {/if}
         </div>
     {/if}
 </div>

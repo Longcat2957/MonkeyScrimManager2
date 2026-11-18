@@ -7,11 +7,20 @@
         // 바깥 클릭·Escape로 닫히지 않게 해야 하는 확인 창은 false로 둔다.
         dismissible?: boolean;
         onclose?: () => void;
+        oncancel?: () => void;
         children: Snippet;
         footer?: Snippet;
     };
 
-    let { open = $bindable(false), title, dismissible = true, onclose, children, footer }: Props = $props();
+    let {
+        open = $bindable(false),
+        title,
+        dismissible = true,
+        onclose,
+        oncancel,
+        children,
+        footer
+    }: Props = $props();
 
     const id = $props.id();
     let dialog = $state<HTMLDialogElement | null>(null);
@@ -31,6 +40,7 @@
 
     function cancel(event: Event) {
         if (!dismissible) event.preventDefault();
+        oncancel?.();
     }
 
     function backdrop(event: MouseEvent) {
@@ -43,27 +53,27 @@
     oncancel={cancel}
     onclose={closed}
     onclick={backdrop}
-    class="m-auto w-[min(36rem,calc(100%-2rem))] max-h-[85dvh] overflow-hidden rounded-(--radius-box) border border-brass-line bg-bg-surface p-0 text-text-primary shadow-[0_24px_64px_rgb(0_0_0/45%)] backdrop:bg-black/55 dark:bg-bg-surface-dark dark:text-text-dark"
+    class="m-auto max-h-[85dvh] w-[min(36rem,calc(100%-2rem))] overflow-hidden rounded-box border border-line-strong bg-surface p-0 text-ink backdrop:bg-black/60"
     aria-labelledby={`${id}-title`}
 >
     <div class="flex max-h-[85dvh] flex-col">
-        <header class="flex items-center justify-between gap-4 border-b border-brass-line px-5 py-4">
-            <h2 id={`${id}-title`} class="text-lg font-semibold">{title}</h2>
+        <header class="flex items-center justify-between gap-3 border-b border-line bg-surface-2 px-4 py-2.5">
+            <h2 id={`${id}-title`} class="min-w-0 text-base font-bold">{title}</h2>
             {#if dismissible}
                 <button
                     type="button"
-                    class="rounded-(--radius-small) px-2 py-1 text-sm text-text-muted hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark"
+                    class="min-h-9 shrink-0 rounded-form px-2.5 text-ui font-semibold text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
                     onclick={() => dialog?.close()}
                 >
                     닫기
                 </button>
             {/if}
         </header>
-        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div class="min-h-0 flex-1 overflow-y-auto p-4">
             {@render children()}
         </div>
         {#if footer}
-            <footer class="border-t border-brass-line px-5 py-4">{@render footer()}</footer>
+            <footer class="border-t border-line bg-surface-2 px-4 py-3">{@render footer()}</footer>
         {/if}
     </div>
 </dialog>

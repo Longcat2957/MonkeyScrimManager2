@@ -29,10 +29,6 @@
     }
 </script>
 
-<Button
-    variant="quiet"
-    size="auto"
-    injClass="min-h-11 px-3 text-sm"
-    disabled={disabled || pending}
-    onclick={change}>방식 다시 고르기</Button
+<Button variant="quiet" class="px-3 text-ui" disabled={disabled || pending} onclick={change}
+    >방식 다시 고르기</Button
 >

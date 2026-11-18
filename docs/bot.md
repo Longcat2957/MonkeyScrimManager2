@@ -1,7 +1,7 @@
 # Discord 봇
 
 구현 범위: 시즌 조회·전환·모집 생성·개인 신청·모집/팀 구성/경기 라인업/ROFL 결과 게시·운영자 요청 참가 안내 DM·Gateway 동기화·게시 복구.
-업무 규칙과 DB는 SvelteKit 서버가 소유한다. 역할과 저장 구조는 [봇 계획](bot-plan.md)을 따른다.
+웹 서버가 권한·업무 규칙·DB를 소유한다. 봇은 인증된 내부 API를 통해 변경을 요청하고 Discord에 전송한다. 게시 작업과 interaction 기록의 구조는 [DB ERD](database-erd.md#discord-작업과-요청-기록)를 따른다. 봇은 웹 로그인 세션을 만들지 않고, 비밀 interaction 토큰이나 요청 원문을 저장하거나 로그에 남기지 않는다.
 
 ## 설정과 실행
 
@@ -35,7 +35,7 @@ pnpm start:bot
 ```
 
 VPS에서는 웹·봇·Caddy를 같은 Docker Compose 프로젝트로 관리한다. 웹 포트는 호스트에 공개하지 않고 Caddy만 외부 HTTPS를 받는다. Caddy는 `/internal`·`/internal/`을 차단하며 웹은 `PROTOCOL_HEADER=x-forwarded-proto`를 읽는다. 내부 인증 키를 클라이언트 환경 변수나 URL에 넣지 않는다.
-호스트에서 직접 실행할 때는 웹을 `HOST=127.0.0.1`로 열며 기존 systemd·nginx 예제를 사용할 수 있다. 현재 Compose 배포·인증서 관리와 dev CI → main CD 절차는 [배포 문서](deployment.md)를 따른다. 과거 nginx 격리 검사는 [별도 실행 기록](../artifacts/ui-review/operations/deployment.md)으로 구분한다.
+호스트에서 직접 실행할 때는 웹을 `HOST=127.0.0.1`로 열며 systemd·nginx 예제를 사용할 수 있다. Compose 배포·인증서 관리와 dev CI → main CD 절차는 [배포 문서](deployment.md)를 따른다.
 
 ## 명령 등록과 동작
 
@@ -131,6 +131,4 @@ pnpm check
 
 봇 테스트는 node:test와 고정 API/Discord adapter를 사용한다. `test:lite`는 웹 lite와 봇 테스트를 함께 실행한다.
 hard는 기존 전용 PostgreSQL과 실제 빌드한 SvelteKit 앱에서 내부 API·업무 저장·게시 상태를 검증한다.
-현재 시즌·게시 복구 UI의 핵심 검증은 `apps/bot/tests/seasons.test.ts`와 `recovery.test.ts`에 있다. 이전 CLI 옵션 방식의 검증 기록은 [봇 검증](../artifacts/operations/seasons-bot.md), 시즌 서비스와 다른 운영 보완의 이전 전체 집계는 [검사 JSON](../artifacts/ui-review/operations/checks.json)을 따른다. 부분 테스트 수를 전체 결과에 중복 합산하지 않는다.
-운영 VPS의 Discord Gateway 연결과 전역 명령 등록은 확인했다. 실제 명령 실행·메시지/DM 수신은 운영 서버에서 별도로 확인한다.
-실제 서버의 권한·DM 수신 설정을 포함한 연동 검증은 지정한 테스트 서버와 발송 대상이 준비된 뒤 별도로 진행한다.
+운영 VPS에서 확인한 Gateway 연결·전역 명령 등록과 실제 사용자 흐름 검증은 구분한다. 지정된 테스트 서버와 수신자를 준비한 뒤 실제 명령·권한 회수·Components V2 게시·DM 수신·재연결과 게시 복구를 확인한다.

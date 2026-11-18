@@ -26,14 +26,15 @@
 
     let panel = $state<HTMLDivElement | null>(null);
 
-    function close() {
+    function close(restoreFocus = false) {
+        if (restoreFocus) panel?.parentElement?.querySelector<HTMLElement>(':scope > button')?.focus();
         open = false;
         onclose?.();
     }
 
     function choose(index: number) {
         if (actions[index]?.disabled) return;
-        close();
+        close(true);
         onselect(index);
     }
 
@@ -41,22 +42,41 @@
     $effect(() => {
         if (!open) return;
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') close();
-        };
-        const onPointer = (event: PointerEvent) => {
             if (!panel) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                close(true);
+                return;
+            }
             if (
-                !panel.contains(event.target as Node) &&
-                !(event.target as Element).closest('[data-menu-trigger]')
+                !(event.target instanceof HTMLElement) ||
+                !event.target.matches('[role="menuitem"]') ||
+                !panel.contains(event.target)
             )
+                return;
+            if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            const items = [...panel.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])')];
+            const index = items.indexOf(event.target);
+            if (event.key === 'Home') items[0]?.focus();
+            else if (event.key === 'End') items.at(-1)?.focus();
+            else items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+        };
+        const outside = (event: Event) => {
+            if (panel && event.target instanceof Node && !panel.parentElement?.contains(event.target))
                 close();
         };
-        document.addEventListener('keydown', onKey);
-        document.addEventListener('pointerdown', onPointer, true);
-        queueMicrotask(() => panel?.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')?.focus());
+        window.addEventListener('keydown', onKey, true);
+        document.addEventListener('pointerdown', outside, true);
+        document.addEventListener('focusin', outside);
+        queueMicrotask(() => {
+            (panel?.querySelector<HTMLElement>('button:not([disabled])') ?? panel)?.focus();
+        });
         return () => {
-            document.removeEventListener('keydown', onKey);
-            document.removeEventListener('pointerdown', onPointer, true);
+            window.removeEventListener('keydown', onKey, true);
+            document.removeEventListener('pointerdown', outside, true);
+            document.removeEventListener('focusin', outside);
         };
     });
 </script>
@@ -64,34 +84,35 @@
 {#if open}
     <div
         bind:this={panel}
-        role="menu"
-        aria-label={label}
+        tabindex="-1"
         class={[
-            'absolute z-[1600] min-w-56 rounded-(--radius-form) border border-brass-line bg-bg-surface p-1 text-text-primary shadow-[0_12px_32px_rgb(0_0_0/35%)] dark:bg-bg-surface-dark dark:text-text-dark',
+            'absolute z-[1600] max-h-[50dvh] w-max min-w-48 max-w-[min(19rem,calc(100vw-2rem))] overflow-y-auto rounded-box border border-line-strong bg-surface-2 p-1.5 text-ink',
             align === 'right' ? 'right-0' : 'left-0',
             side === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
         ]}
     >
-        {#each actions as action, index (action.content)}
-            <button
-                type="button"
-                role="menuitem"
-                disabled={action.disabled}
-                aria-current={action.current ? 'true' : undefined}
-                class={[
-                    'flex w-full flex-col items-start gap-0.5 rounded-(--radius-small) px-3 py-2 text-left text-sm',
-                    'hover:bg-bg-highlight disabled:cursor-not-allowed disabled:opacity-45 dark:hover:bg-bg-highlight-dark',
-                    action.current && 'font-semibold text-hex',
-                    action.danger && 'text-error'
-                ]}
-                onclick={() => choose(index)}
-            >
-                <span>{action.content}</span>
-                {#if action.desc}<span class="text-xs text-text-muted">{action.desc}</span>{/if}
-            </button>
-        {/each}
+        <div role="menu" aria-label={label} class="flex flex-col gap-0.5">
+            {#each actions as action, index (index)}
+                <button
+                    type="button"
+                    role="menuitem"
+                    disabled={action.disabled}
+                    aria-current={action.current ? 'true' : undefined}
+                    class={[
+                        'flex min-h-9 w-full flex-col items-start justify-center gap-0.5 rounded-small px-2.5 py-1.5 text-left text-ui hover:bg-surface-hover disabled:cursor-not-allowed pointer-coarse:min-h-11',
+                        action.disabled && !action.current && 'text-muted',
+                        action.current && 'bg-selected font-semibold text-nexus',
+                        action.danger && 'text-error'
+                    ]}
+                    onclick={() => choose(index)}
+                >
+                    <span>{action.content}</span>
+                    {#if action.desc}<span class="text-xs text-muted">{action.desc}</span>{/if}
+                </button>
+            {/each}
+        </div>
         {#if footer}
-            <div class="mt-1 border-t border-brass-line pt-1" role="group" aria-label="화면 설정">
+            <div class="mt-1 border-t border-line pt-1" role="group" aria-label="화면 설정">
                 {@render footer()}
             </div>
         {/if}

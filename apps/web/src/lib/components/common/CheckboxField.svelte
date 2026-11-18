@@ -11,18 +11,18 @@
     const id = $props.id();
 </script>
 
-<label class="flex items-start gap-2 text-sm">
+<label class="inline-flex min-h-6 items-center gap-2 text-ui pointer-coarse:min-h-11">
     <input
         id={`${id}-check`}
         type="checkbox"
         bind:checked
         {disabled}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        class="mt-0.5 size-4 shrink-0 accent-[var(--color-hex)] disabled:opacity-45"
+        class="size-4 shrink-0 accent-nexus disabled:opacity-45"
         onchange={() => onchange?.(checked)}
     />
     <span class="flex flex-col gap-0.5">
         <span class="font-medium">{label}</span>
-        {#if hint}<span id={`${id}-hint`} class="text-xs text-text-muted">{hint}</span>{/if}
+        {#if hint}<span id={`${id}-hint`} class="text-xs text-muted">{hint}</span>{/if}
     </span>
 </label>

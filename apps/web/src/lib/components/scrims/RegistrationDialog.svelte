@@ -34,6 +34,7 @@
     let pending = $state(false);
     let refreshRequired = $state(false);
     let form = $state<HTMLFormElement>();
+    const id = $props.id();
 
     const title = $derived(editing ? '신청 수정' : '참가 신청');
     const accountOptions = $derived([
@@ -72,6 +73,7 @@
         positionsError = positions.length ? '' : '희망 포지션을 하나 이상 골라 주세요';
         if (positionsError) {
             cancel();
+            void tick().then(() => form?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus());
             return;
         }
         formData.set('riotAccountId', accountId);
@@ -98,56 +100,70 @@
             } finally {
                 pending = false;
                 await tick();
+                if (positionsError) form?.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();
             }
         };
     };
 </script>
 
-<Dialog {open} {title} onclose={close}>
-    <form
-        bind:this={form}
-        method="POST"
-        action={editing ? '?/registration' : '?/register'}
-        novalidate
-        aria-busy={pending}
-        use:enhance={submit}
-        class="flex flex-col gap-4"
-    >
-        {#if accounts.length > 0}
-            <SelectField
-                label="Riot 계정 (선택)"
-                bind:value={accountId}
-                options={accountOptions}
-                disabled={pending || refreshRequired}
-            />
-        {/if}
-
-        <fieldset class="flex flex-col gap-2" disabled={pending || refreshRequired}>
-            <legend class="mb-1 text-xs font-semibold text-text-muted">희망 포지션</legend>
-            <div class="grid gap-2 sm:grid-cols-2">
-                {#each POSITIONS as position (position.key)}
-                    <CheckboxField
-                        label={position.text}
-                        checked={positions.includes(position.key)}
-                        onchange={() => toggle(position.key)}
-                        disabled={pending}
-                    />
-                {/each}
-            </div>
-            {#if positionsError}
-                <p role="alert" class="text-sm text-error">{positionsError}</p>
+<form
+    bind:this={form}
+    method="POST"
+    action={editing ? '?/registration' : '?/register'}
+    novalidate
+    aria-busy={pending}
+    use:enhance={submit}
+>
+    <Dialog bind:open {title} dismissible={!pending}>
+        <div class="flex flex-col gap-4">
+            {#if accounts.length > 0}
+                <SelectField
+                    label="Riot 계정 (선택)"
+                    bind:value={accountId}
+                    options={accountOptions}
+                    disabled={pending || refreshRequired}
+                />
             {/if}
-        </fieldset>
 
-        {#if formError}
-            <p role="alert" class="text-sm text-error">{formError}</p>
-        {/if}
-
-        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" type="button" disabled={pending} onclick={close}>취소</Button>
-            <Button variant="primary" type="submit" loading={pending} disabled={pending || refreshRequired}>
-                {editing ? '저장' : '신청하기'}
-            </Button>
+            <fieldset
+                class="min-w-0"
+                disabled={pending || refreshRequired}
+                aria-describedby={positionsError ? `${id}-positions-error` : undefined}
+            >
+                <legend class="mb-1.5 text-xs font-semibold text-muted">희망 포지션</legend>
+                <div class="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
+                    {#each POSITIONS as position (position.key)}
+                        <CheckboxField
+                            label={position.text}
+                            checked={positions.includes(position.key)}
+                            onchange={() => toggle(position.key)}
+                            disabled={pending}
+                        />
+                    {/each}
+                </div>
+                {#if positionsError}
+                    <p id={`${id}-positions-error`} role="alert" class="mt-1 text-sm text-error">
+                        {positionsError}
+                    </p>
+                {/if}
+            </fieldset>
         </div>
-    </form>
-</Dialog>
+        {#snippet footer()}
+            {#if formError}
+                <p role="alert" class="mb-2 text-sm text-error">{formError}</p>
+            {/if}
+
+            <div class="flex flex-wrap justify-end gap-2">
+                <Button variant="secondary" type="button" disabled={pending} onclick={close}>취소</Button>
+                <Button
+                    variant="primary"
+                    type="submit"
+                    loading={pending}
+                    disabled={pending || refreshRequired}
+                >
+                    {editing ? '저장' : '신청하기'}
+                </Button>
+            </div>
+        {/snippet}
+    </Dialog>
+</form>

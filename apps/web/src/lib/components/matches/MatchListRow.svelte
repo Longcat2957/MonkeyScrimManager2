@@ -21,13 +21,7 @@
 </script>
 
 {#snippet team(name: string, side: 'a' | 'b')}
-    <span
-        class={[
-            'truncate',
-            winner === side && 'font-semibold',
-            winner && winner !== side && 'text-gray-500 dark:text-gray-400'
-        ]}
-    >
+    <span class={['truncate', winner === side && 'font-semibold', winner && winner !== side && 'text-muted']}>
         {name}{#if winner === side}<span class="sr-only"> 승리</span>{/if}
     </span>
 {/snippet}
@@ -45,7 +39,7 @@
             class="grid grid-cols-[minmax(0,max-content)_auto_minmax(0,max-content)] items-baseline justify-start gap-1.5"
         >
             {@render team(match.teamA, 'a')}
-            <span class="shrink-0 font-semibold tabular-nums">{match.scoreA} : {match.scoreB}</span>
+            <span class="shrink-0 text-sm font-bold tabular-nums">{match.scoreA} : {match.scoreB}</span>
             {@render team(match.teamB, 'b')}
         </span>
     {/snippet}

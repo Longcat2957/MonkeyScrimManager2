@@ -23,7 +23,6 @@ function push(tone: ToastTone, message: string) {
     }, 5000);
 }
 
-/** STDF toast와 같은 호출 형태를 유지한다. */
 export const toast = {
     success: (message: string) => push('success', message),
     error: (message: string) => push('error', message),

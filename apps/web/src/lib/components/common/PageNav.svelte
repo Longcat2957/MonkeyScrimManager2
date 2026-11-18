@@ -25,31 +25,37 @@
         window.push(pages);
         return window;
     });
+    const control =
+        'inline-flex min-h-9 min-w-9 items-center justify-center rounded-form border text-ui font-semibold pointer-coarse:min-h-11 pointer-coarse:min-w-11';
+    const quiet =
+        'border-line-strong bg-surface text-ink-2 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-45';
 </script>
 
 {#if total > pageSize}
-    <nav aria-label={label} class="flex items-center justify-center gap-1 pt-2">
+    <nav aria-label={label} class="flex flex-wrap items-center justify-center gap-1 pt-2">
         <button
             type="button"
-            class="min-h-11 min-w-11 rounded-(--radius-small) border border-brass-line text-sm disabled:opacity-40"
+            class={[control, quiet]}
             disabled={current <= 1}
             aria-label="이전 쪽"
             onclick={() => onchange(current - 1)}
         >
-            ‹
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                class="size-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"><path d="m10 3-5 5 5 5" /></svg
+            >
         </button>
         {#each visible as page, index (index)}
             {#if page === -1}
-                <span class="px-0.5 text-sm text-text-muted" aria-hidden="true">…</span>
+                <span class="px-0.5 text-ui text-muted" aria-hidden="true">…</span>
             {:else}
                 <button
                     type="button"
-                    class={[
-                        'min-h-11 min-w-11 rounded-(--radius-small) border text-sm font-semibold',
-                        page === current
-                            ? 'border-hex bg-hex/10 text-hex'
-                            : 'border-brass-line text-text-muted hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark'
-                    ]}
+                    class={[control, page === current ? 'border-nexus bg-selected text-ink' : quiet]}
                     aria-current={page === current ? 'page' : undefined}
                     onclick={() => onchange(page)}
                 >
@@ -59,12 +65,19 @@
         {/each}
         <button
             type="button"
-            class="min-h-11 min-w-11 rounded-(--radius-small) border border-brass-line text-sm disabled:opacity-40"
+            class={[control, quiet]}
             disabled={current >= Math.ceil(total / pageSize)}
             onclick={() => onchange(current + 1)}
         >
             <span class="sr-only">다음 쪽</span>
-            <span aria-hidden="true">›</span>
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                class="size-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"><path d="m6 3 5 5-5 5" /></svg
+            >
         </button>
     </nav>
 {/if}

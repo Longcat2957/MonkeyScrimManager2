@@ -1,0 +1,1501 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=1440" />
+        <title>10월 정기 내전 · 소환사의 협곡 전술 상황판 | Monkeybot</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Oxanium:wght@600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg: #080c12;
+                --rail: #05080d;
+                --rail-surface: #0d141f;
+                --rail-line: #182434;
+                --rail-ink: #eaf2fa;
+                --rail-muted: #8ca2bc;
+                --surface: #0e151f;
+                --surface-2: #141e2c;
+                --hover: #192638;
+                --selected: #132a3a;
+                --line: #1f2e42;
+                --ctl-line: #3c5470;
+                --ink: #eaf2fa;
+                --ink-2: #c3d3e4;
+                --muted: #8ea4be;
+                --cyan: #00d4ff;
+                --cyan-hover: #33ddff;
+                --cyan-ink: #041017;
+                --cyan-soft: rgba(0, 212, 255, 0.14);
+                --role-gold: #d4b375;
+                --role-dim: rgba(212, 179, 117, 0.35);
+                --ok: #2ce59b;
+                --ok-soft: rgba(44, 229, 155, 0.14);
+                --info: #5eb4ff;
+                --info-soft: rgba(94, 180, 255, 0.15);
+                --warn: #f5b841;
+                --warn-soft: rgba(245, 184, 65, 0.16);
+                --danger: #ff647d;
+                --danger-solid: #d92949;
+                --danger-soft: rgba(255, 100, 125, 0.15);
+                --blue-side: #2997ff;
+                --blue-soft: rgba(41, 151, 255, 0.16);
+                --red-side: #ff4769;
+                --red-soft: rgba(255, 71, 105, 0.16);
+                --focus: #00d4ff;
+                --font-sans: 'Noto Sans KR', system-ui, sans-serif;
+                --font-brand: 'Oxanium', 'Noto Sans KR', sans-serif;
+                color-scheme: dark;
+            }
+            :root:has(#theme-light:checked) {
+                --bg: #eaeff5;
+                --rail: #dfe7f0;
+                --rail-surface: #ffffff;
+                --rail-line: #c3d1e0;
+                --rail-ink: #0b1420;
+                --rail-muted: #465a70;
+                --surface: #ffffff;
+                --surface-2: #f2f6fa;
+                --hover: #e5edf5;
+                --selected: #dff1f8;
+                --line: #cfdbe7;
+                --ctl-line: #687e96;
+                --ink: #0b1420;
+                --ink-2: #24364b;
+                --muted: #4b5f75;
+                --cyan: #007396;
+                --cyan-hover: #005f7c;
+                --cyan-ink: #ffffff;
+                --cyan-soft: #daf2f8;
+                --role-gold: #8c6622;
+                --role-dim: rgba(140, 102, 34, 0.3);
+                --ok: #0a7547;
+                --ok-soft: #d9f5e8;
+                --info: #0c58a6;
+                --info-soft: #ddecfc;
+                --warn: #945600;
+                --warn-soft: #fdeec9;
+                --danger: #b81434;
+                --danger-solid: #b81434;
+                --danger-soft: #fbdde3;
+                --blue-side: #0062c4;
+                --blue-soft: #dcebfb;
+                --red-side: #c4183c;
+                --red-soft: #fce0e6;
+                --focus: #007396;
+                color-scheme: light;
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            ::selection {
+                background: var(--cyan);
+                color: var(--cyan-ink);
+            }
+            body {
+                width: 1440px;
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font-sans);
+                font-size: 14px;
+                line-height: 1.45;
+                font-variant-numeric: tabular-nums;
+                word-break: keep-all;
+                -webkit-font-smoothing: antialiased;
+            }
+            button,
+            input,
+            select,
+            a {
+                font: inherit;
+                color: inherit;
+            }
+            :focus-visible,
+            .is-focus {
+                outline: 2px solid var(--focus);
+                outline-offset: 2px;
+            }
+            /* 우상단 테마 전환 스위치 (셸 모드 스위치 겸용) */
+            .theme-switch {
+                position: fixed;
+                top: 14px;
+                right: 24px;
+                z-index: 50;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                height: 34px;
+                padding: 0 12px;
+                border: 1px solid var(--ctl-line);
+                border-radius: 6px;
+                background: var(--surface-2);
+                color: var(--ink);
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+            .theme-switch input {
+                accent-color: var(--cyan);
+                width: 14px;
+                height: 14px;
+            }
+            /* 첫 화면 1440x900 */
+            #screen {
+                width: 1440px;
+                height: 900px;
+                overflow: hidden;
+                display: grid;
+                grid-template-columns: 224px 1216px;
+                background:
+                    radial-gradient(circle at 82% 8%, var(--cyan-soft), transparent 36%),
+                    var(--bg);
+                border-bottom: 2px solid var(--line);
+            }
+            .rail {
+                background: var(--rail);
+                color: var(--rail-ink);
+                border-right: 1px solid var(--rail-line);
+                display: flex;
+                flex-direction: column;
+                padding: 18px 14px;
+                gap: 18px;
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                text-decoration: none;
+                padding: 2px 4px;
+            }
+            .brand img {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                border: 1px solid var(--cyan);
+            }
+            .wordmark {
+                font-family: var(--font-brand);
+                font-size: 21px;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                color: var(--rail-ink);
+            }
+            .guild-select {
+                width: 100%;
+                height: 38px;
+                padding: 0 10px;
+                border-radius: 6px;
+                border: 1px solid var(--ctl-line);
+                background: var(--rail-surface);
+                color: var(--rail-ink);
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .rail-nav ul {
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .rail-nav a {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                height: 38px;
+                padding: 0 10px;
+                border-radius: 6px;
+                text-decoration: none;
+                color: var(--rail-muted);
+                font-weight: 500;
+                border: 1px solid transparent;
+            }
+            .rail-nav a[aria-current='page'] {
+                background: var(--cyan-soft);
+                border-color: var(--cyan);
+                color: var(--rail-ink);
+                font-weight: 700;
+            }
+            .rail-nav svg {
+                width: 16px;
+                height: 16px;
+                color: var(--cyan);
+                flex-shrink: 0;
+            }
+            .rail-foot {
+                margin-top: auto;
+                padding-top: 12px;
+                border-top: 1px solid var(--rail-line);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .account-btn {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px;
+                border-radius: 6px;
+                border: 1px solid var(--ctl-line);
+                background: var(--rail-surface);
+                color: var(--rail-ink);
+                cursor: pointer;
+                text-align: left;
+            }
+            .crest {
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                background: var(--surface-2);
+                border: 1px solid var(--ctl-line);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--cyan);
+                flex-shrink: 0;
+            }
+            .work {
+                padding: 14px 24px 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                height: 898px;
+            }
+            .top-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-right: 128px;
+                min-height: 36px;
+            }
+            .title-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .title-row h1 {
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+            }
+            .meta-inline {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .fearless-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 2px 8px;
+                border-radius: 4px;
+                border: 1px solid var(--role-gold);
+                color: var(--role-gold);
+                font-size: 12px;
+                font-weight: 600;
+            }
+            /* 전술 4단계 시퀀스 잠금 바 */
+            .phase-lock {
+                display: grid;
+                grid-template-columns: 1.45fr 1fr 0.9fr 0.85fr;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+                overflow: hidden;
+            }
+            .phase-step {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 10px 14px;
+                border-right: 1px solid var(--line);
+                text-decoration: none;
+                min-height: 54px;
+            }
+            .phase-step:last-child {
+                border-right: 0;
+            }
+            .phase-step.current {
+                background: var(--selected);
+                box-shadow: inset 0 -2px 0 var(--cyan);
+            }
+            .phase-num {
+                font-family: var(--font-brand);
+                font-size: 16px;
+                font-weight: 700;
+                width: 26px;
+                height: 26px;
+                border-radius: 5px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--ctl-line);
+                color: var(--muted);
+                flex-shrink: 0;
+            }
+            .phase-step.current .phase-num {
+                background: var(--cyan);
+                border-color: var(--cyan);
+                color: var(--cyan-ink);
+            }
+            .phase-label {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+            .phase-label strong {
+                font-size: 14px;
+                font-weight: 700;
+            }
+            .phase-step.disabled {
+                color: var(--muted);
+                opacity: 0.68;
+                cursor: not-allowed;
+            }
+            .phase-step.quiet {
+                color: var(--ink-2);
+            }
+            .phase-reason {
+                font-size: 11px;
+                color: var(--muted);
+            }
+            /* 버튼 공통 */
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                height: 36px;
+                padding: 0 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 600;
+                border: 1px solid transparent;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .btn-primary {
+                background: var(--cyan);
+                color: var(--cyan-ink);
+                font-weight: 700;
+            }
+            .btn-primary:hover,
+            .btn-primary.is-hover {
+                background: var(--cyan-hover);
+            }
+            .btn-secondary {
+                background: var(--surface-2);
+                border-color: var(--ctl-line);
+                color: var(--ink);
+            }
+            .btn-secondary:hover,
+            .btn-secondary.is-hover {
+                background: var(--hover);
+            }
+            .btn-quiet {
+                background: transparent;
+                border-color: transparent;
+                color: var(--ink-2);
+            }
+            .btn-quiet:hover,
+            .btn-quiet.is-hover {
+                background: var(--hover);
+                color: var(--ink);
+            }
+            .btn-danger {
+                background: var(--danger-solid);
+                color: #ffffff;
+            }
+            .btn-danger:hover,
+            .btn-danger.is-hover {
+                filter: brightness(1.1);
+            }
+            .btn:disabled,
+            .btn.is-disabled {
+                opacity: 0.42;
+                cursor: not-allowed;
+            }
+            /* 본문 2열 */
+            .main-grid {
+                display: grid;
+                grid-template-columns: 1fr 336px;
+                gap: 16px;
+                flex: 1;
+                min-height: 0;
+            }
+            .left-col {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                min-height: 0;
+            }
+            /* Signature Move: 소환사의 협곡 5라인 전력 밸런스 바 */
+            .lane-matrix {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+                overflow: hidden;
+            }
+            .lane-cell {
+                padding: 8px 12px;
+                border-right: 1px solid var(--line);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .lane-cell:last-child {
+                border-right: 0;
+            }
+            .lane-cell.crowded {
+                background: var(--warn-soft);
+            }
+            .role-svg {
+                width: 22px;
+                height: 22px;
+                flex-shrink: 0;
+            }
+            .lane-stat {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+            }
+            .lane-top {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 4px;
+            }
+            .lane-top strong {
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .lane-count {
+                font-family: var(--font-brand);
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--ink);
+            }
+            .lane-cell.crowded .lane-count {
+                color: var(--warn);
+            }
+            .lane-sub {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 11px;
+                color: var(--muted);
+            }
+            .slot-pips {
+                display: inline-flex;
+                gap: 3px;
+            }
+            .pip {
+                width: 8px;
+                height: 4px;
+                border-radius: 2px;
+                background: var(--line);
+            }
+            .pip.on {
+                background: var(--ok);
+            }
+            .pip.over {
+                background: var(--warn);
+            }
+            /* 참가자 보드 */
+            .panel {
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+            }
+            .roster-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+                overflow: hidden;
+            }
+            .roster-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 14px;
+                border-bottom: 1px solid var(--line);
+                gap: 12px;
+            }
+            .roster-counts {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .roster-counts h2 {
+                font-size: 16px;
+                font-weight: 700;
+            }
+            .count-pill {
+                font-size: 12px;
+                color: var(--muted);
+                padding: 2px 8px;
+                border-radius: 4px;
+                background: var(--surface-2);
+                border: 1px solid var(--line);
+            }
+            .seg-tabs {
+                display: inline-flex;
+                background: var(--surface-2);
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 4px;
+                gap: 3px;
+            }
+            .seg-tab {
+                height: 28px;
+                padding: 0 10px;
+                border-radius: 4px;
+                border: 0;
+                background: transparent;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+            .seg-tab[aria-selected='true'] {
+                background: var(--selected);
+                color: var(--ink);
+                border: 1px solid var(--cyan);
+            }
+            table.roster {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            table.roster th {
+                text-align: left;
+                padding: 6px 14px;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--muted);
+                background: var(--surface-2);
+                border-bottom: 1px solid var(--line);
+            }
+            table.roster th:last-child,
+            table.roster td:last-child {
+                text-align: right;
+            }
+            table.roster td {
+                height: 46px;
+                padding: 0 14px;
+                border-bottom: 1px solid var(--line);
+                vertical-align: middle;
+            }
+            table.roster tr:last-child td {
+                border-bottom: 0;
+            }
+            table.roster tbody tr:hover,
+            table.roster tr.is-hover {
+                background: var(--hover);
+            }
+            table.roster tr.is-selected {
+                background: var(--selected);
+            }
+            .player-cell {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .player-name {
+                font-weight: 600;
+                color: var(--ink);
+                text-decoration: none;
+            }
+            .riot-id {
+                font-size: 12px;
+                color: var(--muted);
+                margin-left: 6px;
+            }
+            .pos-list {
+                display: inline-flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .pos-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                height: 24px;
+                padding: 0 8px 0 6px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid var(--line);
+                background: var(--surface-2);
+                color: var(--ink-2);
+            }
+            .pos-chip.primary {
+                border-color: var(--role-gold);
+                color: var(--ink);
+            }
+            .pos-chip svg {
+                width: 14px;
+                height: 14px;
+            }
+            /* 상태 태그 */
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                height: 22px;
+                padding: 0 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid transparent;
+            }
+            .tag-theme {
+                background: var(--cyan-soft);
+                color: var(--cyan);
+                border-color: var(--cyan);
+            }
+            .tag-ok {
+                background: var(--ok-soft);
+                color: var(--ok);
+            }
+            .tag-info {
+                background: var(--info-soft);
+                color: var(--info);
+            }
+            .tag-warn {
+                background: var(--warn-soft);
+                color: var(--warn);
+            }
+            .tag-danger {
+                background: var(--danger-soft);
+                color: var(--danger);
+            }
+            .tag-muted {
+                color: var(--muted);
+                background: var(--surface-2);
+                border-color: var(--line);
+            }
+            .tag-blue {
+                background: var(--blue-soft);
+                color: var(--blue-side);
+                border-color: var(--blue-side);
+            }
+            .tag-red {
+                background: var(--red-soft);
+                color: var(--red-side);
+                border-color: var(--red-side);
+            }
+            /* 우측 열 */
+            .right-col {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .side-panel {
+                padding: 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .side-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .side-head h2 {
+                font-size: 15px;
+                font-weight: 700;
+            }
+            .method-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .method-card {
+                width: 100%;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid var(--ctl-line);
+                background: var(--surface-2);
+                text-align: left;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                cursor: pointer;
+            }
+            .method-card:hover {
+                background: var(--hover);
+                border-color: var(--cyan);
+            }
+            .method-card strong {
+                font-size: 14px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .method-card span {
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .kv-list {
+                display: grid;
+                grid-template-columns: 76px 1fr;
+                row-gap: 8px;
+                align-items: center;
+                font-size: 13px;
+            }
+            .kv-list dt {
+                color: var(--muted);
+            }
+            .kv-list dd {
+                font-weight: 600;
+            }
+            .side-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                padding-top: 4px;
+                border-top: 1px solid var(--line);
+            }
+            /* 디자인 시스템 시트 */
+            #system {
+                padding: 40px 36px 56px;
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+                background: var(--bg);
+            }
+            .sys-head {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                border-bottom: 1px solid var(--line);
+                padding-bottom: 12px;
+            }
+            .sys-head h2 {
+                font-size: 22px;
+                font-weight: 700;
+            }
+            .sys-grid-2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            .sys-grid-3 {
+                display: grid;
+                grid-template-columns: 1.2fr 0.9fr 0.9fr;
+                gap: 20px;
+            }
+            .sys-box {
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+                padding: 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+            .sys-box h3 {
+                font-size: 15px;
+                font-weight: 700;
+                padding-bottom: 8px;
+                border-bottom: 1px solid var(--line);
+            }
+            .swatches {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
+            }
+            .swatch {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px;
+                border-radius: 6px;
+                border: 1px solid var(--line);
+                background: var(--surface-2);
+            }
+            .swatch-chip {
+                width: 30px;
+                height: 30px;
+                border-radius: 5px;
+                border: 1px solid var(--ctl-line);
+                flex-shrink: 0;
+            }
+            .swatch small {
+                display: block;
+                font-size: 11px;
+                color: var(--muted);
+            }
+            .type-rows,
+            .state-matrix {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .type-row {
+                display: grid;
+                grid-template-columns: 170px 1fr;
+                align-items: baseline;
+                padding-bottom: 8px;
+                border-bottom: 1px solid var(--line);
+            }
+            .type-row:last-child {
+                border-bottom: 0;
+            }
+            .matrix-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .matrix-table th,
+            .matrix-table td {
+                padding: 7px 8px;
+                text-align: left;
+                font-size: 12px;
+                border-bottom: 1px solid var(--line);
+                vertical-align: top;
+            }
+            .field {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .field label {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--ink-2);
+            }
+            .input,
+            .select {
+                height: 36px;
+                padding: 0 10px;
+                border-radius: 6px;
+                border: 1px solid var(--ctl-line);
+                background: var(--surface-2);
+                color: var(--ink);
+                width: 100%;
+            }
+            .input.is-error,
+            .select.is-error {
+                border-color: var(--danger);
+            }
+            .input:disabled,
+            .select:disabled {
+                opacity: 0.45;
+            }
+            .err-msg {
+                font-size: 11px;
+                color: var(--danger);
+            }
+            .check-line {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                font-size: 13px;
+                accent-color: var(--cyan);
+            }
+            .tag-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+            .dialog-demo {
+                border: 1px solid var(--ctl-line);
+                border-radius: 8px;
+                background: var(--surface-2);
+                padding: 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .menu-demo {
+                border: 1px solid var(--ctl-line);
+                border-radius: 8px;
+                background: var(--surface-2);
+                padding: 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .menu-item {
+                height: 34px;
+                padding: 0 10px;
+                border-radius: 5px;
+                border: 0;
+                background: transparent;
+                text-align: left;
+                font-size: 13px;
+                cursor: pointer;
+            }
+            .menu-item:hover {
+                background: var(--hover);
+            }
+            .menu-item.danger {
+                color: var(--danger);
+            }
+            .toast {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 12px;
+                border-radius: 6px;
+                border: 1px solid var(--ctl-line);
+                background: var(--surface-2);
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .toast.err {
+                border-color: var(--danger);
+                color: var(--danger);
+            }
+            .skel {
+                height: 12px;
+                border-radius: 4px;
+                background: var(--line);
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 공식 Riot 5포지션 기하학 심볼 -->
+        <svg hidden aria-hidden="true">
+            <symbol id="pos-top" viewBox="0 0 34 34">
+                <path
+                    fill="var(--role-dim)"
+                    fill-rule="evenodd"
+                    d="M21,14H14v7h7V14Zm5-3V26L11.014,26l-4,4H30V7.016Z"
+                />
+                <polygon
+                    fill="var(--role-gold)"
+                    points="4 4 4.003 28.045 9 23 9 9 23 9 28.045 4.003 4 4"
+                />
+            </symbol>
+            <symbol id="pos-jungle" viewBox="0 0 34 34">
+                <path
+                    fill="var(--role-gold)"
+                    fill-rule="evenodd"
+                    d="M25,3c-2.128,3.3-5.147,6.851-6.966,11.469A42.373,42.373,0,0,1,20,20a27.7,27.7,0,0,1,1-3C21,12.023,22.856,8.277,25,3ZM13,20c-1.488-4.487-4.76-6.966-9-9,3.868,3.136,4.422,7.52,5,12l3.743,3.312C14.215,27.917,16.527,30.451,17,31c4.555-9.445-3.366-20.8-8-28C11.67,9.573,13.717,13.342,13,20Zm8,5a15.271,15.271,0,0,1,0,2l4-4c0.578-4.48,1.132-8.864,5-12C24.712,13.537,22.134,18.854,21,25Z"
+                />
+            </symbol>
+            <symbol id="pos-mid" viewBox="0 0 34 34">
+                <path
+                    fill="var(--role-dim)"
+                    fill-rule="evenodd"
+                    d="M30,12.968l-4.008,4L26,26H17l-4,4H30ZM16.979,8L21,4H4V20.977L8,17,8,8h8.981Z"
+                />
+                <polygon fill="var(--role-gold)" points="25 4 4 25 4 30 9 30 30 9 30 4 25 4" />
+            </symbol>
+            <symbol id="pos-bot" viewBox="0 0 34 34">
+                <path
+                    fill="var(--role-dim)"
+                    fill-rule="evenodd"
+                    d="M13,20h7V13H13v7ZM4,4V26.984l3.955-4L8,8,22.986,8l4-4H4Z"
+                />
+                <polygon
+                    fill="var(--role-gold)"
+                    points="29.997 5.955 25 11 25 25 11 25 5.955 29.997 30 30 29.997 5.955"
+                />
+            </symbol>
+            <symbol id="pos-support" viewBox="0 0 34 34">
+                <path
+                    fill="var(--role-gold)"
+                    fill-rule="evenodd"
+                    d="M26,13c3.535,0,8-4,8-4H23l-3,3,2,7,5-2-3-4h2ZM22,5L20.827,3H13.062L12,5l5,6Zm-5,9-1-1L13,28l4,3,4-3L18,13ZM11,9H0s4.465,4,8,4h2L7,17l5,2,2-7Z"
+                />
+            </symbol>
+        </svg>
+
+        <label class="theme-switch" for="theme-light">
+            <input type="checkbox" id="theme-light" />
+            라이트 모드
+        </label>
+
+        <!-- 1. 실제 내전 상세 첫 화면 (1440x900) -->
+        <section id="screen" aria-label="내전 상세 첫 화면">
+            <aside class="rail">
+                <a class="brand" href="#screen">
+                    <img src="../../../static/brand/logo.png" alt="" />
+                    <span class="wordmark">Monkeybot</span>
+                </a>
+                <select class="guild-select" aria-label="서버 선택">
+                    <option selected>원숭이 내전 서버</option>
+                    <option>목요 칼바람 모임</option>
+                </select>
+                <nav class="rail-nav" aria-label="서버 메뉴">
+                    <ul>
+                        <li>
+                            <a href="#screen">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9.5 10 4l7 5.5V16a1 1 0 0 1-1 1h-4v-4H8v4H4a1 1 0 0 1-1-1V9.5Z" /></svg>
+                                서버 홈
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#screen" aria-current="page">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h5l2 3h5v9H4V4Zm4 6 4 4m0-4-4 4" /></svg>
+                                내전
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#screen">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h12M4 10h12M4 15h8" /></svg>
+                                경기 기록
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#screen">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 15V9m4 6V5m4 10v-4m4 4V7" /></svg>
+                                통계
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#screen">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="3" /><path d="M10 3v2m0 10v2M3 10h2m10 0h2" /></svg>
+                                관리
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="rail-foot">
+                    <button type="button" class="account-btn" aria-haspopup="menu">
+                        <span class="crest">개</span>
+                        <span style="flex: 1; font-weight: 600; font-size: 13px">개발자</span>
+                        <span style="color: var(--rail-muted); font-size: 12px">▾</span>
+                    </button>
+                </div>
+            </aside>
+
+            <main class="work">
+                <header class="top-head">
+                    <div class="title-row">
+                        <h1>10월 정기 내전</h1>
+                        <span class="tag tag-theme">모집 중</span>
+                        <div class="meta-inline">
+                            <span>10월 31일 (토) 20:00</span>
+                            <span>·</span>
+                            <span>2팀</span>
+                            <span>·</span>
+                            <span class="fearless-badge">하드 피어리스</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" aria-haspopup="menu">운영 메뉴 ▾</button>
+                </header>
+
+                <!-- 내전 4단계 전술 시퀀스 (단계 이동 + 단일 다음 행동 직결) -->
+                <nav class="phase-lock" aria-label="내전 단계">
+                    <div class="phase-step current" aria-current="page">
+                        <div style="display: flex; align-items: center; gap: 10px">
+                            <span class="phase-num">1</span>
+                            <span class="phase-label">
+                                <strong>모집·참가자</strong>
+                                <span class="phase-reason">선발 정원 충족</span>
+                            </span>
+                        </div>
+                        <button type="button" class="btn btn-primary">모집 마감 →</button>
+                    </div>
+                    <div class="phase-step disabled" aria-disabled="true">
+                        <div style="display: flex; align-items: center; gap: 10px">
+                            <span class="phase-num">2</span>
+                            <span class="phase-label">
+                                <strong>팀 편성</strong>
+                                <span class="phase-reason">편성 방식 미정</span>
+                            </span>
+                        </div>
+                    </div>
+                    <a class="phase-step quiet" href="#screen">
+                        <div style="display: flex; align-items: center; gap: 10px">
+                            <span class="phase-num">3</span>
+                            <span class="phase-label">
+                                <strong>대진·경기</strong>
+                            </span>
+                        </div>
+                    </a>
+                    <div class="phase-step disabled" aria-disabled="true">
+                        <div style="display: flex; align-items: center; gap: 10px">
+                            <span class="phase-num">4</span>
+                            <span class="phase-label">
+                                <strong>결과</strong>
+                            </span>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="main-grid">
+                    <div class="left-col">
+                        <!-- Signature Move: 선발 10인 협곡 5라인 희망 포지션 밸런스 -->
+                        <section class="lane-matrix" aria-label="선발 희망 포지션 분포">
+                            <div class="lane-cell">
+                                <svg class="role-svg"><use href="#pos-top" /></svg>
+                                <div class="lane-stat">
+                                    <div class="lane-top">
+                                        <strong>탑</strong>
+                                        <span class="lane-count">4명</span>
+                                    </div>
+                                    <div class="lane-sub">
+                                        <span>1순위 1 · 부 3</span>
+                                        <span class="slot-pips"><i class="pip on"></i><i class="pip on"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lane-cell">
+                                <svg class="role-svg"><use href="#pos-jungle" /></svg>
+                                <div class="lane-stat">
+                                    <div class="lane-top">
+                                        <strong>정글</strong>
+                                        <span class="lane-count">2명</span>
+                                    </div>
+                                    <div class="lane-sub">
+                                        <span>1순위 2 · 대기 1</span>
+                                        <span class="slot-pips"><i class="pip on"></i><i class="pip on"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lane-cell crowded">
+                                <svg class="role-svg"><use href="#pos-mid" /></svg>
+                                <div class="lane-stat">
+                                    <div class="lane-top">
+                                        <strong>미드</strong>
+                                        <span class="lane-count">5명</span>
+                                    </div>
+                                    <div class="lane-sub">
+                                        <span>1순위 4 · 부 1</span>
+                                        <span class="slot-pips"><i class="pip over"></i><i class="pip over"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lane-cell">
+                                <svg class="role-svg"><use href="#pos-bot" /></svg>
+                                <div class="lane-stat">
+                                    <div class="lane-top">
+                                        <strong>원딜</strong>
+                                        <span class="lane-count">2명</span>
+                                    </div>
+                                    <div class="lane-sub">
+                                        <span>1순위 2</span>
+                                        <span class="slot-pips"><i class="pip on"></i><i class="pip on"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lane-cell">
+                                <svg class="role-svg"><use href="#pos-support" /></svg>
+                                <div class="lane-stat">
+                                    <div class="lane-top">
+                                        <strong>서폿</strong>
+                                        <span class="lane-count">2명</span>
+                                    </div>
+                                    <div class="lane-sub">
+                                        <span>1순위 1 · 부 1</span>
+                                        <span class="slot-pips"><i class="pip on"></i><i class="pip on"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="panel roster-panel" aria-labelledby="roster-title">
+                            <div class="roster-bar">
+                                <div class="roster-counts">
+                                    <h2 id="roster-title">참가자</h2>
+                                    <span class="count-pill">신청 11/12명</span>
+                                    <span class="count-pill">선발 10/10명</span>
+                                    <div class="seg-tabs" role="tablist" aria-label="상태 필터">
+                                        <button type="button" role="tab" class="seg-tab" aria-selected="true">전체 11</button>
+                                        <button type="button" role="tab" class="seg-tab" aria-selected="false">선발 10</button>
+                                        <button type="button" role="tab" class="seg-tab" aria-selected="false">대기 1</button>
+                                        <button type="button" role="tab" class="seg-tab" aria-selected="false">철회·제외 2</button>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px">
+                                    <button type="button" class="btn btn-secondary">참가자 추가</button>
+                                    <button type="button" class="btn btn-secondary">선발 관리</button>
+                                </div>
+                            </div>
+
+                            <table class="roster">
+                                <thead>
+                                    <tr>
+                                        <th>참가자</th>
+                                        <th style="width: 220px">희망 포지션</th>
+                                        <th style="width: 92px">상태</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">개</span><a class="player-name" href="#screen">개발자</a><span class="riot-id">개발자#KR1</span></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span><span class="pos-chip"><svg><use href="#pos-top" /></svg>탑</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">홍</span><a class="player-name" href="#screen">홍길동</a><span class="riot-id">홍길동#KR1</span></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span><span class="pos-chip"><svg><use href="#pos-top" /></svg>탑</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">김</span><a class="player-name" href="#screen">김철수</a></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-jungle" /></svg>정글</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">박</span><a class="player-name" href="#screen">박영희</a></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-support" /></svg>서폿</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">이</span><a class="player-name" href="#screen">이몽룡</a><span class="riot-id">이몽룡#KR4</span></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-bot" /></svg>원딜</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">성</span><a class="player-name" href="#screen">성춘향</a></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-top" /></svg>탑</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">장</span><a class="player-name" href="#screen">장보고</a></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">강</span><a class="player-name" href="#screen">강감찬</a><span class="riot-id">강감찬#KR7</span></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-jungle" /></svg>정글</span><span class="pos-chip"><svg><use href="#pos-support" /></svg>서폿</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">유</span><a class="player-name" href="#screen">유관순</a></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-bot" /></svg>원딜</span><span class="pos-chip"><svg><use href="#pos-mid" /></svg>미드</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">안</span><a class="player-name" href="#screen">안중근</a></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span><span class="pos-chip"><svg><use href="#pos-top" /></svg>탑</span></span></td>
+                                        <td><span class="tag tag-ok">선발</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="player-cell"><span class="crest">정</span><a class="player-name" href="#screen">정약용</a><span class="riot-id">정약용#KR10</span></div></td>
+                                        <td><span class="pos-list"><span class="pos-chip primary"><svg><use href="#pos-jungle" /></svg>정글</span></span></td>
+                                        <td><span class="tag tag-info">대기</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    </div>
+
+                    <div class="right-col">
+                        <section class="panel side-panel" aria-labelledby="method-head">
+                            <div class="side-head">
+                                <h2 id="method-head">편성 방식</h2>
+                            </div>
+                            <div class="method-list">
+                                <button type="button" class="method-card" aria-pressed="false">
+                                    <strong>수동 편성</strong>
+                                    <span>운영자가 참가자를 팀 자리에 직접 배치해요</span>
+                                </button>
+                                <button type="button" class="method-card" aria-pressed="false">
+                                    <strong>경매</strong>
+                                    <span>팀장을 정하고 포인트로 입찰해 팀원을 데려가요</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="panel side-panel" aria-labelledby="my-reg-head">
+                            <div class="side-head">
+                                <h2 id="my-reg-head">내 신청</h2>
+                                <span class="tag tag-ok">선발됨</span>
+                            </div>
+                            <dl class="kv-list">
+                                <dt>희망 포지션</dt>
+                                <dd>
+                                    <span class="pos-list">
+                                        <span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span>
+                                        <span class="pos-chip"><svg><use href="#pos-top" /></svg>탑</span>
+                                    </span>
+                                </dd>
+                                <dt>Riot 계정</dt>
+                                <dd>개발자#KR1</dd>
+                            </dl>
+                            <div class="side-actions">
+                                <button type="button" class="btn btn-quiet">신청 철회</button>
+                                <button type="button" class="btn btn-secondary">수정</button>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </main>
+        </section>
+
+        <!-- 2. 디자인 시스템 시트 -->
+        <section id="system" aria-label="디자인 시스템 시트">
+            <div class="sys-head">
+                <h2>디자인 시스템 · 소환사의 협곡 전술 상황판</h2>
+                <span style="color: var(--muted)">Oxanium 700 + Noto Sans KR · 다크 기본 / 라이트 지원</span>
+            </div>
+
+            <div class="sys-box">
+                <h3>색상 토큰</h3>
+                <div class="swatches">
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--bg)"></span><div><strong>--bg</strong><small>협곡 현무암 바닥</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--rail)"></span><div><strong>--rail</strong><small>좌측 전술 레일</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--surface)"></span><div><strong>--surface</strong><small>작전 패널 면</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--surface-2)"></span><div><strong>--surface-2</strong><small>입력 칸 · 보조 면</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--cyan)"></span><div><strong>--cyan</strong><small>넥서스 시안 · 진행 액션</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--role-gold)"></span><div><strong>--role-gold</strong><small>포지션 문장 · 피어리스</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--ok)"></span><div><strong>--ok</strong><small>선발 · 종료</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--info)"></span><div><strong>--info</strong><small>대기 · 편성 중</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--warn)"></span><div><strong>--warn</strong><small>진행 중 · 라인 집중</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--danger)"></span><div><strong>--danger</strong><small>제외 · 취소 · 오류</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--blue-side)"></span><div><strong>--blue-side</strong><small>블루 팀 진영</small></div></div>
+                    <div class="swatch"><span class="swatch-chip" style="background: var(--red-side)"></span><div><strong>--red-side</strong><small>레드 팀 진영</small></div></div>
+                </div>
+            </div>
+
+            <div class="sys-grid-2">
+                <div class="sys-box">
+                    <h3>타이포그래피</h3>
+                    <div class="type-rows">
+                        <div class="type-row"><span style="color: var(--muted); font-size: 12px">워드마크 · Oxanium 700</span><span class="wordmark" style="color: var(--ink)">Monkeybot</span></div>
+                        <div class="type-row"><span style="color: var(--muted); font-size: 12px">페이지 제목 · 22px 700</span><span style="font-size: 22px; font-weight: 700">10월 정기 내전</span></div>
+                        <div class="type-row"><span style="color: var(--muted); font-size: 12px">섹션 제목 · 16px 700</span><span style="font-size: 16px; font-weight: 700">참가자 · 편성 방식</span></div>
+                        <div class="type-row"><span style="color: var(--muted); font-size: 12px">본문 · 14px 400</span><span>운영자가 참가자를 팀 자리에 직접 배치해요</span></div>
+                        <div class="type-row"><span style="color: var(--muted); font-size: 12px">라벨 · 12px 600</span><span style="font-size: 12px; font-weight: 600">희망 포지션 · Riot 계정</span></div>
+                        <div class="type-row"><span style="color: var(--muted); font-size: 12px">고정폭 수치 · Oxanium</span><span style="font-family: var(--font-brand); font-size: 18px; font-weight: 700">11/12 · 10/10 · 20:00 · 1,540 MMR</span></div>
+                    </div>
+                </div>
+
+                <div class="sys-box">
+                    <h3>버튼 상태</h3>
+                    <table class="matrix-table">
+                        <thead><tr><th>종류</th><th>기본</th><th>호버</th><th>포커스</th><th>비활성</th></tr></thead>
+                        <tbody>
+                            <tr><td>주요</td><td><button class="btn btn-primary">모집 마감</button></td><td><button class="btn btn-primary is-hover">모집 마감</button></td><td><button class="btn btn-primary is-focus">모집 마감</button></td><td><button class="btn btn-primary" disabled>모집 마감</button></td></tr>
+                            <tr><td>보조</td><td><button class="btn btn-secondary">선발 관리</button></td><td><button class="btn btn-secondary is-hover">선발 관리</button></td><td><button class="btn btn-secondary is-focus">선발 관리</button></td><td><button class="btn btn-secondary" disabled>선발 관리</button></td></tr>
+                            <tr><td>조용한</td><td><button class="btn btn-quiet">취소</button></td><td><button class="btn btn-quiet is-hover">취소</button></td><td><button class="btn btn-quiet is-focus">취소</button></td><td><button class="btn btn-quiet" disabled>취소</button></td></tr>
+                            <tr><td>위험</td><td><button class="btn btn-danger">제외</button></td><td><button class="btn btn-danger is-hover">제외</button></td><td><button class="btn btn-danger is-focus">제외</button></td><td><button class="btn btn-danger" disabled>제외</button></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sys-box">
+                <h3>폼 컨트롤</h3>
+                <table class="matrix-table">
+                    <thead><tr><th>컨트롤</th><th>기본</th><th>포커스</th><th>오류</th><th>비활성</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td>텍스트 입력</td>
+                            <td><div class="field"><label>제목</label><input class="input" value="10월 정기 내전" readonly /></div></td>
+                            <td><div class="field"><label>제목</label><input class="input is-focus" value="10월 정기 내전" readonly /></div></td>
+                            <td><div class="field"><label>제목</label><input class="input is-error" value="" placeholder="내전 제목" readonly /><span class="err-msg">제목을 입력해 주세요</span></div></td>
+                            <td><div class="field"><label>제목</label><input class="input" value="10월 정기 내전" disabled /></div></td>
+                        </tr>
+                        <tr>
+                            <td>선택 · 날짜</td>
+                            <td><div class="field"><label>팀 수</label><select class="select"><option>2팀</option></select></div></td>
+                            <td><div class="field"><label>일정</label><input type="date" class="input is-focus" value="2026-10-31" readonly /></div></td>
+                            <td><div class="field"><label>Riot 계정</label><select class="select is-error"><option>연결이 해제된 계정</option></select><span class="err-msg">유효한 계정을 골라 주세요</span></div></td>
+                            <td><div class="field"><label>팀 수</label><select class="select" disabled><option>2팀</option></select></div></td>
+                        </tr>
+                        <tr>
+                            <td>선택 상자 · 라디오 · 스위치</td>
+                            <td><label class="check-line"><input type="checkbox" checked readonly /> 하드 피어리스</label></td>
+                            <td><label class="check-line"><input type="radio" class="is-focus" checked readonly /> 수동 편성</label></td>
+                            <td><div><label class="check-line"><input type="checkbox" /> 포지션 선택</label><div class="err-msg">최소 1개 선택해 주세요</div></div></td>
+                            <td><label class="check-line" style="opacity: 0.45"><input type="checkbox" checked disabled /> 다크 모드</label></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="sys-grid-2">
+                <div class="sys-box">
+                    <h3>상태 태그 · 포지션 칩 · 진영 표시</h3>
+                    <div class="tag-row">
+                        <span class="tag tag-theme">모집 중</span>
+                        <span class="tag tag-info">편성 중</span>
+                        <span class="tag tag-info">대진 준비</span>
+                        <span class="tag tag-warn">진행 중</span>
+                        <span class="tag tag-ok">종료</span>
+                        <span class="tag tag-danger">중도 종료</span>
+                        <span class="tag tag-danger">취소</span>
+                    </div>
+                    <div class="tag-row">
+                        <span class="tag tag-ok">선발</span>
+                        <span class="tag tag-info">대기</span>
+                        <span class="tag tag-muted">철회</span>
+                        <span class="tag tag-danger">제외</span>
+                        <span class="tag tag-blue">◆ 블루 팀</span>
+                        <span class="tag tag-red">▲ 레드 팀</span>
+                    </div>
+                    <div class="tag-row">
+                        <span class="pos-chip primary"><svg><use href="#pos-top" /></svg>탑</span>
+                        <span class="pos-chip primary"><svg><use href="#pos-jungle" /></svg>정글</span>
+                        <span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span>
+                        <span class="pos-chip primary"><svg><use href="#pos-bot" /></svg>원딜</span>
+                        <span class="pos-chip primary"><svg><use href="#pos-support" /></svg>서폿</span>
+                    </div>
+                </div>
+
+                <div class="sys-box">
+                    <h3>표 행 상태 (기본 · 호버 · 선택)</h3>
+                    <table class="roster">
+                        <tbody>
+                            <tr><td><div class="player-cell"><span class="crest">홍</span><span class="player-name">홍길동 (기본)</span></div></td><td><span class="pos-chip primary"><svg><use href="#pos-mid" /></svg>미드</span></td><td><span class="tag tag-ok">선발</span></td></tr>
+                            <tr class="is-hover"><td><div class="player-cell"><span class="crest">김</span><span class="player-name">김철수 (호버)</span></div></td><td><span class="pos-chip primary"><svg><use href="#pos-jungle" /></svg>정글</span></td><td><span class="tag tag-ok">선발</span></td></tr>
+                            <tr class="is-selected"><td><div class="player-cell"><input type="checkbox" checked readonly style="accent-color: var(--cyan)" /><span class="crest">정</span><span class="player-name">정약용 (선택됨)</span></div></td><td><span class="pos-chip primary"><svg><use href="#pos-jungle" /></svg>정글</span></td><td><span class="tag tag-info">대기</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sys-grid-3">
+                <div class="sys-box">
+                    <h3>확인 대화상자</h3>
+                    <div class="dialog-demo" role="dialog" aria-label="참가자 제외">
+                        <strong style="font-size: 16px">참가자 제외</strong>
+                        <p style="color: var(--ink-2); font-size: 13px">2명을 제외할까요? 제외한 신청은 되돌릴 수 없고, 빈 선발 자리는 먼저 신청한 대기자가 채워요.</p>
+                        <div style="display: flex; justify-content: flex-end; gap: 8px">
+                            <button class="btn btn-secondary">취소</button>
+                            <button class="btn btn-danger">제외</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sys-box">
+                    <h3>운영 메뉴 팝오버 · 토스트</h3>
+                    <div class="menu-demo" role="menu">
+                        <button class="menu-item">내전 설정 수정</button>
+                        <button class="menu-item">참가 안내 보내기</button>
+                        <button class="menu-item danger">중도 종료</button>
+                        <button class="menu-item danger">내전 취소</button>
+                    </div>
+                    <div class="toast">✓ 참가 안내를 보냈어요</div>
+                    <div class="toast err">! 다른 운영자가 먼저 상태를 변경했어요</div>
+                </div>
+
+                <div class="sys-box">
+                    <h3>빈 상태 · 로딩 스켈레톤</h3>
+                    <div style="padding: 18px; border: 1px dashed var(--line); border-radius: 6px; text-align: center; color: var(--muted)">
+                        아직 신청한 사람이 없어요
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px">
+                        <div class="skel" style="width: 78%"></div>
+                        <div class="skel" style="width: 62%"></div>
+                        <div class="skel" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>

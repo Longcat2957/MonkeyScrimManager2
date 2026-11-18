@@ -48,9 +48,9 @@
     <title>경기 기록 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h1 class="flex items-center gap-2 text-2xl font-semibold">
+<div class="flex min-w-0 flex-col gap-4">
+    <div class="page-head">
+        <h1 class="flex items-center gap-2 text-title font-bold">
             경기 기록
             {#if changing}<Spinner label="경기 목록 불러오는 중" />{/if}
         </h1>
@@ -76,7 +76,7 @@
     {:else}
         <div
             aria-busy={changing}
-            class={['flex flex-col gap-6 transition-opacity', changing && 'opacity-50']}
+            class={['flex flex-col gap-4 transition-opacity', changing && 'opacity-50']}
         >
             <!-- 진행 중인 경기가 없으면 빈 표를 두지 않는다. -->
             {#if data.live.length}
@@ -103,7 +103,7 @@
             >
                 {#snippet footer()}
                     {#if data.doneTotal > data.pageSize}
-                        <div class="border-t border-brass-line py-2">
+                        <div class="border-t border-line py-2">
                             <PageNav
                                 total={data.doneTotal}
                                 pageSize={data.pageSize}
@@ -112,11 +112,11 @@
                             />
                         </div>
                     {:else if data.doneTotal > 0 && data.page > 1}
-                        <div class="flex justify-center border-t border-brass-line py-2">
+                        <div class="flex justify-center border-t border-line py-2">
                             <Button
                                 type="button"
                                 variant="quiet"
-                                injClass="min-h-12 px-3"
+                                class="min-h-12 px-3"
                                 onclick={() => navigate({ page: 1 })}>첫 페이지로</Button
                             >
                         </div>

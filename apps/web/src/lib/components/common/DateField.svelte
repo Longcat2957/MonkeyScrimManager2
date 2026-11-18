@@ -75,7 +75,7 @@
 </script>
 
 <div class="flex min-w-0 flex-col gap-1">
-    <label for={`${id}-date`} class="text-xs font-semibold text-text-muted">{label}</label>
+    <label for={`${id}-date`} class="text-xs font-semibold text-ink-2">{label}</label>
     <input
         id={`${id}-date`}
         bind:this={element}
@@ -91,16 +91,15 @@
         aria-invalid={error || invalid ? 'true' : undefined}
         aria-describedby={described}
         class={[
-            'min-h-11 w-full min-w-0 rounded-(--radius-form) border bg-bg-surface px-3 text-sm text-text-primary tabular-nums',
-            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hex',
-            'disabled:cursor-not-allowed disabled:opacity-45 dark:bg-bg-surface-dark dark:text-text-dark',
-            error || invalid ? 'border-error' : 'border-brass-line'
+            'min-h-9 w-full min-w-0 rounded-form border bg-surface-2 px-2.5 text-sm text-ink tabular-nums pointer-coarse:min-h-11',
+            'disabled:cursor-not-allowed disabled:opacity-45',
+            error || invalid ? 'border-error' : 'border-line-strong'
         ]}
     />
     {#if name && value}<input type="hidden" {name} {value} />{/if}
     {#if error}
         <p id={`${id}-error`} class="text-xs text-error">{error}</p>
     {:else if hint}
-        <p id={`${id}-hint`} class="text-xs text-text-muted">{hint}</p>
+        <p id={`${id}-hint`} class="text-xs text-muted">{hint}</p>
     {/if}
 </div>

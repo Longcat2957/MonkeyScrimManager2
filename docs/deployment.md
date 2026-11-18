@@ -1,12 +1,10 @@
-# VPS 배포 준비와 격리 검증
+# VPS 배포와 복구
 
-웹은 SvelteKit adapter-node, 봇은 별도 Node.js 프로세스, DB는 PostgreSQL 17 이상을 사용한다. 신규 VPS 운영은 아래 Docker Compose 구성을 따른다. 기존 systemd·nginx 단독 실행 예제와 CI·백업 도구는 별도 검증 경로로 유지한다. 실제 인증서·운영 비밀 값은 저장소에 포함하지 않는다. 앱 배포 결과는 해당 main CD의 Actions 실행과 VPS 상태로 확인한다. 사용자 OAuth 로그인·슬래시 명령 등록·게시/DM 발송은 별도 운영 확인 대상이다. 약관·개인정보 본문은 기존 사용자 보류를 유지한다.
-
-최신 기능과 migration의 전체 CI·브라우저·격리 배포 결과는 [릴리스 통합 검증](release-validation.md)을 따른다. 과거 격리 실행이나 부분 테스트 통과를 새 커밋의 전체 성공으로 대체하지 않는다.
+운영 환경은 Docker Compose로 Caddy, PostgreSQL, 웹(SvelteKit adapter-node), Discord 봇을 실행한다. 앱 배포 결과는 해당 main CD의 Actions 실행과 VPS 상태로 확인한다. 인증서 개인 키·운영 비밀은 저장소에 넣지 않는다. systemd·nginx 예제는 Compose와 별개인 단독 실행·격리 검사용이다.
 
 ## Docker Compose 운영: 인프라 통합
 
-운영 Compose 설정은 Caddy·PostgreSQL·웹·봇을 `monkeybot` 프로젝트로 관리한다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. 웹 요청을 VPS에 직접 연결하려면 Cloudflare DNS only 설정이 필요하다. Caddy가 공인 HTTPS 인증서를 자동 발급·갱신하며 dev CI가 공통 앱 이미지를 만들고 main CD가 VPS의 Compose 서비스를 갱신한다. 실제 적용 결과는 해당 Actions 실행과 VPS·DNS 상태로 확인한다. 2026-11-16의 최초 nginx·PostgreSQL 이관 기록은 아래에 보존한다.
+운영 Compose 프로젝트는 `monkeybot`이다. 웹 주소는 `https://monkeybot.lol`, `bot.monkeybot.lol`은 예약이다. Cloudflare DNS only로 VPS에 직접 연결하고, Caddy가 공인 HTTPS 인증서를 발급·갱신한다. dev CI가 공통 앱 이미지를 발행하며 main CD가 VPS의 Compose 서비스를 갱신한다.
 
 | 위치 | 역할 |
 | --- | --- |
@@ -38,11 +36,9 @@ DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunn
 
 최초 이관 전에는 `/var/backups/monkeybot/infra-<UTC시각>/`에 기존 컨테이너 설정·nginx·인증서, DB별 custom dump와 globals SQL, SHA256 목록을 보관한다. dump의 archive 목록을 검사하고 기존 DB의 테이블별 행 수·행 해시·sequence 상태·DB 소유자와 기존 역할의 권한·비밀번호 해시를 이관 전후에 비교한다. 해당 자료에는 비밀 값과 사용자 자료가 포함되므로 서버에서만 제한된 권한으로 보관한다.
 
-최초 인프라 이관 직후 컨테이너는 `monkeybot-nginx-1`·`monkeybot-postgres-1`이었다. Caddy 전환에서는 nginx를 교체하며 PostgreSQL 컨테이너·볼륨은 유지한다. 이전 컨테이너의 설정·로그는 아래 정리 보관본에 남기고 중지된 컨테이너는 제거했다. 복구 때는 보관한 설정으로 컨테이너를 다시 만들며 같은 PostgreSQL 볼륨을 사용하는 두 컨테이너를 동시에 시작하지 않는다.
+최초 이관의 백업 위치는 `/opt/monkeybot/.infra-backup-path`에서 확인한다. 복구할 때 같은 PostgreSQL 볼륨을 사용하는 두 컨테이너를 동시에 시작하지 않는다.
 
-2026-11-16 최초 이관에서는 기존 DB 130개 테이블의 행 수·데이터 해시와 sequence 상태, DB 소유자 및 기존 계정의 권한·비밀번호 해시가 모두 일치했다. 당시 MSM2 전용 DB는 업무 테이블 0개였으며 실행·migration 계정의 실제 TCP 접속과 스키마 생성 권한 구분을 확인했다. 격리 Compose에서도 계정 준비 재실행, migration 계정의 DDL, 런타임의 DML·DDL 거부, Compose 재생성 후 기존 볼륨의 자료 보존을 검증했다. 서버의 `/opt/monkeybot/.infra-backup-path`가 최초 이관의 백업·검증 보고서 경로를 가리킨다.
-
-### 후속 앱 구성의 연결점
+### 앱 서비스 연결
 
 이미지와 `web.env`·`bot.env`·`migration.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 순서다. Caddy는 이때 `maintenance.caddy` 대신 `application.caddy`를 읽고 웹을 연결한다.
 
@@ -76,19 +72,11 @@ Caddy의 HTTP `/healthz` 200은 프록시 생존 확인이다. 앱 구성의 웹
 
 서버 `authorized_keys`에는 `restrict` 옵션을 붙인 배포 공개 키를 추가한다. 기존 로그인 키는 유지하고 새 키와 고정 host key로 실제 SSH 접속을 검증한다. 개인 키는 GitHub Secret 등록 후 로컬 임시 파일을 정리한다. 후속 CD job은 `environment: production`으로 이 값에 접근하며, dev CI에는 배포 접속 정보를 전달하지 않는다. [GitHub Environment 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
 
-### 2026-11-16 환경 준비 결과
+### 기존 환경 복구 자료
 
-이관 당시 Monkeybot 설정 `/root/monkeybot-infra/main/`을 기준으로 Discord 앱 `1525847677542207548`의 OAuth·봇 설정을 같은 앱으로 맞췄다. 원본 경로는 아래 정리 보관본으로 옮겼으며 활성 환경은 `/etc/monkeybot`이다. 별도로 보관한 `.env.old`는 과거 앱 설정이다. 기존 런타임 DB URL·migration·PostgreSQL 설정을 보존하고 MSM2 전용 내부 키를 새로 만들어 웹·봇에 동일하게 저장했다. 새 운영 callback은 `https://monkeybot.lol/auth/discord/callback`이며 사용자가 Discord 개발자 포털의 Redirects 등록 완료를 확인했다.
+활성 환경은 `/etc/monkeybot`이다. `.env.old`는 과거 앱 설정이므로 복사해 덮어쓰지 않는다. Discord 개발자 포털에 등록한 운영 callback은 `https://monkeybot.lol/auth/discord/callback`이다. 과거 KR 플랫폼 상태 요청의 403은 키 폐기의 근거가 아니다. 키 유효성은 사용자가 별도로 확인했으며, 개별 Riot 경로의 운영 접근 결과와 구분한다.
 
-Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱 ID 일치를 확인했다. KR 플랫폼 상태 조회의 HTTP 403은 당시 요청의 진단 기록으로 보존한다. 이후 사용자가 Riot 키의 유효성을 확인했으므로 키 교체를 요구하거나 CI 진행을 막지 않는다. 키 유효성 확인과 해당 요청 경로의 접근 결과는 구분하며 같은 요청을 반복하지 않는다. 이 단계는 Gateway 로그인·OAuth 로그인 완료·명령 등록·게시/DM 발송을 검증하지 않는다. [Riot 응답 코드 문서](https://developer.riotgames.com/docs/portal#response-codes)
-
-환경 파일·SSH 설정의 변경 전 보관본과 비밀 값을 제외한 검증 보고서는 `/var/backups/monkeybot/environment-<UTC시각>/`에 저장한다. `/opt/monkeybot/.env-backup-path`로 이번 경로를 확인한다. 환경 준비 단계에서는 nginx·PostgreSQL만 실행했고 앱은 아래 CD에서 기동한다.
-
-### 구 프로젝트 정리 결과
-
-사용자 요청에 따라 구 프로젝트 7개 디렉터리(`/root/deploy`, `monkeybot-main`, `monkeybot-dev`, `monkeybot-releases`, `monkeybot-infra`, `cleanup-backup-20261116T065411Z`, `monkeybot-backups`)의 전체 내용과 구 로그를 `/var/backups/monkeybot/legacy-cleanup-20261116T085522Z`에 보관했다. 원본 1,745개 파일의 내용·해시를 확인하고 구 디렉터리, 중지 컨테이너 2개, 미사용 네트워크 3개와 별도로 보관한 `deploy_valkey-data` 볼륨을 제거했다.
-
-보관본은 약 253 MiB이며 디렉터리 0700·파일 0600이다. `cleanup-report.json`, `final-checksums.json`, `legacy-files-manifest.json`에 정리·복구 근거가 있다. 활성 nginx·PostgreSQL의 컨테이너·이미지·볼륨·네트워크와 `/opt/monkeybot`, `/etc/monkeybot`, 이전 DB 백업은 유지했다. 4개 DB와 모든 역할, 기존 130개 테이블의 행 수·데이터 해시가 전후 일치했고 공개 포트·DB loopback 포트·도메인 응답도 동일하다. 보관본을 포함한 순확보 용량은 약 215 MiB다.
+환경 파일·SSH 설정의 변경 전 보관본은 `/var/backups/monkeybot/environment-<UTC시각>/`에 두고 `/opt/monkeybot/.env-backup-path`에서 위치를 확인한다. 구 프로젝트의 설정·로그·볼륨 복구 자료는 `/var/backups/monkeybot/legacy-cleanup-20261116T085522Z`의 `cleanup-report.json`, `final-checksums.json`, `legacy-files-manifest.json`을 따른다. 보관본에는 비밀 값과 사용자 자료가 있으므로 디렉터리 0700·파일 0600을 유지한다.
 
 ## 실행 전제
 
@@ -102,7 +90,7 @@ Discord 봇 토큰의 읽기 전용 애플리케이션 조회는 HTTP 200과 앱
 
 서비스 운영 권한은 Discord 서버 관리 권한과 별개다. 대상 사용자가 서비스에 한 번 로그인하고 현재 migration을 적용한 뒤, 웹의 DB 설정을 읽을 수 있는 서버에서 `pnpm admin:bootstrap <기존 Discord 사용자 ID>`를 실행한다. 도움말은 `pnpm admin:bootstrap --help`다. 운영자가0명일 때만 한 명을 지정하고 감사 이력을 함께 저장한다. 환경 변수로 임의 사용자를 자동 승격하지 않는다.
 
-운영자가 이미 있으면 백오피스에서 다른 운영자를 지정하거나 회수한다. 실제 DB 권한을 매번 검사하며 마지막 운영자의 회수는 거절한다. 자기 권한을 회수하면 내 정보로 이동하고 기존 세션도 다음 요청부터 백오피스 접근을 잃는다. CLI·migration의 이번 실행은 격리 테스트 schema에 한정했으며 사용자 개발/운영 DB의 초기 지정은 실행하지 않았다.
+운영자가 이미 있으면 백오피스에서 다른 운영자를 지정하거나 회수한다. 실제 DB 권한을 매번 검사하며 마지막 운영자의 회수는 거절한다. 자기 권한을 회수하면 기존 세션도 다음 요청부터 백오피스 접근을 잃는다.
 
 ## 저장소 CI
 
@@ -160,7 +148,7 @@ VPS에서는 빌드·패키지 설치를 하지 않는다. 서비스 비밀 파�
 
 unit은 실패 시 재시작하고 SIGTERM으로 종료한다. 봇의 `After=monkeybot-web.service`는 기동 순서이며 HTTP 준비 완료 보장은 아니다. 봇의 기존 내부 API 오류·재시도 처리도 유지한다. `PrivateTmp`, 읽기 전용 시스템 영역, 제한된 실행 사용자를 사용하므로 설치 디렉터리는 실행 시 쓰기가 필요 없어야 한다. 릴리스 파일은 배포 작업자가 준비한다.
 
-운영 적용 시에는 환경 파일·검토한 릴리스와 migration을 먼저 준비하고 `systemd-analyze verify`·`nginx -t`를 통과시킨다. 웹을 먼저 올려 공개 화면과 내부 접근 경계를 확인한 뒤 봇을 시작한다. **봇 시작은 실제 Discord 연결과 대기 중인 게시를 발생시킬 수 있으므로 현재 제외된 실연동 검증으로 자동 실행하지 않는다.** 장애 때는 `journalctl -u monkeybot-web`, `journalctl -u monkeybot-bot`와 기존 백오피스 상태를 확인하며 비밀 값이나 메시지 본문을 복사하지 않는다.
+단독 운영에 적용할 때에는 환경 파일·릴리스와 migration을 먼저 준비하고 `systemd-analyze verify`·`nginx -t`를 실행한다. 웹의 공개 화면과 내부 접근 차단을 확인한 뒤 봇을 시작한다. **봇을 시작하면 실제 Discord에 연결되고 대기 중인 게시물이 발송될 수 있다.** 격리 검증에서는 기동하지 않는다. 장애 때는 `journalctl -u monkeybot-web`, `journalctl -u monkeybot-bot`와 백오피스 상태를 확인하고 비밀 값이나 메시지 본문을 복사하지 않는다.
 
 ## HTTPS 프록시
 
@@ -203,14 +191,14 @@ ROFL은 큐·파일을 limiter에 저장하지 않고 입장 불가 시 바로 4
 
 요청마다 서버가 UUID를 만들고 `X-Request-ID`로 반환한다. JSON 로그에는 `event`, `requestId`, manifest의 `route` 템플릿, 허용된 `method`, `status`, 허용된 오류 `code`, `durationMs`만 기록한다. 요청 본문·쿠키·토큰·Riot ID·원본 파일·실행자 ID·실제 경로/URL query·원시 SQL/예외 객체는 기록하지 않는다. 부분 실패도 코드만 기록하고 SvelteKit의 기본 원시 오류 출력은 대체한다. 풀의 대기 요청은 connect 호출 당시 문맥에 연결해 다른 요청에 오류를 잘못 귀속하지 않는다.
 
-`durationMs`는 서버가 응답 객체를 만들 때까지의 시간이며 브라우저의 전체 전송 시간이나 CWV가 아니다. stdout/journal의 실제 저장·접근 권한·회전·보존과 알림·대시보드는 운영 환경에서 정한다. 앱은 로그 수집 외부 서비스나 자동 경보를 추가하지 않는다. 실행 증거와 검사 범위는 [운영 안정성 검증](../artifacts/ui-review/next/operations.md)을 따른다.
+`durationMs`는 서버가 응답 객체를 만들 때까지의 시간이며 브라우저의 전체 전송 시간이나 CWV가 아니다. 실제 트래픽에서 DB 잠금·쿼리 시간, 업로드 동시성·메모리, Discord 재시도 대기를 점검해 한도를 조정한다. 운영 로그의 접근 권한·회전·보존과 알림은 배포 환경에서 확인한다. 격리 기능 검사는 서버 부하 검증을 대신하지 않는다.
 
 ## DB migration과 백업·복원
 
-앱 기동은 migration을 실행하지 않는다. 새 환경에서는 검토한 Drizzle journal 순서로 적용한다. 운영 데이터를 만든 뒤에는 먼저 보호된 백업과 격리 복원 근거를 확보하고 쓰기 중지·전환 시간을 정한다. 환경 파일을 읽는 명령을 실행할 때는 `apps/web`을 작업 디렉터리로 사용한다.
+웹 기동은 migration을 실행하지 않는다. Compose 배포의 일회성 `migrate` 서비스가 검토한 Drizzle journal 순서로 적용한다. 단독 실행에서도 런타임 계정이 아닌 전용 migration 계정을 사용한다. 운영 DB는 보호된 백업과 별도 빈 DB의 복원 근거를 먼저 확보하고 쓰기 중지·전환 시간을 정한다. 다음 단독 실행 명령의 작업 디렉터리는 `apps/web`이다.
 
 ```sh
-node --env-file=/etc/monkeybot/web.env node_modules/drizzle-kit/bin.cjs migrate
+node --env-file=/etc/monkeybot/migration.env node_modules/drizzle-kit/bin.cjs migrate
 ```
 
 [database_backup.mjs](../scripts/database_backup.mjs)는 PostgreSQL 17의 `pg_dump`, `pg_restore`, `psql`을 PATH에서 실행한다. 접속 URL은 전용 환경 변수에서만 읽고 일반 `DATABASE_URL`로 대체하지 않는다. URL·비밀번호를 하위 명령의 argv·도구 출력에 남기지 않는다. 접속 오류의 원시 문구에는 주소·자료가 포함될 수 있어 도구는 명령 종류와 실패 사실만 출력한다.
@@ -260,7 +248,7 @@ node scripts/verify_deployment.mjs --report /tmp/msm2-deployment-check.json
 4. 외부 fetch를 차단하고 운영 웹 build를 격리 DB와 빈 외부 자격 증명으로 실행한다. 실제 nginx·로컬 TLS를 통해 `/docs` 200, HTTP 이동, 내부 경로 404, HTTPS origin/CSRF, 위조 헤더 덮어쓰기, 크기 제한 413, 웹 SIGTERM 종료를 확인한다. `/docs`에 없는 form action의 POST는 origin 검사를 통과한 뒤 405여야 하며, 다른 origin은 403이어야 한다.
 5. 직접 만든 프로세스·label이 일치하는 컨테이너·임시 인증서·dump를 정리한다. JSON에는 버전·단계·hash·정리 결과를 남기고 URL·쿠키·인증서 private key·DB 자료·원시 도구 오류를 넣지 않는다.
 
-이 검사는 실제 공인 인증서·VPS·봇 Gateway·OAuth 제공자·Riot·실제 ROFL 원본·음성 청취·물리 장치를 사용하지 않는다. 현재 사용자 보류와 제외 범위는 유지한다.
+이 검사는 배포 도구의 격리 실행이지 운영 복구 훈련이 아니다. 릴리스마다 실제 CI·CD 실행, DNS와 공인 TLS, DB 백업과 별도 빈 DB 복원·권한·전환 절차를 확인한다. 실제 OAuth·Riot·Discord 송수신과 League 원본 파일을 사용하는 사용자 흐름은 [테스트 경계](testing.md#검증-경계)에 따라 별도로 확인한다.
 
 ## 근거
 

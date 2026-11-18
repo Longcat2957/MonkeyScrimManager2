@@ -21,7 +21,7 @@
     } from '#lib/features/scrims/settings.ts';
     import type { ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     type Props = {
         open: boolean;
@@ -152,20 +152,22 @@
     range: { min: number; max: number },
     apply: (next: number) => void
 )}
-    <fieldset class="flex flex-col gap-1 border-0 p-0">
-        <legend class="mb-1 text-xs font-semibold text-text-muted">{label}</legend>
-        <div class="flex items-center gap-2">
+    <fieldset class="min-w-0 border-0 p-0">
+        <legend class="mb-1.5 text-xs font-semibold text-muted">{label}</legend>
+        <div
+            class="inline-flex max-w-full items-center overflow-hidden rounded-form border border-line-strong bg-surface-2"
+        >
             <button
                 type="button"
-                class="min-h-11 min-w-11 rounded-(--radius-form) border border-brass-line text-sm disabled:opacity-45"
+                class="grid size-9 place-items-center text-base hover:bg-surface-hover focus-visible:-outline-offset-2 disabled:opacity-45 pointer-coarse:size-11"
                 aria-label={`${label} 줄이기`}
                 disabled={value <= range.min}
                 onclick={() => apply(value - 1)}>−</button
             >
-            <output class="min-w-11 text-center text-sm font-semibold">{value}</output>
+            <output class="min-w-7 border-x border-line text-center text-sm font-bold">{value}</output>
             <button
                 type="button"
-                class="min-h-11 min-w-11 rounded-(--radius-form) border border-brass-line text-sm disabled:opacity-45"
+                class="grid size-9 place-items-center text-base hover:bg-surface-hover focus-visible:-outline-offset-2 disabled:opacity-45 pointer-coarse:size-11"
                 aria-label={`${label} 늘리기`}
                 disabled={value >= range.max}
                 onclick={() => apply(value + 1)}>+</button
@@ -183,10 +185,10 @@
     novalidate
     aria-busy={pending}
     use:enhance={submit}
-    {@attach nonSubmitButtons}
+    {@attach preventComposingSubmit}
 >
     <Dialog bind:open {title} dismissible={false}>
-        <fieldset disabled={pending || refreshRequired} class="flex min-w-0 flex-col gap-5 border-0 p-0">
+        <fieldset disabled={pending || refreshRequired} class="flex min-w-0 flex-col gap-4 border-0 p-0">
             <div data-field="title">
                 <TextField
                     label="제목"
@@ -199,8 +201,8 @@
             </div>
 
             {#if can('scheduledAt')}
-                <div class="flex flex-col gap-3">
-                    <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1.5">
+                    <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8.5rem),1fr))] gap-3">
                         <div data-field="date" class="min-w-0 [&_input]:min-w-0">
                             <DateField label="날짜" bind:value={input.date} error={errors.date} />
                         </div>
@@ -208,13 +210,13 @@
                             <TextField label="시각" type="time" bind:value={input.time} error={errors.time} />
                         </div>
                     </div>
-                    <p class="text-xs text-text-muted">날짜와 시각을 모두 비우면 일정 미정이에요.</p>
+                    <p class="text-xs text-muted">날짜와 시각을 모두 비우면 일정 미정이에요.</p>
                 </div>
             {/if}
 
             {#if can('teamCount') || can('reserveCapacity')}
-                <div class="flex flex-col gap-2">
-                    <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-2.5 border-t border-line pt-3">
+                    <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7.5rem),1fr))] gap-3">
                         {@render counter(
                             '팀 수',
                             input.teamCount,
@@ -228,18 +230,18 @@
                             (next) => (input.reserveCapacity = next)
                         )}
                     </div>
-                    <p class="text-sm text-text-muted" aria-live="polite">{capacityLine}</p>
+                    <p class="text-ui font-medium text-ink-2" aria-live="polite">{capacityLine}</p>
                 </div>
             {/if}
 
             {#if can('hardFearless')}
-                <div class="overflow-hidden rounded-(--radius-box) border border-brass-line">
+                <div class="border-y border-line">
                     <SwitchCell title="하드 피어리스" bind:active={input.hardFearless} />
                 </div>
             {/if}
 
             {#if locked.length}
-                <p class="text-sm text-text-muted">이 단계에서 바꿀 수 없는 설정: {locked.join(' · ')}</p>
+                <p class="text-sm text-muted">이 단계에서 바꿀 수 없는 설정: {locked.join(' · ')}</p>
             {/if}
         </fieldset>
 
@@ -248,7 +250,7 @@
                 {#if formError}
                     <p role="alert" class="text-sm text-error">{formError}</p>
                 {/if}
-                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <div class="flex flex-wrap justify-end gap-2">
                     <Button variant="secondary" type="button" disabled={pending} onclick={close}>취소</Button>
                     <Button
                         variant="primary"

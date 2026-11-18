@@ -49,7 +49,7 @@
         role="group"
         aria-roledescription="캐러셀"
         aria-label="업적"
-        class="mx-auto flex w-full max-w-3xl flex-col gap-3"
+        class="flex w-full min-w-0 flex-col gap-2"
     >
         <div
             role="presentation"
@@ -59,44 +59,43 @@
             ontouchcancel={() => (touch = null)}
         >
             <div
-                class="inverse-surface relative isolate flex min-h-52 items-center gap-5 overflow-hidden rounded-(--radius-box) border border-brass-line bg-bg-base-dark p-5 text-text-dark sm:min-h-64 sm:gap-8 sm:p-8"
+                class="inverse-surface relative isolate flex flex-wrap items-center gap-x-4 gap-y-3 overflow-hidden rounded-(--radius-box) border border-line bg-ground p-4 text-ink sm:p-5"
             >
                 {#if item.splashUrl}
                     <img
                         src={item.splashUrl}
                         alt=""
                         loading="lazy"
-                        class="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] opacity-25"
+                        class="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] opacity-50"
                     />
-                    <span
-                        class="absolute inset-0 -z-10 bg-linear-to-r from-bg-base-dark via-bg-base-dark/80 to-bg-base-dark/40"
+                    <span class="absolute inset-0 -z-10 bg-linear-to-r from-ground via-ground/80 to-ground/40"
                     ></span>
                 {/if}
-                <span class="relative shrink-0">
+                <span class="shrink-0">
                     {#if winner.iconUrl}
                         <img
                             src={winner.iconUrl}
                             alt=""
-                            width="128"
-                            height="128"
-                            class="size-20 rounded-(--radius-box) border border-brass-line sm:size-32"
+                            width="56"
+                            height="56"
+                            class="size-14 rounded-(--radius-small) border border-white/20"
                         />
                     {:else}
                         <PlayerFace name={winner.displayName} imageUrl={null} size="lg" />
                     {/if}
-                    <span
-                        aria-hidden="true"
-                        class="absolute -right-2 -bottom-2 flex size-9 items-center justify-center rounded-full bg-bg-base-dark text-xl ring-1 ring-brass-line"
-                        >{item.emoji}</span
-                    >
                 </span>
-                <div class="flex min-w-0 flex-1 flex-col gap-1">
-                    <h3 class="text-2xl font-bold text-balance text-brass sm:text-4xl">{item.title}</h3>
-                    <p class="text-sm text-text-dark/80">{item.description}</p>
-                    <p class="mt-2 text-xl font-bold">{winner.displayName}</p>
-                    <p class="text-sm tabular-nums">
-                        <span class="text-lg font-bold">{winner.value}</span>
-                        <span class="text-text-dark/75">· {winner.games}게임</span>
+                <div class="min-w-0 flex-1 basis-40">
+                    <h3 class="text-lg font-bold text-balance">{item.title}</h3>
+                    <p class="mt-1 text-ui text-ink/85">{item.description}</p>
+                </div>
+                <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 sm:flex-col">
+                    <p class="text-base font-bold wrap-anywhere">
+                        <span class="text-xs text-role-gold">1위</span>
+                        {winner.displayName}
+                    </p>
+                    <p class="text-ui tabular-nums">
+                        <span class="font-bold">{winner.value}</span>
+                        <span class="text-ink/80">· {winner.games}게임</span>
                     </p>
                 </div>
             </div>
@@ -108,9 +107,8 @@
             <div class="flex min-w-0 items-center gap-2">
                 <Button
                     variant="secondary"
-                    size="auto"
                     ariaLabel="이전 업적"
-                    injClass="size-11! shrink-0 justify-center p-0!"
+                    class="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(-1)}
                 >
                     <svg
@@ -145,7 +143,7 @@
                                         aria-hidden="true"
                                         class={[
                                             'block h-1.5 rounded-full',
-                                            index === current ? 'w-6 bg-hex' : 'w-1.5 bg-brass-line'
+                                            index === current ? 'w-6 bg-nexus' : 'w-1.5 bg-line'
                                         ]}
                                     ></span>
                                 </button>
@@ -155,9 +153,8 @@
                 </div>
                 <Button
                     variant="secondary"
-                    size="auto"
                     ariaLabel="다음 업적"
-                    injClass="size-11! shrink-0 justify-center p-0!"
+                    class="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(1)}
                 >
                     <svg

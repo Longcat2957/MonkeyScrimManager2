@@ -9,16 +9,16 @@
 
 {#if parts}
     <span
-        class="flex size-11 shrink-0 flex-col items-center justify-center rounded-(--radius-form) bg-bg-highlight leading-none dark:bg-bg-highlight-dark"
+        class="flex size-10 shrink-0 flex-col items-center justify-center rounded-(--radius-form) border border-line bg-surface-2 leading-none"
     >
-        <span class="text-[0.6875rem] opacity-70">{parts.month}월</span>
-        <span class="mt-1 text-base font-semibold tabular-nums"
+        <span class="text-micro leading-none text-muted">{parts.month}월</span>
+        <span class="mt-1 text-base leading-none font-bold tabular-nums"
             >{parts.day}<span class="sr-only">일</span></span
         >
     </span>
 {:else}
     <span
-        class="flex size-11 shrink-0 items-center justify-center rounded-(--radius-form) border border-dashed border-border px-0.5 text-center text-xs leading-4 text-text-muted"
+        class="flex size-10 shrink-0 items-center justify-center rounded-(--radius-form) border border-dashed border-line px-0.5 text-center text-micro leading-tight text-muted"
     >
         {emptyText}
     </span>

@@ -119,55 +119,43 @@
     }}
 />
 
-<section aria-labelledby="lineup-heading" aria-busy={busy} class="hex-panel overflow-hidden">
-    <header
-        class="flex flex-wrap items-center justify-between gap-3 bg-bg-surface p-4 dark:bg-bg-surface-dark"
-    >
+<section aria-labelledby="lineup-heading" aria-busy={busy} class="panel @container overflow-hidden">
+    <header class="panel-bar">
         <div class="flex flex-wrap items-center gap-2">
             <h2 id="lineup-heading" class="font-semibold">출전 라인업</h2>
-            {#if confirmed}<StatusTag text="확정" state="success" />{:else}<span
-                    class="text-sm text-text-muted">{placed}/10 배치</span
+            {#if confirmed}<StatusTag text="확정" state="success" />{:else}<span class="text-sm text-muted"
+                    >{placed}/10 배치</span
                 >{/if}
         </div>
         {#if operation.can.releaseLineup}
-            <Button variant="secondary" injClass="px-3" loading={busy} onclick={release}>확정 해제</Button>
+            <Button variant="secondary" class="px-3" loading={busy} onclick={release}>확정 해제</Button>
         {:else if operation.can.confirmLineup}
-            <Button variant="primary" injClass="px-4" disabled={!complete} loading={busy} onclick={save}
+            <Button variant="primary" class="px-4" disabled={!complete} loading={busy} onclick={save}
                 >라인업 확정</Button
             >
         {/if}
     </header>
     {#if operation.can.editLineup && !confirmed}
-        <div
-            class="flex flex-col gap-3 border-t border-brass-line bg-bg-surface px-4 py-3 dark:bg-bg-surface-dark"
-        >
-            <p class="text-sm text-text-muted">
-                선수를 끌어 포지션에 놓으세요. 선수를 누른 뒤 자리 선택도 가능해요.
-            </p>
-        </div>
+        <p class="px-4 py-2 text-ui text-muted">
+            선수를 끌어 포지션에 놓으세요. 선수를 누른 뒤 자리 선택도 가능해요.
+        </p>
     {/if}
-    {#if failure}<p role="alert" class="border-t border-brass-line p-4 text-sm text-error">{failure}</p>{/if}
+    {#if failure}<p role="alert" class="border-t border-line p-4 text-sm text-error">{failure}</p>{/if}
     {#if selected}
-        <p
-            role="status"
-            class="border-t border-brass-line bg-bg-surface px-4 py-2 text-sm dark:bg-bg-surface-dark"
-        >
+        <p role="status" class="border-t border-line bg-selected px-4 py-2 text-ui font-medium">
             {selected.displayName} 선택됨 · Esc로 취소
         </p>
     {/if}
-    <div class="grid gap-px border-t border-brass-line bg-brass-line md:grid-cols-2">
+    <div class="grid gap-px bg-line @min-[34rem]:grid-cols-2">
         {#each operation.teams as team (team.id)}
-            <section
-                aria-labelledby={`lineup-team-${team.id}`}
-                class="min-w-0 bg-bg-surface p-3 dark:bg-bg-surface-dark"
-            >
+            <section aria-labelledby={`lineup-team-${team.id}`} class="min-w-0 bg-surface">
                 <h3
                     id={`lineup-team-${team.id}`}
-                    class="mb-3 flex items-center justify-between gap-2 font-semibold"
+                    class="flex min-h-9 items-center border-b border-line bg-surface-2 px-4 py-2 text-ui font-bold"
                 >
                     <span class="min-w-0 truncate">{team.name}</span>
                 </h3>
-                <ol class="flex flex-col gap-2">
+                <ol class="divide-y divide-line">
                     {#each POSITIONS as position (position.key)}
                         {@const target = `${team.id}:${position.key}`}
                         {@const player = team.players.find(
@@ -182,15 +170,15 @@
                             role="group"
                             aria-label={`${team.name} ${position.text}`}
                             class={[
-                                'flex min-h-16 items-stretch gap-2 rounded-(--radius-form) border p-1.5',
-                                drag.over === target ? 'border-hex ring-2 ring-hex/30' : 'border-brass-line'
+                                'flex min-h-12 items-stretch gap-1 px-2 py-1',
+                                drag.over === target && 'bg-selected ring-1 ring-inset ring-nexus'
                             ]}
                             ondragover={(event) => drag.enter(event, target)}
                             ondragleave={() => drag.leave(target)}
                             ondrop={(event) => drag.drop(event, target)}
                         >
                             <span
-                                class="flex w-12 shrink-0 flex-col items-center justify-center gap-1 text-xs text-text-muted"
+                                class="flex w-16 shrink-0 items-center gap-1.5 border-r border-line pl-1 text-xs font-medium text-muted"
                                 ><PositionIcon position={position.key} /><span>{position.text}</span></span
                             >
                             {#if editable}
@@ -201,9 +189,9 @@
                                     aria-pressed={player ? selectedId === player.participantId : undefined}
                                     disabled={!player && !targeting}
                                     class={[
-                                        'flex min-w-0 flex-1 items-center justify-between gap-2 rounded-(--radius-small) px-2 text-left',
+                                        'flex min-h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-(--radius-small) px-2 text-left text-ui enabled:hover:bg-surface-hover pointer-coarse:min-h-11',
                                         player && 'cursor-grab active:cursor-grabbing',
-                                        selectedId === player?.participantId && 'bg-hex/10 text-hex'
+                                        selectedId === player?.participantId && 'bg-selected text-nexus'
                                     ]}
                                     ondragstart={(event) => {
                                         if (player) drag.start(event, player.participantId);
@@ -218,7 +206,7 @@
                                         ><span class="truncate font-medium"
                                             >{player?.displayName ??
                                                 (targeting ? '여기에 배치' : '미배정')}</span
-                                        >{#if player?.riotId}<span class="truncate text-xs text-text-muted"
+                                        >{#if player?.riotId}<span class="truncate text-xs text-muted"
                                                 >{player.riotId}</span
                                             >{/if}</span
                                     >
@@ -227,16 +215,16 @@
                                 {#if player && !targeting}
                                     <Button
                                         variant="quiet"
-                                        injClass="px-2 text-xs"
+                                        class="px-2 text-xs"
                                         onclick={() => move(player.participantId, `${team.id}:pool`)}
                                         ><span class="sr-only">{player.displayName} </span>해제</Button
                                     >
                                 {/if}
                             {:else}
-                                <span class="flex min-w-0 flex-1 flex-col justify-center px-2"
+                                <span class="flex min-w-0 flex-1 flex-col justify-center px-2 text-ui"
                                     ><span class="truncate font-medium"
                                         >{player?.displayName ?? '미배정'}</span
-                                    >{#if player?.riotId}<span class="truncate text-xs text-text-muted"
+                                    >{#if player?.riotId}<span class="truncate text-xs text-muted"
                                             >{player.riotId}</span
                                         >{/if}</span
                                 >
@@ -249,8 +237,8 @@
                         role="group"
                         aria-label={`${team.name} 미배정 선수`}
                         class={[
-                            'mt-3 flex min-h-12 flex-wrap items-center gap-2 rounded-(--radius-form) border border-dashed p-2',
-                            drag.over === `${team.id}:pool` ? 'border-hex' : 'border-brass-line'
+                            'mx-2 mb-2 flex min-h-12 flex-wrap items-center gap-2 rounded-(--radius-form) border border-dashed p-2',
+                            drag.over === `${team.id}:pool` ? 'border-nexus' : 'border-line'
                         ]}
                         ondragover={(event) => drag.enter(event, `${team.id}:pool`)}
                         ondragleave={() => drag.leave(`${team.id}:pool`)}
@@ -262,16 +250,16 @@
                                 draggable="true"
                                 aria-pressed={selectedId === player.participantId}
                                 class={[
-                                    'min-h-10 min-w-0 rounded-(--radius-small) border px-3 py-2 text-sm',
+                                    'min-h-9 min-w-0 rounded-(--radius-small) border px-2.5 py-1 text-ui pointer-coarse:min-h-11',
                                     selectedId === player.participantId
-                                        ? 'border-hex bg-hex/10 text-hex'
-                                        : 'border-brass-line'
+                                        ? 'border-nexus bg-nexus/10 text-nexus'
+                                        : 'border-line'
                                 ]}
                                 ondragstart={(event) => drag.start(event, player.participantId)}
                                 ondragend={() => drag.end()}
                                 onclick={() => choose(player.participantId)}>{player.displayName}</button
                             >
-                        {:else}<span class="text-xs text-text-muted">여기에 놓아 배치 해제</span>{/each}
+                        {:else}<span class="text-xs text-muted">여기에 놓아 배치 해제</span>{/each}
                     </div>
                 {/if}
             </section>

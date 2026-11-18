@@ -41,7 +41,7 @@
     <label class="flex min-w-0 max-w-full flex-col gap-1">
         <span class="sr-only">조회할 시즌</span>
         <select
-            class="min-h-11 max-w-full rounded-(--radius-form) border border-brass-line bg-bg-surface px-3 text-sm font-semibold text-text-primary disabled:opacity-45 dark:bg-bg-surface-dark dark:text-text-dark"
+            class="min-h-9 min-w-0 max-w-full rounded-form border border-line-strong bg-surface-2 px-2.5 text-ui font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-11"
             {value}
             disabled={disabled || changing}
             onchange={change}
@@ -53,5 +53,5 @@
         </select>
     </label>
 {:else if selected}
-    <p class="text-sm text-text-muted [overflow-wrap:anywhere]">시즌: {selected.name}</p>
+    <p class="text-ui text-muted [overflow-wrap:anywhere]">시즌: {selected.name}</p>
 {/if}

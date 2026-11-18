@@ -8,7 +8,7 @@
     import SectionState from '#lib/components/common/SectionState.svelte';
     import type { ServiceAdminOverview } from '#lib/features/service-admin.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     type Props = {
         overview: ServiceAdminOverview;
@@ -134,42 +134,48 @@
     };
 </script>
 
-<section class="flex min-w-0 flex-col gap-5" aria-labelledby={`${id}-admins`} aria-busy={busy}>
-    <h2 id={`${id}-admins`} class="text-lg font-semibold">서비스 운영자</h2>
-    <ul role="list" class="divide-y divide-border rounded-(--radius-box) border border-border">
-        {#each overview.admins as admin (admin.userId)}
-            <li class="flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-4">
-                <div class="min-w-0 flex-1">
-                    <p class="font-medium wrap-anywhere">
-                        {admin.displayName}{admin.userId === currentUserId ? ' (나)' : ''}
-                    </p>
-                    {#if admin.userId}<p class="mt-1 text-sm text-text-muted tabular-nums wrap-anywhere">
-                            {admin.userId}
-                        </p>{/if}
-                </div>
-                <form
-                    method="POST"
-                    {action}
-                    aria-label={`${admin.displayName} (${admin.userId}) 권한 관리`}
-                    use:enhance={submit}
-                >
-                    <input type="hidden" name="userId" value={admin.userId ?? ''} />
-                    <input type="hidden" name="enabled" value="false" />
-                    <Button
-                        variant="secondary"
-                        type="submit"
-                        size="auto"
-                        injClass="min-h-12 px-3 text-sm"
-                        disabled={locked || lastAdmin || !admin.userId}
-                        loading={busy && !granting && busyTarget === admin.userId}
+<section
+    class="panel grid min-w-0 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
+    aria-labelledby={`${id}-admins`}
+    aria-busy={busy}
+>
+    <h2 id={`${id}-admins`} class="panel-bar col-span-full font-bold">서비스 운영자</h2>
+    <div class="min-w-0">
+        <ul role="list" class="divide-y divide-line">
+            {#each overview.admins as admin (admin.userId)}
+                <li class="flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-2">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold wrap-anywhere">
+                            {admin.displayName}{admin.userId === currentUserId ? ' (나)' : ''}
+                        </p>
+                        {#if admin.userId}<p class="text-xs text-muted tabular-nums wrap-anywhere">
+                                {admin.userId}
+                            </p>{/if}
+                    </div>
+                    <form
+                        method="POST"
+                        {action}
+                        aria-label={`${admin.displayName} (${admin.userId}) 권한 관리`}
+                        use:enhance={submit}
                     >
-                        권한 해제<span class="sr-only"> {admin.displayName} ({admin.userId})</span>
-                    </Button>
-                </form>
-            </li>
-        {/each}
-    </ul>
-    {#if lastAdmin}<p class="text-sm text-text-muted">마지막 서비스 운영자는 권한을 해제할 수 없어요.</p>{/if}
+                        <input type="hidden" name="userId" value={admin.userId ?? ''} />
+                        <input type="hidden" name="enabled" value="false" />
+                        <Button
+                            variant="secondary"
+                            type="submit"
+                            disabled={locked || lastAdmin || !admin.userId}
+                            loading={busy && !granting && busyTarget === admin.userId}
+                        >
+                            권한 해제<span class="sr-only"> {admin.displayName} ({admin.userId})</span>
+                        </Button>
+                    </form>
+                </li>
+            {/each}
+        </ul>
+        {#if lastAdmin}<p class="px-4 pb-3 text-ui text-muted">
+                마지막 서비스 운영자는 권한을 해제할 수 없어요.
+            </p>{/if}
+    </div>
 
     <form
         bind:this={grantForm}
@@ -178,8 +184,8 @@
         aria-label="서비스 운영자 지정"
         novalidate
         use:enhance={submit}
-        {@attach nonSubmitButtons}
-        class="flex min-w-0 flex-col gap-3"
+        {@attach preventComposingSubmit}
+        class="flex min-w-0 flex-col gap-2 border-t border-line bg-surface-2 px-4 py-3 md:border-t-0 md:border-l"
     >
         <input type="hidden" name="enabled" value="true" />
         <TextField
@@ -193,48 +199,47 @@
             error={inputError}
             oninput={() => (inputError = '')}
         />
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-text-muted">이 서비스에 로그인한 사용자를 지정할 수 있어요.</p>
-            <Button
-                variant="primary"
-                type="submit"
-                size="auto"
-                injClass="min-h-12 w-full px-4 text-base sm:w-auto"
-                disabled={locked}
-                loading={busy && granting}>운영자 지정</Button
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <p class="min-w-[min(100%,10rem)] flex-1 text-ui text-muted">
+                이 서비스에 로그인한 사용자를 지정할 수 있어요.
+            </p>
+            <Button variant="primary" type="submit" disabled={locked} loading={busy && granting}
+                >운영자 지정</Button
             >
         </div>
     </form>
-    {#if error || actionError}<p role="alert" class="text-sm text-error wrap-anywhere">
+    {#if error || actionError}<p
+            role="alert"
+            class="col-span-full border-t border-line px-4 py-2 text-ui text-error wrap-anywhere"
+        >
             {error || actionError}
         </p>{/if}
-    {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
+    {#if notice}<p role="status" class="col-span-full border-t border-line px-4 py-2 text-ui text-success">
+            {notice}
+        </p>{/if}
 </section>
 
-<section class="flex min-w-0 flex-col gap-4" aria-labelledby={`${id}-history`} aria-busy={moving}>
-    <h2 id={`${id}-history`} class="text-lg font-semibold">운영자 변경 이력</h2>
+<section class="panel min-w-0" aria-labelledby={`${id}-history`} aria-busy={moving}>
+    <h2 id={`${id}-history`} class="panel-bar font-bold">운영자 변경 이력</h2>
     {#if overview.entries.length === 0}
         <SectionState
             state="empty"
             message={overview.total ? '이 쪽에는 변경 이력이 없어요' : '아직 기록된 운영자 변경이 없어요'}
         />
     {:else}
-        <ol role="list" class="divide-y divide-border border-y border-border">
+        <ol role="list" class="divide-y divide-line">
             {#each overview.entries as entry (entry.id)}
-                <li class="flex min-w-0 flex-col gap-2 py-4">
+                <li class="flex min-w-0 flex-col gap-1 px-4 py-2.5">
                     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                        <h3 class="min-w-0 font-medium wrap-anywhere">
+                        <h3 class="min-w-0 text-sm font-semibold wrap-anywhere">
                             {entry.target.displayName}{entry.target.userId ? ` (${entry.target.userId})` : ''}
                             · {entry.kind === 'granted' ? '운영자 지정' : '권한 해제'}
                         </h3>
-                        <time
-                            datetime={entry.occurredAt}
-                            class="shrink-0 text-sm text-text-muted tabular-nums"
-                        >
+                        <time datetime={entry.occurredAt} class="shrink-0 text-xs text-muted tabular-nums">
                             {date.format(new Date(entry.occurredAt))}
                         </time>
                     </div>
-                    <p class="text-sm text-text-muted wrap-anywhere">
+                    <p class="text-ui text-muted wrap-anywhere">
                         담당: {entry.source === 'bootstrap'
                             ? '서버 초기 설정'
                             : (entry.actor?.displayName ?? '삭제된 사용자')}

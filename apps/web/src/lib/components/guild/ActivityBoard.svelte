@@ -23,62 +23,62 @@
     // 처음 열 때 진행 중인 내전이 없으면 최근 경기부터 보여 준다. 이후 탭은 사용자가 고른 대로 둔다.
     let active = $state(untrack(() => (activeScrims.ok && activeScrims.value.length === 0 ? 1 : 0)));
     const labels = $derived([
-        { text: activeScrims.ok ? `진행 중 ${activeScrims.value.length}` : '진행 중' },
-        { text: '최근 경기' }
+        activeScrims.ok ? `진행 중 ${activeScrims.value.length}` : '진행 중',
+        '최근 경기'
     ]);
 </script>
 
 <!-- 진행 중인 내전과 최근 경기를 한 카드에서 탭으로 나눈다. 전체 목록은 헤더의 내전·경기 기록 메뉴가 담당한다. -->
-<section aria-labelledby="activity" class="flex flex-col gap-3">
-    <h2 id="activity" class="text-lg font-semibold">내전 현황</h2>
-    <div class="hex-panel overflow-hidden">
-        <div role="group" aria-label="보기 선택" class="border-b border-brass-line px-1">
-            <SelectionTabs {labels} {active} onclickTab={(index) => (active = index)} />
+<section aria-labelledby="activity" class="panel min-w-0 overflow-hidden">
+    <div class="panel-bar">
+        <h2 id="activity" class="text-base font-semibold">내전 현황</h2>
+        <div role="group" aria-label="보기 선택" class="min-w-0">
+            <SelectionTabs {labels} {active} onchange={(index) => (active = index)} />
         </div>
+    </div>
 
-        {#if active === 0}
-            {#if !activeScrims.ok}
-                <div class="p-3">
-                    <SectionState state="error" message="내전을 불러오지 못했어요" {onretry} />
-                </div>
-            {:else if activeScrims.value.length === 0}
-                <p class="px-3 py-8 text-center text-sm text-text-muted">
-                    {heroShown ? '다른 진행 중인 내전이 없어요' : '진행 중인 내전이 없어요'}
-                </p>
-            {:else}
-                <ul aria-label="진행 중인 내전" class="divide-y divide-brass-line">
-                    {#each activeScrims.value as scrim (scrim.id)}
-                        <li>
-                            <ScrimListRow
-                                {scrim}
-                                href={resolve('/g/[guildId]/scrims/[scrimId]', {
-                                    guildId,
-                                    scrimId: scrim.id
-                                })}
-                                line={false}
-                            />
-                        </li>
-                    {/each}
-                </ul>
-            {/if}
-        {:else if !recentMatches.ok}
+    {#if active === 0}
+        {#if !activeScrims.ok}
             <div class="p-3">
-                <SectionState state="error" message="경기 기록을 불러오지 못했어요" {onretry} />
+                <SectionState state="error" message="내전을 불러오지 못했어요" {onretry} />
             </div>
-        {:else if recentMatches.value.length === 0}
-            <p class="px-3 py-8 text-center text-sm text-text-muted">아직 기록된 경기가 없어요</p>
+        {:else if activeScrims.value.length === 0}
+            <p class="px-3 py-8 text-center text-sm text-muted">
+                {heroShown ? '다른 진행 중인 내전이 없어요' : '진행 중인 내전이 없어요'}
+            </p>
         {:else}
-            <ul aria-label="최근 경기" class="divide-y divide-brass-line">
-                {#each recentMatches.value as match (match.id)}
+            <ul aria-label="진행 중인 내전" class="divide-y divide-line">
+                {#each activeScrims.value as scrim (scrim.id)}
                     <li>
-                        <MatchListRow
-                            {match}
-                            href={resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id })}
+                        <ScrimListRow
+                            {scrim}
+                            href={resolve('/g/[guildId]/scrims/[scrimId]', {
+                                guildId,
+                                scrimId: scrim.id
+                            })}
                             line={false}
                         />
                     </li>
                 {/each}
             </ul>
         {/if}
-    </div>
+    {:else if !recentMatches.ok}
+        <div class="p-3">
+            <SectionState state="error" message="경기 기록을 불러오지 못했어요" {onretry} />
+        </div>
+    {:else if recentMatches.value.length === 0}
+        <p class="px-3 py-8 text-center text-sm text-muted">아직 기록된 경기가 없어요</p>
+    {:else}
+        <ul aria-label="최근 경기" class="divide-y divide-line">
+            {#each recentMatches.value as match (match.id)}
+                <li>
+                    <MatchListRow
+                        {match}
+                        href={resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.id })}
+                        line={false}
+                    />
+                </li>
+            {/each}
+        </ul>
+    {/if}
 </section>

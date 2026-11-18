@@ -22,6 +22,7 @@
 두 표본의 공통 참가자 필드는 275개다. 나머지는 로컬 표본에만 38개, 공개 표본에만 64개 존재한다.
 서로 다른 경기이므로 이 차이를 패치 변경만의 결과로 단정하지 않는다.
 10명이라는 참가자 수, 필드 목록, 문자열 형태도 전체 ROFL의 불변 조건이 아니다.
+공개 16.5 파일에서는 98개 청크와 1,674,057개 패킷을 끝까지 분리했다. 16.21 파일의 스트림별 실측은 아래에 구분한다.
 
 집계 근거는 Git에서 제외되는 `samples/rofl-research/metadata-inventory.json`과
 `samples/rofl-research/16.21-full/`의 `report.json`, `chunks.json`, `verification.json`이다.
@@ -126,34 +127,11 @@ payload를 끝까지 분리한 사실만으로 킬·이동·피해·아이템 �
 독립 Python 검사에서 697개 청크와 1,795,343개 인덱스를 전수 대조하고 원본·메타데이터 보존을 확인했다.
 이는 구조 검증이다. 서명의 진위, 업로드 권한, 경기 결과의 정당성이나 게임 이벤트 의미를 인증하지 않는다.
 
-## 로컬 연구 자료 보관 방식
+## 비교한 구현과 적용 범위
 
-개발자가 `rofl:research`를 실행한 추출 디렉터리는 원본 파일, 전체 메타데이터, 압축 해제 청크,
-청크 목록, 압축된 패킷 인덱스와 보고서를 보관한다.
-인덱스의 오프셋은 압축 해제 청크 기준이며 payload를 잘라 다시 읽을 수 있다.
-원본에는 헤더의 미확정 바이트, 서명, 압축된 표현까지 남으므로 JSON 변환에서 빠진 정보도 재조사할 수 있다.
-청크별 해시와 전체 버전, 출력 schemaVersion을 기록하며 해석 실패를 데이터 삭제로 처리하지 않는다.
-집계용 메모리의 항목 수를 제한하되 통계 생략 여부를 보고하고, 전체 패킷 인덱스 기록은 계속한다.
-원본과 파생 결과는 모두 `/samples/` 아래에서 Git 제외를 유지한다.
+개발자가 명시적으로 실행하는 [로컬 전체 추출](rofl.md#본문-전체-추출)은 미해석 바이트를 보존한다. 연구 원본과 파생 결과는 참가자를 식별할 수 있으므로 Git에서 제외된 `samples/`에만 둔다.
 
-## 외부 구현 조사
-
-조회 시점의 서로 다른 프로젝트를 구분한다. 최신이라는 사실만으로 현재 빌드의 지원을 인정하지 않는다.
-
-| 프로젝트 | 확인한 상태 | 참고 범위 |
-| --- | --- | --- |
-| `gzordrai/rofl-parser.js` | 마지막 소스 변경·릴리스 2025-01-13, 마지막 기본 브랜치 커밋 2025-09-19(의존성) | 메타데이터 전용, Apache-2.0 |
-| `shyunku-libraries/rofl-parser` | 최신 커밋 2026-08-20, 패키지 `26.16.1`, 번들 16.15/16.16 | 구조·의미 분리와 호환성 검증; package.json에 ISC 선언, 별도 LICENSE 없음 |
-| `ss26367098/rofllens` | 최신 커밋 2026-07-27, 의미 profile `16.14.794.5912` | ROFL2 transport, verified/candidate/unknown 구분, MIT |
-| `Toastaspiring/ROFL-X` | 확인한 기본 브랜치 커밋 2026-10-08 | 16.9 의미 해석과 16.19 파일 단독 연구, MIT 및 attribution 조항 |
-
-근거: [기존 JS 소스 변경](https://github.com/gzordrai/rofl-parser.js/commit/f49304c7a7a2bf85a0efb87ff36f31a18a75da63),
-[기존 JS 릴리스](https://github.com/gzordrai/rofl-parser.js/releases/tag/1.1.1),
-[새 JS README](https://github.com/shyunku-libraries/rofl-parser/blob/73530424162672aa7daafe233f647cc655607880/README.md),
-[RoflLens README](https://github.com/ss26367098/rofllens/blob/62a475a8f05e7dfa94df5990758be2156c892496/README.md),
-[ROFL-X README](https://github.com/Toastaspiring/ROFL-X/blob/88954be66da506f188fbd134944fdfd8334ad846/README.md).
-새 JS의 16.16 결과도 구조 디코더 75개와 의미 해석 허용 3개를 구분한다. [검증 결과](https://github.com/shyunku-libraries/rofl-parser/blob/73530424162672aa7daafe233f647cc655607880/patches/16.16/validation.json)
-조사한 구현에서 우리 16.21 빌드의 검증된 의미 profile은 확인하지 못했다. 외부 파서는 런타임 의존성으로 추가하지 않았다.
+[RoflLens](https://github.com/ss26367098/rofllens/blob/62a475a8f05e7dfa94df5990758be2156c892496/README.md)의 의미 profile은 `16.14.794.5912` 기준이다. [JS 파서 16.16 검증 결과](https://github.com/shyunku-libraries/rofl-parser/blob/73530424162672aa7daafe233f647cc655607880/patches/16.16/validation.json)도 구조 디코더 75개와 의미 해석 허용 3개를 구분한다. 조사한 구현에서 `16.21.829.8620`의 검증된 의미 profile은 확인하지 못했다. 이들을 런타임 의존성이나 해당 빌드의 규격으로 취급하지 않는다.
 
 ## 다음 연구와 보류 기준
 

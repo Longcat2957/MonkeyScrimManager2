@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { resolve } from '$app/paths';
-    import { asset } from '$app/paths';
+    import { asset, resolve } from '$app/paths';
     import { page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import { overlay } from '#lib/ui/overlay.ts';
     import { currentMode, setMode, type ThemeMode } from '#lib/ui/theme.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
@@ -10,10 +10,10 @@
     import MenuButton from './MenuButton.svelte';
     import { guildNavItems, type NavItem } from './navigation.ts';
 
-    let mode: ThemeMode = $state('primary');
+    let mode: ThemeMode = $state('dark');
     let menuOpen = $state(false);
 
-    // 서버 렌더링에서는 기본 라이트를 쓰고, 하이드레이션 뒤 저장된 모드를 읽는다.
+    // 하이드레이션 뒤 첫 페인트에서 복원한 모드를 스위치에 반영한다.
     $effect(() => {
         mode = currentMode();
     });
@@ -41,7 +41,7 @@
                             }
                         ]
                       : []),
-                  { label: '로그아웃', href: '', current: false }
+                  ...(page.data.authenticated ? [{ label: '로그아웃', href: '', current: false }] : [])
               ]
             : []
     );
@@ -84,77 +84,90 @@
 {#snippet brand(rail: boolean)}
     <a
         href={resolve('/')}
-        class="flex shrink-0 items-center gap-2 no-underline"
+        class="flex shrink-0 items-center gap-2.5 px-1 py-0.5 no-underline"
         aria-label={`${SERVICE_NAME} 홈`}
     >
-        <img src={asset('brand/logo.png')} alt="" width="32" height="32" class="size-8" />
+        <img
+            src={asset('brand/logo.png')}
+            alt=""
+            width="34"
+            height="34"
+            class="size-8.5 rounded-full border border-nexus"
+        />
         {#if rail || desktop.current}
-            <span class="font-brand text-xl leading-none font-bold tracking-wide">{SERVICE_NAME}</span>
+            <span class="font-brand text-[1.3125rem] leading-none font-bold tracking-[-0.02em]"
+                >{SERVICE_NAME}</span
+            >
         {/if}
     </a>
 {/snippet}
 
+{#if page.data.authenticated}
+    <form id="logout-form" method="POST" action={resolve('/auth/logout')} class="hidden"></form>
+{/if}
+
 {#snippet sessionControl()}
-    {#if page.data.authenticated}
-        <form id="logout-form" method="POST" action={resolve('/auth/logout')} class="hidden"></form>
-    {:else if !user}
+    {#if !page.data.authenticated && !user && pathname !== '/'}
         <a
             href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + page.url.search)}`}
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
-            class="rounded-(--radius-form) inline-flex min-h-9 items-center justify-center bg-hex px-3 text-sm font-semibold text-hex-ink"
+            class="inline-flex min-h-9 items-center justify-center rounded-form bg-nexus px-3 text-ui font-semibold text-nexus-ink hover:bg-nexus-hover pointer-coarse:min-h-11"
             >로그인</a
         >
     {/if}
 {/snippet}
 
 {#snippet guildSwitcher(wide: boolean)}
-    {#if user}
+    {#if user && pathname !== '/'}
         <MenuButton
             label="서버 선택"
             actions={guildActions}
             onselect={selectGuild}
+            align={wide ? 'left' : 'right'}
             triggerVariant="secondary"
-            triggerClass={wide ? 'w-full justify-between' : 'gap-1.5'}
+            triggerClass={wide
+                ? 'min-h-9.5 w-full not-hover:bg-surface'
+                : 'max-w-[55vw] not-hover:bg-surface'}
         >
-            <span class="max-w-40 truncate text-sm font-semibold">{guild?.name ?? '서버 선택'}</span>
-            <span aria-hidden="true">▾</span>
+            <span class="min-w-0 flex-1 truncate text-left">{guild?.name ?? '서버 선택'}</span>
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                class="size-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"><path d="m4 6 4 4 4-4" /></svg
+            >
         </MenuButton>
     {/if}
 {/snippet}
 
-{#snippet themeToggle(wide: boolean)}
+{#snippet themeToggle()}
     <button
         type="button"
         role="switch"
         aria-checked={mode === 'primary'}
         aria-label="라이트 모드"
-        class={[
-            'inline-flex min-h-9 items-center gap-2 rounded-(--radius-form) border border-brass-line bg-bg-surface px-3 text-xs font-semibold text-text-muted hover:text-text-primary dark:bg-bg-surface-dark dark:hover:text-text-dark',
-            wide && 'w-full justify-between'
-        ]}
+        class="inline-flex min-h-9 w-full items-center justify-between gap-2 rounded-form px-2.5 text-ui text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
         onclick={toggleMode}
     >
         <span
-            class="relative flex h-4 w-7 items-center rounded-full border border-brass-line bg-bg-highlight dark:bg-bg-highlight-dark"
+            class="relative flex h-4 w-7 items-center rounded-full border border-line-strong bg-surface"
             aria-hidden="true"
         >
             <span
                 class={[
-                    'size-3 rounded-full bg-hex transition-transform',
+                    'size-3 rounded-full bg-nexus motion-safe:transition-transform',
                     mode === 'primary' ? 'translate-x-3.5' : 'translate-x-0.5'
                 ]}
             ></span>
         </span>
-        <span class={wide ? '' : 'hidden sm:inline'} aria-hidden="true">라이트 모드</span>
+        <span aria-hidden="true">라이트 모드</span>
     </button>
 {/snippet}
 
-{#snippet themeInMenu()}
-    {@render themeToggle(true)}
-{/snippet}
-
-{#snippet accountMenu(wide = false, withTheme = false)}
+{#snippet accountMenu()}
     {#if user}
         <MenuButton
             label="계정 메뉴"
@@ -166,16 +179,19 @@
             side={desktop.current ? 'up' : 'down'}
             onselect={selectAccount}
             triggerVariant="secondary"
-            triggerClass={wide ? 'w-full justify-between' : 'gap-2 px-2'}
-            footer={withTheme ? themeInMenu : undefined}
+            triggerClass="w-full gap-2.5 p-2 not-hover:bg-surface"
+            footer={themeToggle}
         >
-            <span
-                class="flex size-7 items-center justify-center rounded-full bg-bg-highlight text-xs font-semibold dark:bg-bg-highlight-dark"
+            <PlayerFace name={user.displayName} imageUrl={user.avatarUrl} size="sm" />
+            <span class="min-w-0 flex-1 truncate text-left text-ui">{user.displayName}</span>
+            <svg
                 aria-hidden="true"
+                viewBox="0 0 16 16"
+                class={['size-4 shrink-0 text-muted', !desktop.current && 'rotate-180']}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"><path d="m4 10 4-4 4 4" /></svg
             >
-                {user.displayName.slice(0, 1)}
-            </span>
-            <span class="hidden text-sm md:inline">{user.displayName}</span>
         </MenuButton>
     {/if}
 {/snippet}
@@ -183,24 +199,24 @@
 {#if desktop.current}
     <!-- 좌측 서버 레일: 목업의 사이드 내비게이션. 현재 서버·메뉴·계정을 한 곳에 둔다. -->
     <aside
-        class="sticky top-0 flex h-dvh w-56 shrink-0 flex-col gap-4 overflow-visible border-r border-brass-line bg-crown px-3 py-4 text-text-primary dark:bg-crown dark:text-text-dark"
+        class="sticky top-0 z-40 flex h-dvh w-56 shrink-0 flex-col gap-4.5 border-r border-line bg-rail px-3.5 py-4.5 text-ink"
     >
         {@render brand(true)}
         {@render guildSwitcher(true)}
         {#if guildItems.length}
-            <ContextNav items={guildItems} label="서버 메뉴" vertical tone="rail" />
+            <ContextNav items={guildItems} label="서버 메뉴" />
         {/if}
-        <div class="mt-auto flex flex-col gap-2 border-t border-brass-line pt-3">
+        <div class="mt-auto flex flex-col gap-2 border-t border-line pt-3">
             {#if user}
-                {@render accountMenu(true, true)}
+                {@render accountMenu()}
             {:else}
-                {@render themeToggle(true)}
+                {@render themeToggle()}
+                {@render sessionControl()}
             {/if}
-            {#if !page.data.authenticated && !user}{@render sessionControl()}{/if}
-            {#if page.data.authenticated}
+            {#if page.data.authenticated && !user}
                 <button
                     type="button"
-                    class="min-h-11 w-full rounded-(--radius-form) border border-brass-line px-3 text-left text-sm font-semibold"
+                    class="min-h-9 w-full rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
                     onclick={logout}
                 >
                     로그아웃
@@ -210,15 +226,15 @@
     </aside>
 {:else}
     <header
-        class="sticky top-0 z-50 flex h-(--app-header-height) items-center gap-2 border-b border-brass-line bg-crown px-3 text-text-primary dark:bg-crown dark:text-text-dark"
+        class="sticky top-0 z-50 flex h-(--app-header-height) items-center gap-2 border-b border-line bg-rail px-3 text-ink"
     >
         {@render brand(false)}
-        <div class="ml-auto flex items-center gap-1">
+        <div class="ml-auto flex min-w-0 items-center gap-1">
             {@render guildSwitcher(false)}
-            {#if !page.data.authenticated && !user}{@render sessionControl()}{/if}
+            {@render sessionControl()}
             <button
                 type="button"
-                class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-(--radius-form) text-text-muted hover:bg-bg-highlight hover:text-text-primary dark:hover:bg-bg-highlight-dark dark:hover:text-text-dark"
+                class="inline-flex size-9 shrink-0 items-center justify-center rounded-form text-ink-2 hover:bg-surface-hover pointer-coarse:size-11"
                 onclick={() => (menuOpen = true)}
             >
                 <svg
@@ -245,35 +261,31 @@
     >
         <div class="absolute inset-0 bg-black/60" onclick={() => (menuOpen = false)} aria-hidden="true"></div>
         <aside
-            class="absolute inset-y-0 right-0 flex w-[min(20rem,85%)] flex-col gap-4 overflow-y-auto border-l border-brass-line bg-bg-surface p-4 text-text-primary dark:bg-bg-surface-dark dark:text-text-dark"
+            class="absolute inset-y-0 right-0 flex w-[min(20rem,85%)] flex-col gap-4 overflow-y-auto border-l border-line bg-rail p-3.5 text-ink"
         >
-            {#if user}
-                <p class="px-3 text-xs font-semibold text-text-muted">{user.displayName}</p>
-            {/if}
+            <button
+                type="button"
+                class="min-h-9 self-end rounded-form px-3 text-ui text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
+                onclick={() => (menuOpen = false)}>닫기</button
+            >
             {#if guildItems.length}
-                <ContextNav
-                    items={guildItems}
-                    label="서버 메뉴"
-                    vertical
-                    tone="rail"
-                    onnavigate={() => (menuOpen = false)}
-                />
+                <ContextNav items={guildItems} label="서버 메뉴" onnavigate={() => (menuOpen = false)} />
             {/if}
             {#if user}
-                {@render accountMenu(true, true)}
+                {@render accountMenu()}
             {:else}
                 <button
                     type="button"
-                    class="min-h-11 rounded-(--radius-form) border border-brass-line px-3 text-left text-sm font-semibold"
+                    class="min-h-11 rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover"
                     onclick={toggleMode}
                 >
                     {mode === 'primary' ? '다크 모드로 전환' : '라이트 모드로 전환'}
                 </button>
             {/if}
-            {#if page.data.authenticated}
+            {#if page.data.authenticated && !user}
                 <button
                     type="button"
-                    class="min-h-11 rounded-(--radius-form) border border-brass-line px-3 text-left text-sm font-semibold"
+                    class="min-h-11 rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover"
                     onclick={() => {
                         menuOpen = false;
                         logout();

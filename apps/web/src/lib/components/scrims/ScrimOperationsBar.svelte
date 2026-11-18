@@ -1,13 +1,7 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { page } from '$app/state';
     import MenuButton from '#lib/components/layout/MenuButton.svelte';
     import type { MenuAction } from '#lib/components/common/menu.ts';
-    import type {
-        ScrimRevertAction,
-        ScrimSettings,
-        ScrimSettingsField
-    } from '#lib/features/scrims/types.ts';
+    import type { ScrimRevertAction, ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { toast } from '#lib/ui/toast.ts';
@@ -131,8 +125,15 @@
         triggerVariant="secondary"
         triggerClass="gap-1"
     >
-        <span class="text-sm font-semibold">운영 메뉴</span>
-        <span aria-hidden="true">▾</span>
+        운영 메뉴
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path
+                d="m2.5 4.5 3.5 3.5 3.5-3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+            />
+        </svg>
     </MenuButton>
 {/if}
 

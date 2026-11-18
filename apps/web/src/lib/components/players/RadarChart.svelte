@@ -20,14 +20,14 @@
     const clamp = (value: number) => Math.min(1, Math.max(0.04, value));
 </script>
 
-<figure class="flex flex-col items-center">
+<figure class="flex flex-col items-center px-3 pb-3">
     <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        class="w-full max-w-80 overflow-visible text-info dark:text-dark"
+        class="w-full max-w-72 overflow-visible text-role-gold"
         role="img"
         aria-label={title}
     >
-        <g class="text-text-primary/15 dark:text-text-dark/20" fill="none" stroke="currentColor">
+        <g class="text-line-strong" fill="none" stroke="currentColor">
             {#each RINGS as ring (ring)}<polygon points={polygon(() => ring)} />{/each}
             {#each axes as axis, index (axis.label)}
                 {@const [x, y] = point(index, 1)}
@@ -37,7 +37,7 @@
         <polygon
             points={polygon((index) => clamp(axes[index]!.value))}
             fill="currentColor"
-            fill-opacity="0.25"
+            fill-opacity="0.16"
             stroke="currentColor"
             stroke-width="2"
             stroke-linejoin="round"
@@ -49,30 +49,20 @@
             <g>
                 <title>{axis.label} {axis.detail}</title>
                 <circle cx={x} cy={y} r="12" fill="transparent" />
-                <circle
-                    cx={x}
-                    cy={y}
-                    r="4"
-                    fill="currentColor"
-                    class="stroke-bg-surface dark:stroke-bg-surface-dark"
-                    stroke-width="2"
-                />
+                <circle cx={x} cy={y} r="4" fill="currentColor" class="stroke-surface" stroke-width="2" />
             </g>
             <text
                 x={lx}
                 y={ly}
                 text-anchor="middle"
                 dominant-baseline="middle"
-                class="fill-text-primary text-[13px] font-semibold dark:fill-text-dark"
-                >{axis.label}<tspan
-                    x={lx}
-                    dy="1.4em"
-                    class="fill-text-primary font-normal dark:fill-text-dark">{axis.detail}</tspan
+                class="fill-ink text-[13px] font-semibold"
+                >{axis.label}<tspan x={lx} dy="1.4em" class="fill-ink-2 font-normal">{axis.detail}</tspan
                 ></text
             >
         {/each}
     </svg>
-    <figcaption class="text-center text-xs leading-5 text-text-muted">
+    <figcaption class="text-center text-xs leading-5 text-muted">
         바깥쪽일수록 서버 내 순위가 높아요.
         <ul class="sr-only">
             {#each axes as axis (axis.label)}<li>{axis.label} {axis.detail}</li>{/each}

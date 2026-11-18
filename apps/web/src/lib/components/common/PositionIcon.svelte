@@ -12,7 +12,14 @@
         bot: 'riot/positions/bottom.svg',
         support: 'riot/positions/support.svg'
     } as const satisfies Record<LolPosition, string>;
-    const SIZE = { sm: 'size-4', md: 'size-6', lg: 'size-8' };
+    const SIZE = { sm: 'size-3.5', md: 'size-5.5', lg: 'size-8' };
 </script>
 
-<img src={asset(FILE[position])} alt="" aria-hidden="true" class={['shrink-0 object-contain', SIZE[size]]} />
+<span
+    aria-hidden="true"
+    class={[
+        'inline-block shrink-0 bg-role-gold mask-contain mask-center mask-no-repeat forced-colors:bg-[CanvasText] forced-colors:forced-color-adjust-none',
+        SIZE[size]
+    ]}
+    style:mask-image={`url("${asset(FILE[position])}")`}
+></span>

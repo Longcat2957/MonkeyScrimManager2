@@ -5,18 +5,18 @@
     let { text, state = 'neutral' }: { text: string; state?: StatusState } = $props();
 
     const STATE: Record<StatusState, string> = {
-        theme: 'border-hex/60 bg-hex/10 text-hex',
-        success: 'border-success/50 bg-success/10 text-success',
-        warning: 'border-warning/50 bg-warning/10 text-warning',
-        error: 'border-error/50 bg-error/10 text-error',
-        info: 'border-info/50 bg-info/10 text-info',
-        neutral: 'border-brass-line bg-bg-highlight text-text-muted dark:bg-bg-highlight-dark'
+        theme: 'border-nexus bg-selected text-nexus',
+        success: 'border-transparent bg-success/15 text-success',
+        warning: 'border-transparent bg-warning/15 text-warning',
+        error: 'border-transparent bg-error/15 text-error',
+        info: 'border-transparent bg-info/15 text-info',
+        neutral: 'border-line bg-surface-2 text-muted'
     };
 </script>
 
 <span
     class={[
-        'inline-flex min-h-6 items-center whitespace-nowrap rounded-(--radius-small) border px-2 py-0.5 text-xs leading-tight font-semibold',
+        'inline-flex min-h-5.5 items-center whitespace-nowrap rounded-(--radius-small) border px-2 text-xs leading-tight font-semibold',
         STATE[state]
     ]}>{text}</span
 >

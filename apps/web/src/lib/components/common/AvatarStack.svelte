@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-    import { avatarColor } from '#lib/ui/avatar.ts';
+    import PlayerFace from './PlayerFace.svelte';
 
     type Props = {
         people: StackPerson[];
@@ -20,42 +20,21 @@
     const label = $derived(
         shown.map((person) => person.name).join(', ') + (remaining ? ` 외 ${remaining}명` : '')
     );
-    const PX = { xs: 'size-6 text-[0.625rem]', sm: 'size-10 text-xs' };
 </script>
 
 <!-- 장식 요소로 다룬다. 조작 대상과 보조기기 트리에서 빼고 요약 문구만 읽게 한다. -->
 {#if shown.length}
     <span class="inline-flex shrink-0 items-center">
         <span class="sr-only">{label}</span>
-        <span inert aria-hidden="true" class="flex items-center -space-x-2">
+        <span inert aria-hidden="true" class="flex items-center -space-x-1">
             {#each shown as person (person.key)}
-                {#if person.imageUrl}
-                    <img
-                        src={person.imageUrl}
-                        alt=""
-                        loading="lazy"
-                        class={[
-                            'rounded-full object-cover ring-2 ring-bg-surface dark:ring-bg-surface-dark',
-                            PX[size]
-                        ]}
-                    />
-                {:else}
-                    <span
-                        class={[
-                            'flex items-center justify-center rounded-full font-semibold text-white ring-2 ring-bg-surface dark:ring-bg-surface-dark',
-                            PX[size]
-                        ]}
-                        style:background-color={avatarColor(person.name)}
-                    >
-                        {person.name.slice(0, 1)}
-                    </span>
-                {/if}
+                <PlayerFace name={person.name} imageUrl={person.imageUrl} {size} />
             {/each}
             {#if remaining}
                 <span
                     class={[
-                        'flex items-center justify-center rounded-full bg-bg-highlight font-semibold tabular-nums ring-2 ring-bg-surface dark:bg-bg-highlight-dark dark:ring-bg-surface-dark',
-                        PX[size]
+                        'flex items-center justify-center rounded-(--radius-form) border border-line-strong bg-surface-2 px-1 font-semibold text-muted tabular-nums',
+                        size === 'xs' ? 'h-6 min-w-6 text-micro' : 'h-7 min-w-7 text-xs'
                     ]}
                 >
                     +{remaining}

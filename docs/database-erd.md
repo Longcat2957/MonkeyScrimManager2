@@ -1,19 +1,7 @@
 # MSM2 데이터베이스 ERD
 
-기준: 2026-11-16 [schema.ts](../apps/web/src/lib/server/db/schema.ts)의 **44개 업무 테이블·104개 외래키**. Drizzle `getTableConfig`의 원본 스키마 집계이며 조회용 `relations`를 별도 제약으로 세지 않는다.
-전체 초기 생성 기준은 [0000_initial_schema.sql](../apps/web/drizzle/0000_initial_schema.sql)과 [0001_discord_bot.sql](../apps/web/drizzle/0001_discord_bot.sql), Drizzle snapshot·journal이다.
-게시 점유의 필수 operation 제약은 [0002_discord_lease_constraint.sql](../apps/web/drizzle/0002_discord_lease_constraint.sql)로 강화한다.
-경기 라인업·결과 이력·게시 대상 확장은 [0003_match_results.sql](../apps/web/drizzle/0003_match_results.sql)에 포함한다.
-취소한 ROFL의 새 채택 이력과 활성 결과 고유키는 [0004_rofl_result_restoration.sql](../apps/web/drizzle/0004_rofl_result_restoration.sql)에 포함한다.
-경매의 직전 행위 원장은 [0005_auction_actions.sql](../apps/web/drizzle/0005_auction_actions.sql), 시작 전 취소 복구 근거는 [0006_scrim_cancellation_restore.sql](../apps/web/drizzle/0006_scrim_cancellation_restore.sql), 준비 단계 중도 종료·우세 팀 판정·재개 제약은 [0007_scrim_early_end.sql](../apps/web/drizzle/0007_scrim_early_end.sql)에 포함한다. 기존 행의 미확인 상태·행위를 추정해 채우지 않는다.
-진행 중 전체 취소 배치·Match 귀속은 [0008_scrim_result_cancellation.sql](../apps/web/drizzle/0008_scrim_result_cancellation.sql), 계정·설정 변경 감사 원장은 [0009_guild_audit.sql](../apps/web/drizzle/0009_guild_audit.sql)에 포함한다.
-서비스 운영자 지정·회수 감사는 [0010_service_admin_events.sql](../apps/web/drizzle/0010_service_admin_events.sql)에 포함한다.
-본인 공개 설정·탈퇴 상태·고유 공개 UUID와 탈퇴 시 비공개 제약은 [0011_account_privacy.sql](../apps/web/drizzle/0011_account_privacy.sql)에 포함한다. 내부 사용자 ID·과거 경기·MMR·canonical PUUID는 유지한다.
-알려진 기존 글만 갱신하고 유실/채널 변경 때 과거 새글 생성을 차단하는 작업 표식은 [0012_privacy_publication_refresh.sql](../apps/web/drizzle/0012_privacy_publication_refresh.sql)에 포함한다.
-포지션별 선호 챔피언의 선택 순서는 [0013_champion_preference_order.sql](../apps/web/drizzle/0013_champion_preference_order.sql)에 포함한다. 기존 테이블의 열·제약만 보완하므로 테이블·외래키 수는 유지한다. `0013`은 격리 테스트 DB에서 검증했으며 운영 DB에는 적용하지 않았다.
-인증·서버별 계정·모집·편성·대진·진행 상태와 ROFL 결과·MMR 자동 반영은 실제 DB를 사용한다.
-
-배포 복원 검증은 별도 `msm2_deploy_probe` schema의 부모/자식 FK를 만들 수 있으며 그 검증용 관계는 업무 ERD에 포함하지 않는다. `0007` 당시41개/93개와 probe 포함94개의 역사 실행은 [통합 검증 기록](../artifacts/ui-review/operations/checks.json)에 보존한다. 현재 원본 스키마·업그레이드 범위는 [후속 구현](remaining-implementation.md)을 따른다.
+기준은 [Drizzle 스키마](../apps/web/src/lib/server/db/schema.ts)의 44개 업무 테이블과 104개 외래키다. 조회용 `relations`와 격리 복원 검사 전용 `msm2_deploy_probe`는 집계하지 않는다.
+변경 이력과 적용 순서는 [migration 디렉터리](../apps/web/drizzle/)의 SQL과 journal을 따른다. 적용한 SQL은 수정하지 않으며, 운영 자료가 있는 DB의 변경은 [백업·복원 절차](deployment.md#db-migration과-백업복원)를 따른다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
 밴픽 진행·픽 순서·수동 결과 승인 모델과 원본 ROFL 보관 테이블은 없다.
@@ -124,6 +112,7 @@ erDiagram
     guild_members {
         text guild_id PK, FK
         text user_id PK, FK
+        text nickname "서버 별명, NULL 허용"
         boolean is_admin "표시용 동기화 값"
         boolean manage_guild
         text_array role_ids
@@ -196,7 +185,7 @@ erDiagram
 
 `user_champion_preferences.champion_id`는 Data Dragon의 숫자 `key`다. 같은 챔피언을 다른 포지션에 저장할 수 있으며 같은 포지션의 중복은 기존 PK가 막는다. `ordinal`은 기본 1·양수이며 `(user_id, position, ordinal)`도 고유하다. `0013`은 기존 항목을 사용자·포지션별 `created_at → champion_id` 순서로 채우고 10개를 초과한 기존 행도 삭제하지 않는다. 새 저장의 포지션당 최대 10개 제한과 실제 카탈로그 검증은 서비스가 담당한다.
 
-본인 저장은 활성 사용자 행의 `NO KEY UPDATE` 잠금 뒤 해당 포지션만 원자 교체한다. 탈퇴도 같은 사용자 행을 잠그고 선호를 삭제하므로 늦은 저장이 탈퇴 뒤 설정을 재생성하지 않는다. 카탈로그에 없는 기존 항목은 같은 포지션에서 보존·재정렬·삭제할 수 있고 새로 추가하거나 다른 포지션에 복사할 수 없다. 경매 후보에는 프로필 공개 상태이고 탈퇴하지 않은 사용자의 실제 카탈로그 항목만 저장 순서대로 제공한다. 관련 검사 94개의 범위는 [백엔드 계획](backend-plan.md#본인-선호-챔피언)에 기록한다.
+본인 저장과 탈퇴는 같은 사용자 행을 잠그므로 늦은 저장이 탈퇴 뒤 설정을 재생성하지 않는다. 기존 미확인 항목의 유지·재정렬·삭제와 경매 공개 조건은 [선호 챔피언 규칙](backend-plan.md#본인-선호-챔피언)을 따른다.
 
 Riot 식별자는 PUUID 고유 행으로 재사용하고 사용자 연결은 `guild_riot_accounts`에서 **서버별**로 관리한다.
 같은 계정은 서버마다 다른 사용자에게 연결될 수 있으며 `(guild_id, user_id)`의 대표 연결은 최대 하나다.
@@ -743,8 +732,7 @@ erDiagram
 `(file_sha256, projection_version)`은 고유하고 V1 하위 모델은 공통 메타의 버전 1만 참조한다.
 정상 업로드는 참가자 열 명을 모두 검증한 뒤 선별 자료·Game·출전·MMR·진출·게시 예약을 함께 커밋한다.
 연결 실패 자료만 별도로 저장하거나 ROFL 근거 없는 출전 행을 먼저 만들지 않는다.
-Riot API로 검증한 계정과 파일의 명시적 `TEAM_POSITION`을 확정 라인업에 대조한다. 미연결 부계정도 팀·포지션으로
-확인되면 `riot_accounts`와 당시 `game_participants`에 기록하지만 서버 연결·대표 계정은 자동 변경하지 않는다.
+첫 결과에서 검증한 실사용 계정은 `riot_accounts`·`guild_riot_accounts`와 당시 `game_participants`에 기록한다. 기존 소유자와 충돌하면 거절하고, 대표 계정이 없을 때만 첫 확인 계정을 대표로 지정한다. [ROFL 자동 귀속 규칙](rofl-import.md#자동-귀속과-경기-운영)을 따른다.
 리플레이 원시 PUUID와 배열 순서는 계정·포지션 연결 근거로 사용하지 않는다.
 
 ## 함께 적용되는 제약

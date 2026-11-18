@@ -38,4 +38,3 @@
 
 밴픽·게임 중 진행 입력, 별도 Match 시작 버튼, 서버 경매 타이머는 이 기능의 범위가 아니다.
 action별 책임과 상태 전환은 [백엔드 계획](../../../../../../docs/backend-plan.md#4-현재-화면과-crud의-대응)을 따른다.
-이전 운영 보완 검사는 [통합 검증 기록](../../../../../../artifacts/ui-review/operations/checks.json), 전체 취소·현재 후속 기능과 제외 범위는 [후속 기록](../../../../../../docs/ui-review/next.md)·[순차 구현 기록](../../../../../../docs/remaining-implementation.md)을 따른다.

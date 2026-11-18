@@ -7,7 +7,7 @@
         subTitle?: string;
         detail?: string;
         info?: string;
-        // 마지막 행이 아니면 STDF Cell처럼 안쪽으로 들인 구분선을 그린다.
+        // 마지막 행이 아니면 안쪽으로 들인 구분선을 그린다.
         line?: boolean;
         titleChild?: Snippet;
         leftChild?: Snippet;
@@ -37,33 +37,31 @@
 </script>
 
 <!--
-    STDF Cell은 행 전체가 button이라 링크로 쓸 수 없다. 이동하는 행은 Cell과 같은 클래스로 만든 링크를 쓰고,
-    STDF CellGroup 안에 두어 /me 등의 Cell 목록과 같은 모양을 유지한다.
+    이동하는 행만 링크로 렌더링한다.
     오른쪽 detail은 항상 제목 줄, info는 항상 부제 줄에 맞추도록 grid로 배치한다.
     오른쪽 칸은 flex로 두어 작은 글자가 부모 줄 높이를 물려받아 행이 커지지 않게 한다.
-    CellGroup이 overflow-hidden이므로 포커스 표시는 행 안쪽에 그린다.
+    행 목록이 overflow-hidden일 수 있으므로 포커스 표시는 행 안쪽에 그린다.
     relative는 행 안의 sr-only(absolute) 텍스트가 스크롤 영역 밖으로 빠져 문서 높이를 늘리지 않게 한다.
 -->
 <svelte:element
     this={href ? 'a' : 'div'}
     href={href ?? undefined}
     class={[
-        'relative block bg-bg-surface px-3 dark:bg-bg-surface-dark',
-        href &&
-            'no-underline hover:bg-text-primary/3 focus-visible:rounded-(--radius-box) focus-visible:-outline-offset-2 active:bg-text-primary/5 dark:hover:bg-text-dark/3 dark:active:bg-text-dark/5'
+        'relative block bg-surface px-3.5',
+        href && 'no-underline hover:bg-surface-hover focus-visible:-outline-offset-2 active:bg-selected'
     ]}
 >
     <span
         class={[
-            'grid w-full items-center gap-x-3 gap-y-0.5 py-4',
+            'grid min-h-11 w-full items-center gap-x-2.5 gap-y-0.5 py-2',
             leftChild ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
-            line && 'border-b border-text-primary/5 dark:border-text-dark/5'
+            line && 'border-b border-line'
         ]}
     >
         {#if leftChild}
             <span class="col-start-1 row-span-2 row-start-1 self-center">{@render leftChild()}</span>
         {/if}
-        <span class={['row-start-1 truncate font-medium', col.main]}>
+        <span class={['row-start-1 truncate text-ui font-semibold text-ink', col.main]}>
             {#if titleChild}{@render titleChild()}{:else}{title}{/if}
         </span>
         {#if detailChild || detail}
@@ -71,19 +69,19 @@
                 {#if detailChild}
                     {@render detailChild()}
                 {:else}
-                    <span class="text-gray-700 dark:text-gray-300">{detail}</span>
+                    <span class="text-ui text-ink-2">{detail}</span>
                 {/if}
             </span>
         {/if}
         {#if subTitle}
-            <span class={['row-start-2 truncate text-xs text-text-muted', col.main]}>{subTitle}</span>
+            <span class={['row-start-2 truncate text-xs text-muted', col.main]}>{subTitle}</span>
         {/if}
         {#if infoChild || info}
             <span class={['row-start-2 flex items-center justify-end', col.right]}>
                 {#if infoChild}
                     {@render infoChild()}
                 {:else}
-                    <span class="text-xs font-light text-text-muted">{info}</span>
+                    <span class="text-xs text-muted">{info}</span>
                 {/if}
             </span>
         {/if}

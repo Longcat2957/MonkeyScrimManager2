@@ -12,21 +12,21 @@
     ] as const;
 </script>
 
-<footer class="border-t border-brass-line bg-crown dark:bg-crown">
+<footer class="border-t border-line bg-rail">
     <div
-        class="flex flex-col gap-2 px-4 py-3 text-text-primary sm:flex-row sm:items-center sm:justify-between md:px-6 dark:text-text-dark"
+        class="flex flex-col gap-1 px-4 py-2 text-ink-2 sm:flex-row sm:items-center sm:justify-between md:px-6"
     >
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class="font-brand text-lg font-bold tracking-wide">{SERVICE_NAME}</span>
-            <span class="text-xs text-text-muted">{serviceDomain}</span>
+            <span class="font-brand text-base font-bold tracking-[-0.02em] text-ink">{SERVICE_NAME}</span>
+            <span class="text-xs text-muted">{serviceDomain}</span>
         </div>
 
-        <nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-sm">
+        <nav aria-label="서비스 정책 및 안내" class="-mx-2 flex flex-wrap items-center text-ui">
             {#each footerLinks as link (link.href)}
                 <a
                     href={link.href}
                     class={[
-                        'inline-flex min-h-11 min-w-11 items-center justify-center px-2 underline-offset-4 hover:underline',
+                        'inline-flex min-h-9 min-w-11 items-center justify-center rounded-form px-2 underline-offset-4 hover:underline pointer-coarse:min-h-11',
                         link.href === resolve('/privacy') && 'font-semibold'
                     ]}
                 >

@@ -2,7 +2,7 @@
     import Button from '#lib/components/common/Button.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
-    import { POSITIONS, REGISTRATION_STATUS } from '#lib/features/labels.ts';
+    import { MY_REGISTRATION, POSITIONS, REGISTRATION_STATUS } from '#lib/features/labels.ts';
     import type { MyRegistration, RegistrationAccount } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
@@ -69,41 +69,39 @@
 </script>
 
 <section
-    class="hex-panel flex flex-col gap-3 p-4"
+    class="panel flex min-w-0 flex-col gap-3 p-3.5"
     aria-labelledby="my-registration"
     aria-busy={registering || withdrawing}
 >
     <div class="flex items-center justify-between gap-2">
-        <h2 id="my-registration" class="text-sm font-semibold">내 신청</h2>
+        <h2 id="my-registration" class="text-[15px] font-bold">내 신청</h2>
         {#if registration && status}
-            <StatusTag text={status.text} state={status.state ?? 'neutral'} />
+            <StatusTag
+                text={MY_REGISTRATION[registration.status] ?? status.text}
+                state={status.state ?? 'neutral'}
+            />
         {/if}
     </div>
 
     {#if registration && status}
-        <dl class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-y-2 text-sm">
-            <dt class="text-text-muted">희망 포지션</dt>
+        <dl class="grid grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-y-2 text-ui">
+            <dt class="text-muted">희망 포지션</dt>
             <dd><PositionChips positions={registration.positions as LolPosition[]} /></dd>
-            <dt class="text-text-muted">Riot 계정</dt>
-            <dd class="truncate font-semibold">
+            <dt class="text-muted">Riot 계정</dt>
+            <dd class="font-semibold wrap-anywhere">
                 {registration.riotAccountId ? (account?.riotId ?? '연결이 해제된 계정') : '계정 없이 참가'}
             </dd>
         </dl>
         {#if canEdit}
-            <div class="flex justify-end gap-2 border-t border-brass-line pt-3">
-                <Button variant="quiet" size="sm" loading={withdrawing} onclick={withdraw}>철회</Button>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={withdrawing}
-                    onclick={() => (dialogOpen = true)}
-                >
+            <div class="flex justify-end gap-2 border-t border-line pt-1">
+                <Button variant="quiet" loading={withdrawing} onclick={withdraw}>신청 철회</Button>
+                <Button variant="secondary" disabled={withdrawing} onclick={() => (dialogOpen = true)}>
                     수정
                 </Button>
             </div>
         {/if}
     {:else if blockedReason}
-        <p class="text-sm text-text-muted">{blockedReason}</p>
+        <p class="text-sm text-muted">{blockedReason}</p>
     {:else if canRegister}
         <Button variant="primary" size="sm" loading={registering} disabled={registering} onclick={register}>
             신청하기

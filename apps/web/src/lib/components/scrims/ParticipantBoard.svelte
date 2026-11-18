@@ -2,6 +2,8 @@
     import { tick } from 'svelte';
     import { resolve } from '$app/paths';
     import Button from '#lib/components/common/Button.svelte';
+    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { REGISTRATION_STATUS } from '#lib/features/labels.ts';
     import type {
@@ -43,17 +45,14 @@
 
     const active = $derived(counts.selected + counts.standby);
     const labels = $derived(
-        FILTERS.map(({ text, statuses }) => ({
-            text: desktop.current
-                ? `${text} ${statuses.reduce((sum, status) => sum + counts[status], 0)}`
-                : text
-        }))
+        FILTERS.map(({ text, statuses }) =>
+            desktop.current ? `${text} ${statuses.reduce((sum, status) => sum + counts[status], 0)}` : text
+        )
     );
     const shown = $derived.by(() => {
-        const statuses = FILTERS[filter]!.statuses;
+        const statuses = managing ? ACTIVE : FILTERS[filter]!.statuses;
         return participants.filter((participant) => statuses.includes(participant.status));
     });
-    const selectable = $derived(participants.filter((participant) => ACTIVE.includes(participant.status)));
 
     function toggle(id: string) {
         selected = selected.includes(id) ? selected.filter((value) => value !== id) : [...selected, id];
@@ -78,75 +77,45 @@
             pending = false;
             await tick();
             controls
-                ?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+                ?.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)')
                 ?.focus({ preventScroll: true });
         }
     }
 </script>
 
-<section
-    class="hex-panel flex min-w-0 flex-col overflow-hidden"
-    aria-labelledby="participants"
-    aria-busy={pending}
->
-    <div class="flex flex-wrap items-center gap-2 border-b border-brass-line px-4 py-3">
-        <h2 id="participants" class="text-base font-semibold">참가자</h2>
-        <span
-            class="rounded-(--radius-small) border border-brass-line bg-bg-overlay px-2 py-0.5 text-xs text-text-muted dark:bg-bg-overlay-dark"
-            >신청 {active}/{counts.activeCapacity}명</span
-        >
-        {#if manager}
+<section class="panel min-w-0 overflow-hidden" aria-labelledby="participants" aria-busy={pending}>
+    <div class="panel-bar justify-start gap-x-2.5 px-3.5 py-2">
+        <div class="flex flex-wrap items-center gap-1.5">
+            <h2 id="participants" class="mr-1 text-base font-bold">참가자</h2>
             <span
-                class="rounded-(--radius-small) border border-brass-line bg-bg-overlay px-2 py-0.5 text-xs text-text-muted dark:bg-bg-overlay-dark"
-                >선발 {counts.selected}/{counts.playCapacity}명</span
+                class="rounded-(--radius-small) border border-line bg-surface-2 px-2 py-0.5 text-xs text-muted"
+                >신청 {active}/{counts.activeCapacity}명</span
             >
-        {/if}
-        {#if pending}<span
-                class="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
-                aria-hidden="true"
-            ></span>{/if}
+            {#if manager}
+                <span
+                    class="rounded-(--radius-small) border border-line bg-surface-2 px-2 py-0.5 text-xs text-muted"
+                    >선발 {counts.selected}/{counts.playCapacity}명</span
+                >
+            {/if}
+            {#if pending}<Spinner label="선발 상태를 저장하는 중" />{/if}
+        </div>
 
-        {#if !managing}
-            <div
-                role="tablist"
-                aria-label="상태 필터"
-                class="ml-1 inline-flex gap-0.5 rounded-(--radius-small) border border-brass-line bg-bg-overlay p-0.5 dark:bg-bg-overlay-dark"
-            >
-                {#each labels as label, index (label.text)}
-                    <button
-                        type="button"
-                        role="tab"
-                        aria-selected={filter === index}
-                        class={[
-                            'min-h-7 whitespace-nowrap rounded-[3px] px-2.5 text-xs font-semibold',
-                            filter === index
-                                ? 'bg-hex/15 text-hex'
-                                : 'text-text-muted hover:text-text-primary dark:hover:text-text-dark'
-                        ]}
-                        onclick={() => (filter = index)}
-                    >
-                        {label.text}
-                    </button>
-                {/each}
+        {#if participants.length && !managing}
+            <div role="group" aria-label="상태 필터" class="max-w-full min-w-0">
+                <SelectionTabs {labels} bind:active={filter} />
             </div>
         {/if}
 
         {#if canSelect && !managing}
-            <div class="ml-auto flex shrink-0 gap-2">
+            <div class="ml-auto flex flex-wrap gap-1.5">
                 <Button
                     variant="secondary"
-                    size="sm"
                     disabled={active >= counts.activeCapacity}
                     onclick={() => (adding = true)}
                 >
                     참가자 추가
                 </Button>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={selectable.length === 0}
-                    onclick={() => (managing = true)}
-                >
+                <Button variant="secondary" disabled={active === 0} onclick={() => (managing = true)}>
                     선발 관리
                 </Button>
             </div>
@@ -154,9 +123,7 @@
     </div>
 
     {#if managing}
-        <div
-            class="flex flex-wrap items-center justify-between gap-2 border-b border-brass-line bg-hex/5 px-3 py-2"
-        >
+        <div class="panel-bar bg-selected">
             <span class="text-sm font-semibold">선택 {selected.length}명</span>
             <div class="flex flex-wrap gap-2">
                 <Button
@@ -183,95 +150,98 @@
                 >
                     제외
                 </Button>
-                <Button variant="quiet" size="sm" onclick={() => (managing = false)}>완료</Button>
+                <Button variant="quiet" size="sm" disabled={pending} onclick={() => (managing = false)}
+                    >완료</Button
+                >
             </div>
         </div>
     {/if}
 
-    <div bind:this={controls} class="min-h-0 flex-1 overflow-y-auto">
+    <div bind:this={controls} class="overflow-x-auto">
         {#if participants.length === 0}
-            <p class="px-4 py-10 text-center text-sm text-text-muted">아직 신청한 사람이 없어요</p>
+            <p class="px-4 py-10 text-center text-sm text-muted">아직 신청한 사람이 없어요</p>
         {:else if shown.length === 0}
-            <p class="px-4 py-10 text-center text-sm text-text-muted">해당하는 참가자가 없어요</p>
+            <p class="px-4 py-10 text-center text-sm text-muted">해당하는 참가자가 없어요</p>
         {:else}
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse text-sm">
-                    <thead>
+            <table
+                class="data-table table-fixed sm:[&_td]:px-3.5 sm:[&_th]:px-3.5 [&_th]:py-1.5"
+                aria-labelledby="participants"
+            >
+                <thead>
+                    <tr>
+                        {#if managing}<th scope="col" class="w-11"><span class="sr-only">선택</span></th>{/if}
+                        <th scope="col">참가자</th>
+                        <th scope="col" class="w-[38%] sm:w-[13.75rem]">희망 포지션</th>
+                        <th scope="col" class="w-16 text-right sm:w-[5.75rem]">상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#each shown as participant (participant.registrationId)}
+                        {@const tag = REGISTRATION_STATUS[participant.status]}
                         <tr
-                            class="border-b border-brass-line bg-bg-overlay text-xs text-text-muted dark:bg-bg-overlay-dark"
+                            class={managing && selected.includes(participant.registrationId)
+                                ? 'bg-selected'
+                                : undefined}
                         >
-                            {#if managing}<th class="w-9 px-3 py-2"><span class="sr-only">선택</span></th
-                                >{/if}
-                            <th class="px-2 py-1.5 text-left font-medium sm:px-4">참가자</th>
-                            <th class="px-2 py-1.5 text-left font-medium sm:px-4">희망 포지션</th>
-                            <th class="px-2 py-1.5 text-right font-medium sm:px-4">상태</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#each shown as participant, index (participant.registrationId)}
-                            {@const tag = REGISTRATION_STATUS[participant.status]}
-                            <tr
-                                class={[
-                                    'h-[46px] border-b border-brass-line/60 last:border-0 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark',
-                                    managing && selected.includes(participant.registrationId) && 'bg-hex/5'
-                                ]}
-                            >
-                                {#if managing}
-                                    <td class="px-3">
+                            {#if managing}
+                                <td class="!p-0">
+                                    <label class="grid min-h-11 cursor-pointer place-items-center">
                                         <input
                                             type="checkbox"
-                                            class="size-4 accent-[var(--color-hex)]"
+                                            class="size-4 cursor-pointer accent-[var(--color-nexus)] disabled:cursor-not-allowed"
                                             checked={selected.includes(participant.registrationId)}
-                                            disabled={!ACTIVE.includes(participant.status) || pending}
+                                            disabled={pending}
                                             aria-label={`${participant.displayName} 선택`}
                                             onchange={() => toggle(participant.registrationId)}
                                         />
-                                    </td>
-                                {/if}
-                                <td class="px-2 sm:px-4">
-                                    <span class="flex min-w-0 items-center gap-2">
-                                        <span
-                                            class="grid size-7 shrink-0 place-items-center rounded-[5px] border border-brass-line bg-bg-overlay text-xs font-bold dark:bg-bg-overlay-dark"
-                                            aria-hidden="true">{participant.displayName.slice(0, 1)}</span
-                                        >
-                                        <span class="flex min-w-0 flex-col">
-                                            {#if participant.userId && !managing}
-                                                <a
-                                                    href={resolve('/g/[guildId]/players/[userId]', {
-                                                        guildId,
-                                                        userId: participant.userId
-                                                    })}
-                                                    class="truncate font-semibold hover:underline"
-                                                    >{participant.displayName}</a
-                                                >
-                                            {:else}
-                                                <span class="truncate font-semibold"
-                                                    >{participant.displayName}</span
-                                                >
-                                            {/if}
-                                            {#if participant.riotId}
-                                                <span class="truncate text-xs text-text-muted"
-                                                    >{participant.riotId}</span
-                                                >
-                                            {/if}
-                                        </span>
+                                    </label>
+                                </td>
+                            {/if}
+                            <td>
+                                <span class="flex min-w-0 items-center gap-2.5">
+                                    <span
+                                        class="grid size-7 shrink-0 place-items-center rounded-form border border-line-strong bg-surface-2 text-xs font-bold text-nexus"
+                                        aria-hidden="true">{participant.displayName.slice(0, 1)}</span
+                                    >
+                                    <span
+                                        class="flex min-w-0 flex-col gap-x-4 sm:flex-row sm:flex-wrap sm:items-baseline"
+                                    >
+                                        {#if participant.userId && !managing}
+                                            <a
+                                                href={resolve('/g/[guildId]/players/[userId]', {
+                                                    guildId,
+                                                    userId: participant.userId
+                                                })}
+                                                class="min-w-0 font-semibold wrap-anywhere hover:underline"
+                                                >{participant.displayName}</a
+                                            >
+                                        {:else}
+                                            <span class="min-w-0 font-semibold wrap-anywhere"
+                                                >{participant.displayName}</span
+                                            >
+                                        {/if}
+                                        {#if participant.riotId}
+                                            <span class="min-w-0 text-xs text-muted wrap-anywhere"
+                                                >{participant.riotId}</span
+                                            >
+                                        {/if}
                                     </span>
-                                </td>
-                                <td class="px-2 sm:px-4">
-                                    <PositionChips positions={participant.positions} />
-                                </td>
-                                <td class="w-16 px-2 text-right whitespace-nowrap sm:px-4">
-                                    {#if tag.state}
-                                        <StatusTag text={tag.text} state={tag.state} />
-                                    {:else}
-                                        <span class="text-xs text-text-muted">{tag.text}</span>
-                                    {/if}
-                                </td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
+                                </span>
+                            </td>
+                            <td>
+                                <PositionChips positions={participant.positions} />
+                            </td>
+                            <td class="text-right whitespace-nowrap">
+                                {#if tag.state}
+                                    <StatusTag text={tag.text} state={tag.state} />
+                                {:else}
+                                    <span class="text-xs text-muted">{tag.text}</span>
+                                {/if}
+                            </td>
+                        </tr>
+                    {/each}
+                </tbody>
+            </table>
         {/if}
     </div>
 </section>

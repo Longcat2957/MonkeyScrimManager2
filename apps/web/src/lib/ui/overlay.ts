@@ -32,11 +32,6 @@ function focusable(node: HTMLElement) {
 }
 
 function focusFirst(node: HTMLElement) {
-    // STDF Mask는 이름 없는 전체 화면 버튼이므로 키보드·보조기기 탐색에서 제외한다.
-    for (const mask of node.querySelectorAll<HTMLElement>(':scope > button')) {
-        mask.tabIndex = -1;
-        mask.setAttribute('aria-hidden', 'true');
-    }
     const preferred = node.querySelector<HTMLElement>('[data-autofocus]');
     const target = preferred && canFocus(preferred) ? preferred : focusable(node)[0];
     (target ?? node).focus({ preventScroll: true });
@@ -63,7 +58,7 @@ function syncBackground() {
     document.body.style.overflow = 'hidden';
 }
 
-/** STDF 오버레이에 의미 구조·최상위 키보드 조작·배경 차단·포커스 복귀를 보완한다. */
+/** 메뉴 시트가 열려 있는 동안 배경을 차단하고 닫을 때 포커스를 돌려준다. */
 export function overlay({ open, label, onclose }: OverlayOptions): Attachment<HTMLElement> {
     return (node) => {
         if (!open) return;
@@ -81,7 +76,7 @@ export function overlay({ open, label, onclose }: OverlayOptions): Attachment<HT
         node.tabIndex = -1;
         syncBackground();
 
-        // STDF 패널의 지연 렌더링을 기다리되 새 오버레이의 포커스를 빼앗지 않는다.
+        // 패널 렌더링을 기다리되 새 오버레이의 포커스를 빼앗지 않는다.
         let frame = 0;
         let attempts = 0;
         const moveFocus = () => {

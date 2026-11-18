@@ -2,9 +2,9 @@
     import { dismissToast, toasts } from '#lib/ui/toast.ts';
 
     const TONE = {
-        success: 'border-success/60 bg-bg-surface text-success dark:bg-bg-surface-dark',
-        error: 'border-error/60 bg-bg-surface text-error dark:bg-bg-surface-dark',
-        info: 'border-info/60 bg-bg-surface text-info dark:bg-bg-surface-dark'
+        success: 'border-success/60 text-success',
+        error: 'border-error/60 text-error',
+        info: 'border-info/60 text-info'
     } as const;
 </script>
 
@@ -17,15 +17,14 @@
     {#each $toasts as item (item.id)}
         <div
             class={[
-                'pointer-events-auto flex w-full max-w-md items-center justify-between gap-3 border px-4 py-3 text-sm font-semibold shadow-[0_8px_24px_rgb(0_0_0/25%)]',
-                'rounded-(--radius-form)',
+                'pointer-events-auto flex w-fit max-w-full items-center justify-between gap-3 rounded-form border bg-surface-2 py-1 pr-1.5 pl-3 text-ui font-semibold sm:max-w-md',
                 TONE[item.tone]
             ]}
         >
             <span>{item.message}</span>
             <button
                 type="button"
-                class="shrink-0 rounded-(--radius-small) px-1 text-xs opacity-70 hover:opacity-100"
+                class="min-h-9 shrink-0 rounded-form px-2 text-xs text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
                 onclick={() => dismissToast(item.id)}
             >
                 닫기

@@ -23,26 +23,23 @@
         return match.scoreA > match.scoreB ? 'a' : 'b';
     }
 
-    const COLUMNS = 'md:grid-cols-[minmax(0,1fr)_4rem_6rem_10rem_5.5rem_1rem]';
+    const COLUMNS = '@min-[42rem]:grid-cols-[minmax(0,1.6fr)_3rem_4rem_minmax(0,.7fr)_5.5rem_1rem]';
 </script>
 
 <!-- 진행 중·종료를 각각 머리 줄과 열 제목이 있는 표로 나눈다. 행 전체가 경기 상세 링크다. -->
-<section
-    aria-labelledby={id}
-    class="overflow-hidden rounded-(--radius-box) bg-bg-surface dark:bg-bg-surface-dark"
->
-    <header class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 {id} class="font-semibold">{title}</h2>
-        <span class="text-sm opacity-60 tabular-nums">{count}경기</span>
+<section aria-labelledby={id} class="panel @container overflow-hidden">
+    <header class="panel-bar">
+        <h2 {id} class="font-bold">{title}</h2>
+        <span class="text-xs font-medium text-muted tabular-nums">{count}경기</span>
     </header>
 
     {#if matches.length === 0}
-        <p class="px-4 py-10 text-center text-sm opacity-60">{emptyMessage}</p>
+        <p class="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>
     {:else}
         <div
             aria-hidden="true"
             class={[
-                'hidden gap-4 border-b border-border px-4 py-2 text-xs font-medium opacity-60 md:grid',
+                'hidden items-center gap-3 border-b border-line bg-surface-2 px-4 py-2 text-xs font-medium text-muted @min-[42rem]:grid',
                 COLUMNS
             ]}
         >
@@ -50,7 +47,7 @@
                 >날짜</span
             ><span></span>
         </div>
-        <ul class="divide-y divide-text-primary/5 dark:divide-text-dark/5">
+        <ul class="divide-y divide-line">
             {#each matches as match (match.id)}
                 {@const winner = winnerOf(match)}
                 {@const status = MATCH_STATUS[match.status]}
@@ -59,40 +56,42 @@
                     <a
                         href={hrefFor(match)}
                         class={[
-                            'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-text-primary/3 focus-visible:bg-text-primary/5 dark:hover:bg-text-dark/5',
+                            'grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-offset-[-2px]',
                             COLUMNS
                         ]}
                     >
-                        <span class="flex min-w-0 flex-col">
+                        <span class="flex min-w-0 flex-col gap-0.5">
                             <!-- 팀 이름은 각각 줄이고 vs는 항상 보이게 둔다. 승자는 결과 열 한 곳에서만 표시한다. -->
                             <span
-                                class="grid grid-cols-[minmax(0,max-content)_auto_minmax(0,max-content)] items-baseline justify-start gap-1.5 font-medium"
+                                class="grid grid-cols-[minmax(0,max-content)_auto_minmax(0,max-content)] items-baseline justify-start gap-1.5 text-ui font-semibold"
                             >
                                 <span class="truncate">{match.teamA}</span>
-                                <span class="text-xs font-normal opacity-50">vs</span>
+                                <span class="text-micro font-normal text-muted">vs</span>
                                 <span class="truncate">{match.teamB}</span>
                             </span>
-                            <span class="truncate text-xs opacity-60">
-                                {match.scrimTitle}<span class="md:hidden"
+                            <span class="truncate text-xs text-muted">
+                                {match.scrimTitle}<span class="@min-[42rem]:hidden"
                                     >{` · BO${match.bestOf} · ${date}`}</span
                                 >
                             </span>
                         </span>
 
-                        <span class="hidden text-sm opacity-70 md:block"
+                        <span class="hidden text-ui text-ink-2 @min-[42rem]:block"
                             ><span class="sr-only">형식 </span>BO{match.bestOf}</span
                         >
 
-                        <span class="text-center text-lg font-semibold tabular-nums">
+                        <span class="whitespace-nowrap text-center text-base font-bold tabular-nums">
                             <span class="sr-only">스코어 </span>{match.scoreA} : {match.scoreB}
                         </span>
 
-                        <span class="col-span-2 flex min-w-0 items-center gap-1.5 text-sm md:col-span-1">
+                        <span
+                            class="col-span-2 flex min-w-0 items-center gap-1.5 text-ui @min-[42rem]:col-span-1"
+                        >
                             {#if winner}
                                 <svg
                                     aria-hidden="true"
                                     viewBox="0 0 24 24"
-                                    class="size-4 shrink-0 text-warning"
+                                    class="size-3.5 shrink-0 text-role-gold"
                                     fill="none"
                                     stroke="currentColor"
                                     stroke-width="2"
@@ -112,12 +111,12 @@
                             {/if}
                         </span>
 
-                        <span class="hidden text-sm opacity-60 md:block">{date}</span>
+                        <span class="hidden text-xs text-muted @min-[42rem]:block">{date}</span>
 
                         <svg
                             aria-hidden="true"
                             viewBox="0 0 24 24"
-                            class="hidden size-4 opacity-40 md:block"
+                            class="hidden size-4 text-muted @min-[42rem]:block"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"><path d="m9 18 6-6-6-6" /></svg

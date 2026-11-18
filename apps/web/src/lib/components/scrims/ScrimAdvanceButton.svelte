@@ -49,8 +49,7 @@
     <div class="flex flex-col items-end gap-1">
         <Button
             variant="primary"
-            size="sm"
-            injClass="min-h-9 px-4"
+            class="px-3.5"
             disabled={advancing || Boolean(phaseAction.blockedReason)}
             loading={advancing}
             onclick={advance}
@@ -69,7 +68,7 @@
             </svg>
         </Button>
         {#if phaseAction.blockedReason}
-            <span class="max-w-52 text-right text-xs text-text-muted">{phaseAction.blockedReason}</span>
+            <span class="max-w-52 text-right text-xs text-muted">{phaseAction.blockedReason}</span>
         {/if}
     </div>
 {/if}

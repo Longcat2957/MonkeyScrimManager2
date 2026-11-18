@@ -17,7 +17,7 @@
 
 <Dialog bind:open title="업적별 순위">
     <div class="flex flex-col gap-4">
-        <ul aria-label="업적 선택" class="flex flex-wrap gap-1.5">
+        <ul aria-label="업적 선택" class="flex flex-wrap gap-1">
             {#each items as achievement, index (achievement.id)}
                 <li>
                     <button
@@ -25,13 +25,12 @@
                         aria-pressed={index === current}
                         onclick={() => (current = index)}
                         class={[
-                            'min-h-11 rounded-(--radius-small) border px-3 py-1.5 text-sm',
+                            'min-h-9 rounded-(--radius-small) border px-2.5 py-1 text-ui pointer-coarse:min-h-11',
                             index === current
-                                ? 'border-hex bg-hex/10 font-semibold text-hex'
-                                : 'border-brass-line text-text-muted hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark'
+                                ? 'border-nexus bg-nexus/10 font-semibold text-nexus'
+                                : 'border-line text-muted hover:bg-surface-hover'
                         ]}
                     >
-                        <span aria-hidden="true">{achievement.emoji}</span>
                         {achievement.title}
                     </button>
                 </li>
@@ -39,14 +38,14 @@
         </ul>
         {#if item}
             <section aria-labelledby="ranking-title" class="flex flex-col gap-2">
-                <h3 id="ranking-title" class="text-sm text-text-muted">{item.description}</h3>
-                <ol class="flex flex-col divide-y divide-brass-line">
+                <h3 id="ranking-title" class="text-sm text-muted">{item.description}</h3>
+                <ol class="flex flex-col divide-y divide-line">
                     {#each item.entries as entry, index (entry.userId)}
-                        <li class="flex items-center gap-3 py-2.5">
+                        <li class="flex min-h-11 items-center gap-2 py-1.5">
                             <span
                                 class={[
                                     'w-6 text-right font-bold tabular-nums',
-                                    index === 0 && 'text-warning'
+                                    index === 0 && 'text-role-gold'
                                 ]}>{index + 1}</span
                             >
                             <PlayerFace name={entry.displayName} imageUrl={entry.iconUrl} />
@@ -55,12 +54,12 @@
                                     guildId,
                                     userId: entry.userId
                                 })}
-                                class="min-w-0 flex-1 truncate font-semibold hover:underline"
+                                class="flex min-h-9 min-w-0 flex-1 items-center text-ui font-semibold wrap-anywhere hover:text-nexus hover:underline pointer-coarse:min-h-11"
                                 >{entry.displayName}</a
                             >
                             <span class="flex flex-col items-end text-sm tabular-nums">
                                 <span class="font-bold">{entry.value}</span>
-                                <span class="text-xs text-text-muted">{entry.games}게임</span>
+                                <span class="text-xs text-muted">{entry.games}게임</span>
                             </span>
                         </li>
                     {/each}

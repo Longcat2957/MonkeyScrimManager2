@@ -24,8 +24,10 @@
         pairs={data.formation.pairs}
     />
 {:else}
-    <section aria-labelledby="manual-formation" class="flex flex-col gap-4">
-        <h2 id="manual-formation" class="text-xl font-semibold">수동 편성</h2>
+    <section aria-labelledby="manual-formation" class="flex flex-col gap-2">
+        <h2 id="manual-formation" class="page-head border-b border-line pb-2 text-base font-bold">
+            수동 편성
+        </h2>
         <SectionState state="empty" message="모집이 마감되면 선발된 참가자로 팀을 편성할 수 있어요" />
     </section>
 {/if}

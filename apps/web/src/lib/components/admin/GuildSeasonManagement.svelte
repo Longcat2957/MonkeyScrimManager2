@@ -7,7 +7,7 @@
     import TextField from '#lib/components/common/TextField.svelte';
     import type { GuildSeasonOverview } from '#lib/features/seasons.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     type Props = { overview: GuildSeasonOverview; initialName?: string; initialError?: string };
     let { overview, initialName = '', initialError = '' }: Props = $props();
@@ -101,18 +101,18 @@
     };
 </script>
 
-<div class="flex min-w-0 flex-col gap-8">
-    <section aria-labelledby={`${id}-current`} class="flex min-w-0 flex-col gap-3">
-        <h2 id={`${id}-current`} class="text-lg font-semibold">현재 시즌</h2>
+<div class="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+    <section aria-labelledby={`${id}-current`} class="panel min-w-0 self-start">
+        <h2 id={`${id}-current`} class="panel-bar font-bold">현재 시즌</h2>
         {#if overview.current}
-            <p class="text-xl font-semibold wrap-anywhere">{overview.current.name}</p>
-            <p class="text-sm text-text-muted">
+            <p class="px-4 pt-4 text-title font-bold wrap-anywhere">{overview.current.name}</p>
+            <p class="px-4 pt-1 pb-4 text-ui text-muted">
                 시작 <time datetime={overview.current.startedAt}
                     >{date.format(new Date(overview.current.startedAt))}</time
                 >
             </p>
         {:else}
-            <p class="text-sm leading-6 text-text-muted">
+            <p class="p-4 text-ui text-muted">
                 진행 중인 시즌이 없어요. Discord에서 서버 초기 설정을 확인해 주세요.
             </p>
         {/if}
@@ -123,48 +123,48 @@
         method="POST"
         action="?tab=seasons&/rotateSeason"
         use:enhance={submit}
-        {@attach nonSubmitButtons}
+        {@attach preventComposingSubmit}
         aria-labelledby={`${id}-rotate`}
         aria-busy={busy}
-        class="flex flex-col gap-4"
+        class="panel flex min-w-0 flex-col"
     >
-        <h2 id={`${id}-rotate`} class="text-lg font-semibold">시즌 전환</h2>
+        <h2 id={`${id}-rotate`} class="panel-bar font-bold">시즌 전환</h2>
         <input type="hidden" name="name" value={name} />
         <input type="hidden" name="expectedCurrentSeasonId" value={overview.current?.id ?? ''} />
         <input type="hidden" name="confirm" value="true" />
-        <TextField
-            label="새 시즌 이름"
-            placeholder="예: 2027 시즌 1"
-            bind:value={name}
-            maxlength={100}
-            error={inputError}
-            disabled={locked || !overview.current}
-        />
-        <p class="text-sm leading-6 text-text-muted">
-            기존 내전·MMR 이력은 유지해요. 새 내전부터 새 시즌에 기록하고, 새 시즌 MMR은 1500에서 시작해요.
-        </p>
-        {#if error}<p role="alert" class="text-sm text-error">{error}</p>{/if}
-        {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
-        <div>
-            <Button
-                variant="primary"
-                type="submit"
-                size="auto"
-                injClass="min-h-12 px-4 text-base"
+        <div class="grid min-w-0 gap-3 p-4">
+            <TextField
+                label="새 시즌 이름"
+                placeholder="예: 2027 시즌 1"
+                bind:value={name}
+                maxlength={100}
+                error={inputError}
                 disabled={locked || !overview.current}
-                loading={busy}>새 시즌 시작</Button
-            >
+            />
+            <p class="text-ui text-muted">
+                기존 내전·MMR 이력은 유지해요. 새 내전부터 새 시즌에 기록하고, 새 시즌 MMR은 1500에서
+                시작해요.
+            </p>
+            {#if error}<p role="alert" class="text-sm text-error">{error}</p>{/if}
+            {#if notice}<p role="status" class="text-sm text-success">{notice}</p>{/if}
+            <div class="flex justify-end">
+                <Button variant="primary" type="submit" disabled={locked || !overview.current} loading={busy}
+                    >새 시즌 시작</Button
+                >
+            </div>
         </div>
     </form>
 
-    <section aria-labelledby={`${id}-completed`} class="flex min-w-0 flex-col gap-3">
-        <h2 id={`${id}-completed`} class="text-lg font-semibold">지난 시즌</h2>
+    <section aria-labelledby={`${id}-completed`} class="panel min-w-0 md:col-span-2">
+        <h2 id={`${id}-completed`} class="panel-bar font-bold">지난 시즌</h2>
         {#if overview.completed.length}
-            <ol class="divide-y divide-border rounded-(--radius-box) bg-bg-surface dark:bg-bg-surface-dark">
+            <ol class="divide-y divide-line">
                 {#each overview.completed as season (season.id)}
-                    <li class="flex min-w-0 flex-col gap-2 px-4 py-4">
-                        <h3 class="font-semibold wrap-anywhere">{season.name}</h3>
-                        <p class="text-sm text-text-muted">
+                    <li
+                        class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3"
+                    >
+                        <h3 class="text-sm font-semibold wrap-anywhere">{season.name}</h3>
+                        <p class="text-ui text-muted">
                             <time datetime={season.startedAt}>{date.format(new Date(season.startedAt))}</time>
                             ~
                             {#if season.endedAt}<time datetime={season.endedAt}
@@ -175,7 +175,7 @@
                 {/each}
             </ol>
         {:else}
-            <p class="text-sm text-text-muted">아직 종료된 시즌이 없어요.</p>
+            <p class="px-4 py-3 text-ui text-muted">아직 종료된 시즌이 없어요.</p>
         {/if}
     </section>
 </div>

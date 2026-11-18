@@ -7,7 +7,7 @@
     import TextField from '#lib/components/common/TextField.svelte';
     import type { RecordSeasonSelection } from '#lib/features/seasons.ts';
     import { parseMatchDateFilters } from '#lib/features/matches/filters.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
 
     type Values = { q: string; from: string; to: string; seasonId: string | null };
     type Props = RecordSeasonSelection & {
@@ -74,14 +74,14 @@
     }
 </script>
 
-<search aria-label="경기 기록 필터">
+<search aria-label="경기 기록 필터" class="panel @container">
     <form
         method="GET"
         action={page.url.pathname}
-        {@attach nonSubmitButtons}
+        {@attach preventComposingSubmit}
         aria-label="경기 조회"
         aria-busy={busy}
-        class="flex flex-col gap-3"
+        class="flex flex-col gap-2 p-3 sm:p-4"
         onsubmit={(event) => {
             event.preventDefault();
             void apply({ q: query, from: start, to: end, seasonId: season });
@@ -92,7 +92,12 @@
         <fieldset disabled={locked} class="min-w-0">
             <legend class="sr-only">조회 조건</legend>
             <div
-                class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,1.4fr)_minmax(0,1fr)_auto] xl:items-end"
+                class={[
+                    'grid min-w-0 gap-3 @min-[34rem]:grid-cols-2 @min-[34rem]:items-end',
+                    seasons.length
+                        ? '@min-[56rem]:grid-cols-[minmax(9rem,1fr)_minmax(16rem,1.3fr)_minmax(8rem,.7fr)_auto]'
+                        : '@min-[45rem]:grid-cols-[minmax(10rem,1fr)_minmax(17rem,1fr)_auto]'
+                ]}
             >
                 <TextField
                     label="내전·팀 이름 검색"
@@ -102,8 +107,8 @@
                     disabled={locked}
                     maxlength={50}
                 />
-                <fieldset class="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-                    <legend class="mb-2 text-sm font-medium">경기일 (한국 시간)</legend>
+                <fieldset class="grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+                    <legend class="mb-1 text-xs font-semibold text-muted">경기일 (한국 시간)</legend>
                     <DateField
                         label="시작일"
                         name="from"
@@ -132,26 +137,17 @@
                         onselect={(value) => (season = value)}
                     />
                 {/if}
-                <div class="flex items-center justify-end gap-2 md:self-end">
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        injClass="min-h-12 px-4 text-base"
-                        disabled={locked}>조회</Button
-                    >
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <Button type="submit" variant="primary" class="px-4" disabled={locked}>조회</Button>
                     {#if hasFilters}
-                        <Button
-                            type="button"
-                            variant="quiet"
-                            injClass="min-h-12 px-3 text-base"
-                            disabled={locked}
-                            onclick={reset}>초기화</Button
+                        <Button type="button" variant="quiet" class="px-3" disabled={locked} onclick={reset}
+                            >초기화</Button
                         >
                     {/if}
                 </div>
             </div>
         </fieldset>
-        <p id={`${id}-hint`} class="text-sm text-text-muted">기간을 지정하면 날짜가 확인된 경기만 보여요.</p>
+        <p id={`${id}-hint`} class="text-xs text-muted">기간을 지정하면 날짜가 확인된 경기만 보여요.</p>
         {#if error}<p id={`${id}-error`} role="alert" class="text-sm text-error">{error}</p>{/if}
     </form>
 </search>

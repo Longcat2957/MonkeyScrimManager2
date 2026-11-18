@@ -4,13 +4,10 @@
     type Props = {
         items: NavItem[];
         label: string;
-        vertical?: boolean;
         onnavigate?: () => void;
-        // crown: 상단 크라운 바, rail: 좌측 서버 레일, default: 시트·본문
-        tone?: 'default' | 'crown' | 'rail';
     };
 
-    let { items, label, vertical = false, onnavigate, tone = 'default' }: Props = $props();
+    let { items, label, onnavigate }: Props = $props();
 </script>
 
 {#snippet navIcon(label: string)}
@@ -22,7 +19,7 @@
         stroke="currentColor"
         stroke-width="1.6"
         aria-hidden="true"
-        class="shrink-0"
+        class="shrink-0 text-nexus"
     >
         {#if label === '서버 홈'}
             <path d="M3 9.5 10 4l7 5.5V16a1 1 0 0 1-1 1h-4v-4H8v4H4a1 1 0 0 1-1-1V9.5Z" />
@@ -41,48 +38,24 @@
     </svg>
 {/snippet}
 
-<nav aria-label={label}>
-    <ul
-        class={[
-            'flex',
-            vertical ? 'flex-col gap-1' : 'flex-wrap items-center gap-1',
-            tone === 'rail' && 'w-full'
-        ]}
-    >
+<nav aria-label={label} class="min-h-0 overflow-y-auto">
+    <ul class="flex flex-col gap-1">
         {#each items as item (item.label)}
             {@const itemClass = [
-                'flex min-h-11 items-center text-sm font-semibold no-underline',
-                tone === 'rail'
-                    ? [
-                          'w-full gap-2 rounded-(--radius-form) border border-transparent px-3',
-                          item.current
-                              ? 'border-hex/40 bg-hex/10 text-hex'
-                              : 'text-text-muted hover:bg-bg-highlight hover:text-text-primary dark:hover:bg-bg-highlight-dark dark:hover:text-text-dark'
-                      ]
-                    : tone === 'crown'
-                      ? [
-                            'border-b-2 px-3',
-                            item.current
-                                ? 'border-hex text-hex'
-                                : 'border-transparent text-text-muted hover:text-text-primary dark:hover:text-text-dark'
-                        ]
-                      : [
-                            'rounded-(--radius-form) px-3',
-                            item.current
-                                ? 'bg-hex/10 text-hex'
-                                : 'text-text-muted hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark'
-                        ],
-                item.disabled && 'opacity-50',
-                vertical && 'w-full'
+                'flex min-h-9.5 w-full items-center gap-2.5 rounded-form border px-2.5 text-sm no-underline focus-visible:-outline-offset-2 pointer-coarse:min-h-11',
+                item.current
+                    ? 'border-nexus bg-selected font-bold text-ink'
+                    : 'border-transparent font-medium text-muted hover:bg-surface-hover hover:text-ink',
+                item.disabled && 'opacity-50'
             ]}
-            <li class={tone === 'rail' ? 'w-full' : undefined}>
+            <li>
                 {#if item.static || item.disabled}
                     <span
                         class={itemClass}
                         aria-current={item.current ? 'page' : undefined}
                         aria-disabled={item.disabled || undefined}
                     >
-                        {#if tone === 'rail'}{@render navIcon(item.label)}{/if}
+                        {@render navIcon(item.label)}
                         {item.label}
                     </span>
                 {:else}
@@ -92,7 +65,7 @@
                         onclick={onnavigate}
                         class={itemClass}
                     >
-                        {#if tone === 'rail'}{@render navIcon(item.label)}{/if}
+                        {@render navIcon(item.label)}
                         {item.label}
                     </a>
                 {/if}

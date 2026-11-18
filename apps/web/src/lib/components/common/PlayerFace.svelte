@@ -1,32 +1,27 @@
 <script lang="ts">
-    import { avatarColor } from '#lib/ui/avatar.ts';
-
-    // 프로필 사진이나 주 챔피언 아이콘. 없으면 이름 첫 글자를 이름별 색 원에 쓴다. 장식이므로 이름을 읽히지 않는다.
+    // 사진과 이름 첫 글자는 장식이므로 옆의 이름을 중복해서 읽지 않는다.
     let {
         name,
         imageUrl,
         size = 'md'
-    }: { name: string; imageUrl: string | null; size?: 'sm' | 'md' | 'lg' } = $props();
+    }: { name: string; imageUrl: string | null; size?: 'xs' | 'sm' | 'md' | 'lg' } = $props();
 
-    const SIZE = { sm: 'size-7 text-xs', md: 'size-9 text-sm', lg: 'size-16 text-2xl' };
+    const SIZE = {
+        xs: 'size-6 text-micro',
+        sm: 'size-7 text-xs',
+        md: 'size-8 text-ui',
+        lg: 'size-14 text-xl'
+    };
+    const crest = 'shrink-0 rounded-(--radius-form) border border-line-strong bg-surface-2';
 </script>
 
 {#if imageUrl}
-    <img
-        src={imageUrl}
-        alt=""
-        loading="lazy"
-        class={['shrink-0 rounded-full object-cover ring-2 ring-bg-base dark:ring-bg-base-dark', SIZE[size]]}
-    />
+    <img src={imageUrl} alt="" loading="lazy" class={[crest, 'object-cover', SIZE[size]]} />
 {:else}
     <span
         aria-hidden="true"
-        class={[
-            'flex shrink-0 items-center justify-center rounded-full font-semibold text-white',
-            SIZE[size]
-        ]}
-        style:background-color={avatarColor(name)}
+        class={[crest, 'inline-flex items-center justify-center font-bold text-nexus', SIZE[size]]}
     >
-        {name.slice(0, 1)}
+        {String.fromCodePoint(name.codePointAt(0) ?? 63)}
     </span>
 {/if}

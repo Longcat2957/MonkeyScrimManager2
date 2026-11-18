@@ -2,7 +2,7 @@
 
 업무 규칙은 MSM1 커밋 `d60df685e48c180b236342eae81b389ae87e38bf`의
 `services/series/mmr.py`, `repositories/series/mmr.py`, `services/auctions/games.py`를 준용한다.
-현재 [DB 스키마](database-erd.md)의 점수·반영 회차·원장을 사용한다. [내부 반영·역분개 서비스](../apps/web/src/lib/server/mmr/README.md)는 운영 ROFL 저장·마지막 결과 취소·진행 중 내전 전체 취소 흐름에 연결되어 있다. 새 전체 취소의 최종 HTTP·브라우저 통합검증을 완료했으며 [후속 구현 기록](ui-review/next.md)에 결과를 정리했다.
+[MMR 서비스](../apps/web/src/lib/server/mmr/)는 [DB 스키마](database-erd.md)의 점수·반영 회차·원장을 사용해 ROFL 결과를 반영하고, 마지막 세트 또는 진행 중 내전의 결과를 역분개한다.
 
 ## 계산 기준
 
@@ -15,15 +15,13 @@
 
 ## 시즌 전환
 
-관리자 `/시즌` 명령과 [시즌 서비스](../apps/web/src/lib/server/discord/bot-seasons.ts)가 현재·종료 시즌 조회와 원자적 전환을 제공한다. MSM1 pin의 [services/guilds/seasons.py](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)를 준용해 현재 시즌 종료와 이름을 지정한 새 시즌 생성을 같은 트랜잭션에서 처리한다.
+웹 서버 관리와 봇의 [시즌 명령](bot.md#시즌-조회와-전환)은 [공통 시즌 서비스](../apps/web/src/lib/server/guild/seasons.ts)를 사용한다. MSM1의 [시즌 전환](https://github.com/Longcat2957/MonkeyScrimManager/blob/d60df685e48c180b236342eae81b389ae87e38bf/apps/api-python/src/monkeybot_api/services/guilds/seasons.py)처럼 현재 시즌 종료와 새 시즌 생성을 같은 트랜잭션에서 처리한다.
 
 - 현재 실효 관리자 권한을 검사하고, 새 이름은 trim 후 1~100자, `confirm=true`와 선택한 `expectedCurrentSeasonId`를 요구한다. 현재 시즌이 바뀌었으면 409이며 다른 시즌을 자동으로 선택해 재시도하지 않는다.
 - 길드·현재 시즌 잠금으로 최초 준비와 전환을 직렬화한다. interaction receipt는 실행자·선택 시즌·새 이름·결과를 함께 보존하며 같은 요청의 재전송은 새 시즌을 중복 생성하지 않는다.
 - 진행 중인 내전도 이미 고정된 시즌을 유지하고, 이후 정상 결과와 정정은 그 시즌의 MMR·원장을 사용한다. 전환 후 새 모집은 새 활성 시즌에 고정한다.
 - 이전 MMR 행이나 원장을 새 시즌으로 복제·이동하지 않는다. 새 시즌의 미반영 포지션은 기존 1500 규칙을 적용하며 조회로 점수 행을 생성하지 않는다.
-- 종료 시즌의 이름·기간을 운영 명령에서 조회할 수 있다. 웹 개인 전적·통계·서버 홈 순위에도 `?season=<UUID>` 선택을 연결했다. 생략하면 활성 시즌, 명시하면 같은 서버의 해당 시즌만 조회하며 없는 시즌·다른 서버 시즌은 404다. 시즌 선택은 기존 `position`·`min`·`recent`·`q`를 보존하고 `page`·`offset`을 초기화한다. 홈의 모집·진행 내전·최근 경기 범위와 내전 편성의 고정 시즌은 바꾸지 않는다. 조회는 현재 점수·원장에 쓰지 않는다. 최종 통합검증은 [후속 구현 기록](ui-review/next.md)을 따른다.
-
-봇 입력·오류·검증 범위는 [시즌 명령](bot.md#시즌-조회와-전환), 최종 전체 검사 집계는 [운영 보완 검사 기록](../artifacts/ui-review/operations/checks.json)을 따른다. 실제 Discord·운영 DB의 시즌 전환은 실행하지 않았다.
+- 웹 개인 전적·통계·홈 순위에서 `?season=<UUID>`를 생략하면 활성 시즌을 조회한다. 명시한 시즌이 없거나 다른 서버 소속이면 404다. 시즌 변경은 `position`·`min`·`recent`·`q`를 보존하고 `page`·`offset`을 초기화한다. 홈의 모집·진행 내전·최근 경기와 편성의 고정 시즌은 바뀌지 않는다.
 
 ## 결과 입력과 운영 문맥
 
@@ -33,8 +31,7 @@ MMR은 그렇게 보존된 `gameParticipants.position`을 사용한다. 희망 �
 
 수동 편성은 이미 확정한 포지션을 경기 생성 시 복사하고, 경매는 경기 전체의 라인업을 한 번 확정한다.
 진출한 팀의 확정 포지션도 다음 경기로 복사하며, 같은 경기의 다음 Game마다 라인업을 다시 확정하지 않는다.
-실제 Riot 계정과 파일의 명시적 `TEAM_POSITION`을 대조해 출전자를 자동 연결한다. 미연결 부계정은 팀·포지션 근거가
-충분할 때 당시 사용 계정으로만 기록하고 서버 계정 연결은 바꾸지 않는다. 포지션이 없는 기존 연결 계정은 검증된 사용자와 확정 포지션을 사용한다.
+[ROFL 자동 귀속 규칙](rofl-import.md#자동-귀속과-경기-운영)에 따라 실사용 계정을 출전자와 연결한다. 첫 결과에서 새로 확인한 서버별 연결도 결과와 함께 저장하며, 기존 소유자·대표 계정·과거 MMR 귀속은 덮어쓰지 않는다.
 
 Game과 점수 처리 순서는 MSM1처럼 서비스의 등록 순서·Match revision으로 관리한다.
 실제 경기 시각은 별도의 사실이므로 확인되지 않으면 null을 유지하고 업로드 시각으로 만들지 않는다.
@@ -85,5 +82,3 @@ MSM1 pin의 [경매 전체 취소](https://github.com/Longcat2957/MonkeyScrimMan
 - 현재값·revision·원장·채택 ROFL 영수증·10명 실출전을 검증한다. 타 내전의 유효 후속 반영과 점수가 같은 관리 보정도 넘지 않는다. 최신 세트를 먼저 역분개했더라도 앞선 결과에서 실패하면 모든 변경을 롤백한다.
 - `scrim_cancellations` 배치와 `Match.cancellationBatchId`에 이전 운영 문맥·대진·라인업·결과 수량을 남긴다. Game·출전·ROFL·원장·Match·라인업의 원본 행과 FK는 보존하며 현재 대진만 분리한다.
 - 복구는 참가자를 유지한 `preparing`이다. 취소한 결과·MMR을 재적용하지 않는다. 수동 배정은 유지하고, 경매는 팀장·시작 포인트를 보존한 `setup`으로 돌아가 영입을 다시 진행한다. 근거 없는 과거 취소와 경매 취소 근거 불일치는 복구하지 않는다.
-
-새 DB·마이그레이션 검증과 현재 소스 근거는 [전체 취소 기록](../artifacts/ui-review/next/cancellation.md)을 따른다. 전체 통합검증을 완료했으며 결과는 [후속 구현 기록](ui-review/next.md)에 정리했다. 실서비스 DB·Discord에 이 작업을 실행하지 않았다.

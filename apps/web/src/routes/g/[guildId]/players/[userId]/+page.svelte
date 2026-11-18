@@ -20,7 +20,6 @@
     import type { RankedMetric } from '#lib/features/players/stats.ts';
     import { formatShortDate, POSITIONS } from '#lib/features/labels.ts';
     import type { LolPosition } from '#lib/features/guild/types.ts';
-    import { desktop } from '#lib/ui/viewport.svelte.ts';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
@@ -31,9 +30,7 @@
     const filters = $derived([{ key: 'all' as const, games: data.overallGames }, ...data.positions]);
     const active = $derived(filters.findIndex((filter) => filter.key === data.position));
     const labels = $derived(
-        filters.map((filter) => ({
-            text: `${filter.key === 'all' ? '전체' : laneText(filter.key)} ${filter.games}`
-        }))
+        filters.map((filter) => `${filter.key === 'all' ? '전체' : laneText(filter.key)} ${filter.games}`)
     );
     // 챔피언이 많으면 상위 몇 개만 먼저 보여 준다. 포지션을 바꾸면 다시 접는다.
     const CHAMPION_PREVIEW = 6;
@@ -129,37 +126,34 @@
     <title>{data.player.displayName} 전적 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col gap-8" aria-busy={changing}>
-    <header class="flex flex-col gap-5">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-4">
+<div class="@container flex min-w-0 flex-col gap-5" aria-busy={changing}>
+    <header class="panel">
+        <div class="page-head p-4">
+            <div class="flex min-w-0 max-w-full items-center gap-3">
                 <PlayerFace name={data.player.displayName} imageUrl={data.player.iconUrl} size="lg" />
                 <div class="flex min-w-0 flex-col gap-1">
                     <div class="flex min-w-0 flex-wrap items-center gap-2">
-                        <h1 class="min-w-0 max-w-full text-2xl font-semibold [overflow-wrap:anywhere]">
+                        <h1 class="min-w-0 max-w-full text-title font-bold wrap-anywhere">
                             {data.player.displayName}
                         </h1>
                         {#if data.badges.length}
                             <ul aria-label="1위 업적" class="flex flex-wrap gap-1">
                                 {#each data.badges as badge (badge.id)}
                                     <li
-                                        title={badge.title}
-                                        class="flex size-7 items-center justify-center rounded-(--radius-small) bg-bg-highlight dark:bg-bg-highlight-dark"
+                                        class="rounded-(--radius-small) bg-surface-2 px-2 py-0.5 text-xs font-semibold text-role-gold"
                                     >
-                                        <span aria-hidden="true">{badge.emoji}</span><span class="sr-only"
-                                            >{badge.title}</span
-                                        >
+                                        {badge.title}
                                     </li>
                                 {/each}
                             </ul>
                         {/if}
                     </div>
                     {#if data.player.riotIds.length}
-                        <p class="text-sm break-words text-text-muted">{data.player.riotIds.join(' · ')}</p>
+                        <p class="text-ui wrap-anywhere text-muted">{data.player.riotIds.join(' · ')}</p>
                     {/if}
                     {#if data.recordWins !== null}
                         <p class="text-sm font-semibold tabular-nums">
-                            <span class="text-info dark:text-dark">{data.recordWins}승</span> ·
+                            <span class="text-success">{data.recordWins}승</span> ·
                             <span class="text-error">{overall - data.recordWins}패</span>
                             · {overall}게임
                         </p>
@@ -169,17 +163,20 @@
             <SeasonSelector seasons={data.seasons} selectedSeasonId={data.selectedSeasonId} />
         </div>
         {#if data.recent.length}
-            <section aria-labelledby="recent-strip" class="flex flex-col gap-2">
-                <h2 id="recent-strip" class="text-xs font-semibold opacity-60">
+            <section
+                aria-labelledby="recent-strip"
+                class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line px-4 py-3"
+            >
+                <h2 id="recent-strip" class="text-xs font-semibold text-muted">
                     최근 {data.recent.length}게임
                 </h2>
-                <ol class="flex flex-wrap gap-1.5">
+                <ol class="flex min-w-0 flex-wrap gap-1">
                     {#each data.recent as game, index (index)}
                         <li>
                             <span
                                 class={[
-                                    'flex flex-col items-center gap-1 rounded-(--radius-form) bg-bg-surface pb-1 ring-2 dark:bg-bg-surface-dark',
-                                    game.win ? 'ring-success' : 'ring-error'
+                                    'flex min-w-7 flex-col items-center gap-0.5',
+                                    game.win ? 'text-success' : 'text-error'
                                 ]}
                                 title={`${game.champion.name} ${game.win ? '승' : '패'}`}
                             >
@@ -187,19 +184,15 @@
                                     <img
                                         src={game.champion.iconUrl}
                                         alt=""
-                                        class="size-10 rounded-(--radius-form)"
+                                        class="size-7 rounded-(--radius-small)"
                                     />
                                 {:else}
-                                    <span class="flex size-10 items-center justify-center text-xs"
+                                    <span class="flex size-7 items-center justify-center bg-surface-2 text-xs"
                                         >{game.champion.name.slice(0, 2)}</span
                                     >
                                 {/if}
-                                <span
-                                    aria-hidden="true"
-                                    class={[
-                                        'text-xs font-semibold',
-                                        game.win ? 'text-success' : 'text-error'
-                                    ]}>{game.win ? '승' : '패'}</span
+                                <span aria-hidden="true" class="text-micro font-semibold"
+                                    >{game.win ? '승' : '패'}</span
                                 >
                                 <span class="sr-only">{game.champion.name} {game.win ? '승리' : '패배'}</span>
                             </span>
@@ -217,44 +210,45 @@
         />
     {:else}
         <!-- 포지션 필터는 요약·챔피언·최근 게임에 함께 적용한다. -->
-        <div role="group" aria-label="포지션 필터" class="border-b border-brass-line">
+        <div role="group" aria-label="포지션 필터" class="min-w-0 border-b border-line pb-3">
             <SelectionTabs
                 {labels}
                 {active}
-                onclickTab={(index) => navigate({ position: filters[index]!.key })}
+                onchange={(index) => navigate({ position: filters[index]!.key })}
             />
         </div>
-        {#if changing}<p role="status" class="text-sm text-text-muted">전적을 불러오는 중</p>{/if}
+        {#if changing}<p role="status" class="text-sm text-muted">전적을 불러오는 중</p>{/if}
 
         <!-- 먼저 지표와 포지션별 실력을 확인하고, 챔피언·개별 기록과 보조 분석을 이어 읽는다. -->
-        <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <section aria-labelledby="summary" class="flex flex-col gap-3">
-                <h2 id="summary" class="text-lg font-semibold">핵심 지표</h2>
-                <div class={['grid gap-2', desktop.current ? 'grid-cols-3' : 'grid-cols-2']}>
+        <div class="grid items-start gap-4 @min-[54rem]:grid-cols-[minmax(0,1fr)_minmax(17rem,21rem)]">
+            <section aria-labelledby="summary" class="panel overflow-hidden">
+                <div class="panel-bar"><h2 id="summary" class="text-base font-semibold">핵심 지표</h2></div>
+                <div class="grid grid-cols-2 gap-px bg-line sm:grid-cols-3">
                     {#each primaryTiles as [key, label, value, note] (key)}
                         <StatTile {label} {value} {note} />
                     {/each}
                 </div>
-                <AccessibleAccordion
-                    items={[{ title: `세부 지표 ${secondaryTiles.length}개` }]}
-                    border="solid"
-                >
-                    {#snippet children()}
-                        <div class={['grid gap-2', desktop.current ? 'grid-cols-3' : 'grid-cols-2']}>
-                            {#each secondaryTiles as [key, label, value, note] (key)}
-                                <StatTile {label} {value} {note} />
-                            {/each}
-                        </div>
-                    {/snippet}
-                </AccessibleAccordion>
+                <div class="border-t border-line px-3">
+                    <AccessibleAccordion items={[{ title: `세부 지표 ${secondaryTiles.length}개` }]}>
+                        {#snippet children()}
+                            <div
+                                class="grid grid-cols-2 gap-px border-y border-line bg-line sm:grid-cols-3 max-sm:[&>:last-child]:col-span-2"
+                            >
+                                {#each secondaryTiles as [key, label, value, note] (key)}
+                                    <StatTile {label} {value} {note} />
+                                {/each}
+                            </div>
+                        {/snippet}
+                    </AccessibleAccordion>
+                </div>
             </section>
 
-            <section aria-labelledby="mmr" class="flex min-w-0 flex-col gap-3">
-                <h2 id="mmr" class="text-lg font-semibold">포지션별 MMR</h2>
-                <table class="hex-panel w-full overflow-hidden text-sm">
+            <section aria-labelledby="mmr" class="panel overflow-hidden">
+                <div class="panel-bar"><h2 id="mmr" class="text-base font-semibold">포지션별 MMR</h2></div>
+                <table class="data-table">
                     <caption class="sr-only">포지션별 MMR</caption>
-                    <thead class="text-xs text-text-muted">
-                        <tr class="border-b border-brass-line">
+                    <thead class="text-xs text-muted">
+                        <tr class="border-b border-line">
                             <th scope="col" class="px-3 py-2 text-left font-medium">포지션</th>
                             <th scope="col" class="px-3 py-2 text-right font-medium">MMR</th>
                             <th scope="col" class="px-3 py-2 text-right font-medium">게임</th>
@@ -262,7 +256,7 @@
                     </thead>
                     <tbody>
                         {#each data.mmr as row (row.position)}
-                            <tr class="border-b border-brass-line last:border-b-0">
+                            <tr class={row.position === data.position ? 'bg-selected' : ''}>
                                 <th scope="row" class="px-3 py-2 text-left font-medium"
                                     ><span class="flex items-center gap-2"
                                         ><PositionIcon position={row.position} size="sm" />{laneText(
@@ -273,11 +267,11 @@
                                 <td class="px-3 py-2 text-right font-semibold tabular-nums"
                                     >{row.rating.toLocaleString('ko-KR')}</td
                                 >
-                                <td class="px-3 py-2 text-right tabular-nums opacity-70">{row.games}</td>
+                                <td class="text-right text-muted tabular-nums">{row.games}</td>
                             </tr>
                         {:else}
                             <tr
-                                ><td colspan="3" class="px-3 py-4 text-center opacity-60"
+                                ><td colspan="3" class="px-3 py-4 text-center text-muted"
                                     >아직 반영된 MMR이 없어요</td
                                 ></tr
                             >
@@ -286,109 +280,111 @@
                 </table>
             </section>
 
-            <div class="flex min-w-0 flex-col gap-8">
-                <section aria-labelledby="champions" class="flex flex-col gap-3">
-                    <h2 id="champions" class="text-lg font-semibold">챔피언별 성적</h2>
-                    <ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                        {#each champions as record, index (record.champion.id)}
-                            <li
-                                class="flex items-center gap-3 rounded-(--radius-box) border border-brass-line bg-bg-surface p-3 dark:bg-bg-surface-dark"
-                            >
-                                <span class="relative shrink-0">
-                                    {#if record.champion.iconUrl}<img
-                                            src={record.champion.iconUrl}
-                                            alt=""
-                                            class="size-11 rounded-(--radius-form)"
-                                        />{/if}
-                                    {#if index < 5}<span
-                                            class="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-warning text-[0.625rem] font-bold text-bg-base-dark"
-                                            >{index + 1}</span
-                                        >{/if}
-                                </span>
-                                <span class="flex min-w-0 flex-col">
-                                    <span class="truncate font-semibold">{record.champion.name}</span>
-                                    <span class="text-xs tabular-nums">
-                                        <span class="opacity-60">{record.games}게임</span>
-                                        <span
-                                            class={record.wins / record.games >= 0.5
-                                                ? 'text-success'
-                                                : 'text-error'}>{percent(record.wins / record.games)}</span
-                                        >
-                                        <span class="opacity-60">· KDA {fixed(record.kda, 2)}</span>
-                                    </span>
-                                </span>
-                            </li>
-                        {/each}
-                    </ul>
+            <div class="flex min-w-0 flex-col gap-4">
+                <section aria-labelledby="champions" class="panel overflow-hidden">
+                    <div class="panel-bar">
+                        <h2 id="champions" class="text-base font-semibold">챔피언별 성적</h2>
+                    </div>
+                    <table class="data-table [&_td]:px-2">
+                        <caption class="sr-only">챔피언별 출전 게임과 성적</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">챔피언</th>
+                                <th scope="col" class="text-right">게임</th>
+                                <th scope="col" class="text-right">승률</th>
+                                <th scope="col" class="text-right">KDA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#each champions as record, index (record.champion.id)}
+                                <tr>
+                                    <th scope="row" class="text-left font-semibold">
+                                        <span class="flex items-center gap-2">
+                                            {#if record.champion.iconUrl}<img
+                                                    src={record.champion.iconUrl}
+                                                    alt=""
+                                                    class="size-7 shrink-0 rounded-(--radius-small)"
+                                                />{/if}
+                                            <span>{record.champion.name}</span>
+                                            {#if index < 5}<span class="text-micro text-muted"
+                                                    >{index + 1}위</span
+                                                >{/if}
+                                        </span>
+                                    </th>
+                                    <td class="text-right tabular-nums">{record.games}</td>
+                                    <td class="text-right font-semibold tabular-nums"
+                                        >{percent(record.wins / record.games)}</td
+                                    >
+                                    <td class="text-right text-ink-2 tabular-nums">{fixed(record.kda, 2)}</td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
                     {#if data.champions.length > CHAMPION_PREVIEW}
-                        <span class="self-center">
+                        <div class="flex justify-center border-t border-line p-1">
                             <Button
                                 variant="quiet"
-                                size="auto"
-                                injClass="min-h-11 px-3 text-sm"
+                                class="min-h-11 px-3 text-sm"
                                 onclick={() => (showAllChampions = !showAllChampions)}
                             >
                                 {showAllChampions ? '접기' : `챔피언 ${data.champions.length}개 모두 보기`}
                             </Button>
-                        </span>
+                        </div>
                     {/if}
                 </section>
 
-                <section aria-labelledby="history" class="flex flex-col gap-3">
-                    <h2 id="history" class="text-lg font-semibold">게임 기록</h2>
-                    <div class="hex-panel overflow-hidden">
-                        <ul class="divide-y divide-brass-line">
-                            {#each historyRows as { game, href } (game.gameId + game.playedAt)}
-                                <li>
-                                    <LinkCell
-                                        {href}
-                                        line={false}
-                                        subTitle={`${game.scrimTitle} · ${game.playedAt ? formatShortDate(game.playedAt) : '경기 일시 미확인'}`}
-                                    >
-                                        {#snippet leftChild()}
-                                            <span class="relative">
-                                                {#if game.champion.iconUrl}<img
-                                                        src={game.champion.iconUrl}
-                                                        alt=""
-                                                        class="size-10 rounded-(--radius-form)"
-                                                    />{/if}
-                                                {#if game.position}<span
-                                                        class="absolute -right-1 -bottom-1 rounded-full bg-bg-surface p-0.5 dark:bg-bg-surface-dark"
-                                                        ><PositionIcon
-                                                            position={game.position}
-                                                            size="sm"
-                                                        /></span
-                                                    >{/if}
-                                            </span>
-                                        {/snippet}
-                                        {#snippet titleChild()}
-                                            <span class="flex min-w-0 items-baseline gap-2">
-                                                <span class="truncate">{game.champion.name}</span>
-                                                <span class="shrink-0 text-sm font-normal tabular-nums"
-                                                    >{game.kills ?? '—'} /
-                                                    <span class="text-error">{game.deaths ?? '—'}</span>
-                                                    / {game.assists ?? '—'} · CS {game.cs ?? '—'}</span
-                                                >
-                                            </span>
-                                        {/snippet}
-                                        {#snippet detailChild()}
-                                            <StatusTag
-                                                text={game.win ? '승' : '패'}
-                                                state={game.win ? 'success' : 'error'}
-                                            />
-                                        {/snippet}
-                                    </LinkCell>
-                                </li>
-                            {:else}
-                                <li>
-                                    <SectionState
-                                        state="empty"
-                                        message="이 쪽에는 게임 기록이 없어요. 아래 쪽 번호에서 다른 기록을 확인해 주세요."
-                                    />
-                                </li>
-                            {/each}
-                        </ul>
+                <section aria-labelledby="history" class="panel overflow-hidden">
+                    <div class="panel-bar">
+                        <h2 id="history" class="text-base font-semibold">게임 기록</h2>
                     </div>
+                    <ul class="divide-y divide-line">
+                        {#each historyRows as { game, href } (game.gameId + game.playedAt)}
+                            <li>
+                                <LinkCell
+                                    {href}
+                                    line={false}
+                                    subTitle={`${game.scrimTitle} · ${game.playedAt ? formatShortDate(game.playedAt) : '경기 일시 미확인'}`}
+                                >
+                                    {#snippet leftChild()}
+                                        <span class="relative block size-8 shrink-0">
+                                            {#if game.champion.iconUrl}<img
+                                                    src={game.champion.iconUrl}
+                                                    alt=""
+                                                    class="size-8 rounded-(--radius-small)"
+                                                />{/if}
+                                            {#if game.position}<span
+                                                    class="absolute -right-1 -bottom-1 rounded-full bg-surface p-0.5"
+                                                    ><PositionIcon position={game.position} size="sm" /></span
+                                                >{/if}
+                                        </span>
+                                    {/snippet}
+                                    {#snippet titleChild()}
+                                        <span class="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                                            <span class="min-w-0">{game.champion.name}</span>
+                                            <span class="text-xs font-normal text-ink-2 tabular-nums"
+                                                >{game.kills ?? '—'} /
+                                                <span class="text-error">{game.deaths ?? '—'}</span>
+                                                / {game.assists ?? '—'} · CS {game.cs ?? '—'}</span
+                                            >
+                                        </span>
+                                    {/snippet}
+                                    {#snippet detailChild()}
+                                        <StatusTag
+                                            text={game.win ? '승' : '패'}
+                                            state={game.win ? 'success' : 'error'}
+                                        />
+                                    {/snippet}
+                                </LinkCell>
+                            </li>
+                        {:else}
+                            <li>
+                                <SectionState
+                                    state="empty"
+                                    message="이 쪽에는 게임 기록이 없어요. 아래 쪽 번호에서 다른 기록을 확인해 주세요."
+                                />
+                            </li>
+                        {/each}
+                    </ul>
                     <PageNav
                         total={data.total}
                         pageSize={data.pageSize}
@@ -398,28 +394,32 @@
                 </section>
             </div>
 
-            <aside class="flex flex-col gap-8">
+            <aside class="flex min-w-0 flex-col gap-4">
                 {#if radar}
-                    <section aria-labelledby="style" class="flex flex-col gap-3">
-                        <h2 id="style" class="text-lg font-semibold">플레이 성향</h2>
+                    <section aria-labelledby="style" class="panel">
+                        <div class="panel-bar">
+                            <h2 id="style" class="text-base font-semibold">플레이 성향</h2>
+                        </div>
                         <RadarChart title="서버 내 상위 % 기준 플레이 성향" axes={radar} />
                     </section>
                 {/if}
 
-                <DuoList
-                    title="베스트 듀오"
-                    records={data.duos.best}
-                    {guildId}
-                    seasonId={data.selectedSeasonId}
-                    tone="success"
-                />
-                <DuoList
-                    title="워스트 듀오"
-                    records={data.duos.worst}
-                    {guildId}
-                    seasonId={data.selectedSeasonId}
-                    tone="error"
-                />
+                <div class="panel divide-y divide-line overflow-hidden">
+                    <DuoList
+                        title="베스트 듀오"
+                        records={data.duos.best}
+                        {guildId}
+                        seasonId={data.selectedSeasonId}
+                        tone="success"
+                    />
+                    <DuoList
+                        title="워스트 듀오"
+                        records={data.duos.worst}
+                        {guildId}
+                        seasonId={data.selectedSeasonId}
+                        tone="error"
+                    />
+                </div>
             </aside>
         </div>
     {/if}

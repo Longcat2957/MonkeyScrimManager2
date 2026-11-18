@@ -39,7 +39,7 @@
             match.games.findIndex((game) => game.id === data.game?.id)
         )
     );
-    const labels = $derived(match.games.map((game) => ({ text: `${game.order}세트` })));
+    const labels = $derived(match.games.map((game) => `${game.order}세트`));
     const maxDamage = $derived(
         Math.max(
             0,
@@ -49,6 +49,9 @@
         )
     );
     const remaining = $derived(Math.max(0, match.bestOf - match.games.length));
+    const canRevertGame = $derived(
+        data.operation?.can.revertResult && data.operation.latestGameId === data.game?.id
+    );
 
     let uploadOpen = $state(false);
     let detailOpen = $state(false);
@@ -108,22 +111,23 @@
 {#snippet team(name: string, side: 'a' | 'b')}
     <span
         class={[
-            'min-w-0 text-base font-semibold break-words md:text-2xl',
-            winner && winner !== side && 'text-text-muted'
+            'min-w-0 break-words text-sm font-bold sm:text-lg',
+            winner && winner !== side && 'text-muted'
         ]}
     >
-        {name}{#if winner === side}<span class="sr-only"> 승리</span>{/if}
+        {name}{#if winner === side}
+            <span class="inline-block text-xs font-semibold text-success">승리</span>{/if}
     </span>
 {/snippet}
 
 <ScrimSummary scrim={data.scrim} {navigation} />
 
-<div class="flex flex-col gap-6">
+<div class="flex min-w-0 flex-col gap-5">
     <!-- 시리즈 머리 -->
-    <header class="flex flex-col gap-4">
-        <h2 class="hex-panel grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-5 py-4">
-            <span class="flex min-w-0 justify-end">{@render team(match.teamA, 'a')}</span>
-            <span class="text-4xl font-black tabular-nums"
+    <header class="panel overflow-hidden">
+        <h2 class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 py-5 sm:gap-6">
+            <span class="min-w-0 text-right">{@render team(match.teamA, 'a')}</span>
+            <span class="whitespace-nowrap text-3xl font-bold tabular-nums sm:text-4xl"
                 >{match.scoreA} <span aria-hidden="true" class="opacity-40">:</span><span class="sr-only"
                     >대</span
                 >
@@ -131,17 +135,17 @@
             >
             <span class="flex min-w-0">{@render team(match.teamB, 'b')}</span>
         </h2>
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="flex min-w-0 flex-col gap-1">
-                <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                    <span>BO{match.bestOf}</span>
-                    <StatusTag text={status.text} state={status.state} />
-                </p>
-            </div>
+        <div
+            class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2 px-4 py-2"
+        >
+            <p class="flex flex-wrap items-center gap-2 text-ui font-semibold">
+                <span>BO{match.bestOf}</span>
+                <StatusTag text={status.text} state={status.state} />
+            </p>
             {#if data.can.upload}
                 <Button
                     variant="primary"
-                    injClass="min-h-11 px-4"
+                    class="min-h-11 px-4"
                     disabled={remaining === 0}
                     onclick={() => (uploadOpen = true)}>ROFL 업로드</Button
                 >
@@ -156,28 +160,29 @@
     {#if !data.game}
         <SectionState state="empty" message="아직 기록된 세트가 없어요" />
     {:else}
-        <section aria-labelledby="game-heading" class="flex flex-col gap-4" aria-busy={changing}>
-            <h2 id="game-heading" class="sr-only">{data.game.order}세트</h2>
-            {#if changing}<p role="status" class="text-sm text-text-muted">세트를 불러오는 중</p>{/if}
-            {#if match.games.length > 1}
-                <div role="group" aria-label="세트 선택" class="border-b border-brass-line">
-                    <SelectionTabs {labels} active={activeGame} onclickTab={selectGame} />
-                </div>
-            {/if}
-            {#if data.operation?.can.revertResult && data.operation.latestGameId === data.game.id}
-                <div class="flex justify-end">
-                    <Button
-                        variant="danger"
-                        size="sm"
-                        injClass="min-h-11 px-3"
-                        loading={reverting}
-                        onclick={revertResult}>마지막 세트 취소</Button
-                    >
+        <section aria-labelledby="game-heading" class="flex min-w-0 flex-col gap-3" aria-busy={changing}>
+            {#if changing}<p role="status" class="text-sm text-muted">세트를 불러오는 중</p>{/if}
+            {#if match.games.length > 1 || canRevertGame}
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    {#if match.games.length > 1}
+                        <div role="group" aria-label="세트 선택" class="max-w-full">
+                            <SelectionTabs {labels} active={activeGame} onchange={selectGame} />
+                        </div>
+                    {/if}
+                    {#if canRevertGame}
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            class="ml-auto px-3"
+                            loading={reverting}
+                            onclick={revertResult}>마지막 세트 취소</Button
+                        >
+                    {/if}
                 </div>
             {/if}
             {#if revertFailure}<p role="alert" class="text-sm text-error">{revertFailure}</p>{/if}
             {#if data.operation?.blockedReason && data.operation.latestGameId === data.game.id}
-                <p class="text-sm text-text-muted">결과 취소: {data.operation.blockedReason}</p>
+                <p class="text-sm text-muted">결과 취소: {data.operation.blockedReason}</p>
             {/if}
             <GameHero game={data.game} />
             {#each data.game.sides as side (side.side)}
@@ -196,12 +201,12 @@
     {/if}
 
     {#if data.usedChampions}
-        <section aria-labelledby="fearless" class="flex flex-col gap-3">
-            <h2 id="fearless" class="text-lg font-semibold">다음 세트에서 쓸 수 없는 챔피언</h2>
-            <ul class="hex-panel flex flex-wrap gap-2 p-4">
+        <section aria-labelledby="fearless" class="panel">
+            <h2 id="fearless" class="panel-bar font-bold">다음 세트에서 쓸 수 없는 챔피언</h2>
+            <ul class="flex flex-wrap gap-2 p-3">
                 {#each data.usedChampions as champion (champion.id)}
                     <li
-                        class="flex items-center gap-1.5 rounded-(--radius-small) bg-bg-highlight/60 py-1 pr-2 pl-1 text-xs dark:bg-bg-highlight-dark/60"
+                        class="flex items-center gap-1.5 rounded-(--radius-small) bg-surface-hover/60 py-1 pr-2 pl-1 text-xs"
                     >
                         {#if champion.iconUrl}<img
                                 src={champion.iconUrl}

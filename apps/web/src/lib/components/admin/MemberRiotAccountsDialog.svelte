@@ -9,7 +9,7 @@
     import type { RiotAccount, RiotLookup } from '#lib/features/me/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
     import { toast } from '#lib/ui/toast.ts';
 
     type Member = { userId: string; displayName: string; riotAccounts: RiotAccount[] };
@@ -128,38 +128,30 @@
 </script>
 
 <Dialog bind:open title={`${member?.displayName ?? '멤버'}의 Riot 계정`} dismissible={!busy} onclose={close}>
-    <div bind:this={panel} aria-busy={busy} class="flex flex-col gap-5">
-        <p class="text-sm text-text-muted tabular-nums wrap-anywhere">{member?.userId}</p>
+    <div bind:this={panel} aria-busy={busy} class="flex min-w-0 flex-col gap-3">
+        <p class="text-xs text-muted tabular-nums wrap-anywhere">{member?.userId}</p>
 
-            {#if member?.riotAccounts.length}
-                <ul
-                    class="flex flex-col divide-y divide-text-primary/5 rounded-(--radius-form) border border-border dark:divide-text-dark/5"
-                >
-                    {#each member.riotAccounts as account (account.id)}
-                        <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-                            <span class="flex min-w-0 flex-1 flex-col">
-                                <span class="flex flex-wrap items-center gap-2">
-                                    <span class="min-w-0 font-medium wrap-anywhere"
-                                        >{account.gameName}<span class="font-normal opacity-60">
-                                            #{account.tagLine}</span
-                                        ></span
-                                    >
-                                    {#if account.isPrimary}<StatusTag text="대표" state="theme" />{/if}
-                                </span>
-                                {#if account.inActiveScrim}<span class="text-xs opacity-60"
-                                        >진행 중인 내전에 쓰여 해제할 수 없어요</span
-                                    >{/if}
+        {#if member?.riotAccounts.length}
+            <ul class="divide-y divide-line border-y border-line">
+                {#each member.riotAccounts as account (account.id)}
+                    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                        <span class="flex min-w-[min(100%,9rem)] flex-1 flex-col">
+                            <span class="flex flex-wrap items-center gap-2">
+                                <span class="min-w-0 text-sm font-semibold wrap-anywhere"
+                                    >{account.gameName}<span class="font-normal text-muted">
+                                        #{account.tagLine}</span
+                                    ></span
+                                >
+                                {#if account.isPrimary}<StatusTag text="대표" state="theme" />{/if}
                             </span>
-                            {#if account.inActiveScrim}<span class="text-xs opacity-60"
+                            {#if account.inActiveScrim}<span class="text-xs text-muted"
                                     >진행 중인 내전에 쓰여 해제할 수 없어요</span
                                 >{/if}
                         </span>
-                        <span class="flex shrink-0 items-center">
+                        <span class="ml-auto flex flex-wrap items-center justify-end gap-1">
                             {#if !account.isPrimary}
                                 <Button
                                     variant="quiet"
-                                    size="auto"
-                                    injClass="min-h-11 px-2 text-sm"
                                     disabled={busy}
                                     loading={busyId === account.id && busyAction === 'primary'}
                                     onclick={() => run('primary', account)}
@@ -167,50 +159,72 @@
                                         {account.gameName}#{account.tagLine}</span
                                     ></Button
                                 >
-                                    해제<span class="sr-only"> {account.gameName}#{account.tagLine}</span>
-                                </Button>
-                            </span>
-                        </li>
-                    {/each}
-                </ul>
-            {:else}
-                <p class="text-sm opacity-70">연결된 계정이 없어요</p>
-            {/if}
+                            {/if}
+                            <Button
+                                variant="danger"
+                                disabled={busy || account.inActiveScrim}
+                                loading={busyId === account.id && busyAction === 'unlink'}
+                                onclick={() => run('unlink', account)}
+                            >
+                                해제<span class="sr-only"> {account.gameName}#{account.tagLine}</span>
+                            </Button>
+                        </span>
+                    </li>
+                {/each}
+            </ul>
+        {:else}
+            <p class="border-y border-line py-3 text-ui text-muted">연결된 계정이 없어요</p>
+        {/if}
 
-            {#if !found}
-                <form
-                    method="POST"
-                    action="?/lookup"
-                    class="flex flex-col gap-3"
-                    novalidate
-                    use:enhance={submitLookup}
-                    {@attach nonSubmitButtons}
+        {#if !found}
+            <form
+                method="POST"
+                action="?/lookup"
+                class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2"
+                novalidate
+                use:enhance={submitLookup}
+                {@attach preventComposingSubmit}
+            >
+                <TextField
+                    label="연결할 Riot ID"
+                    placeholder="이름#태그"
+                    bind:value={riotId}
+                    disabled={busy}
+                    {error}
+                    autocomplete="off"
+                    required
+                />
+                <div class="mt-5">
+                    <Button variant="primary" type="submit" loading={pending}>조회</Button>
+                </div>
+            </form>
+        {:else}
+            <form
+                method="POST"
+                action="?/link"
+                class="flex flex-col gap-3"
+                novalidate
+                use:enhance={submitLink}
+                {@attach preventComposingSubmit}
+            >
+                <div
+                    class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-(--radius-form) bg-surface-2 px-3 py-2"
                 >
-                    <span class="font-semibold break-all"
-                        >{found.gameName}<span class="font-normal opacity-60"> #{found.tagLine}</span></span
+                    <span class="min-w-0 font-semibold wrap-anywhere"
+                        >{found.gameName}<span class="font-normal text-muted">#{found.tagLine}</span></span
                     >
-                    <span class="text-sm opacity-70">{found.region} 서버</span>
+                    <span class="text-xs text-muted">{found.region} 서버</span>
                 </div>
                 {#if error}
                     <p role="alert" class="text-sm text-error">{error}</p>
                 {:else}
-                    <p class="text-sm opacity-80">이 Riot 계정을 연결할까요?</p>
+                    <p class="text-ui text-ink-2">이 Riot 계정을 연결할까요?</p>
                 {/if}
                 <div class="flex justify-end gap-2">
-                    <Button
-                        variant="secondary"
-                        size="auto"
-                        injClass="min-h-11 px-4"
-                        disabled={busy}
-                        onclick={() => ((found = null), (error = ''))}>다시 입력</Button
+                    <Button variant="secondary" disabled={busy} onclick={() => ((found = null), (error = ''))}
+                        >다시 입력</Button
                     >
-                    <Button
-                        variant="primary"
-                        type="submit"
-                        size="auto"
-                        injClass="min-h-11 px-4"
-                        loading={pending}>연결</Button
-                    >
+                    <Button variant="primary" type="submit" loading={pending}>연결</Button>
                 </div>
             </form>
         {/if}

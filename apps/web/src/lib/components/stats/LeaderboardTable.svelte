@@ -42,7 +42,7 @@
     ];
 
     const PAGE_SIZE = 20;
-    const PODIUM = ['bg-warning/15', 'bg-text-primary/5 dark:bg-text-dark/10', 'bg-warning/5'];
+    const PODIUM = ['bg-medal-gold/10', 'bg-medal-silver/10', 'bg-medal-bronze/10'];
     let current = $state(1);
     let sortMessage = $state('');
     let previousContext = '';
@@ -86,7 +86,7 @@
     }
 </script>
 
-<p id={`${id}-hint`} class="text-xs text-text-muted lg:hidden">
+<p id={`${id}-hint`} class="px-3 py-2 text-xs text-muted xl:hidden">
     표를 가로로 스크롤해 모든 지표를 확인하세요.
 </p>
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (가로 표의 스크롤 영역에 키보드 진입점을 제공한다.) -->
@@ -95,18 +95,18 @@
     aria-labelledby={id}
     aria-describedby={`${id}-hint`}
     tabindex="0"
-    class="relative overflow-x-auto scroll-ps-[9.5rem] scroll-pe-2 rounded-(--radius-box) border border-border bg-bg-surface sm:scroll-ps-[14.5rem] dark:bg-bg-surface-dark"
+    class="relative overflow-x-auto scroll-ps-[9.5rem] scroll-pe-2 sm:scroll-ps-[12.5rem]"
 >
-    <table class="w-full min-w-[44rem] text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+    <table class="data-table min-w-[44rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
         <caption {id} class="sr-only">사용자별 지표</caption>
         <thead class="text-xs" onfocusin={revealColumn}>
-            <tr class="border-b border-border">
-                <th scope="col" class="w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium text-text-muted"
+            <tr class="border-b border-line">
+                <th scope="col" class="w-10 px-2 py-2 text-right lg:w-12 lg:px-3 font-medium text-muted"
                     >순위</th
                 >
                 <th
                     scope="col"
-                    class="sticky left-0 z-20 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2 text-left font-medium text-text-muted dark:bg-bg-surface-dark"
+                    class="sticky left-0 z-20 w-36 min-w-36 max-w-36 bg-surface-2 px-3 py-2 text-left font-medium text-muted sm:w-48 sm:min-w-48 sm:max-w-48"
                     >사용자</th
                 >
                 {#each COLUMNS as column (column.key)}
@@ -122,16 +122,24 @@
                         <button
                             type="button"
                             class={[
-                                'inline-flex min-h-11 min-w-11 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark',
-                                sortKey === column.key
-                                    ? 'font-semibold text-primary dark:text-dark'
-                                    : 'text-text-muted'
+                                'inline-flex min-h-9 min-w-9 w-full items-center justify-end gap-1 rounded-(--radius-small) px-2 hover:bg-surface-hover pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+                                sortKey === column.key ? 'font-semibold text-nexus' : 'text-muted'
                             ]}
                             onclick={() => sortBy(column.key)}
                         >
-                            {column.label}<span aria-hidden="true" class="text-[0.625rem]"
-                                >{sortKey === column.key ? (descending ? '▼' : '▲') : '↕'}</span
+                            {column.label}
+                            <svg
+                                aria-hidden="true"
+                                width="10"
+                                height="12"
+                                viewBox="0 0 10 12"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
                             >
+                                {#if sortKey !== column.key || !descending}<path d="m2 5 3-3 3 3" />{/if}
+                                {#if sortKey !== column.key || descending}<path d="m2 7 3 3 3-3" />{/if}
+                            </svg>
                         </button>
                     </th>
                 {/each}
@@ -143,7 +151,7 @@
                 <!-- 1~3위는 행 바탕으로 구분하고, 순위 숫자로도 같은 정보를 준다. -->
                 <tr
                     class={[
-                        'border-b border-border last:border-b-0',
+                        'border-b border-line last:border-b-0',
                         value(row, sortKey) !== null && PODIUM[index]
                     ]}
                 >
@@ -152,15 +160,15 @@
                     >
                     <th
                         scope="row"
-                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 sm:w-56 sm:min-w-56 sm:max-w-56 bg-bg-surface px-3 py-2 text-left font-normal dark:bg-bg-surface-dark"
+                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 bg-surface px-3 py-1 text-left font-normal sm:w-48 sm:min-w-48 sm:max-w-48"
                     >
-                        <div class="flex min-w-0 items-center gap-2">
+                        <div class="flex min-w-0 flex-col">
                             <a
                                 href={`${resolve('/g/[guildId]/players/[userId]', {
                                     guildId,
                                     userId: row.userId
                                 })}${seasonId ? `?season=${seasonId}` : ''}`}
-                                class="flex min-h-11 min-w-0 flex-1 items-center gap-2 hover:underline"
+                                class="flex min-h-9 min-w-0 flex-1 items-center gap-2 hover:text-nexus hover:underline pointer-coarse:min-h-11"
                             >
                                 <PlayerFace name={row.displayName} imageUrl={row.iconUrl} size="sm" />
                                 <span class="min-w-0 font-semibold leading-5 whitespace-normal wrap-anywhere"
@@ -168,15 +176,10 @@
                                 >
                             </a>
                             {#if row.badges.length}
-                                <ul aria-label="1위 업적" class="hidden shrink-0 gap-1 sm:flex">
+                                <ul aria-label="1위 업적" class="hidden flex-wrap gap-x-2 pl-8 sm:flex">
                                     {#each row.badges as badge (badge.id)}
-                                        <li
-                                            title={badge.title}
-                                            class="flex size-6 items-center justify-center rounded-(--radius-small) bg-bg-highlight text-sm dark:bg-bg-highlight-dark"
-                                        >
-                                            <span aria-hidden="true">{badge.emoji}</span><span class="sr-only"
-                                                >{badge.title}</span
-                                            >
+                                        <li class="text-micro font-medium whitespace-normal text-role-gold">
+                                            {badge.title}
                                         </li>
                                     {/each}
                                 </ul>
@@ -185,7 +188,7 @@
                     </th>
                     <td class="px-3 py-2.5 text-right tabular-nums">
                         <span class="block font-semibold">{fixed(row.kda, 2)}</span>
-                        <span class="hidden text-xs text-text-muted sm:block"
+                        <span class="hidden text-xs text-muted sm:block"
                             >{fixed(row.kills, 1)} / {fixed(row.deaths, 1)} / {fixed(row.assists, 1)}</span
                         >
                     </td>
@@ -196,7 +199,7 @@
                                 row.wins / row.games >= 0.5 ? 'text-success' : 'text-error'
                             ]}>{percent(row.wins / row.games)}</span
                         >
-                        <span class="hidden text-xs text-text-muted sm:block"
+                        <span class="hidden text-xs text-muted sm:block"
                             >{row.wins}승 {row.games - row.wins}패</span
                         >
                     </td>

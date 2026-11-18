@@ -48,22 +48,24 @@
     <title>이용 안내 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="max-w-6xl">
-    <h1 class="text-2xl font-semibold">이용 안내</h1>
-    <div class="mt-6 grid gap-10 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-12">
+<div class="max-w-5xl">
+    <header class="page-head border-b border-line pb-4">
+        <h1 class="text-title font-bold">이용 안내</h1>
+    </header>
+    <div class="grid gap-8 pt-5 md:grid-cols-[10rem_minmax(0,1fr)] xl:gap-12">
         <nav
             aria-label="목차"
-            class="grid grid-cols-2 gap-x-4 gap-y-4 self-start lg:sticky lg:top-24 lg:grid-cols-1 lg:gap-y-6"
+            class="grid grid-cols-2 gap-x-4 gap-y-2 self-start border-b border-line pb-4 text-ui md:sticky md:top-[calc(var(--app-header-height)+1rem)] md:max-h-[calc(100dvh-var(--app-header-height)-2rem)] md:grid-cols-1 md:gap-y-5 md:overflow-y-auto md:border-r md:border-b-0 md:pr-4"
         >
             {#each TOC_GROUPS as group (group.title)}
                 <div class="min-w-0">
-                    <h2 class="text-sm font-semibold text-text-muted">{group.title}</h2>
-                    <ul class="mt-2 flex flex-col gap-1">
+                    <h2 class="font-bold text-ink">{group.title}</h2>
+                    <ul class="mt-1">
                         {#each group.items as item (item.id)}
                             <li>
                                 <a
                                     href={`#${item.id}`}
-                                    class="flex min-h-11 items-center rounded-(--radius-small) px-2 py-2 text-sm underline underline-offset-4 hover:bg-bg-overlay dark:hover:bg-bg-overlay-dark"
+                                    class="flex min-h-9 items-center rounded-form px-1.5 text-ink-2 hover:bg-surface-hover hover:text-nexus focus-visible:-outline-offset-2 pointer-coarse:min-h-11"
                                     >{item.text}</a
                                 >
                             </li>
@@ -73,14 +75,16 @@
             {/each}
             <a
                 href="#faq"
-                class="col-span-2 flex min-h-11 items-center border-t border-border px-2 pt-3 text-sm underline underline-offset-4 hover:bg-bg-overlay lg:col-span-1 dark:hover:bg-bg-overlay-dark"
+                class="col-span-2 flex min-h-9 items-center rounded-form px-1.5 font-semibold text-ink hover:bg-surface-hover hover:text-nexus focus-visible:-outline-offset-2 md:col-span-1 pointer-coarse:min-h-11"
                 >자주 묻는 질문</a
             >
         </nav>
-        <article class="doc min-w-0">
+        <article
+            class="doc min-w-0 max-w-[72ch] text-ink-2 [&_h2]:text-ink [&_h3]:text-ink [&_strong]:text-ink"
+        >
             <section>
-                <h2 class="mt-0! text-2xl!">참가·기록</h2>
-                <h3 id="recruit" tabindex="-1" class="text-lg!">모집 참여</h3>
+                <h2 class="mt-0!">참가·기록</h2>
+                <h3 id="recruit" tabindex="-1">모집 참여</h3>
                 <p>
                     Discord 모집 글의 <strong>참가하기</strong> 버튼으로 바로 신청할 수 있어요. 웹 사전 가입이나
                     Riot 계정 연결은 필요하지 않아요.
@@ -98,7 +102,7 @@
                 </ol>
                 <p>신청하면 선발 자리가 남아 있을 때 바로 선발되고, 다 찼으면 대기가 돼요.</p>
 
-                <h3 id="rofl" tabindex="-1" class="text-lg!">ROFL 업로드</h3>
+                <h3 id="rofl" tabindex="-1">ROFL 업로드</h3>
                 <p>
                     수동 편성에서 확정한 팀·포지션은 경기에 자동 적용돼요. 경매는 운영자가 경기 화면에서 출전
                     라인업을 한 번 확정해요. 한 경기의 모든 세트는 같은 라인업을 사용하며, 서버 관리자와 그
@@ -125,9 +129,9 @@
                     서버별 연결 계정은 <strong>내 정보</strong>에서 확인할 수 있어요.
                 </p>
             </section>
-            <section class="mt-12 border-t border-border pt-8">
-                <h2 class="mt-0! text-2xl!">운영하기</h2>
-                <h3 id="teams" tabindex="-1" class="text-lg!">팀 편성</h3>
+            <section class="mt-10 border-t border-line pt-6">
+                <h2 class="mt-0!">운영하기</h2>
+                <h3 id="teams" tabindex="-1">팀 편성</h3>
                 <p>
                     운영자가 내전 화면의 <strong>편성 방식</strong>에서 수동 편성과 경매 중 하나를 골라요.
                     모집 중에 미리 골라 둘 수 있고, 팀 편성을 확정하기 전까지 바꿀 수 있어요. 편성을 시작한 뒤
@@ -164,7 +168,7 @@
                 </ul>
                 <p>모든 팀이 다 차면 경매가 끝나고 대진 화면으로 이동해요.</p>
 
-                <h3 id="bracket" tabindex="-1" class="text-lg!">대진</h3>
+                <h3 id="bracket" tabindex="-1">대진</h3>
                 <p>
                     경매 또는 3·4팀 수동 편성이 끝나면 운영자가 팀을 대진 자리에 배치하고 준결승·결승의 경기
                     방식(단판, 3전 2선승, 5전 3선승)을 정한 뒤 <strong>대진 확정·내전 시작</strong>을 눌러요.
@@ -179,7 +183,7 @@
                     끝난 내전은 기록된 세트가 있는 경기 상세로 바로 이동해요.
                 </p>
 
-                <h3 id="operations" tabindex="-1" class="text-lg!">되돌리기·중도 종료</h3>
+                <h3 id="operations" tabindex="-1">되돌리기·중도 종료</h3>
                 <p>
                     운영자는 내전 화면의 운영 메뉴에서 모집 다시 열기, 팀 편성 다시 하기처럼 이전 단계로
                     되돌릴 수 있어요. 모집을 다시 열면 팀 편성은 지워지고 편성 방식은 그대로 남아요. 세트가
@@ -208,8 +212,8 @@
                     기록한 블루 팀을 유지해야 해요.
                 </p>
             </section>
-            <section class="mt-12 border-t border-border pt-8">
-                <h2 id="faq" tabindex="-1" class="mt-0! text-2xl!">자주 묻는 질문</h2>
+            <section class="mt-10 border-t border-line pt-6">
+                <h2 id="faq" tabindex="-1" class="mt-0!">자주 묻는 질문</h2>
                 <div class="mt-3">
                     <AccessibleAccordion items={FAQ.map((item) => ({ title: item.q }))} border="solid">
                         {#snippet children(_item: unknown, index: number)}

@@ -148,16 +148,14 @@
 <section
     aria-labelledby="manual-formation"
     aria-busy={pending > 0 || busy}
-    class="hex-panel manual-board w-full min-w-0 overflow-clip"
+    class="panel manual-board w-full min-w-0 overflow-clip"
     style:--selection-height={`${selectedId ? selectionHeight : 0}px`}
 >
     <!-- 도구 줄 -->
-    <div
-        class="flex flex-col gap-2 bg-bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between dark:bg-bg-surface-dark"
-    >
+    <header class="panel-bar">
         <div class="flex min-w-0 flex-col">
             <div class="flex items-center gap-2">
-                <h2 id="manual-formation" class="text-lg font-semibold">수동 편성</h2>
+                <h2 id="manual-formation" class="text-base font-bold">수동 편성</h2>
                 {#if confirmed}
                     <StatusTag text="확정" state="success" />
                 {:else if !editable}
@@ -167,7 +165,7 @@
                     <Spinner />
                 {/if}
             </div>
-            <p class="truncate text-sm font-semibold tabular-nums">
+            <p class="text-ui text-muted tabular-nums">
                 {placed}/{players.length} 배치
             </p>
         </div>
@@ -175,8 +173,7 @@
             <!-- 시너지·라인 상대 전적 레일을 펼친다. -->
             <Button
                 variant={details ? 'secondary' : 'quiet'}
-                size="auto"
-                injClass="min-h-11 px-3 text-sm"
+                class="px-3 text-ui"
                 onclick={() => (details = !details)}
             >
                 {details ? '상세 닫기' : '상세'}
@@ -195,15 +192,13 @@
                 <ChangeMethodButton disabled={busy || pending > 0} />
                 <Button
                     variant="quiet"
-                    size="auto"
-                    injClass="min-h-11 px-3 text-sm"
+                    class="px-3 text-ui"
                     disabled={placed === 0 || busy || pending > 0}
                     onclick={reset}>초기화</Button
                 >
                 <Button
                     variant="primary"
-                    size="auto"
-                    injClass="min-h-11 px-4 text-sm"
+                    class="px-4 text-ui"
                     disabled={Boolean(confirmBlocked) || busy || pending > 0}
                     onclick={confirmFormation}
                 >
@@ -211,15 +206,15 @@
                 </Button>
             {/if}
         </div>
-    </div>
+    </header>
 
     {#if editable && (selectedId || confirmBlocked)}
         <!-- 선택 상태와 확정 조건을 같은 자리에서 알리고 선택 안내는 스크롤 중에도 유지한다. -->
         <p
             bind:clientHeight={selectionHeight}
             class={[
-                'flex min-h-10 items-center gap-2 bg-bg-surface px-4 py-1 text-sm dark:bg-bg-surface-dark',
-                selectedId && 'sticky top-(--app-header-height) z-20 border-b border-border'
+                'flex min-h-9 items-center gap-2 bg-surface-2 px-3 py-1 text-ui',
+                selectedId && 'sticky top-(--app-header-height) z-20 border-b border-line'
             ]}
             aria-live="polite"
         >
@@ -229,16 +224,13 @@
                         <strong class="truncate">{selectedName}</strong>
                         <span class="shrink-0">선택됨</span>
                     </span>
-                    <span class="text-xs text-text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
+                    <span class="text-xs text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
                 </span>
-                <Button
-                    variant="quiet"
-                    size="auto"
-                    injClass="min-h-11 shrink-0 px-2 text-sm"
-                    onclick={() => (selectedId = null)}>선택 취소</Button
+                <Button variant="quiet" class="shrink-0 px-2 text-ui" onclick={() => (selectedId = null)}
+                    >선택 취소</Button
                 >
             {:else}
-                <span class="opacity-70">{confirmBlocked}</span>
+                <span class="text-muted">{confirmBlocked}</span>
             {/if}
         </p>
     {/if}
@@ -259,7 +251,7 @@
     {/snippet}
 
     {#if !confirmed && (editable || unassigned.length > 0)}
-        <div class="border-t border-border pt-px">
+        <div class="border-t border-line">
             <FormationPool
                 players={unassigned}
                 {selectedId}
@@ -271,9 +263,9 @@
     {/if}
 
     <!-- 좁은 화면은 참가자를 먼저 고른 뒤 세로로 이어지는 팀 자리에 배치한다. -->
-    <div class="relative">
+    <div class="relative bg-line">
         {#if details && desktop.current && teams.length === 2}
-            <div class="grid grid-cols-[8rem_minmax(0,1fr)_6rem_minmax(0,1fr)_8rem] gap-px pt-px">
+            <div class="grid grid-cols-[7rem_minmax(0,1fr)_5rem_minmax(0,1fr)_7rem] gap-px pt-px">
                 <FormationSynergyRail team={teams[0]!} {players} assignments={current} {pairs} />
                 {@render teamColumn(teams[0]!)}
                 <FormationHeadToHead teams={[teams[0]!, teams[1]!]} {players} assignments={current} {pairs} />
@@ -281,7 +273,7 @@
                 <FormationSynergyRail team={teams[1]!} {players} assignments={current} {pairs} />
             </div>
         {:else if details && desktop.current}
-            <div class="grid grid-cols-[8rem_minmax(0,1fr)_8rem_minmax(0,1fr)] gap-px pt-px">
+            <div class="grid grid-cols-[7rem_minmax(0,1fr)_7rem_minmax(0,1fr)] gap-px pt-px">
                 {#each teams as team (team.id)}
                     <FormationSynergyRail {team} {players} assignments={current} {pairs} />
                     {@render teamColumn(team)}
@@ -290,7 +282,7 @@
         {:else}
             <div class="grid gap-px pt-px sm:grid-cols-2">
                 {#each teams as team (team.id)}
-                    <div class="min-w-0 bg-bg-surface dark:bg-bg-surface-dark">
+                    <div class="min-w-0 bg-surface">
                         {@render teamColumn(team)}
                         {#if details}
                             <FormationSynergyRail {team} {players} assignments={current} {pairs} compact />
@@ -314,6 +306,13 @@
 </section>
 
 <style>
+    .manual-board :global(.formation-lanes) {
+        display: grid;
+        grid-template-rows: repeat(5, minmax(3.5rem, auto));
+        gap: 0.25rem;
+        padding: 0 0.5rem 0.5rem;
+    }
+
     .manual-board :global(button) {
         scroll-margin-block-start: var(--selection-height);
     }

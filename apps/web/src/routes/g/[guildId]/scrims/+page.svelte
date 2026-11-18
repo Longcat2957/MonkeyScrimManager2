@@ -34,7 +34,7 @@
 
     const guildId = $derived(page.params.guildId!);
     const active = $derived(FILTERS.findIndex((filter) => filter.key === data.statusFilter));
-    const labels = $derived(FILTERS.map((filter) => ({ text: `${filter.text} ${data.counts[filter.key]}` })));
+    const labels = $derived(FILTERS.map((filter) => `${filter.text} ${data.counts[filter.key]}`));
     // 같은 목록의 필터·쪽만 바뀌는 동안에는 이전 결과를 흐리게 둔다.
     const changing = $derived(navigating.to?.route.id === page.route.id);
 
@@ -64,57 +64,54 @@
     <title>내전 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col gap-6">
-    <div class="flex items-center justify-between gap-4">
-        <h1 class="text-2xl font-semibold">내전</h1>
+<div class="flex min-w-0 flex-col gap-4">
+    <header class="page-head">
+        <h1 class="text-title font-bold">내전</h1>
         {#if data.can.createScrim}
             <span class="shrink-0">
-                <Button variant="primary" size="auto" onclick={() => (creating = true)}>모집 만들기</Button>
+                <Button variant="primary" onclick={() => (creating = true)}>모집 만들기</Button>
             </span>
         {/if}
-    </div>
+    </header>
 
     {#if data.counts.all === 0}
         <SectionState state="empty" message="아직 내전이 없어요" />
     {:else}
         <section aria-labelledby="scrim-list" aria-busy={changing} class="flex flex-col gap-3">
-            <div class="flex items-center gap-2">
-                <h2 id="scrim-list" class="sr-only">{FILTERS[active]?.text} 내전</h2>
-                <!-- 선택한 상태는 목록 이름과 탭이 함께 알린다. -->
-                <div role="group" aria-label="상태 필터" class="min-w-0 flex-1 border-b border-brass-line">
-                    <SelectionTabs
-                        {labels}
-                        {active}
-                        onclickTab={(index) => navigate({ status: FILTERS[index]!.key })}
-                    />
+            <div class="panel overflow-hidden">
+                <div class="panel-bar">
+                    <h2 id="scrim-list" class="sr-only">{FILTERS[active]?.text} 내전</h2>
+                    <!-- 선택한 상태는 목록 이름과 탭이 함께 알린다. -->
+                    <div role="group" aria-label="상태 필터" class="max-w-full min-w-0">
+                        <SelectionTabs
+                            {labels}
+                            {active}
+                            onchange={(index) => navigate({ status: FILTERS[index]!.key })}
+                        />
+                    </div>
+                    {#if changing}
+                        <Spinner label="내전 목록을 불러오는 중" />
+                    {/if}
                 </div>
-                {#if changing}
-                    <Spinner label="내전 목록을 불러오는 중" />
+
+                {#if data.scrims.length === 0}
+                    <SectionState state="empty" message="조건에 맞는 내전이 없어요" />
+                {:else}
+                    <ul class={['divide-y divide-line transition-opacity', changing && 'opacity-60']}>
+                        {#each data.scrims as scrim (scrim.id)}
+                            <li>
+                                <ScrimListRow
+                                    {scrim}
+                                    href={resolve('/g/[guildId]/scrims/[scrimId]', {
+                                        guildId,
+                                        scrimId: scrim.id
+                                    })}
+                                />
+                            </li>
+                        {/each}
+                    </ul>
                 {/if}
             </div>
-
-            {#if data.scrims.length === 0}
-                <SectionState state="empty" message="조건에 맞는 내전이 없어요" />
-            {:else}
-                <div class={['transition-opacity', changing && 'opacity-50']}>
-                    <div class="hex-panel overflow-hidden">
-                        <ul class="divide-y divide-brass-line">
-                            {#each data.scrims as scrim (scrim.id)}
-                                <li>
-                                    <ScrimListRow
-                                        {scrim}
-                                        href={resolve('/g/[guildId]/scrims/[scrimId]', {
-                                            guildId,
-                                            scrimId: scrim.id
-                                        })}
-                                        line={false}
-                                    />
-                                </li>
-                            {/each}
-                        </ul>
-                    </div>
-                </div>
-            {/if}
 
             <PageNav
                 total={data.total}

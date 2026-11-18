@@ -155,9 +155,11 @@
 </script>
 
 <Dialog {open} title="ROFL 업로드" dismissible={!uploading} onclose={close}>
-    <div class="flex flex-col gap-4">
-        {#if uploadContext}<p class="text-sm">{uploadContext.expectedGameNumber}세트 결과</p>{/if}
+    <div class="flex flex-col gap-3">
         {#if uploadContext}
+            <h3 class="border-b border-line pb-2 text-base font-bold">
+                {uploadContext.expectedGameNumber}세트 결과
+            </h3>
             <fieldset disabled={uploading} class="min-w-0">
                 <RadioGroup
                     legend="이 세트의 블루 팀"
@@ -167,7 +169,10 @@
                 />
             </fieldset>
             {#if blueTeam && redTeam}
-                <fieldset disabled={uploading || refreshRequired}>
+                <fieldset
+                    disabled={uploading || refreshRequired}
+                    class="rounded-(--radius-form) border border-line bg-surface-2 px-3 py-2"
+                >
                     <legend class="sr-only">진영 확인</legend>
                     <CheckboxField
                         label={`블루 ${blueTeam.name} · 레드 ${redTeam.name}이 실제 진영과 맞아요`}
@@ -177,15 +182,20 @@
             {/if}
         {/if}
 
-        <div class="flex flex-wrap items-center gap-3">
+        <div
+            class={[
+                'flex flex-wrap items-center gap-x-3 gap-y-1.5',
+                uploadContext && 'border-t border-line pt-3'
+            ]}
+        >
             <Button
                 variant="secondary"
                 disabled={uploading || refreshRequired || files.length >= max}
                 onclick={() => picker?.click()}
             >
-                <span aria-hidden="true" class="text-base leading-none">+</span>ROFL 선택
+                ROFL 선택
             </Button>
-            <span class="text-xs text-text-muted">최대 {max}개 · 파일당 64MB</span>
+            <span class="text-xs text-muted">최대 {max}개 · 파일당 64MB</span>
             <!-- 공용 Button은 파일 대화상자를 열 수 없어 숨긴 입력에 선택을 맡긴다. -->
             <input
                 bind:this={picker}
@@ -201,11 +211,9 @@
         </div>
 
         {#if files.length}
-            <ul
-                class="flex flex-col divide-y divide-brass-line overflow-hidden rounded-(--radius-box) border border-brass-line"
-            >
+            <ul class="divide-y divide-line border-y border-line">
                 {#each files as item (item.id)}
-                    <li class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                    <li class="flex items-center justify-between gap-2 py-2 text-ui">
                         <span class="flex min-w-0 flex-col">
                             <span class="truncate font-semibold">{item.file.name}</span>
                             <span
@@ -216,7 +224,7 @@
                                         ? 'text-error'
                                         : item.status === 'success'
                                           ? 'text-success'
-                                          : 'text-text-muted'
+                                          : 'text-muted'
                                 ]}
                             >
                                 {(item.file.size / 1024 / 1024).toFixed(1)}MB ·
@@ -228,7 +236,7 @@
                                 variant="quiet"
                                 size="sm"
                                 disabled={uploading}
-                                injClass="shrink-0"
+                                class="shrink-0"
                                 onclick={() => remove(item)}
                                 ><span class="sr-only">{item.file.name} </span>선택 해제</Button
                             >

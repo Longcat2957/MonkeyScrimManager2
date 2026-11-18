@@ -15,9 +15,9 @@
 
 {#if $confirmation}
     <Dialog title={$confirmation.title} {open} dismissible={false} onclose={cancel}>
-        <p id="confirmation-content" class="leading-7">{$confirmation.content}</p>
+        <p id="confirmation-content" class="text-sm leading-relaxed text-ink-2">{$confirmation.content}</p>
         {#snippet footer()}
-            <div class="flex justify-end gap-2">
+            <div class="flex flex-wrap justify-end gap-2">
                 <Button variant="secondary" onclick={cancel}>취소</Button>
                 <Button variant="primary" onclick={() => settleConfirmation(true)}>확인</Button>
             </div>

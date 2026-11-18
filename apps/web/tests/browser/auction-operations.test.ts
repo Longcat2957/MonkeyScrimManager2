@@ -52,7 +52,8 @@ test(
         const candidateBox = await candidate.boundingBox();
         const bidBox = await bid.boundingBox();
         assert.ok(candidateBox && bidBox);
-        assert.ok(candidateBox.y >= 63 && candidateBox.y <= 65);
+        const header = await f.page.getByRole('banner').boundingBox();
+        assert.ok(header && Math.abs(candidateBox.y - (header.y + header.height)) <= 1);
         assert.ok(bidBox.y >= candidateBox.y + candidateBox.height);
         const bidTitle = await f.page.getByText('2팀 입찰가', { exact: true }).boundingBox();
         assert.ok(bidTitle && bidTitle.y >= candidateBox.y + candidateBox.height);
@@ -117,7 +118,7 @@ test(
         // 경기 방식의 클라이언트 선택 상태가 붙은 뒤 입력해 SSR과 초기화 사이의 경합을 피한다.
         await f.page
             .getByRole('group', { name: '준결승 경기 방식', exact: true })
-            .getByRole('button', { name: '3전 2선승', exact: true, pressed: true })
+            .getByRole('radio', { name: '3전 2선승', exact: true, checked: true })
             .waitFor();
         await f.page.getByRole('button', { name: '1팀', exact: true }).press('Enter');
         await f.page.getByRole('button', { name: '1팀', exact: true, pressed: true }).waitFor();
@@ -126,11 +127,12 @@ test(
             .getByRole('button', { name: /1팀 배치 위치 준결승 B 오른쪽/ });
         await target.evaluate((node) => node.scrollIntoView({ block: 'start', behavior: 'instant' }));
         await target.focus();
-        const reminder = f.page.locator('p[aria-live="polite"]').filter({ hasText: '1팀 선택됨' });
+        const reminder = f.page.locator('[aria-live="polite"]').filter({ hasText: '1팀 선택됨' });
         const reminderBox = await reminder.boundingBox();
         const targetBox = await target.boundingBox();
         assert.ok(reminderBox && targetBox);
-        assert.ok(reminderBox.y >= 63 && reminderBox.y <= 65);
+        const header = await f.page.getByRole('banner').boundingBox();
+        assert.ok(header && Math.abs(reminderBox.y - (header.y + header.height)) <= 1);
         assert.ok(targetBox.y >= reminderBox.y + reminderBox.height);
         assert.equal(await f.page.getByRole('button', { name: '선택 취소', exact: true }).count(), 1);
         await capture(f.page, 'bracket-selection-mobile-primary');

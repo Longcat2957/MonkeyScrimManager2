@@ -39,13 +39,29 @@
     }
 </script>
 
-<header class="flex flex-col gap-3">
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <svelte:element this={`h${headingLevel}`} class="text-[1.375rem] font-bold text-balance"
-            >{scrim.title}</svelte:element
+{#snippet stepLabel(item: NavItem, number: number, hint: string)}
+    <span class="flex min-w-0 items-center gap-2">
+        <span
+            class={[
+                'grid size-[26px] shrink-0 place-items-center rounded-[5px] border font-brand text-base font-bold',
+                item.current ? 'border-nexus bg-nexus text-nexus-ink' : 'border-line-strong text-muted'
+            ]}>{number}</span
+        >
+        <span class="flex min-w-0 flex-col">
+            <strong class="text-sm">{item.label}</strong>
+            {#if hint}<span class="text-micro text-muted">{hint}</span>{/if}
+        </span>
+    </span>
+{/snippet}
+
+<header class={['flex min-w-0 flex-col', action ? 'gap-3' : 'mb-4 gap-2']}>
+    <div class="flex min-h-9 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        <svelte:element
+            this={`h${headingLevel}`}
+            class="min-w-0 text-title font-bold tracking-[-0.02em] text-balance">{scrim.title}</svelte:element
         >
         <StatusTag text={status.text} state={status.state} />
-        <p class="flex flex-wrap items-center gap-x-2 text-[13px] text-text-muted">
+        <p class="flex flex-wrap items-center gap-x-2 text-ui text-muted">
             {#each meta as item, index (item)}
                 {#if index > 0}<span aria-hidden="true">·</span>{/if}
                 <span>{item}</span>
@@ -53,7 +69,7 @@
         </p>
         {#if scrim.hardFearless}
             <span
-                class="inline-flex items-center rounded-(--radius-small) border border-brass px-2 py-0.5 text-xs font-semibold text-brass"
+                class="inline-flex items-center rounded-(--radius-small) border border-role-gold px-2 py-0.5 text-xs font-semibold text-role-gold"
                 >하드 피어리스</span
             >
         {/if}
@@ -66,48 +82,27 @@
         <!-- 네 단계는 한 상자의 칸으로 이어지고, 현재 칸만 시안 밑줄로 점등된다. -->
         <nav
             aria-label="내전 단계"
-            class="grid grid-cols-2 gap-px overflow-hidden rounded-(--radius-box) border border-brass-line bg-brass-line md:grid-cols-[1.5fr_1fr_0.9fr_0.85fr]"
+            class={[
+                'grid grid-cols-2 gap-px overflow-hidden rounded-box border border-line bg-line',
+                action ? 'md:grid-cols-[1.45fr_1fr_0.9fr_0.85fr]' : 'md:grid-cols-4'
+            ]}
         >
             {#each items as item, index (item.label)}
-                {@const base =
-                    'flex min-h-14 flex-wrap items-center justify-between gap-2 bg-bg-surface px-3.5 py-2.5 dark:bg-bg-surface-dark'}
+                {@const base = `flex min-w-0 flex-wrap items-center justify-between gap-2.5 px-3 sm:px-3.5 ${action ? 'min-h-[54px] py-2.5' : 'min-h-11 py-1.5'}`}
                 {#if item.static || item.disabled}
                     <span
-                        class={[base, 'text-text-muted']}
+                        class={[base, 'bg-surface text-muted']}
                         aria-disabled={item.disabled || undefined}
                         aria-current={item.current ? 'page' : undefined}
                     >
-                        <span class="flex items-center gap-2">
-                            <span
-                                class="grid size-[26px] shrink-0 place-items-center rounded-[5px] border border-brass-line font-brand text-sm font-bold"
-                                >{index + 1}</span
-                            >
-                            <span class="flex flex-col">
-                                <span class="text-sm font-semibold">{item.label}</span>
-                                {#if reason(item)}<span class="text-xs">{reason(item)}</span>{/if}
-                            </span>
-                        </span>
+                        {@render stepLabel(item, index + 1, reason(item))}
                     </span>
                 {:else if item.current}
                     <div
-                        class={[
-                            base,
-                            'bg-bg-highlight text-text-primary shadow-[inset_0_-2px_0_var(--color-hex)] dark:bg-bg-highlight-dark dark:text-text-dark'
-                        ]}
+                        class={[base, 'bg-selected text-ink shadow-[inset_0_-2px_0_var(--color-nexus)]']}
                         aria-current="page"
                     >
-                        <span class="flex items-center gap-2">
-                            <span
-                                class="grid size-[26px] shrink-0 place-items-center rounded-[5px] bg-hex font-brand text-sm font-bold text-hex-ink"
-                                >{index + 1}</span
-                            >
-                            <span class="flex flex-col">
-                                <span class="text-sm font-semibold">{item.label}</span>
-                                {#if activeReason}
-                                    <span class="text-xs text-text-muted">{activeReason}</span>
-                                {/if}
-                            </span>
-                        </span>
+                        {@render stepLabel(item, index + 1, activeReason)}
                         {#if action}{@render action()}{/if}
                     </div>
                 {:else}
@@ -115,16 +110,10 @@
                         href={item.href}
                         class={[
                             base,
-                            'no-underline text-text-muted hover:bg-bg-highlight dark:hover:bg-bg-highlight-dark'
+                            'bg-surface text-ink-2 no-underline hover:bg-surface-hover focus-visible:-outline-offset-2'
                         ]}
                     >
-                        <span class="flex items-center gap-2">
-                            <span
-                                class="grid size-[26px] shrink-0 place-items-center rounded-[5px] border border-brass-line font-brand text-sm font-bold"
-                                >{index + 1}</span
-                            >
-                            <span class="text-sm font-semibold">{item.label}</span>
-                        </span>
+                        {@render stepLabel(item, index + 1, '')}
                     </a>
                 {/if}
             {/each}

@@ -1,7 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import Button from '#lib/components/common/Button.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { formationPath } from '#lib/features/scrims/paths.ts';
     import type { FormationMethod, ScrimStatus } from '#lib/features/scrims/types.ts';
@@ -40,11 +39,11 @@
 </script>
 
 <section
-    class="hex-panel flex flex-col gap-3 p-3.5"
+    class="panel flex flex-col gap-3 p-3.5"
     aria-labelledby="formation-method"
     aria-busy={Boolean(pending)}
 >
-    <h2 id="formation-method" class="text-[0.9375rem] font-semibold">편성 방식</h2>
+    <h2 id="formation-method" class="text-[15px] font-bold">편성 방식</h2>
     <div class="flex flex-col gap-2">
         {#each METHODS as item (item.name)}
             {@const selected = item.name === method}
@@ -53,14 +52,14 @@
                 aria-pressed={selected}
                 disabled={Boolean(pending)}
                 class={[
-                    'flex flex-col items-start gap-1 rounded-(--radius-form) border px-3 py-3 text-left transition-colors disabled:cursor-wait',
+                    'flex flex-col items-start gap-1 rounded-form border p-3 text-left transition-colors disabled:cursor-wait',
                     selected
-                        ? 'border-hex bg-hex/10 text-hex'
-                        : 'border-brass-line bg-bg-surface hover:border-hex dark:bg-bg-surface-dark'
+                        ? 'border-nexus bg-selected text-ink'
+                        : 'border-line-strong bg-surface-2 hover:border-nexus hover:bg-surface-hover'
                 ]}
                 onclick={() => choose(item.name)}
             >
-                <span class="flex items-center gap-2 text-sm font-semibold">
+                <span class="flex items-center gap-2 text-sm font-bold">
                     {item.title}
                     {#if selected}<StatusTag text="선택됨" state="theme" />{/if}
                     {#if pending === item.name}<span
@@ -68,7 +67,7 @@
                             aria-hidden="true"
                         ></span>{/if}
                 </span>
-                <span class="text-xs text-text-muted">{item.description}</span>
+                <span class="text-xs text-muted">{item.description}</span>
             </button>
         {/each}
     </div>

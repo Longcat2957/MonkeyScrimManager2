@@ -80,31 +80,31 @@
         {
             "name": "Rail",
             "role": "좌측 서버 내비게이션",
-            "classes": "w-56 border-r border-brass-line bg-crown",
+            "classes": "w-56 border-r border-line bg-rail",
             "states": "current, hover"
         },
         {
             "name": "PhaseLock",
             "role": "내전 단계",
-            "classes": "grid gap-px rounded-box border border-brass-line bg-brass-line",
+            "classes": "grid gap-px rounded-box border border-line bg-line",
             "states": "current, upcoming, disabled"
         },
         {
             "name": "LaneMatrix",
             "role": "포지션 분포",
-            "classes": "flex flex-wrap gap-px rounded-box border border-brass-line bg-brass-line",
+            "classes": "flex flex-wrap gap-px rounded-box border border-line bg-line",
             "states": "ok, over, under"
         },
         {
             "name": "Roster",
             "role": "참가자 명부",
-            "classes": "hex-panel table w-full",
+            "classes": "panel data-table",
             "states": "default, hover, selected, empty"
         },
         {
             "name": "Button",
             "role": "행동",
-            "classes": "rounded-form bg-hex text-hex-ink",
+            "classes": "rounded-form bg-nexus text-nexus-ink",
             "states": "primary, secondary, quiet, danger, loading, disabled"
         },
         {
@@ -116,13 +116,13 @@
         {
             "name": "Dialog",
             "role": "대화상자",
-            "classes": "rounded-box border-brass-line bg-bg-surface",
+            "classes": "rounded-box border-line bg-surface",
             "states": "open, busy"
         },
         {
             "name": "DateField",
             "role": "날짜 입력",
-            "classes": "min-h-11 rounded-form border-brass-line tabular-nums",
+            "classes": "rounded-form border-line-strong tabular-nums",
             "states": "default, focus, error, disabled"
         }
     ]

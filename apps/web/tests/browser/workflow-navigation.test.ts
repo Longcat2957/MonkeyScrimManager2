@@ -122,9 +122,9 @@ for (const width of [1440, 390])
             }
             await f.page.reload();
             const format = f.page.getByRole('group', { name: '시리즈 경기 방식', exact: true });
-            await format.getByRole('button', { name: '3전 2선승', exact: true, pressed: true }).waitFor();
-            await format.getByRole('button', { name: '5전 3선승', exact: true }).press('Enter');
-            await format.getByRole('button', { name: '5전 3선승', exact: true, pressed: true }).waitFor();
+            await format.getByRole('radio', { name: '3전 2선승', exact: true, checked: true }).waitFor();
+            await format.getByRole('radio', { name: '5전 3선승', exact: true }).press('Space');
+            await format.getByRole('radio', { name: '5전 3선승', exact: true, checked: true }).waitFor();
             assert.equal(
                 await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
                 false
@@ -229,7 +229,7 @@ test(
         await f.page.reload();
         await f.page
             .getByRole('group', { name: '결승 경기 방식', exact: true })
-            .getByRole('button', { name: '3전 2선승', exact: true, pressed: true })
+            .getByRole('radio', { name: '3전 2선승', exact: true, checked: true })
             .waitFor();
         await f.page.getByRole('button', { name: '대진 확정·내전 시작', exact: true }).press('Enter');
         const dialog = f.page.getByRole('dialog', { name: '대진 확정·내전 시작', exact: true });
@@ -299,7 +299,7 @@ test('3팀 대진은 준결승 한 경기만 생성되어도 전체 대진에 �
     await f.page.goto(f.url + path);
     await f.page
         .getByRole('group', { name: '준결승 경기 방식', exact: true })
-        .getByRole('button', { name: '3전 2선승', exact: true, pressed: true })
+        .getByRole('radio', { name: '3전 2선승', exact: true, checked: true })
         .waitFor();
     await f.page.getByRole('button', { name: '대진 확정·내전 시작', exact: true }).press('Enter');
     const dialog = f.page.getByRole('dialog', { name: '대진 확정·내전 시작', exact: true });

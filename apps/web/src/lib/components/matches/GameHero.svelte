@@ -27,77 +27,58 @@
     );
 </script>
 
-<!-- 서버 홈 첫 카드처럼 화면 모드와 관계없이 어두운 바탕에 배경 아트를 깐다. -->
-<section
-    aria-label={`${game.order}세트 결과`}
-    class={[
-        'inverse-surface relative isolate overflow-hidden rounded-(--radius-box) border-l-4 bg-bg-base-dark text-text-dark ring-1 ring-white/10',
-        winner?.side === 'red'
-            ? 'border-l-error'
-            : winner?.side === 'blue'
-              ? 'border-l-info'
-              : 'border-l-white/20'
-    ]}
+<!-- 세트 킬은 시리즈 스코어와 분리하고, 블루·레드 진영 이름과 함께 표시한다. -->
+<div
+    class="inverse-surface relative isolate overflow-hidden rounded-(--radius-box) border border-line bg-surface text-ink"
 >
     {#if game.splashUrl}
         <img
             src={game.splashUrl}
             alt=""
-            class="absolute inset-0 -z-10 size-full object-cover object-[60%_20%] opacity-60"
+            class="pointer-events-none absolute inset-y-0 right-0 -z-10 h-full w-2/3 object-cover object-[60%_25%] opacity-15"
         />
-        <div
-            class="absolute inset-0 -z-10 bg-linear-to-r from-bg-base-dark from-25% via-bg-base-dark/70 to-bg-base-dark/20"
-        ></div>
     {/if}
-    <div class="flex flex-col gap-5 p-5 md:flex-row md:items-end md:justify-between md:p-7">
-        <div class="flex flex-col gap-3">
+    <header
+        class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-2.5"
+    >
+        <h2 id="game-heading" class="text-sm font-bold">{game.order}세트 결과</h2>
+        <p class="text-xs text-ink-2">{meta}</p>
+    </header>
+    <div class="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 px-4 py-4">
+        <div class="flex min-w-0 flex-col gap-1.5">
             <div class="flex flex-wrap items-center gap-2">
                 {#if winner}
-                    <span
-                        class={[
-                            'rounded-full border bg-bg-base-dark/90 px-3 py-1 text-xs font-semibold',
-                            winner.side === 'red' ? 'border-error/60 text-error' : 'border-info/60 text-info'
-                        ]}
+                    <strong class="text-ui"
+                        >{winner.side === 'red' ? '레드' : '블루'} · {winner.teamName} 승리</strong
                     >
-                        {winner.side === 'red' ? '레드' : '블루'} · {winner.teamName} 승리
-                    </span>
                 {/if}
                 {#if game.mmrStatus === 'pending'}
-                    <span class="rounded-(--radius-small) bg-bg-base-dark/90">
-                        <StatusTag text="MMR 반영 대기" state="warning" />
-                    </span>
+                    <StatusTag text="MMR 반영 대기" state="warning" />
                 {/if}
             </div>
-            <p class="flex items-baseline gap-4 text-6xl font-black tabular-nums md:text-7xl">
-                <span class="text-info">{kills(blue)}</span>
-                <span aria-hidden="true" class="text-4xl text-white/40">:</span>
-                <span class="text-error">{kills(red)}</span>
-                <span class="sr-only">킬, 블루 {kills(blue)} 레드 {kills(red)}</span>
+            <p class="flex items-baseline gap-2 tabular-nums">
+                <span class="text-xs font-medium text-ink-2">블루 킬</span>
+                <strong class="text-3xl text-team-blue">{kills(blue)}</strong>
+                <span aria-hidden="true" class="text-lg text-muted">:</span>
+                <strong class="text-3xl text-team-red">{kills(red)}</strong>
+                <span class="text-xs font-medium text-ink-2">레드 킬</span>
             </p>
-            <p class="text-sm text-white/80">{meta}</p>
         </div>
 
         {#if mvp}
-            <div
-                class="flex items-center gap-3 rounded-(--radius-box) border border-warning/30 bg-black/50 p-3 pr-5 backdrop-blur-sm"
-            >
+            <div class="flex min-w-0 items-center gap-2.5">
                 {#if mvp.champion.iconUrl}
-                    <img
-                        src={mvp.champion.iconUrl}
-                        alt=""
-                        class="size-14 rounded-(--radius-form) ring-2 ring-warning"
-                    />
+                    <img src={mvp.champion.iconUrl} alt="" class="size-10 rounded-(--radius-form)" />
                 {/if}
                 <div class="flex min-w-0 flex-col">
-                    <span class="text-xs font-bold text-warning">MVP</span>
-                    <span class="truncate text-lg font-semibold">{mvp.displayName}</span>
-                    <span class="text-sm text-white/70 tabular-nums"
-                        >{mvp.champion.name} · {mvp.kills}/{mvp.deaths}/{mvp.assists} · KDA {kdaRatio(
-                            mvp
-                        )}</span
+                    <span class="text-micro font-bold text-role-gold">MVP</span>
+                    <span class="break-words text-sm font-semibold">{mvp.displayName}</span>
+                    <span class="text-xs text-ink-2 tabular-nums"
+                        >{mvp.champion.name} · {mvp.kills ?? '-'}/{mvp.deaths ?? '-'}/{mvp.assists ?? '-'} · KDA
+                        {kdaRatio(mvp)}</span
                     >
                 </div>
             </div>
         {/if}
     </div>
-</section>
+</div>

@@ -16,7 +16,7 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { DiscordChannel, GuildDiscordSettingKey } from '#lib/features/guild/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
-    import { nonSubmitButtons } from '#lib/ui/form.ts';
+    import { preventComposingSubmit } from '#lib/ui/form.ts';
     import { toast } from '#lib/ui/toast.ts';
     import type { PageProps } from './$types';
 
@@ -164,12 +164,12 @@
     <title>서버 관리 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="mx-auto flex w-full max-w-3xl flex-col gap-6">
-    <h1 class="text-2xl font-semibold">서버 관리</h1>
+<div class="flex w-full max-w-5xl min-w-0 flex-col gap-4">
+    <h1 class="page-head text-title font-bold">서버 관리</h1>
 
     <!-- 탭 묶음에 이름을 붙이고, 선택한 내용은 영역 제목으로 알린다. -->
-    <div role="group" aria-label="관리 항목" class="border-b border-border">
-        <SelectionTabs labels={TABS.map(({ text }) => ({ text }))} {active} onclickTab={selectTab} />
+    <div role="group" aria-label="관리 항목" class="border-b border-line">
+        <SelectionTabs labels={TABS.map(({ text }) => text)} {active} onchange={selectTab} />
     </div>
 
     {#if data.tab === 'seasons' && data.seasons}
@@ -179,8 +179,8 @@
             initialError={form && 'action' in form && form.action === 'rotateSeason' ? form.message : ''}
         />
     {:else if data.tab === 'audit' && data.audit}
-        <section aria-labelledby="audit" class="flex flex-col gap-3" aria-busy={Boolean(navigating.to)}>
-            <h2 id="audit" class="sr-only">변경 이력</h2>
+        <section aria-labelledby="audit" class="panel" aria-busy={Boolean(navigating.to)}>
+            <h2 id="audit" class="panel-bar font-bold">변경 이력</h2>
             <GuildAuditHistory entries={data.audit.entries} total={data.audit.total} />
             <PageNav
                 total={data.audit.total}
@@ -194,9 +194,7 @@
         <section aria-labelledby="discord" class="flex flex-col gap-3">
             <h2 id="discord" class="sr-only">Discord 연동</h2>
             {#if discord}
-                <ul
-                    class="divide-y divide-text-primary/5 rounded-(--radius-box) bg-bg-surface dark:divide-text-dark/5 dark:bg-bg-surface-dark"
-                >
+                <ul class="panel divide-y divide-line">
                     {#each discord as item (item.key)}
                         <DiscordSettingRow
                             label={item.label}
@@ -214,28 +212,23 @@
             {/if}
         </section>
     {:else}
-        <section aria-labelledby="admins" class="flex flex-col gap-3">
-            <div class="flex items-baseline justify-between gap-3">
-                <h2 id="admins" class="sr-only">멤버</h2>
-                <span class="ml-auto text-sm opacity-60 tabular-nums">관리자 {data.adminCount}명</span>
-            </div>
+        <section aria-labelledby="admins" class="panel [&>nav]:border-t [&>nav]:border-line [&>nav]:pb-2">
+            <h2 id="admins" class="sr-only">멤버</h2>
             <form
                 role="search"
                 aria-label="멤버 검색"
+                class="panel-bar"
                 aria-busy={Boolean(navigating.to)}
-                {@attach nonSubmitButtons}
+                {@attach preventComposingSubmit}
                 onsubmit={(event) => {
                     event.preventDefault();
                     navigate({ q: query });
                 }}
             >
-                <TextField
-                    label="멤버 이름 검색"
-                    type="search"
-                    placeholder="멤버 이름 검색"
-                    bind:value={query}
-                    maxlength={50}
-                />
+                <div class="w-72 max-w-full">
+                    <TextField label="멤버 이름 검색" type="search" bind:value={query} maxlength={50} />
+                </div>
+                <span class="text-ui text-muted">관리자 {data.adminCount}명</span>
             </form>
 
             {#if data.members.length === 0}
@@ -245,36 +238,35 @@
                 />
             {:else}
                 <!-- 관리자 여부는 Discord 역할·권한으로 정해지므로 표시만 하고, 행의 조작은 Riot 계정 관리 하나다. -->
-                <ul
-                    class="divide-y divide-text-primary/5 rounded-(--radius-box) bg-bg-surface dark:divide-text-dark/5 dark:bg-bg-surface-dark"
-                >
+                <ul class="divide-y divide-line">
                     {#each data.members as member (member.userId)}
                         {@const primary = member.riotAccounts[0]}
-                        <li class="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-3">
+                        <li
+                            class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_auto]"
+                        >
                             <!-- 좁은 화면에서는 이름을 줄이지 않고 조작을 다음 줄로 내린다. -->
-                            <span class="flex min-w-48 flex-1 items-center gap-3">
+                            <span class="col-span-2 flex min-w-0 items-center gap-3 sm:col-span-1">
                                 <PlayerFace name={member.displayName} imageUrl={null} />
                                 <span class="flex min-w-0 flex-col">
-                                    <span class="flex min-w-0 items-center gap-2">
+                                    <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                         <span class="min-w-0 font-medium wrap-anywhere"
                                             >{member.displayName}</span
                                         >
                                         {#if member.isAdmin}<StatusTag text="관리자" state="theme" />{/if}
                                     </span>
-                                    <span class="text-sm text-text-muted tabular-nums wrap-anywhere"
+                                    <span class="text-xs text-muted tabular-nums wrap-anywhere"
                                         >{member.userId}</span
                                     >
-                                    <span class="text-xs opacity-60 wrap-anywhere">
-                                        {primary
-                                            ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
-                                            : 'Riot 계정 없음'}
-                                    </span>
                                 </span>
+                            </span>
+                            <span class="text-ui text-ink-2 wrap-anywhere">
+                                {primary
+                                    ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
+                                    : 'Riot 계정 없음'}
                             </span>
                             <Button
                                 variant="secondary"
-                                size="auto"
-                                injClass="ml-auto min-h-11 px-3 text-sm"
+                                class="ml-auto"
                                 onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
                             >
                                 Riot 계정<span class="sr-only">

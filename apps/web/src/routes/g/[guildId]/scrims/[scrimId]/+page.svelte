@@ -75,37 +75,42 @@
 />
 
 {#if showOperations}
-    <div class="mt-2">
-        <ScrimNotifications notifications={data.notifications} />
-    </div>
+    <ScrimNotifications notifications={data.notifications} />
 {/if}
 
-<div class="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
-    <div class="flex min-w-0 flex-col gap-3">
-        <LaneMatrix counts={laneCounts} required={data.scrim.teamCount} />
-        <ParticipantBoard
-            guildId={page.params.guildId!}
-            participants={data.participants}
-            counts={data.counts}
-            manager={data.can.manage}
-            canSelect={data.can.select}
-        />
-    </div>
-
-    <div class="flex flex-col gap-4">
-        {#if choosingMethod}
-            <FormationMethodChooser method={data.scrim.formationMethod} status={data.scrim.status} />
-        {/if}
-        {#if showRegistration && data.me}
-            <MyRegistrationBar
-                registration={data.me.registration}
-                accounts={data.me.riotAccounts}
-                primaryAccountId={data.me.primaryAccountId}
-                previousPositions={data.me.previousPositions}
-                canRegister={data.can.register}
-                canEdit={data.can.editRegistration}
-                blockedReason={data.can.registerBlockedReason}
-            />
-        {/if}
-    </div>
+<div
+    class={[
+        'mt-3 grid min-w-0 items-start gap-x-4 gap-y-2.5',
+        (choosingMethod || showRegistration) && 'xl:grid-cols-[minmax(0,1fr)_21rem] xl:grid-rows-[auto_1fr]'
+    ]}
+>
+    <LaneMatrix counts={laneCounts} required={data.scrim.teamCount} />
+    {#if choosingMethod || showRegistration}
+        <aside
+            class="grid min-w-0 gap-3 sm:grid-cols-2 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:grid-cols-1"
+            aria-label="내전 신청 및 편성"
+        >
+            {#if choosingMethod}
+                <FormationMethodChooser method={data.scrim.formationMethod} status={data.scrim.status} />
+            {/if}
+            {#if showRegistration && data.me}
+                <MyRegistrationBar
+                    registration={data.me.registration}
+                    accounts={data.me.riotAccounts}
+                    primaryAccountId={data.me.primaryAccountId}
+                    previousPositions={data.me.previousPositions}
+                    canRegister={data.can.register}
+                    canEdit={data.can.editRegistration}
+                    blockedReason={data.can.registerBlockedReason}
+                />
+            {/if}
+        </aside>
+    {/if}
+    <ParticipantBoard
+        guildId={page.params.guildId!}
+        participants={data.participants}
+        counts={data.counts}
+        manager={data.can.manage}
+        canSelect={data.can.select}
+    />
 </div>
