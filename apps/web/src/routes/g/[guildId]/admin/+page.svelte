@@ -12,12 +12,10 @@
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
-    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { DiscordChannel, GuildDiscordSettingKey } from '#lib/features/guild/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { preventComposingSubmit } from '#lib/ui/form.ts';
-    import { toast } from '#lib/ui/toast.ts';
     import type { PageProps } from './$types';
 
     let { data, form }: PageProps = $props();
@@ -42,7 +40,9 @@
     // 탭을 바꾸면 멤버 검색·페이지는 초기화한다.
     function selectTab(index: number) {
         const url = new URL(page.url.href);
-        url.search = '';
+        url.searchParams.delete('q');
+        url.searchParams.delete('page');
+        url.searchParams.delete('tab');
         const key = TABS[index]!.key;
         if (key !== 'members') url.searchParams.set('tab', key);
         goto(url, { reset: false });
@@ -66,11 +66,10 @@
     let savingKey = $state<GuildDiscordSettingKey | null>(null);
 
     async function saveDiscord(key: GuildDiscordSettingKey, value: string | null) {
-        if (savingKey || !data.discord || data.discord.settings[key] === value) return;
+        if (savingKey || !data.discord || data.discord.settings[key] === value) return null;
         savingKey = key;
         try {
-            const message = await postAction('discord', { key, value: value ?? '' });
-            if (message) toast.error(message);
+            return await postAction('discord', { key, value: value ?? '' });
         } finally {
             savingKey = null;
         }
@@ -164,12 +163,28 @@
     <title>서버 관리 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex w-full max-w-5xl min-w-0 flex-col gap-4">
-    <h1 class="page-head text-title font-bold">서버 관리</h1>
+<div class="grid w-full max-w-7xl min-w-0 items-start gap-4 xl:grid-cols-[11rem_minmax(0,1fr)] xl:gap-x-6">
+    <h1 class="page-head col-span-full text-title font-bold">서버 관리</h1>
 
     <!-- 탭 묶음에 이름을 붙이고, 선택한 내용은 영역 제목으로 알린다. -->
-    <div role="group" aria-label="관리 항목" class="border-b border-line">
-        <SelectionTabs labels={TABS.map(({ text }) => text)} {active} onchange={selectTab} />
+    <div
+        role="group"
+        aria-label="관리 항목"
+        class="grid min-w-0 grid-cols-2 gap-1 rounded-box border border-line bg-surface p-1 sm:grid-cols-4 xl:sticky xl:top-6 xl:grid-cols-1"
+    >
+        {#each TABS as tab, index (tab.key)}
+            <button
+                type="button"
+                aria-pressed={active === index}
+                class={[
+                    'min-h-11 rounded-form border px-3 text-sm font-semibold xl:text-left',
+                    active === index
+                        ? 'border-nexus bg-selected text-ink'
+                        : 'border-transparent text-ink-2 hover:bg-surface-hover hover:text-ink'
+                ]}
+                onclick={() => selectTab(index)}>{tab.text}</button
+            >
+        {/each}
     </div>
 
     {#if data.tab === 'seasons' && data.seasons}
@@ -179,7 +194,7 @@
             initialError={form && 'action' in form && form.action === 'rotateSeason' ? form.message : ''}
         />
     {:else if data.tab === 'audit' && data.audit}
-        <section aria-labelledby="audit" class="panel" aria-busy={Boolean(navigating.to)}>
+        <section aria-labelledby="audit" class="panel min-w-0" aria-busy={Boolean(navigating.to)}>
             <h2 id="audit" class="panel-bar font-bold">변경 이력</h2>
             <GuildAuditHistory entries={data.audit.entries} total={data.audit.total} />
             <PageNav
@@ -191,8 +206,8 @@
             />
         </section>
     {:else if data.tab === 'discord'}
-        <section aria-labelledby="discord" class="flex flex-col gap-3">
-            <h2 id="discord" class="sr-only">Discord 연동</h2>
+        <section aria-labelledby="discord" class="grid min-w-0 gap-3">
+            <h2 id="discord" class="text-lg font-bold">Discord 연동</h2>
             {#if discord}
                 <ul class="panel divide-y divide-line">
                     {#each discord as item (item.key)}
@@ -212,78 +227,94 @@
             {/if}
         </section>
     {:else}
-        <section aria-labelledby="admins" class="panel [&>nav]:border-t [&>nav]:border-line [&>nav]:pb-2">
-            <h2 id="admins" class="sr-only">멤버</h2>
-            <form
-                role="search"
-                aria-label="멤버 검색"
-                class="panel-bar"
-                aria-busy={Boolean(navigating.to)}
-                {@attach preventComposingSubmit}
-                onsubmit={(event) => {
-                    event.preventDefault();
-                    navigate({ q: query });
-                }}
-            >
-                <div class="w-72 max-w-full">
-                    <TextField label="멤버 이름 검색" type="search" bind:value={query} maxlength={50} />
-                </div>
+        <section aria-labelledby="admins" class="min-w-0">
+            <div class="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h2 id="admins" class="text-lg font-bold">멤버</h2>
+                <span class="font-brand text-lg font-semibold tabular-nums">{data.total}명</span>
                 <span class="text-ui text-muted">관리자 {data.adminCount}명</span>
-            </form>
+            </div>
+            <div class="panel [&>nav]:border-t [&>nav]:border-line [&>nav]:pb-2">
+                <form
+                    role="search"
+                    aria-label="멤버 검색"
+                    class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 border-b border-line bg-surface-2 px-4 py-3 sm:grid-cols-[minmax(0,20rem)_auto] sm:justify-start"
+                    aria-busy={Boolean(navigating.to)}
+                    {@attach preventComposingSubmit}
+                    onsubmit={(event) => {
+                        event.preventDefault();
+                        navigate({ q: query });
+                    }}
+                >
+                    <TextField label="멤버 이름 검색" type="search" bind:value={query} maxlength={50} />
+                    <Button type="submit" variant="secondary">검색</Button>
+                </form>
 
-            {#if data.members.length === 0}
-                <SectionState
-                    state="empty"
-                    message={data.q ? `'${data.q}'에 맞는 멤버가 없어요` : '서비스에 연결된 멤버가 없어요'}
-                />
-            {:else}
-                <!-- 관리자 여부는 Discord 역할·권한으로 정해지므로 표시만 하고, 행의 조작은 Riot 계정 관리 하나다. -->
-                <ul class="divide-y divide-line">
-                    {#each data.members as member (member.userId)}
-                        {@const primary = member.riotAccounts[0]}
-                        <li
-                            class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_auto]"
-                        >
-                            <!-- 좁은 화면에서는 이름을 줄이지 않고 조작을 다음 줄로 내린다. -->
-                            <span class="col-span-2 flex min-w-0 items-center gap-3 sm:col-span-1">
-                                <PlayerFace name={member.displayName} imageUrl={null} />
-                                <span class="flex min-w-0 flex-col">
-                                    <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                        <span class="min-w-0 font-medium wrap-anywhere"
-                                            >{member.displayName}</span
-                                        >
-                                        {#if member.isAdmin}<StatusTag text="관리자" state="theme" />{/if}
-                                    </span>
-                                    <span class="text-xs text-muted tabular-nums wrap-anywhere"
-                                        >{member.userId}</span
-                                    >
-                                </span>
-                            </span>
-                            <span class="text-ui text-ink-2 wrap-anywhere">
-                                {primary
-                                    ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
-                                    : 'Riot 계정 없음'}
-                            </span>
-                            <Button
-                                variant="secondary"
-                                class="ml-auto"
-                                onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
+                {#if data.members.length === 0}
+                    <SectionState
+                        state="empty"
+                        message={data.q
+                            ? `'${data.q}'에 맞는 멤버가 없어요`
+                            : '서비스에 연결된 멤버가 없어요'}
+                    />
+                {:else}
+                    <!-- 관리자 여부는 Discord 역할·권한으로 정해지므로 표시만 하고, 행의 조작은 Riot 계정 관리 하나다. -->
+                    <div
+                        aria-hidden="true"
+                        class="hidden items-center gap-4 border-b border-line px-4 py-2 text-xs font-semibold text-muted md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_5.5rem]"
+                    >
+                        <span>멤버</span><span>Riot 계정</span>
+                    </div>
+                    <ul class="divide-y divide-line">
+                        {#each data.members as member (member.userId)}
+                            {@const primary = member.riotAccounts[0]}
+                            <li
+                                class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_5.5rem] md:gap-x-4"
                             >
-                                Riot 계정<span class="sr-only">
-                                    관리, {member.displayName} ({member.userId})</span
+                                <!-- 좁은 화면에서는 멤버 식별 정보 아래에 연결 계정을 둔다. -->
+                                <span class="flex min-w-0 items-center gap-3">
+                                    <PlayerFace name={member.displayName} imageUrl={null} />
+                                    <span class="flex min-w-0 flex-col">
+                                        <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                            <span class="min-w-0 font-medium wrap-anywhere"
+                                                >{member.displayName}</span
+                                            >
+                                            {#if member.isAdmin}<StatusTag text="관리자" state="theme" />{/if}
+                                        </span>
+                                        <span class="text-xs text-muted tabular-nums wrap-anywhere"
+                                            >{member.userId}</span
+                                        >
+                                    </span>
+                                </span>
+                                <span
+                                    class="col-start-1 min-w-0 pl-11 text-ui wrap-anywhere md:col-start-auto md:pl-0 {primary
+                                        ? 'text-ink-2'
+                                        : 'text-muted'}"
                                 >
-                            </Button>
-                        </li>
-                    {/each}
-                </ul>
-            {/if}
+                                    {primary
+                                        ? `${primary.gameName}#${primary.tagLine}${member.riotAccounts.length > 1 ? ` 외 ${member.riotAccounts.length - 1}` : ''}`
+                                        : 'Riot 계정 없음'}
+                                </span>
+                                <Button
+                                    variant="secondary"
+                                    class="col-start-2 row-span-2 row-start-1 justify-self-end md:col-start-3 md:row-span-1"
+                                    onclick={() => ((accountsFor = member.userId), (accountsOpen = true))}
+                                >
+                                    Riot 계정<span class="sr-only">
+                                        관리, {member.displayName} ({member.userId})</span
+                                    >
+                                </Button>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
 
-            <PageNav
-                total={data.total}
-                pageSize={data.pageSize}
-                current={data.page}
-                onchange={(current) => navigate({ page: current })}
-            />
+                <PageNav
+                    total={data.total}
+                    pageSize={data.pageSize}
+                    current={data.page}
+                    onchange={(current) => navigate({ page: current })}
+                />
+            </div>
         </section>
     {/if}
 </div>

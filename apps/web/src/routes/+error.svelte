@@ -31,15 +31,22 @@
     <meta name="robots" content="noindex" />
 </svelte:head>
 
-<section aria-labelledby="error-title" class="max-w-xl">
-    <header class="page-head border-b border-line pb-4">
-        <h1 id="error-title" class="text-title font-bold">{message.title}</h1>
-        <p class="text-ui font-medium text-muted">오류 {page.status}</p>
-    </header>
-    <p class="my-5 text-sm leading-6 text-ink-2">{message.description}</p>
-    {#if page.status >= 500}
-        <Button variant="primary" onclick={() => window.location.reload()}>다시 시도</Button>
-    {:else if page.status !== 401}
-        <Button href={resolve('/')}>홈으로 돌아가기</Button>
-    {/if}
+<section
+    aria-labelledby="error-title"
+    class="mx-auto grid min-h-[52vh] max-w-4xl content-center gap-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10"
+>
+    <p
+        class="border-b border-line pb-3 font-brand text-7xl leading-none font-semibold text-muted tabular-nums sm:border-r sm:border-b-0 sm:py-8 sm:pr-10"
+    >
+        <span class="sr-only">오류 </span>{page.status}
+    </p>
+    <div>
+        <h1 id="error-title" class="text-title font-bold sm:text-3xl">{message.title}</h1>
+        <p class="mt-2 mb-5 text-sm leading-6 text-ink-2">{message.description}</p>
+        {#if page.status >= 500}
+            <Button variant="primary" onclick={() => window.location.reload()}>다시 시도</Button>
+        {:else if page.status !== 401}
+            <Button href={resolve('/')}>홈으로 돌아가기</Button>
+        {/if}
+    </div>
 </section>

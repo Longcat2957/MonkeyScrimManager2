@@ -10,7 +10,7 @@
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { preventComposingSubmit } from '#lib/ui/form.ts';
-    import { toast } from '#lib/ui/toast.ts';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
 
     type Member = { userId: string; displayName: string; riotAccounts: RiotAccount[] };
 
@@ -20,6 +20,7 @@
 
     let riotId = $state('');
     let error = $state('');
+    let accountError = $state('');
     let pending = $state(false);
     // 조회로 찾은 계정. 값이 있으면 연결 확인 단계를 보여 준다.
     let found = $state<RiotLookup | null>(null);
@@ -30,6 +31,7 @@
     function reset() {
         riotId = '';
         error = '';
+        accountError = '';
         found = null;
     }
 
@@ -42,6 +44,8 @@
     async function run(name: 'primary' | 'unlink', account: RiotAccount) {
         if (busy || !member) return;
         const userId = member.userId;
+        const trigger = document.activeElement;
+        accountError = '';
         busyId = account.id;
         busyAction = name;
         try {
@@ -53,11 +57,18 @@
                 ))
             )
                 return;
-            const message = await postAction(name, { userId, id: account.id });
-            if (message) toast.error(message);
+            accountError = (await postAction(name, { userId, id: account.id })) ?? '';
         } finally {
             busyId = null;
             busyAction = null;
+            await tick();
+            if (document.activeElement === document.body || document.activeElement?.tagName === 'DIALOG') {
+                const next =
+                    trigger instanceof HTMLButtonElement && trigger.isConnected && !trigger.disabled
+                        ? trigger
+                        : panel?.querySelector<HTMLElement>('li button:not(:disabled), input:not(:disabled)');
+                next?.focus();
+            }
         }
     }
 
@@ -127,9 +138,17 @@
     };
 </script>
 
-<Dialog bind:open title={`${member?.displayName ?? '멤버'}의 Riot 계정`} dismissible={!busy} onclose={close}>
-    <div bind:this={panel} aria-busy={busy} class="flex min-w-0 flex-col gap-3">
-        <p class="text-xs text-muted tabular-nums wrap-anywhere">{member?.userId}</p>
+<Dialog bind:open title="Riot 계정 관리" dismissible={!busy} onclose={close}>
+    <div bind:this={panel} aria-busy={busy} class="grid min-w-0 gap-4">
+        {#if member}
+            <div class="flex min-w-0 items-center gap-3">
+                <PlayerFace name={member.displayName} imageUrl={null} />
+                <div class="min-w-0">
+                    <p class="font-bold wrap-anywhere">{member.displayName}</p>
+                    <p class="text-xs text-muted tabular-nums wrap-anywhere">{member.userId}</p>
+                </div>
+            </div>
+        {/if}
 
         {#if member?.riotAccounts.length}
             <ul class="divide-y divide-line border-y border-line">
@@ -175,6 +194,7 @@
         {:else}
             <p class="border-y border-line py-3 text-ui text-muted">연결된 계정이 없어요</p>
         {/if}
+        {#if accountError}<p role="alert" class="text-ui text-error wrap-anywhere">{accountError}</p>{/if}
 
         {#if !found}
             <form
@@ -221,8 +241,15 @@
                     <p class="text-ui text-ink-2">이 Riot 계정을 연결할까요?</p>
                 {/if}
                 <div class="flex justify-end gap-2">
-                    <Button variant="secondary" disabled={busy} onclick={() => ((found = null), (error = ''))}
-                        >다시 입력</Button
+                    <Button
+                        variant="secondary"
+                        disabled={busy}
+                        onclick={async () => {
+                            found = null;
+                            error = '';
+                            await tick();
+                            panel?.querySelector<HTMLInputElement>('input')?.focus();
+                        }}>다시 입력</Button
                     >
                     <Button variant="primary" type="submit" loading={pending}>연결</Button>
                 </div>

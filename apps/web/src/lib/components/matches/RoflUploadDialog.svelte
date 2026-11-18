@@ -1,5 +1,6 @@
 <script lang="ts">
     import { deserialize } from '$app/forms';
+    import { untrack } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import CheckboxField from '#lib/components/common/CheckboxField.svelte';
     import Dialog from '#lib/components/common/Dialog.svelte';
@@ -7,22 +8,29 @@
 
     type Props = {
         open: boolean;
-        // 남은 세트 수만큼만 고를 수 있다.
-        max: number;
-        context?: { expectedRevision: number; expectedGameNumber: number; lineupId: string };
-        teams?: { slot: 'a' | 'b'; name: string }[];
+        context: {
+            max: number;
+            expectedRevision: number;
+            expectedGameNumber: number;
+            lineupId?: string;
+            plannedBlueTeamSlot: 'a' | 'b' | null;
+            teamA: string;
+            teamB: string;
+        };
         // 하나라도 기록되면 닫을 때 마지막으로 기록된 세트 번호를 넘긴다.
         onrecorded: (order: number | null) => void;
     };
 
+    type SideChoice = { slot: string; confirmed: boolean };
     type UploadFile = {
         id: number;
         file: File;
+        side: SideChoice;
         status: 'ready' | 'uploading' | 'success' | 'error';
         message: string;
     };
 
-    let { open = $bindable(false), max, context, teams = [], onrecorded }: Props = $props();
+    let { open = $bindable(false), context, onrecorded }: Props = $props();
 
     const MAX_SIZE = 64 * 1024 * 1024;
 
@@ -33,35 +41,37 @@
     let selectionError = $state('');
     let refreshRequired = $state(false);
     let uploadContext = $state<Props['context']>();
-    let blueTeamSlot = $state('');
-    let blueTeamConfirmed = $state(false);
-    let previousSlot = '';
-    let wasOpen = false;
+    let requestPath = '';
+    let firstSide = $state<SideChoice>({ slot: '', confirmed: false });
+    let completed = $state(false);
     let lastOrder: number | null = null;
     let touched = false;
     const waiting = $derived(files.filter((item) => item.status !== 'success'));
-    const blueTeam = $derived(teams.find((team) => team.slot === blueTeamSlot));
-    const redTeam = $derived(teams.find((team) => team.slot !== blueTeamSlot));
-    const options = $derived(teams.map((team) => ({ value: team.slot, label: team.name })));
+    const max = $derived(uploadContext?.max ?? 0);
+    const options = $derived([
+        { value: 'a', label: uploadContext?.teamA ?? '' },
+        { value: 'b', label: uploadContext?.teamB ?? '' }
+    ]);
+    const canUpload = $derived(
+        !refreshRequired &&
+            !completed &&
+            waiting.length > 0 &&
+            waiting.every(({ side }) => side.slot && side.confirmed)
+    );
 
     $effect(() => {
-        // 입력창을 연 뒤 다른 운영자가 라인업을 바꿔도 원래 확인한 세트와 버전으로만 요청한다.
-        const currentContext = context ? { ...context } : undefined;
-        if (open && !wasOpen) uploadContext = currentContext;
-        blueTeamConfirmed = false;
-        wasOpen = open;
-    });
-
-    $effect(() => {
-        // 진영을 바꾸면 이전 확인은 무효다.
-        if (blueTeamSlot === previousSlot) return;
-        previousSlot = blueTeamSlot;
-        blueTeamConfirmed = false;
+        if (!open) return;
+        // 열린 입력은 팀·세트·버전을 함께 보존한다. 다른 운영자의 수정은 서버에서 충돌로 처리한다.
+        untrack(() => {
+            uploadContext = { ...context };
+            requestPath = `${location.pathname}?/upload`;
+            firstSide = { slot: context.plannedBlueTeamSlot ?? '', confirmed: false };
+        });
     });
 
     function addFiles(selected: File[]) {
         selectionError = '';
-        blueTeamConfirmed = false;
+        if (!files.length) firstSide.confirmed = false;
         const room = Math.max(0, max - files.length);
         if (selected.length > room) selectionError = `파일은 ${max}개까지 선택할 수 있어요`;
         const accepted = selected.slice(0, room);
@@ -70,22 +80,29 @@
             ...files,
             ...accepted
                 .filter((file) => file.size <= MAX_SIZE)
-                .map((file) => ({ id: ++nextId, file, status: 'ready' as const, message: '' }))
+                .map((file, index) => ({
+                    id: ++nextId,
+                    file,
+                    status: 'ready' as const,
+                    message: '',
+                    side: files.length === 0 && index === 0 ? firstSide : { slot: '', confirmed: false }
+                }))
         ];
     }
 
     async function send(item: UploadFile) {
+        if (!uploadContext) return false;
         item.status = 'uploading';
         item.message = '';
         const body = new FormData();
         body.set('file', item.file);
-        if (uploadContext) {
-            for (const [key, value] of Object.entries(uploadContext)) body.set(key, String(value));
-            body.set('blueTeamSlot', blueTeamSlot);
-            body.set('blueTeamConfirmed', String(blueTeamConfirmed));
-        }
+        body.set('expectedRevision', String(uploadContext.expectedRevision));
+        body.set('expectedGameNumber', String(uploadContext.expectedGameNumber + files.indexOf(item)));
+        if (uploadContext.lineupId) body.set('lineupId', uploadContext.lineupId);
+        body.set('blueTeamSlot', item.side.slot);
+        body.set('blueTeamConfirmed', String(item.side.confirmed));
         try {
-            const response = await fetch('?/upload', {
+            const response = await fetch(requestPath, {
                 method: 'POST',
                 body,
                 headers: { 'x-sveltekit-action': 'true' }
@@ -95,6 +112,9 @@
                 lastOrder = Number(result.data?.order);
                 item.status = 'success';
                 item.message = `${lastOrder}세트로 기록했어요`;
+                if (typeof result.data?.revision === 'number')
+                    uploadContext.expectedRevision = result.data.revision;
+                completed = result.data?.completed === true;
             } else {
                 item.status = 'error';
                 item.message =
@@ -114,18 +134,12 @@
     }
 
     async function upload() {
-        if (
-            uploading ||
-            refreshRequired ||
-            !waiting.length ||
-            (uploadContext && (!blueTeamSlot || !blueTeamConfirmed))
-        )
-            return;
+        if (uploading || !canUpload) return;
         uploading = true;
         try {
             // 세트 순서가 섞이지 않도록 파일마다 차례로 보낸다.
             for (const item of waiting) {
-                if (!(await send(item))) break;
+                if (!(await send(item)) || completed) break;
             }
         } finally {
             uploading = false;
@@ -134,10 +148,16 @@
 
     function remove(item: UploadFile) {
         if (uploading) return;
+        const index = files.indexOf(item);
         files = files.filter((file) => file.id !== item.id);
+        // 삭제 뒤 세트 번호가 당겨지는 파일은 바뀐 순서로 진영을 다시 확인한다.
+        for (const file of files.slice(index)) file.side.confirmed = false;
+        if (index === 0)
+            firstSide = files[0]?.side ?? {
+                slot: uploadContext?.plannedBlueTeamSlot ?? '',
+                confirmed: false
+            };
         selectionError = '';
-        blueTeamSlot = '';
-        blueTeamConfirmed = false;
     }
 
     function close() {
@@ -149,10 +169,36 @@
         touched = false;
         refreshRequired = false;
         selectionError = '';
-        blueTeamSlot = '';
-        blueTeamConfirmed = false;
+        completed = false;
     }
 </script>
+
+{#snippet sides(side: SideChoice, index: number, locked: boolean)}
+    <fieldset disabled={uploading || refreshRequired || locked || completed} class="grid min-w-0 gap-2">
+        <RadioGroup
+            legend={index === 0
+                ? '이 세트의 블루 팀'
+                : `${(uploadContext?.expectedGameNumber ?? 0) + index}세트의 블루 팀`}
+            name={`blueTeamSlot-${index}`}
+            bind:value={
+                () => side.slot,
+                (value) => {
+                    side.slot = value;
+                    side.confirmed = false;
+                }
+            }
+            {options}
+        />
+        {#if side.slot && uploadContext}
+            <div class="rounded-(--radius-form) border border-line bg-surface-2 px-3 py-2">
+                <CheckboxField
+                    label={`블루 ${side.slot === 'a' ? uploadContext.teamA : uploadContext.teamB} · 레드 ${side.slot === 'a' ? uploadContext.teamB : uploadContext.teamA}이 실제 진영과 맞아요`}
+                    bind:checked={side.confirmed}
+                />
+            </div>
+        {/if}
+    </fieldset>
+{/snippet}
 
 <Dialog {open} title="ROFL 업로드" dismissible={!uploading} onclose={close}>
     <div class="flex flex-col gap-3">
@@ -160,26 +206,7 @@
             <h3 class="border-b border-line pb-2 text-base font-bold">
                 {uploadContext.expectedGameNumber}세트 결과
             </h3>
-            <fieldset disabled={uploading} class="min-w-0">
-                <RadioGroup
-                    legend="이 세트의 블루 팀"
-                    name="blueTeamSlot"
-                    bind:value={blueTeamSlot}
-                    {options}
-                />
-            </fieldset>
-            {#if blueTeam && redTeam}
-                <fieldset
-                    disabled={uploading || refreshRequired}
-                    class="rounded-(--radius-form) border border-line bg-surface-2 px-3 py-2"
-                >
-                    <legend class="sr-only">진영 확인</legend>
-                    <CheckboxField
-                        label={`블루 ${blueTeam.name} · 레드 ${redTeam.name}이 실제 진영과 맞아요`}
-                        bind:checked={blueTeamConfirmed}
-                    />
-                </fieldset>
-            {/if}
+            {@render sides(firstSide, 0, files[0]?.status === 'success')}
         {/if}
 
         <div
@@ -190,7 +217,7 @@
         >
             <Button
                 variant="secondary"
-                disabled={uploading || refreshRequired || files.length >= max}
+                disabled={uploading || refreshRequired || completed || files.length >= max}
                 onclick={() => picker?.click()}
             >
                 ROFL 선택
@@ -212,10 +239,14 @@
 
         {#if files.length}
             <ul class="divide-y divide-line border-y border-line">
-                {#each files as item (item.id)}
-                    <li class="flex items-center justify-between gap-2 py-2 text-ui">
+                {#each files as item, index (item.id)}
+                    <li class="flex flex-wrap items-center justify-between gap-2 py-2 text-ui">
                         <span class="flex min-w-0 flex-col">
-                            <span class="truncate font-semibold">{item.file.name}</span>
+                            <span class="truncate font-semibold"
+                                >{#if max > 1 && uploadContext}{uploadContext.expectedGameNumber + index}세트
+                                    ·
+                                {/if}{item.file.name}</span
+                            >
                             <span
                                 aria-live="polite"
                                 class={[
@@ -241,6 +272,11 @@
                                 ><span class="sr-only">{item.file.name} </span>선택 해제</Button
                             >
                         {/if}
+                        {#if index > 0}
+                            <div class="w-full">
+                                {@render sides(item.side, index, item.status === 'success')}
+                            </div>
+                        {/if}
                     </li>
                 {/each}
             </ul>
@@ -248,17 +284,15 @@
 
         {#if selectionError}<p role="alert" class="text-sm text-error">{selectionError}</p>{/if}
         {#if refreshRequired}<p role="alert" class="text-sm">닫으면 현재 경기 상태를 다시 확인해요.</p>{/if}
+        {#if completed && waiting.length}<p role="status" class="text-sm">
+                경기가 끝나 남은 파일은 기록하지 않았어요.
+            </p>{/if}
     </div>
 
     {#snippet footer()}
         <div class="flex justify-end gap-2">
-            <Button
-                variant="primary"
-                disabled={!waiting.length ||
-                    refreshRequired ||
-                    Boolean(uploadContext && (!blueTeamSlot || !blueTeamConfirmed))}
-                loading={uploading}
-                onclick={upload}>업로드</Button
+            <Button variant="primary" disabled={!canUpload} loading={uploading} onclick={upload}
+                >업로드</Button
             >
         </div>
     {/snippet}

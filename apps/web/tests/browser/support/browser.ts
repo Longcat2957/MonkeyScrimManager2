@@ -1,18 +1,14 @@
 import type { TestContext } from 'node:test';
-import { chromium } from 'playwright';
+import { chromium, type BrowserContext } from 'playwright';
 import { createHttpFixture } from '../../api/support/http.ts';
 
-/** 격리 앱만 브라우저에서 접근하고 실제 배포의 TLS 프록시·세션 쿠키 계약을 유지한다. */
-export async function createBrowserFixture(t: TestContext, options: { width: number; userId?: string }) {
-    const browser = await chromium.launch({ headless: true });
-    // Node 정리 훅은 등록순으로 실행하므로 브라우저를 앱·DB보다 먼저 닫는다.
-    t.after(() => browser.close());
-    const fixture = await createHttpFixture(t);
-    const context = await browser.newContext({
-        viewport: { width: options.width, height: 1000 }
-    });
-    if (options.userId) {
-        const { cookie } = await fixture.session(options.userId);
+/** 실제 배포의 TLS 프록시와 같은 origin·쿠키로 격리 앱에만 접근한다. */
+export async function sessionContext(
+    context: BrowserContext,
+    fixture: { url: string; origin: string },
+    cookie?: string
+) {
+    if (cookie) {
         const separator = cookie.indexOf('=');
         await context.addCookies([
             {
@@ -37,6 +33,21 @@ export async function createBrowserFixture(t: TestContext, options: { width: num
         if (request.method() === 'POST') headers.origin = fixture.origin;
         await route.fulfill({ response: await route.fetch({ headers, maxRedirects: 0 }) });
     });
+}
+
+export async function createBrowserFixture(t: TestContext, options: { width: number; userId?: string }) {
+    const browser = await chromium.launch({ headless: true });
+    // Node 정리 훅은 등록순으로 실행하므로 브라우저를 앱·DB보다 먼저 닫는다.
+    t.after(() => browser.close());
+    const fixture = await createHttpFixture(t);
+    const context = await browser.newContext({
+        viewport: { width: options.width, height: 1000 }
+    });
+    await sessionContext(
+        context,
+        fixture,
+        options.userId ? (await fixture.session(options.userId)).cookie : undefined
+    );
     const page = await context.newPage();
     page.setDefaultTimeout(10_000);
     const errors: string[] = [];

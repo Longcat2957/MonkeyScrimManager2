@@ -11,7 +11,8 @@ import { DomainError } from '#lib/server/errors.ts';
 import { mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import sample from './fixtures/rofl-sample.json' with { type: 'json' };
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
-import type { MockFailure } from './scrims.ts';
+import { findMockScrim, type MockFailure } from './scrims.ts';
+import { syncMockBracketResult } from './bracket.ts';
 
 /** ROFL 투영에서 게임 화면에 필요한 값만 남긴 형태. 업로드한 파일도 같은 형태로 저장한다. */
 export type RawGame = {
@@ -46,6 +47,8 @@ type StoredMatch = Omit<MatchListItem, 'scoreA' | 'scoreB'> & {
     guildId: string;
     scrimId: string;
     hardFearless: boolean;
+    plannedBlueTeamSlot: 'a' | 'b' | null;
+    revision: number;
     // 게임 기록 없이 점수만 아는 조회용 경기의 점수다. 게임이 있으면 게임으로 센다.
     fixedScore?: [number, number];
     cancelledByScrim?: boolean;
@@ -53,9 +56,9 @@ type StoredMatch = Omit<MatchListItem, 'scoreA' | 'scoreB'> & {
 };
 
 /** 편성·대진에서 막 시작한 개발 경기도 고유한 상세 화면을 갖는다. */
-export function createMockMatch(input: Omit<StoredMatch, 'id' | 'games'>): string {
+export function createMockMatch(input: Omit<StoredMatch, 'id' | 'games' | 'revision'>): string {
     const id = `devMatch-${crypto.randomUUID()}`;
-    matches.push({ ...input, id, games: [] });
+    matches.push({ ...input, id, games: [], revision: 0 });
     return id;
 }
 
@@ -122,6 +125,8 @@ const base = (
     bestOf,
     status,
     playedAt,
+    plannedBlueTeamSlot: null,
+    revision: 0,
     hardFearless: true,
     games: sampleGames(id, winners, playedAt)
 });
@@ -448,26 +453,65 @@ export async function getMockMatch(
         : null;
     // 하드 피어리스 진행 중 경기에서 다음 게임에 쓸 수 없는 챔피언이다.
     const used = match.hardFearless && match.status === 'in_progress' ? usedBy(match.games) : null;
+    const operating = match.status === 'in_progress';
+    const can = {
+        upload: operating,
+        setSide: operating && Boolean(findMockScrim(guildId, match.scrimId)?.canManage)
+    };
     return {
         match: detail,
         game,
         usedChampions: used?.size ? [...used].map(resolvers.champion) : null,
-        // TODO: 업로드 권한(운영자·참가자)을 정하면 함께 확인한다.
-        can: { upload: match.status === 'in_progress' }
+        operation: {
+            plannedBlueTeamSlot: match.plannedBlueTeamSlot,
+            nextGameNumber: match.games.length + 1,
+            revision: match.revision,
+            can
+        },
+        can
     };
+}
+
+type SideInput = { expectedRevision: number; nextGameNumber: number; blueTeamSlot: 'a' | 'b' };
+
+function checkNextSet(match: StoredMatch, input: SideInput): MockFailure | null {
+    if (input.blueTeamSlot !== 'a' && input.blueTeamSlot !== 'b')
+        return { status: 400, message: '이번 세트의 블루 팀을 선택해 주세요' };
+    if (
+        match.status !== 'in_progress' ||
+        input.nextGameNumber !== match.games.length + 1 ||
+        input.expectedRevision !== match.revision
+    )
+        return { status: 409, message: '경기 상태가 바뀌었어요. 현재 세트를 다시 확인해 주세요' };
+    return null;
+}
+
+export function setMockMatchSide(guildId: string, matchId: string, input: SideInput) {
+    const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
+    if (!match) return { status: 404, message: '경기를 찾을 수 없어요' };
+    if (!findMockScrim(guildId, match.scrimId)?.canManage)
+        return { status: 403, message: '진영을 바꿀 권한이 없어요' };
+    const failure = checkNextSet(match, input);
+    if (failure) return failure;
+    match.plannedBlueTeamSlot = input.blueTeamSlot;
+    match.revision++;
+    return null;
 }
 
 /** 검증을 마친 ROFL 결과를 다음 게임으로 기록한다. 승부가 나면 경기를 종료한다. */
 export async function recordMockGame(
     guildId: string,
     matchId: string,
-    raw: RawGame
-): Promise<MockFailure | { order: number }> {
+    raw: RawGame,
+    input: SideInput & { blueTeamConfirmed: boolean }
+): Promise<MockFailure | { order: number; revision: number; completed: boolean }> {
     await wait();
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
     if (!match) return { status: 404, message: '경기를 찾을 수 없어요' };
-    if (match.status !== 'in_progress')
-        return { status: 409, message: '지금은 이 경기에 업로드할 수 없어요' };
+    const failure = checkNextSet(match, input);
+    if (failure) return failure;
+    if (!input.blueTeamConfirmed)
+        return { status: 400, message: '블루·레드 팀이 실제 진영과 맞는지 확인해 주세요' };
     const signature = signatureOf(raw);
     const duplicate = match.games.find((game) => game.signature === signature);
     if (duplicate) return { status: 409, message: `이미 ${duplicate.order}게임으로 기록된 파일이에요` };
@@ -476,23 +520,31 @@ export async function recordMockGame(
         id: `${match.id}-g${order}`,
         order,
         playedAt: null,
-        blueSlot: order % 2 ? 'a' : 'b',
+        blueSlot: input.blueTeamSlot,
         raw,
         signature
     });
     const [a, b] = score(match);
     if (Math.max(a, b) > match.bestOf / 2) match.status = 'completed';
-    return { order };
+    match.plannedBlueTeamSlot = null;
+    const revision = ++match.revision;
+    const completed = match.status === 'completed';
+    await syncMockBracketResult(guildId, match.scrimId, match.id, a, b, match.status);
+    return { order, revision, completed };
 }
 
 /** 내전 중도 종료·되돌리기에 맞춰 경기 상태만 바꾼다. 기록된 게임은 그대로 둔다. */
 export function setMockMatchStatus(guildId: string, matchId: string, status: MatchListItem['status']) {
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
-    if (match) match.status = status;
+    if (match && match.status !== status) {
+        match.status = status;
+        match.revision++;
+    }
 }
 
 /** 원본 결과는 보존하지만 취소한 내전의 현재 점수·게임 목록에서는 제외한다. */
 export function cancelMockMatchResults(guildId: string, matchId: string) {
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
-    if (match) Object.assign(match, { status: 'cancelled', cancelledByScrim: true });
+    if (match)
+        Object.assign(match, { status: 'cancelled', cancelledByScrim: true, revision: match.revision + 1 });
 }

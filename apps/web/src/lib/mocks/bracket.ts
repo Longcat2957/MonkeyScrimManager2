@@ -1,6 +1,8 @@
 import {
+    bracketPlacement,
     bracketSeats,
     bracketTemplate,
+    firstSetSideError,
     isBestOf,
     resolveWinners,
     type BestOf,
@@ -103,12 +105,17 @@ async function load(guildId: string, scrimId: string, icon: IconResolver) {
     return { scrim, teams, state: state ?? null };
 }
 
-function placeTeam(state: BracketState, seat: string, teamId: string | null) {
+function placeTeam(
+    state: BracketState,
+    seat: string,
+    teamId: string | null,
+    swapTeamId: string | null = null
+) {
     for (const item of state.matches) {
         for (const side of [item.a, item.b]) {
-            // 옮긴 팀의 원래 자리는 비우고, 도착 자리에 있던 팀은 팀 풀로 돌아간다.
+            // 같은 경기의 진영을 바꿀 때만 원래 자리에 상대 팀이 남는다.
             if (side.seat === seat) side.teamId = teamId;
-            else if (teamId && side.seat && side.teamId === teamId) side.teamId = null;
+            else if (teamId && side.seat && side.teamId === teamId) side.teamId = swapTeamId;
         }
     }
 }
@@ -135,8 +142,8 @@ export async function getMockBracket(
 async function mutate(
     guildId: string,
     scrimId: string,
-    update: (state: BracketState, teams: BracketTeam[]) => MockFailure | null,
-    locked = false
+    update: (state: BracketState, teams: BracketTeam[], scrim: MockScrim) => MockFailure | null,
+    locked: boolean | 'either' = false
 ) {
     await wait();
     const target = await load(guildId, scrimId, noIcon);
@@ -145,25 +152,37 @@ async function mutate(
     if (!target.state) return { status: 409, message: '팀 편성이 끝나면 대진을 만들 수 있어요' };
     if (target.scrim.status !== 'ready')
         return { status: 409, message: '경기가 시작된 대진은 바꿀 수 없어요' };
-    if (target.state.confirmed !== locked)
+    if (locked !== 'either' && target.state.confirmed !== locked)
         return {
             status: 409,
             message: locked
                 ? '아직 확정하지 않은 대진이에요'
                 : '확정된 대진이에요. 다시 편성한 뒤 바꿔 주세요'
         };
-    return update(target.state, target.teams);
+    return update(target.state, target.teams, target.scrim);
 }
 
 export function placeMockBracketTeam(guildId: string, scrimId: string, seat: string, teamId: string | null) {
-    return mutate(guildId, scrimId, (state, teams) => {
-        if (!bracketSeats(state.matches).some((item) => item.key === seat))
-            return { status: 400, message: '알 수 없는 자리예요' };
-        if (teamId && !teams.some((team) => team.id === teamId))
-            return { status: 400, message: '이 내전의 팀이 아니에요' };
-        placeTeam(state, seat, teamId);
-        return null;
-    });
+    return mutate(
+        guildId,
+        scrimId,
+        (state, teams, scrim) => {
+            const placement = bracketPlacement(
+                state.matches,
+                seat,
+                teamId,
+                scrim.formationMethod === 'auction'
+            );
+            if (state.confirmed && !placement?.swapTeamId)
+                return { status: 409, message: '대진 확정을 해제한 뒤 배치를 변경해 주세요' };
+            if (!placement) return { status: 400, message: '알 수 없는 자리예요' };
+            if (teamId && !teams.some((team) => team.id === teamId))
+                return { status: 400, message: '이 내전의 팀이 아니에요' };
+            placeTeam(state, seat, teamId, placement.swapTeamId);
+            return null;
+        },
+        'either'
+    );
 }
 
 export function setMockBracketBestOf(guildId: string, scrimId: string, stage: string, bestOf: number) {
@@ -182,10 +201,11 @@ export function resetMockBracket(guildId: string, scrimId: string) {
     });
 }
 
-export function confirmMockBracket(guildId: string, scrimId: string) {
-    return mutate(guildId, scrimId, (state) => {
+export function confirmMockBracket(guildId: string, scrimId: string, blueTeamIds?: Record<string, string>) {
+    return mutate(guildId, scrimId, (state, teams, scrim) => {
         if (bracketSeats(state.matches).some((seat) => !seat.teamId))
             return { status: 409, message: '모든 팀을 자리에 배치해 주세요' };
+        if (blueTeamIds) return startBracket(state, teams, scrim, blueTeamIds);
         state.confirmed = true;
         return null;
     });
@@ -210,35 +230,80 @@ export function dropMockBracket(guildId: string, scrimId: string) {
     states.delete(`${guildId}/${scrimId}`);
 }
 
-export async function startMockBracket(guildId: string, scrimId: string): Promise<MockFailure | null> {
-    const target = await load(guildId, scrimId, noIcon);
-    if (!target?.state) return { status: 409, message: '대진을 먼저 확정해 주세요' };
-    if (!target.scrim.canManage) return { status: 403, message: '내전을 시작할 권한이 없어요' };
-    if (target.scrim.status !== 'ready' || !target.state.confirmed)
-        return { status: 409, message: '확정된 대진만 시작할 수 있어요' };
-    for (const match of target.state.matches) {
+function createResolvedMockMatches(
+    state: BracketState,
+    teams: BracketTeam[],
+    scrim: MockScrim,
+    blueTeamIds?: Record<string, string>
+) {
+    state.matches = resolveWinners(state.matches);
+    for (const match of state.matches) {
         if (match.matchId || !match.a.teamId || !match.b.teamId) continue;
         match.matchId = createMockMatch({
-            guildId,
-            scrimId,
-            scrimTitle: target.scrim.title,
-            teamA: target.teams.find((team) => team.id === match.a.teamId)!.name,
-            teamB: target.teams.find((team) => team.id === match.b.teamId)!.name,
-            bestOf: target.state.bestOf[match.stage]!,
-            hardFearless: target.scrim.hardFearless,
+            guildId: scrim.guildId,
+            scrimId: scrim.id,
+            scrimTitle: scrim.title,
+            teamA: teams.find((team) => team.id === match.a.teamId)!.name,
+            teamB: teams.find((team) => team.id === match.b.teamId)!.name,
+            plannedBlueTeamSlot: blueTeamIds ? (blueTeamIds[match.key] === match.a.teamId ? 'a' : 'b') : null,
+            bestOf: state.bestOf[match.stage]!,
+            hardFearless: scrim.hardFearless,
             status: 'in_progress',
             playedAt: null
         });
         match.status = 'in_progress';
     }
-    target.scrim.status = 'in_progress';
+}
+
+function startBracket(
+    state: BracketState,
+    teams: BracketTeam[],
+    scrim: MockScrim,
+    blueTeamIds: Record<string, string>
+) {
+    const message = firstSetSideError(state.matches, blueTeamIds);
+    if (message) return { status: 400, message };
+    createResolvedMockMatches(state, teams, scrim, blueTeamIds);
+    state.confirmed = true;
+    scrim.status = 'in_progress';
     return null;
+}
+
+export function startMockBracket(guildId: string, scrimId: string, blueTeamIds: Record<string, string>) {
+    return mutate(
+        guildId,
+        scrimId,
+        (state, teams, scrim) => startBracket(state, teams, scrim, blueTeamIds),
+        true
+    );
+}
+
+export async function syncMockBracketResult(
+    guildId: string,
+    scrimId: string,
+    matchId: string,
+    scoreA: number,
+    scoreB: number,
+    status: BracketMatch['status']
+) {
+    const target = await load(guildId, scrimId, noIcon);
+    if (!target?.state || target.scrim.status !== 'in_progress') return;
+    const match = target.state.matches.find((item) => item.matchId === matchId);
+    if (!match) return;
+    match.status = status;
+    match.scoreA = scoreA;
+    match.scoreB = scoreB;
+    if (status === 'completed') {
+        match.winner = scoreA > scoreB ? 'a' : 'b';
+        createResolvedMockMatches(target.state, target.teams, target.scrim);
+    }
 }
 
 export async function startMockManualMatch(
     guildId: string,
     scrimId: string,
-    bestOf: BestOf
+    bestOf: BestOf,
+    blueTeamId: string
 ): Promise<MockFailure | null> {
     const target = await load(guildId, scrimId, noIcon);
     if (!target?.state || target.teams.length !== 2)
@@ -247,8 +312,7 @@ export async function startMockManualMatch(
         placeTeam(target.state!, seat.key, target.teams[index]!.id)
     );
     target.state.bestOf.final = bestOf;
-    target.state.confirmed = true;
-    return startMockBracket(guildId, scrimId);
+    return startBracket(target.state, target.teams, target.scrim, { final: blueTeamId });
 }
 
 /** 내전 단계 판단에 쓰는 대진 요약. 대진이 없으면 null이다. */

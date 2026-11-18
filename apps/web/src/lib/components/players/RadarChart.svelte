@@ -20,7 +20,7 @@
     const clamp = (value: number) => Math.min(1, Math.max(0.04, value));
 </script>
 
-<figure class="flex flex-col items-center px-3 pb-3">
+<figure class="flex flex-col items-center pb-2">
     <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         class="w-full max-w-72 overflow-visible text-role-gold"

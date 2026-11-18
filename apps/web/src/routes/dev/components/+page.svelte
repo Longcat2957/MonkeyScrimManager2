@@ -101,123 +101,135 @@
     <title>컴포넌트 테스트 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<header class="page-head mb-5 max-w-5xl">
-    <h1 class="text-title font-bold">컴포넌트 테스트</h1>
+<header class="page-head mb-6 border-b border-line pb-4">
+    <h1 class="text-3xl font-bold tracking-tight">컴포넌트 테스트</h1>
 </header>
 
-<div class="grid max-w-5xl items-start gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(17rem,2fr)]">
-    <section class="panel">
-        <h2 class="panel-bar font-bold">버튼</h2>
-        <div class="flex flex-wrap items-center gap-2 p-4">
-            <Button variant="primary" onclick={() => (result = '저장 선택')}>저장</Button>
-            <Button variant="secondary" onclick={() => (result = '수정 선택')}>수정</Button>
-            <Button variant="quiet" onclick={() => (result = '취소 선택')}>취소</Button>
-            <Button variant="danger" onclick={() => (result = '삭제 선택')}>삭제</Button>
-            <Button variant="primary" loading>저장 중</Button>
-            <Button variant="secondary" disabled>비활성</Button>
-        </div>
-        <p role="status" class="px-4 pb-3 text-ui text-muted empty:hidden">{result}</p>
-    </section>
+<div class="grid items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(13rem,1fr)]">
+    <div class="specimens min-w-0 divide-y divide-line border-y border-line">
+        <section>
+            <h2 class="panel-bar font-bold">버튼</h2>
+            <div class="flex flex-wrap items-center gap-2 p-4">
+                <Button variant="primary" onclick={() => (result = '저장 선택')}>저장</Button>
+                <Button variant="secondary" onclick={() => (result = '수정 선택')}>수정</Button>
+                <Button variant="quiet" onclick={() => (result = '취소 선택')}>취소</Button>
+                <Button variant="danger" onclick={() => (result = '삭제 선택')}>삭제</Button>
+                <Button variant="primary" loading>저장 중</Button>
+                <Button variant="secondary" disabled>비활성</Button>
+            </div>
+            <p role="status" class="px-4 pb-3 text-ui text-muted empty:hidden">{result}</p>
+        </section>
 
-    <section class="panel xl:col-start-2 xl:row-span-2">
-        <h2 class="panel-bar font-bold">입력</h2>
-        <div class="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-1">
-            <TextField label="제목" bind:value={text} placeholder="예: 10월 정기 내전" maxlength={50} />
-            <TextField label="오류 예시" value="잘못된 값" error="형식을 확인해 주세요" />
-            <SelectField
-                label="편성 방식"
-                bind:value={choice}
-                options={[
-                    { value: 'manual', label: '수동 편성' },
-                    { value: 'auction', label: '경매' }
-                ]}
-            />
-            <div class="flex flex-col gap-2">
-                <CheckboxField label="동의" bind:checked hint="필수 항목이에요" />
-                <RadioGroup
-                    legend="범위"
-                    name="scope"
-                    bind:value={radio}
+        <section>
+            <h2 class="panel-bar font-bold">입력</h2>
+            <div class="grid gap-4 p-4 sm:grid-cols-2">
+                <TextField label="제목" bind:value={text} placeholder="예: 10월 정기 내전" maxlength={50} />
+                <TextField label="오류 예시" value="잘못된 값" error="형식을 확인해 주세요" />
+                <SelectField
+                    label="편성 방식"
+                    bind:value={choice}
                     options={[
-                        { value: 'all', label: '전체' },
-                        { value: 'scrims', label: '내전만' }
+                        { value: 'manual', label: '수동 편성' },
+                        { value: 'auction', label: '경매' }
                     ]}
                 />
+                <div class="flex flex-col gap-2">
+                    <CheckboxField label="동의" bind:checked hint="필수 항목이에요" />
+                    <RadioGroup
+                        legend="범위"
+                        name="scope"
+                        bind:value={radio}
+                        options={[
+                            { value: 'all', label: '전체' },
+                            { value: 'scrims', label: '내전만' }
+                        ]}
+                    />
+                </div>
             </div>
-        </div>
-        <div class="border-t border-line">
-            <SwitchCell title="알림 받기" subTitle="새 내전이 열리면 알려 줘요" bind:active={toggle} />
-        </div>
-    </section>
+            <div class="border-t border-line">
+                <SwitchCell title="알림 받기" subTitle="새 내전이 열리면 알려 줘요" bind:active={toggle} />
+            </div>
+        </section>
 
-    <section class="panel">
-        <h2 class="panel-bar font-bold">내전 상태와 포지션</h2>
-        <div class="flex flex-wrap items-center gap-2 p-4">
-            {#each statuses as status (status.text)}
-                <StatusTag text={status.text} state={status.state} />
-            {/each}
-            <StatusTag text="미정" state="neutral" />
-        </div>
-        <ul class="flex flex-wrap gap-x-4 gap-y-2 border-t border-line px-4 py-3">
-            {#each POSITIONS as position (position.key)}
-                <li class="inline-flex items-center gap-1.5 text-ui font-semibold">
-                    <PositionIcon position={position.key} size="sm" />{position.text}
-                </li>
-            {/each}
-        </ul>
-    </section>
+        <section>
+            <h2 class="panel-bar font-bold">내전 상태와 포지션</h2>
+            <div class="flex flex-wrap items-center gap-2 p-4">
+                {#each statuses as status (status.text)}
+                    <StatusTag text={status.text} state={status.state} />
+                {/each}
+                <StatusTag text="미정" state="neutral" />
+            </div>
+            <ul class="flex flex-wrap gap-x-4 gap-y-2 border-t border-line px-4 py-3">
+                {#each POSITIONS as position (position.key)}
+                    <li class="inline-flex items-center gap-1.5 text-ui font-semibold">
+                        <PositionIcon position={position.key} size="sm" />{position.text}
+                    </li>
+                {/each}
+            </ul>
+        </section>
 
-    <section class="panel">
-        <h2 class="panel-bar font-bold">대화상자</h2>
-        <div class="p-4">
-            <Button variant="secondary" onclick={() => (dialogOpen = true)}>대화상자 열기</Button>
-        </div>
-    </section>
+        <section>
+            <h2 class="panel-bar font-bold">대화상자</h2>
+            <div class="p-4">
+                <Button variant="secondary" onclick={() => (dialogOpen = true)}>대화상자 열기</Button>
+            </div>
+        </section>
 
-    <section class="panel">
-        <h2 class="panel-bar font-bold">불러오기</h2>
-        <div class="space-y-3 p-4">
-            <Spinner />
-            <Skeleton rows={2} />
-            <SectionState state="empty" message="아직 내전이 없어요" />
-        </div>
-    </section>
+        <section>
+            <h2 class="panel-bar font-bold">불러오기</h2>
+            <div class="space-y-3 p-4">
+                <Spinner />
+                <Skeleton rows={2} />
+                <SectionState state="empty" message="아직 내전이 없어요" />
+            </div>
+        </section>
 
-    <section class="panel xl:col-span-2">
-        <h2 class="panel-bar font-bold">페이지 이동</h2>
-        <div class="p-4">
-            <PageNav total={42} pageSize={10} current={page} onchange={(next) => (page = next)} />
+        <section>
+            <h2 class="panel-bar font-bold">페이지 이동</h2>
+            <div class="p-4">
+                <PageNav total={42} pageSize={10} current={page} onchange={(next) => (page = next)} />
+            </div>
+        </section>
+    </div>
+    <aside class="border-y border-line xl:sticky xl:top-6">
+        <div class="hidden xl:block">
+            <h2 class="py-3 font-bold">개발 바로가기</h2>
+            {@render shortcuts()}
         </div>
-    </section>
-    <details class="panel xl:col-span-2">
-        <summary class="cursor-pointer px-4 py-3 font-bold">개발 바로가기</summary>
-        <nav
-            aria-label="개발 바로가기"
-            class="grid gap-4 border-t border-line p-4 sm:grid-cols-2 xl:grid-cols-4"
-        >
-            {#each shortcutGroups as group (group.title)}
-                <section>
-                    <h2 class="text-ui font-bold">{group.title}</h2>
-                    <ul class="mt-1">
-                        {#each group.links as link (link.href)}
-                            <li>
-                                <a
-                                    class="inline-flex min-h-9 items-center text-ui text-ink-2 underline underline-offset-4 hover:text-nexus pointer-coarse:min-h-11"
-                                    href={link.href}>{link.label}</a
-                                >
-                            </li>
-                        {/each}
-                    </ul>
-                </section>
-            {/each}
-            <a
-                class="inline-flex min-h-9 items-center text-ui text-ink-2 underline underline-offset-4 hover:text-nexus pointer-coarse:min-h-11"
-                href={resolve('/dev/error')}
-                data-sveltekit-preload-data="false">오류 화면</a
-            >
-        </nav>
-    </details>
+        <details class="xl:hidden">
+            <summary class="cursor-pointer py-3 font-bold">개발 바로가기</summary>
+            {@render shortcuts()}
+        </details>
+    </aside>
 </div>
+
+{#snippet shortcuts()}
+    <nav
+        aria-label="개발 바로가기"
+        class="grid gap-3 border-t border-line py-3 sm:grid-cols-2 xl:grid-cols-1"
+    >
+        {#each shortcutGroups as group (group.title)}
+            <section>
+                <h2 class="text-ui font-bold">{group.title}</h2>
+                <ul class="mt-1">
+                    {#each group.links as link (link.href)}
+                        <li>
+                            <a
+                                class="inline-flex min-h-9 items-center text-ui text-ink-2 underline underline-offset-4 hover:text-nexus pointer-coarse:min-h-11"
+                                href={link.href}>{link.label}</a
+                            >
+                        </li>
+                    {/each}
+                </ul>
+            </section>
+        {/each}
+        <a
+            class="inline-flex min-h-9 items-center text-ui text-ink-2 underline underline-offset-4 hover:text-nexus pointer-coarse:min-h-11"
+            href={resolve('/dev/error')}
+            data-sveltekit-preload-data="false">오류 화면</a
+        >
+    </nav>
+{/snippet}
 
 <Dialog bind:open={dialogOpen} title="대화상자">
     <p class="leading-7">네이티브 dialog가 포커스와 Escape 닫기를 처리해요.</p>
@@ -227,3 +239,20 @@
         </div>
     {/snippet}
 </Dialog>
+
+<style>
+    @media (min-width: 48rem) {
+        .specimens > section {
+            display: grid;
+            grid-template-columns: 9rem minmax(0, 1fr);
+            align-items: start;
+        }
+        .specimens > section > h2 {
+            background: transparent;
+            border: 0;
+        }
+        .specimens > section > :not(h2) {
+            grid-column: 2;
+        }
+    }
+</style>

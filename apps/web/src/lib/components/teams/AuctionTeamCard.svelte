@@ -67,12 +67,15 @@
 <section
     aria-labelledby={`auction-${team.id}`}
     class={[
-        'relative flex min-h-0 min-w-0 flex-col gap-2 p-3 transition',
+        'relative flex min-h-0 min-w-0 flex-col gap-2 p-3 transition-colors',
         celebration && 'celebrate-flash',
-        drag.over === team.id ? 'bg-nexus/10 ring-2 ring-nexus/40 ring-inset dark:bg-nexus/15' : 'bg-surface'
+        drag.over === team.id ? 'bg-selected ring-2 ring-nexus ring-inset' : 'bg-surface'
     ]}
     ondragover={(event) => drag.enter(event, team.id)}
-    ondragleave={() => drag.leave(team.id)}
+    ondragleave={(event) => {
+        if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)))
+            drag.leave(team.id);
+    }}
     ondrop={(event) => drag.drop(event, team.id)}
 >
     {#if celebration}
@@ -102,30 +105,38 @@
     <header class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <div class="flex min-w-0 flex-col gap-1">
             <h3 id={`auction-${team.id}`} class="flex min-w-0 items-center gap-1.5">
-                <span class="shrink-0 rounded-sm border border-line px-1.5 py-0.5 text-xs font-semibold"
+                <span
+                    class="max-w-[60%] truncate rounded-small bg-surface-2 px-1.5 py-0.5 text-ui font-bold text-ink"
                     >{team.name}</span
                 >
-                <span class="truncate text-sm font-bold">{captain?.displayName ?? '팀장 미지정'}</span>
+                <span class="truncate text-base font-semibold tracking-tight"
+                    >{captain?.displayName ?? '팀장 미지정'}</span
+                >
             </h3>
             <span class="text-xs text-muted tabular-nums">시작 {team.startPoints}P</span>
         </div>
-        <span class="shrink-0 text-right text-base font-bold text-role-gold tabular-nums">
-            {team.remainingPoints}P<span class="sr-only"> 남음</span>
+        <span class="shrink-0 text-right">
+            <strong class="font-brand text-xl leading-none font-bold tabular-nums"
+                >{team.remainingPoints}<span class="ml-0.5 text-xs">P</span></strong
+            >
+            <span class="block text-xs text-muted">남음</span>
         </span>
     </header>
 
     <div class="flex items-center gap-2">
-        <span class="shrink-0 text-xs text-muted tabular-nums">인원 {team.members.length}/{TEAM_SIZE}</span>
+        <span class={['shrink-0 text-xs font-medium tabular-nums', full ? 'text-success' : 'text-muted']}
+            >인원 {team.members.length}/{TEAM_SIZE}</span
+        >
         <span aria-hidden="true" class="grid flex-1 grid-cols-5 gap-1">
             {#each Array.from({ length: TEAM_SIZE }, (_, index) => index) as index (index)}
                 <span
                     class={[
-                        'h-1.5 border',
+                        'h-1.5 rounded-small border',
                         index < team.members.length
                             ? full
                                 ? 'border-success bg-success'
                                 : 'border-nexus bg-nexus'
-                            : 'border-line bg-surface-hover'
+                            : 'border-line bg-surface-2'
                     ]}
                 ></span>
             {/each}
@@ -134,9 +145,17 @@
 
     {#if bidding && !full}
         <!-- 입찰 줄은 경매 중 가장 자주 누르는 곳이라 다른 조작보다 크게 둔다. -->
-        <div class="flex flex-col gap-1 border-t border-line pt-2">
+        <div
+            class={[
+                '-mx-3 flex flex-col gap-1.5 border-y border-line px-3 py-2',
+                drag.id && 'pointer-events-none',
+                drag.over === team.id ? 'bg-transparent' : 'bg-surface-2'
+            ]}
+        >
             <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-                <div class="min-w-0 [&_input]:text-base [&_input]:font-semibold [&_input]:tabular-nums">
+                <div
+                    class="min-w-0 [&_input]:bg-surface [&_input]:text-base [&_input]:font-semibold [&_input]:tabular-nums [&_input:enabled:not([aria-invalid]):hover]:border-nexus"
+                >
                     <TextField
                         label={`${team.name} 입찰가`}
                         inputmode="numeric"
@@ -159,7 +178,7 @@
                 {#each STEPS as step (step)}
                     <Button
                         variant="secondary"
-                        class="w-full px-1 text-ui font-semibold tabular-nums"
+                        class="w-full px-1 font-brand text-sm font-bold tabular-nums"
                         disabled={busy}
                         onclick={() => adjust(step)}
                     >
@@ -173,19 +192,22 @@
     {/if}
 
     <ul
-        class="flex min-h-0 flex-col divide-y divide-line overflow-y-auto border-t border-line"
+        class={[
+            'flex min-h-0 flex-col divide-y divide-line overflow-y-auto',
+            (!bidding || full) && 'border-t border-line'
+        ]}
         aria-label={`${team.name} 팀원`}
     >
         {#each team.members as member (member.player.participantId)}
             <li
                 class={[
-                    'flex items-center gap-2 px-1 py-1.5',
+                    'flex items-center gap-2.5 px-1 py-1.5',
                     celebration?.participantId === member.player.participantId && 'member-pop'
                 ]}
             >
                 <PlayerFace name={member.player.displayName} imageUrl={member.player.iconUrl} size="sm" />
                 <span class="flex min-w-0 flex-1 flex-col">
-                    <span class="truncate text-ui font-semibold">{member.player.displayName}</span>
+                    <span class="truncate text-sm font-semibold">{member.player.displayName}</span>
                     <span class="truncate text-xs text-muted tabular-nums"
                         >{laneText(member.player.positions[0])} · MMR {formatMmr(
                             bestMmr(member.player)
@@ -195,9 +217,9 @@
                 <span
                     class={[
                         'shrink-0 rounded-sm px-1.5 py-0.5 text-right text-xs font-semibold tabular-nums',
-                        member.via === 'captain' && 'text-role-gold',
-                        member.via === 'auction' && 'text-ink-2',
-                        member.via === 'manual' && 'bg-info/15 text-info'
+                        member.via === 'captain' && 'bg-surface-2 text-ink-2',
+                        member.via === 'auction' && 'font-brand text-ui text-ink-2',
+                        member.via === 'manual' && 'bg-info/10 text-info'
                     ]}
                 >
                     {member.via === 'captain'
@@ -208,7 +230,7 @@
                 </span>
             </li>
         {:else}
-            <li class="py-2 text-center text-sm opacity-60">아직 없음</li>
+            <li class="py-3 text-center text-sm text-muted">아직 없음</li>
         {/each}
     </ul>
 </section>

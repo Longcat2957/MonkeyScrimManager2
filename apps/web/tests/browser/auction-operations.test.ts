@@ -61,9 +61,30 @@ test(
         const candidates = f.page.getByRole('button', { name: '후보 목록', exact: true });
         assert.equal(await candidates.count(), 1);
         assert.ok((await candidates.boundingBox())!.y > bidBox.y);
+        const bar = candidate.getByRole('progressbar', { name: '남은 입찰 조정 시간' });
+        const barBox = await bar.boundingBox();
+        assert.ok(barBox && Math.abs(barBox.y - candidateBox.y) <= 2);
+        const surface = () => candidate.evaluate((node) => getComputedStyle(node).backgroundColor);
+        const initialColor = await surface();
+        await f.page.emulateMedia({ reducedMotion: 'no-preference' });
+        const fill = bar.locator(':scope > div');
+        const widthBefore = (await fill.boundingBox())!.width;
+        await f.page.waitForFunction(
+            (width) =>
+                document.querySelector('[role="progressbar"] > div')!.getBoundingClientRect().width <
+                width - 1,
+            widthBefore
+        );
+        await f.page.emulateMedia({ reducedMotion: 'reduce' });
+        await f.page.clock.fastForward(5000);
+        assert.equal(await surface(), initialColor);
+        const reducedWidth = (await fill.boundingBox())!.width;
+        assert.ok(reducedWidth > 0 && reducedWidth < widthBefore);
         await f.page.clock.fastForward(10_200);
         const timer = candidate.getByText('조정 시간 종료', { exact: true });
         await timer.waitFor();
+        assert.equal(await bar.getAttribute('aria-valuenow'), '0');
+        assert.equal(await surface(), initialColor);
         const timerBox = await timer.boundingBox();
         assert.ok(timerBox && timerBox.y >= candidateBox.y);
         assert.ok(timerBox.y + timerBox.height <= candidateBox.y + candidateBox.height);
@@ -74,6 +95,7 @@ test(
             .getByRole('button', { name: '+10 2팀 입찰가 10포인트 올리기', exact: true })
             .press('Enter');
         assert.equal(await bid.inputValue(), '25');
+        assert.equal(await bar.getAttribute('aria-valuenow'), '10');
         assert.equal(await f.page.getByRole('button', { name: '낙찰 2팀', exact: true }).isEnabled(), true);
         await capture(f.page, 'manager-candidate-mobile-primary');
 
@@ -85,6 +107,25 @@ test(
         assert.ok(desktopCandidate && desktopBid);
         assert.ok(desktopCandidate.x + desktopCandidate.width < desktopBid.x);
         assert.equal(await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        const point = (box: NonNullable<typeof desktopBid>) =>
+            [box.x + box.width / 2, box.y + box.height / 2] as const;
+        await f.page.mouse.move(...point(desktopCandidate));
+        await f.page.mouse.down();
+        const [x, y] = point(desktopBid);
+        await f.page.mouse.move(x, y, { steps: 12 });
+        await f.page.mouse.move(x + 1, y);
+        const team = f.page.getByRole('region', { name: /^2팀/ });
+        await f.page.waitForFunction(([node, color]) => getComputedStyle(node).backgroundColor === color, [
+            await team.elementHandle(),
+            initialColor
+        ] as const);
+        await f.page.mouse.up();
+        await f.page.getByRole('list', { name: '2팀 팀원' }).getByText('수동', { exact: true }).waitFor();
+        await f.page.getByRole('button', { name: '다음 후보' }).click();
+        await bid.hover();
+        await bid.click();
+        await f.page.keyboard.type('30');
+        assert.equal(await bid.inputValue(), '30');
         assert.deepEqual(f.errors, []);
     }
 );

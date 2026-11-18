@@ -24,12 +24,11 @@
     });
 </script>
 
-<div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+<div class="grid min-w-0 gap-1 @min-[40rem]:justify-items-end">
     <div role="group" aria-label="통계 갱신" class="flex flex-wrap items-center gap-2">
         <button
             type="button"
-            role="switch"
-            aria-checked={automatic}
+            aria-pressed={automatic}
             class="inline-flex min-h-9 items-center gap-2 rounded-(--radius-form) border border-line bg-surface px-3 text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
             onclick={() => onautomatic(!automatic)}
         >
@@ -51,5 +50,7 @@
             >{/if}
         {#if automatic && online && !state.error}<span>30초 간격</span>{/if}
     </p>
-    <p role="status" class={['text-ui', state.error ? 'text-error' : 'text-muted']}>{message}</p>
+    <p role="status" class={['text-ui', !message && 'sr-only', state.error ? 'text-error' : 'text-muted']}>
+        {message}
+    </p>
 </div>

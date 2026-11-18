@@ -7,6 +7,7 @@ import {
     listMockMatches,
     recordMockGame,
     setMockMatchStatus,
+    setMockMatchSide,
     type GameResolvers,
     type RawGame
 } from '../src/lib/mocks/matches.ts';
@@ -102,13 +103,34 @@ test('피어리스 안내는 양 팀의 사용 챔피언을 한 목록에 표시
 
 test('업로드한 게임을 기록하고 같은 파일·종료된 경기는 거절한다', async () => {
     const raw = { ...(sample as RawGame), gameLengthMs: 1_234_567 };
-    assert.deepEqual(await recordMockGame(guildId, 'devMatch001', raw), { order: 3 });
-    assert.equal(((await recordMockGame(guildId, 'devMatch001', raw)) as { status: number }).status, 409);
+    const input = { expectedRevision: 0, nextGameNumber: 3, blueTeamSlot: 'a' as const };
+    assert.equal(setMockMatchSide(guildId, 'devMatch001', input), null);
+    const before = (await getMockMatch(guildId, 'devMatch001', null, resolvers))!;
+    assert.equal(before.operation.plannedBlueTeamSlot, 'a');
+    const actual = {
+        ...input,
+        expectedRevision: before.operation.revision,
+        blueTeamSlot: 'b' as const,
+        blueTeamConfirmed: false
+    };
+    const unconfirmed = await recordMockGame(guildId, 'devMatch001', raw, actual);
+    assert.ok('status' in unconfirmed && unconfirmed.status === 400);
+    actual.blueTeamConfirmed = true;
+    assert.deepEqual(await recordMockGame(guildId, 'devMatch001', raw, actual), {
+        order: 3,
+        revision: 2,
+        completed: true
+    });
+    const duplicate = await recordMockGame(guildId, 'devMatch001', raw, actual);
+    assert.ok('status' in duplicate && duplicate.status === 409);
     const detail = (await getMockMatch(guildId, 'devMatch001', null, resolvers))!;
     assert.equal(detail.match.status, 'completed');
+    assert.equal(detail.game!.sides.find((side) => side.side === 'blue')!.slot, 'b');
+    assert.equal(detail.operation.plannedBlueTeamSlot, null);
     assert.equal(detail.can.upload, false);
-    // 1세트와 진영이 바뀌어 상대 팀이 사용했던 챔피언을 골라도 하드 피어리스에 해당한다.
+    // 이전 세트에 등장한 챔피언은 어느 팀이 다시 골라도 하드 피어리스에 해당한다.
     assert.ok(detail.game!.sides.flatMap((side) => side.players).every((player) => player.fearlessViolation));
     assert.equal(detail.usedChampions, null);
-    assert.equal(((await recordMockGame(guildId, 'devMatch002', raw)) as { status: number }).status, 409);
+    const closed = await recordMockGame(guildId, 'devMatch002', raw, actual);
+    assert.ok('status' in closed && closed.status === 409);
 });

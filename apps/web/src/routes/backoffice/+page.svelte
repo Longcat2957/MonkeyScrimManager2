@@ -56,49 +56,58 @@
     <title>백오피스 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<div class="flex w-full max-w-5xl min-w-0 flex-col gap-4">
-    <h1 class="page-head text-title font-bold">백오피스</h1>
+<div class="grid w-full max-w-7xl min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <h1 class="page-head col-span-full text-title font-bold">백오피스</h1>
 
-    <section aria-labelledby="service-status" aria-busy={checking} class="panel">
-        <div class="panel-bar">
-            <h2 id="service-status" class="font-bold">서비스 상태</h2>
-            <div class="flex flex-wrap items-center gap-2 text-ui">
-                {#await data.status then status}
-                    <time datetime={status.checkedAt} class="text-muted"
-                        >{checkedTime.format(new Date(status.checkedAt))} 확인</time
-                    >
-                {/await}
-                <Button variant="secondary" loading={checking} disabled={checking} onclick={recheck}>
-                    다시 확인
-                </Button>
-            </div>
+    <section
+        aria-labelledby="service-status"
+        aria-busy={checking}
+        class="panel col-span-full grid overflow-hidden md:grid-cols-[13rem_minmax(0,1fr)]"
+    >
+        <div
+            class="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-2 px-4 py-3 md:flex-col md:items-start md:justify-center md:border-r md:border-b-0"
+        >
+            <h2 id="service-status" class="text-lg font-bold">서비스 상태</h2>
+            <Button variant="secondary" loading={checking} disabled={checking} onclick={recheck}>
+                다시 확인
+            </Button>
         </div>
 
-        {#if checkError}<p role="alert" class="px-4 py-2 text-ui text-error">{checkError}</p>{/if}
-
-        {#await data.status}
-            <SectionState state="loading" lines={2} />
-        {:then status}
-            <ul aria-live="polite" class="divide-y divide-line">
-                {#each status.services as service (service.key)}
-                    {@const label = SERVICE_STATE_LABEL[service.state]}
-                    <li
-                        class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 sm:grid sm:grid-cols-[8rem_5rem_minmax(0,1fr)] sm:justify-items-start"
-                    >
-                        <span class="text-sm font-semibold">{service.name}</span>
-                        <StatusTag text={label.text} state={label.state} />
-                        <span class="basis-full text-ui text-muted wrap-anywhere sm:justify-self-end">
-                            {[service.issue, service.detail].filter(Boolean).join(' · ')}
-                        </span>
-                    </li>
-                {/each}
-            </ul>
-        {:catch}
-            <!-- 다시 확인은 제목 옆 버튼 하나로 한다. -->
-            {#if !checkError}<p role="alert" class="px-4 py-3 text-ui text-error">
-                    상태를 확인하지 못했어요
-                </p>{/if}
-        {/await}
+        <div class="min-w-0">
+            {#await data.status}
+                <SectionState state="loading" lines={2} />
+            {:then status}
+                <ul aria-live="polite" class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))]">
+                    {#each status.services as service (service.key)}
+                        {@const label = SERVICE_STATE_LABEL[service.state]}
+                        <li
+                            class="grid min-w-0 content-start gap-2 border-r border-line px-4 py-3 last:border-r-0"
+                        >
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="min-w-0 text-sm font-semibold wrap-anywhere">{service.name}</span
+                                >
+                                <StatusTag text={label.text} state={label.state} />
+                            </div>
+                            <span class="text-ui text-muted wrap-anywhere">
+                                {[service.issue, service.detail].filter(Boolean).join(' · ')}
+                            </span>
+                        </li>
+                    {/each}
+                </ul>
+                <time
+                    datetime={status.checkedAt}
+                    class="block border-t border-line px-4 py-1.5 text-right text-xs text-muted tabular-nums"
+                >
+                    {checkedTime.format(new Date(status.checkedAt))} 확인
+                </time>
+            {:catch}
+                <!-- 다시 확인은 제목 옆 버튼 하나로 한다. -->
+                {#if !checkError}<p role="alert" class="px-4 py-3 text-ui text-error">
+                        상태를 확인하지 못했어요
+                    </p>{/if}
+            {/await}
+            {#if checkError}<p role="alert" class="px-4 py-2 text-ui text-error">{checkError}</p>{/if}
+        </div>
     </section>
 
     <ServiceAdminManagement

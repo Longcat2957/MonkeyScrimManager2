@@ -52,11 +52,16 @@
 
 <!-- 팀 한 열: 머리 + 포지션 다섯 자리. 작업판 안에서 다른 열과 1px 경계로 붙는다. -->
 <section aria-labelledby={`team-${team.id}`} class="flex min-w-0 flex-col bg-surface">
-    <header class="flex h-11 items-center px-3">
+    <header class="flex h-13 items-center border-b border-line bg-surface-2 px-3">
         <div class="flex min-w-0 flex-col">
-            <h3 id={`team-${team.id}`} class="truncate text-sm font-semibold">{team.name}</h3>
+            <h3 id={`team-${team.id}`} class="truncate text-base leading-5 font-bold tracking-tight">
+                {team.name}
+            </h3>
             {#if details}
-                <span class="text-[0.6875rem] text-muted tabular-nums">평균 {formatMmr(average)}</span>
+                <span class="text-xs text-muted"
+                    >평균 <strong class="font-semibold text-ink-2 tabular-nums">{formatMmr(average)}</strong
+                    ></span
+                >
             {/if}
         </div>
     </header>
@@ -71,32 +76,36 @@
                 role="group"
                 aria-label={`${team.name} ${laneText(lane)} 자리`}
                 class={[
-                    'grid min-h-0 items-stretch gap-1 border p-1 transition',
+                    'grid min-h-0 items-stretch gap-1 rounded-form border p-1 transition-colors',
                     interactive && !targeting
                         ? 'grid-cols-[1.75rem_minmax(0,1fr)_2.25rem] pointer-coarse:grid-cols-[1.75rem_minmax(0,1fr)_2.75rem]'
                         : 'grid-cols-[1.75rem_minmax(0,1fr)]',
                     drag.over === slot
-                        ? 'rounded-(--radius-form) border-nexus/70 bg-nexus/10 ring-1 ring-nexus/40 dark:bg-nexus/15'
+                        ? 'border-nexus bg-selected ring-2 ring-nexus ring-inset'
                         : player
-                          ? 'rounded-(--radius-form) border-line bg-surface-hover/40'
-                          : 'rounded-(--radius-small) border-dashed border-line'
+                          ? 'border-line bg-surface-2'
+                          : 'border-dashed border-line-strong/60 bg-surface'
                 ]}
                 ondragover={(event) => drag.enter(event, slot)}
                 ondragleave={() => drag.leave(slot)}
                 ondrop={(event) => drag.drop(event, slot)}
             >
-                <span class="flex items-center justify-center" title={laneText(lane)}>
-                    <PositionIcon position={lane} size="sm" />
+                <span class="flex items-center justify-center border-r border-line" title={laneText(lane)}>
+                    <PositionIcon position={lane} size="md" />
                     <span class="sr-only">{laneText(lane)}</span>
                 </span>
 
                 {#snippet occupant(item: FormationPlayer)}
                     <PlayerFace name={item.displayName} imageUrl={item.iconUrl} size="sm" />
                     <span class="flex min-w-0 flex-1 flex-col text-left">
-                        <span class="truncate text-ui font-semibold">{item.displayName}</span>
-                        <span class="text-micro leading-4 text-muted tabular-nums">
-                            MMR {formatMmr(item.mmr[lane])}
-                            {#if offLane}<span class="text-warning"> · 희망 외</span>{/if}
+                        <span class="truncate text-sm leading-5 font-semibold text-ink"
+                            >{item.displayName}</span
+                        >
+                        <span class="text-micro leading-4 text-muted">
+                            MMR <span class="font-semibold text-ink-2 tabular-nums"
+                                >{formatMmr(item.mmr[lane])}</span
+                            >
+                            {#if offLane}<span class="font-medium text-warning"> · 희망 외</span>{/if}
                         </span>
                     </span>
                 {/snippet}
@@ -104,7 +113,7 @@
                 {#if targeting}
                     <button
                         type="button"
-                        class="flex min-w-0 items-center gap-2 rounded-(--radius-small) border border-dashed border-nexus/60 px-2 text-sm hover:bg-nexus/5 dark:hover:bg-nexus/10"
+                        class="flex min-w-0 items-center gap-1.5 rounded-small border border-dashed border-nexus/60 px-1.5 text-sm transition-colors hover:border-solid hover:border-nexus hover:bg-selected"
                         onclick={() => onplace(slot)}
                     >
                         {#if player}
@@ -121,11 +130,11 @@
                         draggable="true"
                         aria-pressed={selectedId === player.participantId}
                         class={[
-                            'flex min-w-0 cursor-grab items-center gap-2 rounded-(--radius-small) px-2 active:cursor-grabbing',
+                            'flex min-w-0 cursor-grab items-center gap-1.5 rounded-small px-1.5 transition-colors active:cursor-grabbing',
                             drag.id === player.participantId && 'opacity-50',
                             selectedId === player.participantId
-                                ? 'bg-nexus/10 ring-2 ring-nexus/40 dark:bg-nexus/15'
-                                : 'bg-surface hover:bg-surface-hover'
+                                ? 'bg-selected ring-2 ring-nexus ring-inset'
+                                : 'hover:bg-surface-hover'
                         ]}
                         ondragstart={(event) => drag.start(event, player.participantId)}
                         ondragend={() => drag.end()}
@@ -134,11 +143,11 @@
                         {@render occupant(player)}
                     </button>
                 {:else if player}
-                    <span class="flex min-w-0 items-center gap-2 rounded-(--radius-small) bg-surface px-2">
+                    <span class="flex min-w-0 items-center gap-1.5 px-1.5">
                         {@render occupant(player)}
                     </span>
                 {:else}
-                    <span class="flex items-center justify-center text-sm text-muted italic">비어 있음</span>
+                    <span class="flex items-center justify-center text-ui text-muted">비어 있음</span>
                 {/if}
 
                 {#if interactive && !targeting}

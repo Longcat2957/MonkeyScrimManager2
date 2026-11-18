@@ -9,6 +9,7 @@
 
     type Props = {
         match: BracketMatch;
+        formatLabel: string;
         teams: BracketTeam[];
         guildId: string;
         // 앞 경기 이름. 승자 자리를 "준결승 A 승자"처럼 표시한다.
@@ -17,6 +18,8 @@
         seatLabel: (seat: string) => string;
         // 배치 중이면 자리에 팀을 놓고 빼는 조작을 보여 준다. 확정 후에는 점수와 승자를 보여 준다.
         editing: boolean;
+        openingSides: boolean;
+        swapOnly: boolean;
         disabled?: boolean;
         selectedId: string | null;
         drag: DragState;
@@ -26,11 +29,14 @@
 
     let {
         match,
+        formatLabel,
         teams,
         guildId,
         labelOf,
         seatLabel,
         editing,
+        openingSides,
+        swapOnly,
         disabled = false,
         selectedId,
         drag,
@@ -46,8 +52,12 @@
 
 {#snippet seatRow(side: BracketSide, seat: string)}
     {@const team = teamOf(side.teamId)}
-    {@const label = seatLabel(seat)}
-    {@const targeting = selectedId !== null && selectedId !== side.teamId}
+    {@const sideName = openingSides ? `1세트 ${seat === match.a.seat ? '블루' : '레드'}` : ''}
+    {@const label = sideName ? `${match.label} ${sideName}` : seatLabel(seat)}
+    {@const targeting =
+        selectedId !== null &&
+        selectedId !== side.teamId &&
+        (!swapOnly || selectedId === match.a.teamId || selectedId === match.b.teamId)}
     <div
         role="group"
         aria-label={label}
@@ -59,6 +69,14 @@
         ondragleave={() => drag.leave(seat)}
         ondrop={(event) => drag.drop(event, seat)}
     >
+        {#if sideName}
+            <span
+                class={[
+                    'shrink-0 self-center pl-2 text-xs font-semibold',
+                    seat === match.a.seat ? 'text-team-blue' : 'text-team-red'
+                ]}>{sideName}</span
+            >
+        {/if}
         {#if targeting}
             <button
                 type="button"
@@ -68,7 +86,11 @@
             >
                 {#if team}
                     <BracketTeamContent {team} />
-                    <span class="shrink-0 text-xs font-semibold text-nexus">교체</span>
+                    <span class="shrink-0 text-xs font-semibold text-nexus">
+                        {openingSides && (selectedId === match.a.teamId || selectedId === match.b.teamId)
+                            ? '진영 교환'
+                            : '교체'}
+                    </span>
                 {:else}
                     <span class="flex-1 text-center text-sm font-semibold text-nexus">여기에 배치</span>
                 {/if}
@@ -80,6 +102,7 @@
                 {disabled}
                 draggable={!disabled}
                 aria-pressed={selectedId === team.id}
+                data-bracket-team={team.id}
                 class={[
                     'flex min-w-0 flex-1 cursor-grab items-center rounded-(--radius-small) px-3 active:cursor-grabbing',
                     drag.id === team.id && 'opacity-50',
@@ -93,28 +116,30 @@
             >
                 <BracketTeamContent {team} />
             </button>
-            <Button
-                variant="quiet"
-                size="sm"
-                class="min-h-11 min-w-11 px-2"
-                {disabled}
-                onclick={() => onplace(seat, null)}
-            >
-                <svg
-                    aria-hidden="true"
-                    viewBox="0 0 20 20"
-                    class="size-4 text-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.75"><path d="m5 5 10 10M15 5 5 15" /></svg
+            {#if !swapOnly}
+                <Button
+                    variant="quiet"
+                    size="sm"
+                    class="min-h-11 min-w-11 px-2"
+                    {disabled}
+                    onclick={() => onplace(seat, null)}
                 >
-                <span class="sr-only">{team.name} 배치 해제</span>
-            </Button>
+                    <svg
+                        aria-hidden="true"
+                        viewBox="0 0 20 20"
+                        class="size-4 text-muted"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"><path d="m5 5 10 10M15 5 5 15" /></svg
+                    >
+                    <span class="sr-only">{team.name} 배치 해제</span>
+                </Button>
+            {/if}
         {:else}
             <span
                 class="flex flex-1 items-center justify-center rounded-(--radius-small) border border-dashed border-line-strong text-ui text-muted"
             >
-                비어 있음
+                {label === '결승 직행' ? label : '비어 있음'}
             </span>
         {/if}
     </div>
@@ -141,8 +166,19 @@
 {/snippet}
 
 {#snippet sideRow(side: BracketSide, score: number, key: 'a' | 'b')}
-    {#if editing && side.seat}
+    {#if (editing || swapOnly) && side.seat}
         {@render seatRow(side, side.seat)}
+    {:else if openingSides}
+        {@const sideName = key === 'a' ? '1세트 블루' : '1세트 레드'}
+        <div role="group" aria-label={`${match.label} ${sideName}`}>
+            <span
+                class={[
+                    'block px-3 pt-2 text-xs font-semibold',
+                    key === 'a' ? 'text-team-blue' : 'text-team-red'
+                ]}>{sideName}</span
+            >
+            {@render resultRow(side, score, key)}
+        </div>
     {:else}
         {@render resultRow(side, score, key)}
     {/if}
@@ -152,27 +188,32 @@
 <article
     aria-label={match.label}
     class={[
-        'overflow-hidden rounded-(--radius-form) border bg-surface',
+        '@container/match min-w-0 overflow-hidden rounded-form border bg-surface',
         match.status === 'in_progress' ? 'border-warning/60' : 'border-line'
     ]}
 >
     <header
         class="flex min-h-8 items-center justify-between gap-2 border-b border-line bg-surface-2 px-3 py-1"
     >
-        <h4 class="text-xs font-semibold text-muted">{match.label}</h4>
+        <h3 class="min-w-0 text-sm font-bold">
+            {match.label}
+            {#if formatLabel}<span class="ml-1 text-xs font-normal text-muted">{formatLabel}</span>{/if}
+        </h3>
         {#if match.status !== 'pending'}<StatusTag {...MATCH_STATUS[match.status]} />{/if}
     </header>
-    {#if match.matchId}
+    {#if match.matchId && !editing}
         <a
             href={resolve('/g/[guildId]/matches/[matchId]', { guildId, matchId: match.matchId })}
-            class="block divide-y divide-line hover:bg-surface-hover focus-visible:outline-offset-[-2px]"
+            class="grid divide-y divide-line hover:bg-surface-hover focus-visible:outline-offset-[-2px] @min-[36rem]/match:grid-cols-2 @min-[36rem]/match:divide-x @min-[36rem]/match:divide-y-0"
         >
             <span class="sr-only">{match.label} 경기 상세, </span>
             {@render sideRow(match.a, match.scoreA, 'a')}
             {@render sideRow(match.b, match.scoreB, 'b')}
         </a>
     {:else}
-        <div class="divide-y divide-line">
+        <div
+            class="grid divide-y divide-line @min-[36rem]/match:grid-cols-2 @min-[36rem]/match:divide-x @min-[36rem]/match:divide-y-0"
+        >
             {@render sideRow(match.a, match.scoreA, 'a')}
             {@render sideRow(match.b, match.scoreB, 'b')}
         </div>

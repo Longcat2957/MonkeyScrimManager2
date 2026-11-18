@@ -32,7 +32,7 @@
 
     const id = $props.id();
 
-    const toDisplay = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.replaceAll('-', '/') : '');
+    const toDisplay = (draft: string) => draft.replaceAll('-', '/');
 
     // 실제 달력에 존재하는 날짜만 ISO로 인정한다.
     function parse(display: string): string | null {
@@ -51,21 +51,14 @@
         return iso;
     }
 
-    let display = $state(toDisplay(value));
-
-    // 외부에서 유효한 ISO 값을 넣으면 표시를 맞춘다. 사용자가 입력 중인 빈 값은 지우지 않는다.
-    $effect(() => {
-        if (value && parse(display) !== value) display = toDisplay(value);
-    });
-
     function input(event: Event) {
         const target = event.currentTarget as HTMLInputElement;
         const digits = target.value.replace(/\D/g, '').slice(0, 8);
         let next = digits;
         if (digits.length > 4) next = `${digits.slice(0, 4)}/${digits.slice(4)}`;
         if (digits.length > 6) next = `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6)}`;
-        display = next;
-        value = parse(next) ?? '';
+        // 잘못된 초안을 빈 조건으로 제출하지 않도록 유효하지 않은 입력도 호출자에게 전달한다.
+        value = parse(next) ?? next;
         target.value = next;
     }
 
@@ -84,7 +77,7 @@
         autocomplete="off"
         placeholder="YYYY/MM/DD"
         maxlength="10"
-        bind:value={display}
+        value={toDisplay(value)}
         oninput={input}
         {disabled}
         {required}

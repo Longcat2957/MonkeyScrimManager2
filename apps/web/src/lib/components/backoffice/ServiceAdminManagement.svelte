@@ -134,16 +134,48 @@
     };
 </script>
 
-<section
-    class="panel grid min-w-0 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
-    aria-labelledby={`${id}-admins`}
-    aria-busy={busy}
->
-    <h2 id={`${id}-admins`} class="panel-bar col-span-full font-bold">서비스 운영자</h2>
-    <div class="min-w-0">
+<section class="min-w-0" aria-labelledby={`${id}-admins`} aria-busy={busy}>
+    <h2 id={`${id}-admins`} class="mb-3 text-lg font-bold">서비스 운영자</h2>
+    <div class="panel">
+        <form
+            bind:this={grantForm}
+            method="POST"
+            {action}
+            aria-label="서비스 운영자 지정"
+            novalidate
+            use:enhance={submit}
+            {@attach preventComposingSubmit}
+            class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-t-box border-b border-line bg-surface-2 px-4 py-4"
+        >
+            <input type="hidden" name="enabled" value="true" />
+            <TextField
+                label="Discord 사용자 ID"
+                placeholder="예: 970000000000000001"
+                hint="이 서비스에 로그인한 사용자를 지정할 수 있어요."
+                inputmode="numeric"
+                autocomplete="off"
+                bind:value={targetId}
+                maxlength={20}
+                required
+                disabled={locked}
+                error={inputError}
+                oninput={() => (inputError = '')}
+            />
+            <Button variant="primary" type="submit" class="mt-5" disabled={locked} loading={busy && granting}>
+                운영자 지정
+            </Button>
+        </form>
+        {#if error || actionError}
+            <p role="alert" class="border-b border-line px-4 py-2 text-ui text-error wrap-anywhere">
+                {error || actionError}
+            </p>
+        {/if}
+        {#if notice}
+            <p role="status" class="border-b border-line px-4 py-2 text-ui text-success">{notice}</p>
+        {/if}
         <ul role="list" class="divide-y divide-line">
             {#each overview.admins as admin (admin.userId)}
-                <li class="flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-2">
+                <li class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-semibold wrap-anywhere">
                             {admin.displayName}{admin.userId === currentUserId ? ' (나)' : ''}
@@ -176,88 +208,53 @@
                 마지막 서비스 운영자는 권한을 해제할 수 없어요.
             </p>{/if}
     </div>
-
-    <form
-        bind:this={grantForm}
-        method="POST"
-        {action}
-        aria-label="서비스 운영자 지정"
-        novalidate
-        use:enhance={submit}
-        {@attach preventComposingSubmit}
-        class="flex min-w-0 flex-col gap-2 border-t border-line bg-surface-2 px-4 py-3 md:border-t-0 md:border-l"
-    >
-        <input type="hidden" name="enabled" value="true" />
-        <TextField
-            label="Discord 사용자 ID"
-            placeholder="예: 970000000000000001"
-            autocomplete="off"
-            bind:value={targetId}
-            maxlength={20}
-            required
-            disabled={locked}
-            error={inputError}
-            oninput={() => (inputError = '')}
-        />
-        <div class="flex flex-wrap items-center justify-end gap-2">
-            <p class="min-w-[min(100%,10rem)] flex-1 text-ui text-muted">
-                이 서비스에 로그인한 사용자를 지정할 수 있어요.
-            </p>
-            <Button variant="primary" type="submit" disabled={locked} loading={busy && granting}
-                >운영자 지정</Button
-            >
-        </div>
-    </form>
-    {#if error || actionError}<p
-            role="alert"
-            class="col-span-full border-t border-line px-4 py-2 text-ui text-error wrap-anywhere"
-        >
-            {error || actionError}
-        </p>{/if}
-    {#if notice}<p role="status" class="col-span-full border-t border-line px-4 py-2 text-ui text-success">
-            {notice}
-        </p>{/if}
 </section>
 
-<section class="panel min-w-0" aria-labelledby={`${id}-history`} aria-busy={moving}>
-    <h2 id={`${id}-history`} class="panel-bar font-bold">운영자 변경 이력</h2>
-    {#if overview.entries.length === 0}
-        <SectionState
-            state="empty"
-            message={overview.total ? '이 쪽에는 변경 이력이 없어요' : '아직 기록된 운영자 변경이 없어요'}
-        />
-    {:else}
-        <ol role="list" class="divide-y divide-line">
-            {#each overview.entries as entry (entry.id)}
-                <li class="flex min-w-0 flex-col gap-1 px-4 py-2.5">
-                    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+<section class="min-w-0" aria-labelledby={`${id}-history`} aria-busy={moving}>
+    <h2 id={`${id}-history`} class="mb-3 text-lg font-bold">운영자 변경 이력</h2>
+    <div class="panel">
+        {#if overview.entries.length === 0}
+            <SectionState
+                state="empty"
+                message={overview.total ? '이 쪽에는 변경 이력이 없어요' : '아직 기록된 운영자 변경이 없어요'}
+            />
+        {:else}
+            <ol role="list" class="divide-y divide-line">
+                {#each overview.entries as entry (entry.id)}
+                    <li
+                        class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 px-4 py-3"
+                    >
+                        <span
+                            class="row-span-3 rounded-small bg-surface-2 px-2 py-1 text-xs font-semibold text-ink-2"
+                        >
+                            {entry.kind === 'granted' ? '운영자 지정' : '권한 해제'}
+                        </span>
                         <h3 class="min-w-0 text-sm font-semibold wrap-anywhere">
                             {entry.target.displayName}{entry.target.userId ? ` (${entry.target.userId})` : ''}
-                            · {entry.kind === 'granted' ? '운영자 지정' : '권한 해제'}
                         </h3>
-                        <time datetime={entry.occurredAt} class="shrink-0 text-xs text-muted tabular-nums">
+                        <p class="text-ui text-muted wrap-anywhere">
+                            담당: {entry.source === 'bootstrap'
+                                ? '서버 초기 설정'
+                                : (entry.actor?.displayName ?? '삭제된 사용자')}
+                            {#if entry.source === 'web' && entry.actor?.userId}
+                                ({entry.actor.userId})
+                            {/if}
+                        </p>
+                        <time datetime={entry.occurredAt} class="text-xs text-muted tabular-nums">
                             {date.format(new Date(entry.occurredAt))}
                         </time>
-                    </div>
-                    <p class="text-ui text-muted wrap-anywhere">
-                        담당: {entry.source === 'bootstrap'
-                            ? '서버 초기 설정'
-                            : (entry.actor?.displayName ?? '삭제된 사용자')}
-                        {#if entry.source === 'web' && entry.actor?.userId}
-                            ({entry.actor.userId})
-                        {/if}
-                    </p>
-                </li>
-            {/each}
-        </ol>
-    {/if}
-    <div inert={locked}>
-        <PageNav
-            total={overview.total}
-            {pageSize}
-            current={currentPage}
-            label="운영자 변경 이력 쪽 이동"
-            onchange={onpagechange}
-        />
+                    </li>
+                {/each}
+            </ol>
+        {/if}
+        <div inert={locked}>
+            <PageNav
+                total={overview.total}
+                {pageSize}
+                current={currentPage}
+                label="운영자 변경 이력 쪽 이동"
+                onchange={onpagechange}
+            />
+        </div>
     </div>
 </section>

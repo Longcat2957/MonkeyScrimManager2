@@ -7,7 +7,7 @@
     import Button from '#lib/components/common/Button.svelte';
     import TextField from '#lib/components/common/TextField.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
-    import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
     import {
@@ -232,9 +232,9 @@
     };
 </script>
 
-<section aria-labelledby={`${id}-title`} class="panel @container min-w-0">
-    <h2 id={`${id}-title`} class="panel-bar font-bold">선호 챔피언</h2>
-    <p class="px-4 pt-3 text-ui text-muted">
+<section id="champion-preferences" aria-labelledby={`${id}-title`} class="@container min-w-0">
+    <h2 id={`${id}-title`} class="text-lg font-bold">선호 챔피언</h2>
+    <p class="mt-1 mb-3 max-w-prose text-ui text-muted">
         포지션마다 최대 {MAX_PREFERRED_CHAMPIONS}개를 원하는 순서로 저장해요. 프로필 정보를 공개하면 경매의
         포지션 참고 정보로 표시돼요.
     </p>
@@ -246,7 +246,7 @@
         {@attach preventComposingSubmit}
         aria-label="선호 챔피언 저장"
         aria-busy={busy}
-        class="grid min-w-0 gap-x-4 gap-y-3 p-4 @2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]"
+        class="panel grid min-w-0 @3xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]"
     >
         <input type="hidden" name="position" value={position} />
         {#each selected as championId (championId)}<input
@@ -256,68 +256,26 @@
             />{/each}
         <fieldset disabled={locked} class="col-span-full min-w-0 border-b border-line">
             <legend class="sr-only">선호 포지션</legend>
-            <SelectionTabs labels={POSITIONS.map(({ text }) => text)} {active} onchange={choosePosition} />
-        </fieldset>
-        <fieldset disabled={locked} class="min-w-0">
-            <legend class="sr-only">챔피언 검색 및 추가</legend>
-            <search aria-label="선호 챔피언 검색" class="flex min-w-0 flex-col gap-3">
-                <div {@attach searchInput}>
-                    <TextField
-                        label="챔피언 검색"
-                        type="search"
-                        placeholder="한글 또는 영문 이름"
-                        bind:value={query}
-                        disabled={locked || !value.catalog.length}
-                    />
-                </div>
-                {#if value.catalog.length}
-                    <ul
-                        aria-label="추가할 챔피언"
-                        class="grid grid-cols-2 gap-1.5 @md:grid-cols-3 @2xl:grid-cols-2 @4xl:grid-cols-3"
+            <div class="grid grid-cols-5 divide-x divide-line">
+                {#each POSITIONS as lane, index (lane.key)}
+                    <button
+                        type="button"
+                        aria-pressed={active === index}
+                        class={[
+                            'flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 border-b-2 px-1 py-2 text-xs font-semibold focus-visible:-outline-offset-2 @lg:flex-row @lg:gap-2 @lg:text-sm',
+                            active === index
+                                ? 'border-nexus bg-selected text-ink'
+                                : 'border-transparent text-ink-2 hover:bg-surface-hover'
+                        ]}
+                        onclick={() => choosePosition(index)}
                     >
-                        {#each results.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as champion (champion.championId)}
-                            <li class="min-w-0">
-                                <Button
-                                    variant="secondary"
-                                    class="w-full justify-start gap-2 px-2 text-ui !whitespace-normal"
-                                    disabled={locked || selected.length >= MAX_PREFERRED_CHAMPIONS}
-                                    onclick={() => void add(champion.championId)}
-                                >
-                                    {#if champion.iconUrl}<img
-                                            src={champion.iconUrl}
-                                            alt=""
-                                            width="28"
-                                            height="28"
-                                            loading="lazy"
-                                            class="size-7 shrink-0 rounded-(--radius-small)"
-                                        />{/if}
-                                    <span class="min-w-0 text-left wrap-anywhere"
-                                        >{champion.name}<span class="sr-only"> 추가</span></span
-                                    >
-                                </Button>
-                            </li>
-                        {:else}
-                            <li class="col-span-full py-3 text-sm text-muted">
-                                {query.trim()
-                                    ? '일치하는 미선택 챔피언이 없어요.'
-                                    : '추가할 챔피언이 없어요.'}
-                            </li>
-                        {/each}
-                    </ul>
-                    <PageNav
-                        total={results.length}
-                        pageSize={PAGE_SIZE}
-                        {current}
-                        onchange={(next) => {
-                            if (!locked) current = next;
-                        }}
-                        label="챔피언 검색 결과 쪽 이동"
-                    />
-                {/if}
-            </search>
+                        <PositionIcon position={lane.key} size="sm" />{lane.text}
+                    </button>
+                {/each}
+            </div>
         </fieldset>
         <div
-            class="flex min-w-0 flex-col gap-1.5 border-t border-line pt-3 @2xl:border-t-0 @2xl:border-l @2xl:pt-0 @2xl:pl-4"
+            class="flex min-w-0 flex-col gap-2 border-b border-line bg-surface-2 px-4 py-4 @3xl:border-r @3xl:border-b-0"
         >
             <div class="flex items-baseline justify-between gap-3">
                 <h3 class="text-sm font-semibold">{positionName} 선택 순서</h3>
@@ -378,10 +336,70 @@
                 {/each}
             </ol>
         </div>
+        <fieldset disabled={locked} class="min-w-0 px-4 py-4">
+            <legend class="sr-only">챔피언 검색 및 추가</legend>
+            <search aria-label="선호 챔피언 검색" class="flex min-w-0 flex-col gap-3">
+                <div {@attach searchInput}>
+                    <TextField
+                        label="챔피언 검색"
+                        type="search"
+                        placeholder="한글 또는 영문 이름"
+                        bind:value={query}
+                        disabled={locked || !value.catalog.length}
+                    />
+                </div>
+                {#if value.catalog.length}
+                    <ul
+                        aria-label="추가할 챔피언"
+                        class="grid grid-cols-2 gap-1.5 @md:grid-cols-3 @3xl:grid-cols-2 @5xl:grid-cols-3"
+                    >
+                        {#each results.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE) as champion (champion.championId)}
+                            <li class="min-w-0">
+                                <Button
+                                    variant="secondary"
+                                    class="w-full justify-start gap-2 px-2 text-ui !whitespace-normal"
+                                    disabled={locked || selected.length >= MAX_PREFERRED_CHAMPIONS}
+                                    onclick={() => void add(champion.championId)}
+                                >
+                                    {#if champion.iconUrl}<img
+                                            src={champion.iconUrl}
+                                            alt=""
+                                            width="28"
+                                            height="28"
+                                            loading="lazy"
+                                            class="size-7 shrink-0 rounded-(--radius-small)"
+                                        />{/if}
+                                    <span class="min-w-0 text-left wrap-anywhere"
+                                        >{champion.name}<span class="sr-only"> 추가</span></span
+                                    >
+                                </Button>
+                            </li>
+                        {:else}
+                            <li class="col-span-full py-3 text-sm text-muted">
+                                {query.trim()
+                                    ? '일치하는 미선택 챔피언이 없어요.'
+                                    : '추가할 챔피언이 없어요.'}
+                            </li>
+                        {/each}
+                    </ul>
+                    <PageNav
+                        total={results.length}
+                        pageSize={PAGE_SIZE}
+                        {current}
+                        onchange={(next) => {
+                            if (!locked) current = next;
+                        }}
+                        label="챔피언 검색 결과 쪽 이동"
+                    />
+                {/if}
+            </search>
+        </fieldset>
         <p role="status" class="sr-only">{orderNotice}</p>
-        {#if displayError}<p role="alert" class="col-span-full text-ui text-error">{displayError}</p>{/if}
-        {#if notice}<p role="status" class="col-span-full text-ui text-success">{notice}</p>{/if}
-        <div class="col-span-full flex flex-wrap justify-end gap-2 border-t border-line pt-3">
+        {#if displayError}<p role="alert" class="col-span-full px-4 py-2 text-ui text-error">
+                {displayError}
+            </p>{/if}
+        {#if notice}<p role="status" class="col-span-full px-4 py-2 text-ui text-success">{notice}</p>{/if}
+        <div class="col-span-full flex flex-wrap justify-end gap-2 border-t border-line px-4 py-3">
             {#if value.catalogError || refreshRequired}
                 <Button
                     variant="secondary"

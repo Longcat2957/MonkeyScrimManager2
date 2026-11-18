@@ -29,10 +29,15 @@
     };
 </script>
 
-<aside aria-labelledby="head-to-head" class="flex min-w-0 flex-col bg-surface">
-    <div class={['flex flex-col justify-center px-2 text-center', compact ? 'py-2' : 'h-11']}>
-        <h3 id="head-to-head" class="text-xs font-semibold opacity-70">라인 상대 전적</h3>
-        <p class="text-[0.6875rem] opacity-50">{teams[0].name} 기준</p>
+<aside aria-labelledby="head-to-head" class="flex min-w-0 flex-col bg-surface-2">
+    <div
+        class={[
+            'flex flex-col justify-center gap-0.5 px-1 text-center',
+            compact ? 'py-2' : 'h-13 border-b border-line'
+        ]}
+    >
+        <h3 id="head-to-head" class="text-xs leading-tight font-semibold text-ink-2">라인 상대 전적</h3>
+        <p class="truncate text-micro text-muted" title={`${teams[0].name} 기준`}>{teams[0].name} 기준</p>
     </div>
     <ol class={compact ? 'grid grid-cols-5 gap-1 px-3 pb-3' : 'formation-lanes'}>
         {#each LANES as lane (lane)}
@@ -41,15 +46,16 @@
             {@const record = a && b ? headToHead(pairs, a.participantId, b.participantId, lane) : null}
             <li
                 class={[
-                    'flex flex-col items-center justify-center rounded-(--radius-small) border border-line text-center',
+                    'flex min-w-0 flex-col items-center justify-center border-y text-center',
+                    record ? 'border-line bg-surface' : 'border-transparent',
                     compact && 'min-h-16 gap-0.5 py-1'
                 ]}
             >
-                <span class={compact ? 'text-xs font-semibold' : 'sr-only'}>{laneText(lane)}</span>
+                <span class={compact ? 'text-xs font-semibold text-ink-2' : 'sr-only'}>{laneText(lane)}</span>
                 {#if record}
                     <span
                         class={[
-                            'text-sm font-bold leading-none',
+                            'text-xs leading-none font-bold',
                             record.wins > record.losses && 'text-success',
                             record.wins < record.losses && 'text-error'
                         ]}
@@ -57,14 +63,16 @@
                     >
                         {record.wins > record.losses ? '>' : record.wins < record.losses ? '<' : '='}
                     </span>
-                    <span class="mt-1 text-xs font-semibold tabular-nums">{record.wins}-{record.losses}</span>
-                    <span class="text-[0.6875rem] opacity-60">
+                    <span class="font-brand text-base leading-5 font-bold tabular-nums"
+                        >{record.wins}-{record.losses}</span
+                    >
+                    <span class="text-micro leading-tight text-muted">
                         {record.wins === record.losses
                             ? '동률'
                             : `${Math.abs(record.wins - record.losses)}승 ${record.wins > record.losses ? '우위' : '열세'}`}
                     </span>
                 {:else}
-                    <span class="text-xs opacity-50">{a && b ? '맞대결 없음' : '-'}</span>
+                    <span class="text-xs text-muted">{a && b ? '맞대결 없음' : '-'}</span>
                 {/if}
             </li>
         {/each}

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { tick } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import PopoverMenu from '#lib/components/common/PopoverMenu.svelte';
     import type { MenuAction } from '#lib/components/common/menu.ts';
@@ -11,11 +12,13 @@
         actions: MenuAction[];
         busy: boolean;
         disabled: boolean;
-        onselect: (index: number) => void;
+        onselect: (index: number) => Promise<string | null>;
     };
 
     let { label, description, value, actions, busy, disabled, onselect }: Props = $props();
     let open = $state(false);
+    let error = $state('');
+    let field: HTMLSpanElement;
 </script>
 
 <!-- 선택지가 많아 Radio 대신 현재 값 버튼으로 메뉴를 연다. -->
@@ -24,7 +27,7 @@
         <span class="text-sm font-semibold">{label}</span>
         <span class="text-ui text-muted">{description}</span>
     </span>
-    <span class="relative inline-flex w-full min-w-0 max-w-full sm:w-auto sm:justify-self-end">
+    <span bind:this={field} class="relative inline-flex w-full min-w-0 max-w-full wrap-anywhere">
         <Button
             variant="secondary"
             aria-expanded={open}
@@ -53,10 +56,15 @@
             {label}
             {actions}
             align="right"
-            onselect={(index) => {
+            onselect={async (index) => {
                 open = false;
-                if (!disabled) onselect(index);
+                if (disabled) return;
+                error = '';
+                error = (await onselect(index)) ?? '';
+                await tick();
+                if (document.activeElement === document.body) field?.querySelector('button')?.focus();
             }}
         />
     </span>
+    {#if error}<p role="alert" class="text-ui text-error wrap-anywhere sm:col-span-2">{error}</p>{/if}
 </li>

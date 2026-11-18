@@ -5,6 +5,7 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { toast } from '#lib/ui/toast.ts';
     import BracketFormatControl from '#lib/components/bracket/BracketFormatControl.svelte';
+    import FirstSetSideField from '#lib/components/bracket/FirstSetSideField.svelte';
     import { bestOfLabel, type BestOf } from '#lib/features/scrims/bracket.ts';
     import {
         moveAssignment,
@@ -42,6 +43,7 @@
     let busy = $state(false);
     let details = $state(false);
     let bestOf = $state<BestOf>(3);
+    let blueTeamId = $state('');
     let selectionHeight = $state(0);
     let queue: { participantId: string; slot: SlotKey | null }[] = [];
     let processing = false;
@@ -59,8 +61,14 @@
     const selectedName = $derived(
         players.find((player) => player.participantId === selectedId)?.displayName ?? ''
     );
-    const confirmBlocked = $derived(unassigned.length ? '모든 참가자를 배치해야 확정할 수 있어요' : null);
     const startsMatch = $derived(teams.length === 2);
+    const confirmBlocked = $derived(
+        unassigned.length
+            ? '모든 참가자를 배치해야 확정할 수 있어요'
+            : startsMatch && !teams.some((team) => team.id === blueTeamId)
+              ? '경기를 시작하려면 1세트 블루 팀을 골라 주세요'
+              : null
+    );
 
     function select(participantId: string) {
         if (!editable || busy) return;
@@ -110,7 +118,7 @@
         try {
             const message = await postAction(
                 name,
-                name === 'confirm' && startsMatch ? { bestOf: String(bestOf) } : {}
+                name === 'confirm' && startsMatch ? { bestOf: String(bestOf), blueTeamId } : {}
             );
             if (message) toast.error(message);
         } finally {
@@ -153,9 +161,9 @@
 >
     <!-- 도구 줄 -->
     <header class="panel-bar">
-        <div class="flex min-w-0 flex-col">
+        <div class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
             <div class="flex items-center gap-2">
-                <h2 id="manual-formation" class="text-base font-bold">수동 편성</h2>
+                <h2 id="manual-formation" class="text-lg leading-6 font-bold tracking-tight">수동 편성</h2>
                 {#if confirmed}
                     <StatusTag text="확정" state="success" />
                 {:else if !editable}
@@ -165,73 +173,38 @@
                     <Spinner />
                 {/if}
             </div>
-            <p class="text-ui text-muted tabular-nums">
-                {placed}/{players.length} 배치
+            <p class="text-xs font-medium text-muted tabular-nums">
+                <strong class="text-ink">{placed}</strong>/{players.length} 배치
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-1.5">
-            <!-- 시너지·라인 상대 전적 레일을 펼친다. -->
-            <Button
-                variant={details ? 'secondary' : 'quiet'}
-                class="px-3 text-ui"
-                onclick={() => (details = !details)}
-            >
-                {details ? '상세 닫기' : '상세'}
-            </Button>
-            {#if editable}
-                {#if startsMatch}
-                    <BracketFormatControl
-                        label="시리즈"
-                        {bestOf}
-                        disabled={busy || pending > 0}
-                        onchange={async (value) => {
-                            bestOf = value;
-                        }}
-                    />
-                {/if}
-                <ChangeMethodButton disabled={busy || pending > 0} />
-                <Button
-                    variant="quiet"
-                    class="px-3 text-ui"
-                    disabled={placed === 0 || busy || pending > 0}
-                    onclick={reset}>초기화</Button
-                >
-                <Button
-                    variant="primary"
-                    class="px-4 text-ui"
-                    disabled={Boolean(confirmBlocked) || busy || pending > 0}
-                    onclick={confirmFormation}
-                >
-                    {startsMatch ? '편성 확정·경기 시작' : '편성 확정'}
-                </Button>
-            {/if}
-        </div>
+        <!-- 시너지·라인 상대 전적 레일을 펼친다. -->
+        <Button
+            variant={details ? 'secondary' : 'quiet'}
+            class="px-3 text-ui"
+            aria-expanded={details}
+            onclick={() => (details = !details)}
+        >
+            {details ? '상세 닫기' : '상세'}
+        </Button>
     </header>
 
-    {#if editable && (selectedId || confirmBlocked)}
-        <!-- 선택 상태와 확정 조건을 같은 자리에서 알리고 선택 안내는 스크롤 중에도 유지한다. -->
+    {#if editable && selectedId}
+        <!-- 선택한 참가자와 배치 안내는 스크롤 중에도 유지한다. -->
         <p
             bind:clientHeight={selectionHeight}
-            class={[
-                'flex min-h-9 items-center gap-2 bg-surface-2 px-3 py-1 text-ui',
-                selectedId && 'sticky top-(--app-header-height) z-20 border-b border-line'
-            ]}
+            class="sticky top-(--app-header-height) z-20 flex min-h-9 items-center gap-2 border-b border-nexus bg-selected px-4 py-1.5 text-ui"
             aria-live="polite"
         >
-            {#if selectedId}
-                <span class="min-w-0 flex-1">
-                    <span class="flex min-w-0 items-baseline gap-1">
-                        <strong class="truncate">{selectedName}</strong>
-                        <span class="shrink-0">선택됨</span>
-                    </span>
-                    <span class="text-xs text-muted">놓을 자리를 누르거나 끌어 놓으세요</span>
+            <span class="min-w-0 flex-1">
+                <span class="flex min-w-0 items-baseline gap-1">
+                    <strong class="truncate">{selectedName}</strong>
+                    <span class="shrink-0 text-xs font-semibold text-nexus">선택됨</span>
                 </span>
-                <Button variant="quiet" class="shrink-0 px-2 text-ui" onclick={() => (selectedId = null)}
-                    >선택 취소</Button
-                >
-            {:else}
-                <span class="text-muted">{confirmBlocked}</span>
-            {/if}
+                <span class="text-xs text-ink-2">놓을 자리를 누르거나 끌어 놓으세요</span>
+            </span>
+            <Button variant="quiet" class="shrink-0 px-2 text-ui" onclick={() => (selectedId = null)}
+                >선택 취소</Button
+            >
         </p>
     {/if}
 
@@ -250,16 +223,14 @@
         />
     {/snippet}
 
-    {#if !confirmed && (editable || unassigned.length > 0)}
-        <div class="border-t border-line">
-            <FormationPool
-                players={unassigned}
-                {selectedId}
-                interactive={editable && !busy}
-                {drag}
-                onselect={select}
-            />
-        </div>
+    {#if !confirmed && (unassigned.length > 0 || (editable && drag.id))}
+        <FormationPool
+            players={unassigned}
+            {selectedId}
+            interactive={editable && !busy}
+            {drag}
+            onselect={select}
+        />
     {/if}
 
     <!-- 좁은 화면은 참가자를 먼저 고른 뒤 세로로 이어지는 팀 자리에 배치한다. -->
@@ -303,14 +274,60 @@
             {/if}
         {/if}
     </div>
+    {#if editable}
+        <footer class="border-t border-line">
+            <div class="flex flex-wrap items-center justify-end gap-1 px-3 py-1">
+                <ChangeMethodButton disabled={busy || pending > 0} />
+                <Button variant="quiet" disabled={placed === 0 || busy || pending > 0} onclick={reset}
+                    >배정 초기화</Button
+                >
+            </div>
+            <div class="flex flex-wrap items-end gap-x-8 gap-y-4 border-t border-line bg-surface-2 px-4 py-4">
+                {#if startsMatch}
+                    <div>
+                        <p aria-hidden="true" class="text-xs font-semibold text-ink-2">경기 방식</p>
+                        <BracketFormatControl
+                            label="시리즈"
+                            {bestOf}
+                            disabled={busy || pending > 0}
+                            onchange={async (value) => {
+                                bestOf = value;
+                            }}
+                        />
+                    </div>
+                    <FirstSetSideField
+                        teamA={teams[0]!}
+                        teamB={teams[1]!}
+                        bind:value={blueTeamId}
+                        disabled={busy || pending > 0}
+                    />
+                {/if}
+                <div
+                    role="group"
+                    aria-label="편성 확정"
+                    aria-describedby={confirmBlocked ? 'formation-blocked' : undefined}
+                    class="flex w-full flex-col gap-1.5 sm:ml-auto sm:w-auto sm:items-end"
+                >
+                    {#if confirmBlocked}
+                        <p id="formation-blocked" class="text-xs text-ink-2">{confirmBlocked}</p>
+                    {/if}
+                    <Button
+                        variant="primary"
+                        disabled={Boolean(confirmBlocked) || busy || pending > 0}
+                        onclick={confirmFormation}>{startsMatch ? '편성 확정·경기 시작' : '편성 확정'}</Button
+                    >
+                </div>
+            </div>
+        </footer>
+    {/if}
 </section>
 
 <style>
     .manual-board :global(.formation-lanes) {
         display: grid;
-        grid-template-rows: repeat(5, minmax(3.5rem, auto));
-        gap: 0.25rem;
-        padding: 0 0.5rem 0.5rem;
+        grid-template-rows: repeat(5, minmax(3.75rem, auto));
+        gap: 0.375rem;
+        padding: 0.5rem;
     }
 
     .manual-board :global(button) {

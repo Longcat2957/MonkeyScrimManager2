@@ -22,32 +22,19 @@
         if (match.status !== 'completed' || match.scoreA === match.scoreB) return null;
         return match.scoreA > match.scoreB ? 'a' : 'b';
     }
-
-    const COLUMNS = '@min-[42rem]:grid-cols-[minmax(0,1.6fr)_3rem_4rem_minmax(0,.7fr)_5.5rem_1rem]';
 </script>
 
-<!-- 진행 중·종료를 각각 머리 줄과 열 제목이 있는 표로 나눈다. 행 전체가 경기 상세 링크다. -->
-<section aria-labelledby={id} class="panel @container overflow-hidden">
-    <header class="panel-bar">
-        <h2 {id} class="font-bold">{title}</h2>
-        <span class="text-xs font-medium text-muted tabular-nums">{count}경기</span>
+<!-- 각 행에서 내전 문맥, 양 팀 점수, 경기 상태를 한 번에 읽는다. -->
+<section aria-labelledby={id} class="@container min-w-0">
+    <header class="flex items-baseline gap-2 border-b border-line-strong pb-2">
+        <h2 {id} class="text-lg font-bold">{title}</h2>
+        <span class="text-ui text-muted tabular-nums">{count}경기</span>
     </header>
 
     {#if matches.length === 0}
         <p class="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>
     {:else}
-        <div
-            aria-hidden="true"
-            class={[
-                'hidden items-center gap-3 border-b border-line bg-surface-2 px-4 py-2 text-xs font-medium text-muted @min-[42rem]:grid',
-                COLUMNS
-            ]}
-        >
-            <span>경기</span><span>형식</span><span class="text-center">스코어</span><span>결과</span><span
-                >날짜</span
-            ><span></span>
-        </div>
-        <ul class="divide-y divide-line">
+        <ul class="divide-y divide-line border-b border-line">
             {#each matches as match (match.id)}
                 {@const winner = winnerOf(match)}
                 {@const status = MATCH_STATUS[match.status]}
@@ -55,72 +42,38 @@
                 <li>
                     <a
                         href={hrefFor(match)}
-                        class={[
-                            'grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-offset-[-2px]',
-                            COLUMNS
-                        ]}
+                        class="ledger grid min-w-0 items-center gap-x-3 gap-y-2 px-2 py-3 text-ui hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:-outline-offset-2 @min-[40rem]:px-3"
                     >
-                        <span class="flex min-w-0 flex-col gap-0.5">
-                            <!-- 팀 이름은 각각 줄이고 vs는 항상 보이게 둔다. 승자는 결과 열 한 곳에서만 표시한다. -->
-                            <span
-                                class="grid grid-cols-[minmax(0,max-content)_auto_minmax(0,max-content)] items-baseline justify-start gap-1.5 text-ui font-semibold"
-                            >
-                                <span class="truncate">{match.teamA}</span>
-                                <span class="text-micro font-normal text-muted">vs</span>
-                                <span class="truncate">{match.teamB}</span>
-                            </span>
-                            <span class="truncate text-xs text-muted">
-                                {match.scrimTitle}<span class="@min-[42rem]:hidden"
-                                    >{` · BO${match.bestOf} · ${date}`}</span
-                                >
-                            </span>
+                        <span class="min-w-0">
+                            <span class="block break-words font-semibold">{match.scrimTitle}</span>
+                            <span class="text-xs text-muted">{date} · BO{match.bestOf}</span>
                         </span>
-
-                        <span class="hidden text-ui text-ink-2 @min-[42rem]:block"
-                            ><span class="sr-only">형식 </span>BO{match.bestOf}</span
-                        >
-
-                        <span class="whitespace-nowrap text-center text-base font-bold tabular-nums">
-                            <span class="sr-only">스코어 </span>{match.scoreA} : {match.scoreB}
-                        </span>
-
                         <span
-                            class="col-span-2 flex min-w-0 items-center gap-1.5 text-ui @min-[42rem]:col-span-1"
+                            class="pair grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2"
                         >
-                            {#if winner}
-                                <svg
-                                    aria-hidden="true"
-                                    viewBox="0 0 24 24"
-                                    class="size-3.5 shrink-0 text-role-gold"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    ><path
-                                        d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 5h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22m7-7.34V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z"
-                                    /></svg
-                                >
-                                <span class="truncate font-medium"
-                                    ><span class="sr-only">승리 </span>{winner === 'a'
-                                        ? match.teamA
-                                        : match.teamB}</span
-                                >
-                            {:else}
-                                <StatusTag text={status.text} state={status.state} />
-                            {/if}
+                            <span class={['min-w-0 break-words text-right', winner === 'a' && 'font-bold']}>
+                                {match.teamA}
+                                {#if winner === 'a'}<small class="text-success">승</small>{/if}
+                            </span>
+                            <strong class="whitespace-nowrap font-brand text-lg tabular-nums">
+                                <span class="sr-only">스코어 </span>{match.scoreA} : {match.scoreB}
+                            </strong>
+                            <span class={['min-w-0 break-words', winner === 'b' && 'font-bold']}>
+                                {match.teamB}
+                                {#if winner === 'b'}<small class="text-success">승</small>{/if}
+                            </span>
                         </span>
-
-                        <span class="hidden text-xs text-muted @min-[42rem]:block">{date}</span>
-
-                        <svg
-                            aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            class="hidden size-4 text-muted @min-[42rem]:block"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"><path d="m9 18 6-6-6-6" /></svg
-                        >
+                        <span class="flex items-center justify-end gap-1">
+                            <StatusTag text={status.text} state={status.state} />
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                class="size-4 text-muted"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"><path d="m9 18 6-6-6-6" /></svg
+                            >
+                        </span>
                     </a>
                 </li>
             {/each}
@@ -128,3 +81,20 @@
     {/if}
     {@render footer?.()}
 </section>
+
+<style>
+    .ledger {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .pair {
+        grid-area: 2 / 1 / 3 / -1;
+    }
+    @container (min-width: 40rem) {
+        .ledger {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) 5.5rem;
+        }
+        .pair {
+            grid-area: auto;
+        }
+    }
+</style>

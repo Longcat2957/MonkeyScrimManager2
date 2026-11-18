@@ -8,7 +8,6 @@ import { createHttpMatchFiltersFixture } from '../api/support/http-match-filter-
 
 type Fixture = Awaited<ReturnType<typeof createHttpMatchFiltersFixture>>;
 const captures: Record<string, unknown>[] = [];
-const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 async function capture(page: Page, fixture: Fixture, state: string) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -50,32 +49,11 @@ async function ready(page: Page) {
     await page.evaluate(() => document.fonts.ready);
 }
 
-async function season(page: Page, name: string) {
-    const trigger = page.getByRole('button', { name: /^시즌:/ });
-    await trigger.press('Enter');
-    const dialog = page.getByRole('dialog', { name: '조회할 시즌', exact: true });
-    // 오버레이의 최초 포커스가 완료된 뒤 선택 대상을 누르면 초기 rAF와 키 입력이 경합하지 않는다.
-    await page.waitForFunction(
-        (node) => {
-            const first = node
-                ? [
-                      ...node.querySelectorAll<HTMLButtonElement>(
-                          'button:not(:disabled):not([aria-hidden="true"]):not([tabindex="-1"])'
-                      )
-                  ].find(
-                      (button) =>
-                          button.getClientRects().length > 0 &&
-                          getComputedStyle(button).visibility !== 'hidden'
-                  )
-                : undefined;
-            return Boolean(first && first === document.activeElement);
-        },
-        await dialog.elementHandle()
-    );
-    await dialog.getByRole('button', { name: new RegExp('^' + escape(name)) }).press('Enter');
-    await dialog.getByRole('button', { name: new RegExp('^' + escape(name)) }).waitFor({ state: 'hidden' });
-    await page.getByRole('button', { name: '시즌: ' + name, exact: true }).waitFor();
-    await focused(trigger);
+async function season(control: Locator, id: string) {
+    await control.focus();
+    await control.selectOption(id);
+    assert.equal(await control.inputValue(), id);
+    await focused(control);
 }
 
 async function rows(page: Page) {
@@ -148,9 +126,11 @@ for (const width of [1440, 390])
                 const query = page.getByLabel('내전·팀 이름 검색', { exact: true });
                 const from = page.getByLabel('시작일', { exact: true });
                 const to = page.getByLabel('종료일', { exact: true });
+                const seasonSelect = page.getByRole('combobox', { name: '조회할 시즌', exact: true });
                 const submit = page.getByRole('button', { name: '조회', exact: true });
                 const reset = page.getByRole('button', { name: '초기화', exact: true });
                 const day = '2026-10-24';
+                const displayedDay = day.replaceAll('-', '/');
                 const text = '%_';
                 const sameTime = Array.from(
                     { length: 21 },
@@ -174,7 +154,11 @@ for (const width of [1440, 390])
                 assert.equal(await to.count(), 1);
                 assert.equal(await submit.count(), 1);
                 assert.equal(await reset.count(), 0);
-                await page.getByRole('button', { name: '시즌: 전체 시즌', exact: true }).waitFor();
+                assert.equal(await seasonSelect.inputValue(), '');
+                assert.equal(
+                    await seasonSelect.getByRole('option', { name: '전체 시즌', selected: true }).count(),
+                    1
+                );
                 assert.equal((await rows(page)).length, 8);
                 for (const id of [f.match.id, f.cases.unknown!.id, f.cases.cancelled!.id])
                     assert.ok((await rows(page)).includes(id));
@@ -186,7 +170,7 @@ for (const width of [1440, 390])
                 await query.fill(text);
                 await from.fill(day);
                 await to.fill(day);
-                await season(page, f.currentSeason.name);
+                await season(seasonSelect, f.currentSeason.id);
                 assert.equal(await reset.count(), 1);
                 assert.equal(page.url(), initialUrl);
                 assert.equal(loads.length, initialLoads);
@@ -232,8 +216,8 @@ for (const width of [1440, 390])
                 await page.getByText('조건에 맞는 경기가 없어요', { exact: true }).waitFor();
                 assert.equal(await page.getByText('조건에 맞는 경기가 없어요', { exact: true }).count(), 1);
                 assert.deepEqual(await rows(page), []);
-                assert.equal(await from.inputValue(), day);
-                assert.equal(await to.inputValue(), day);
+                assert.equal(await from.inputValue(), displayedDay);
+                assert.equal(await to.inputValue(), displayedDay);
                 await capture(page, f, 'empty-filter-results');
                 await query.fill(text);
                 await submit.press('Enter');
@@ -258,9 +242,14 @@ for (const width of [1440, 390])
                 assert.equal(await doneSection.count(), 0);
                 assert.equal(await page.getByText('조건에 맞는 경기가 없어요', { exact: true }).count(), 0);
                 assert.equal(await query.inputValue(), text);
-                assert.equal(await to.inputValue(), day);
+                assert.equal(await to.inputValue(), displayedDay);
                 await capture(page, f, 'invalid-date-correction');
                 const beforeInvalid = loads.length;
+                await from.fill('2026/02/30');
+                await submit.press('Enter');
+                await focused(from);
+                assert.equal(await from.inputValue(), '2026/02/30');
+                assert.equal(loads.length, beforeInvalid);
                 await from.fill('2026-10-25');
                 await submit.press('Enter');
                 await page
@@ -269,8 +258,8 @@ for (const width of [1440, 390])
                     .waitFor();
                 assert.equal(loads.length, beforeInvalid);
                 await focused(to);
-                assert.equal(await from.inputValue(), '2026-10-25');
-                assert.equal(await to.inputValue(), day);
+                assert.equal(await from.inputValue(), '2026/10/25');
+                assert.equal(await to.inputValue(), displayedDay);
                 await from.fill(day);
                 await submit.press('Enter');
                 await applied({ q: text, from: day, to: day, season: f.currentSeason.id, page: null });
@@ -281,14 +270,14 @@ for (const width of [1440, 390])
                 assert.equal(await query.inputValue(), '');
                 assert.equal(await from.inputValue(), '');
                 assert.equal(await to.inputValue(), '');
-                await page.getByRole('button', { name: '시즌: 전체 시즌', exact: true }).waitFor();
-                await season(page, f.previousSeason.name);
+                assert.equal(await seasonSelect.inputValue(), '');
+                await season(seasonSelect, f.previousSeason.id);
                 await submit.press('Enter');
                 await applied({ season: f.previousSeason.id });
                 await expectRows(page, [f.match.id]);
                 assert.ok((await doneSection.innerText()).includes('날짜 미확인'));
 
-                await season(page, '전체 시즌');
+                await season(seasonSelect, '');
                 await query.fill(text);
                 await from.fill(day);
                 await to.fill(day);

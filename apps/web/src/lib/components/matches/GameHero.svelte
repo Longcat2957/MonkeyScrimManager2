@@ -3,16 +3,9 @@
     import type { GameDetail } from '#lib/features/matches/types.ts';
     import { formatDuration, formatLongDate, kdaRatio } from '#lib/features/matches/format.ts';
 
-    // 세트 한 판의 머리: 이긴 진영, 진영별 킬 점수, 날짜·시간·패치, MVP. 배경은 MVP 챔피언 스플래시.
+    // 시리즈 점수와 구분하여 선택 세트의 일시·패치·MVP를 비교표 머리에 표시한다.
     let { game }: { game: GameDetail } = $props();
 
-    const blue = $derived(game.sides.find((side) => side.side === 'blue')!);
-    const red = $derived(game.sides.find((side) => side.side === 'red')!);
-    const kills = (side: GameDetail['sides'][number]) =>
-        side.players.some((player) => player.kills === null)
-            ? '-'
-            : side.players.reduce((sum, player) => sum + (player.kills ?? 0), 0);
-    const winner = $derived(game.sides.find((side) => side.win) ?? null);
     const mvp = $derived(
         game.sides.flatMap((side) => side.players).find((player) => player.badge === 'mvp') ?? null
     );
@@ -27,58 +20,45 @@
     );
 </script>
 
-<!-- 세트 킬은 시리즈 스코어와 분리하고, 블루·레드 진영 이름과 함께 표시한다. -->
-<div
-    class="inverse-surface relative isolate overflow-hidden rounded-(--radius-box) border border-line bg-surface text-ink"
+<header
+    class={[
+        'grid min-w-0 border-b border-line',
+        mvp && '@min-[36rem]/record:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]'
+    ]}
 >
-    {#if game.splashUrl}
-        <img
-            src={game.splashUrl}
-            alt=""
-            class="pointer-events-none absolute inset-y-0 right-0 -z-10 h-full w-2/3 object-cover object-[60%_25%] opacity-15"
-        />
-    {/if}
-    <header
-        class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-2.5"
-    >
-        <h2 id="game-heading" class="text-sm font-bold">{game.order}세트 결과</h2>
-        <p class="text-xs text-ink-2">{meta}</p>
-    </header>
-    <div class="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 px-4 py-4">
-        <div class="flex min-w-0 flex-col gap-1.5">
-            <div class="flex flex-wrap items-center gap-2">
-                {#if winner}
-                    <strong class="text-ui"
-                        >{winner.side === 'red' ? '레드' : '블루'} · {winner.teamName} 승리</strong
-                    >
-                {/if}
-                {#if game.mmrStatus === 'pending'}
-                    <StatusTag text="MMR 반영 대기" state="warning" />
-                {/if}
-            </div>
-            <p class="flex items-baseline gap-2 tabular-nums">
-                <span class="text-xs font-medium text-ink-2">블루 킬</span>
-                <strong class="text-3xl text-team-blue">{kills(blue)}</strong>
-                <span aria-hidden="true" class="text-lg text-muted">:</span>
-                <strong class="text-3xl text-team-red">{kills(red)}</strong>
-                <span class="text-xs font-medium text-ink-2">레드 킬</span>
-            </p>
+    <div class="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-3 sm:px-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <h2 id="game-heading" class="text-lg font-bold"><span>{game.order}세트</span> 결과</h2>
+            {#if game.mmrStatus === 'pending'}<StatusTag text="MMR 반영 대기" state="warning" />{/if}
         </div>
-
-        {#if mvp}
-            <div class="flex min-w-0 items-center gap-2.5">
-                {#if mvp.champion.iconUrl}
-                    <img src={mvp.champion.iconUrl} alt="" class="size-10 rounded-(--radius-form)" />
-                {/if}
-                <div class="flex min-w-0 flex-col">
-                    <span class="text-micro font-bold text-role-gold">MVP</span>
-                    <span class="break-words text-sm font-semibold">{mvp.displayName}</span>
-                    <span class="text-xs text-ink-2 tabular-nums"
-                        >{mvp.champion.name} · {mvp.kills ?? '-'}/{mvp.deaths ?? '-'}/{mvp.assists ?? '-'} · KDA
-                        {kdaRatio(mvp)}</span
-                    >
-                </div>
-            </div>
-        {/if}
+        <p class="text-xs text-muted">{meta}</p>
     </div>
-</div>
+    {#if mvp}
+        <div
+            class="relative isolate flex min-w-0 flex-wrap items-center gap-2 overflow-hidden bg-surface-2 px-3 py-2 sm:px-4"
+        >
+            {#if game.splashUrl}
+                <img
+                    src={game.splashUrl}
+                    alt=""
+                    class="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover object-[60%_25%] opacity-10"
+                />
+            {/if}
+            {#if mvp.champion.iconUrl}<img
+                    src={mvp.champion.iconUrl}
+                    alt=""
+                    class="size-8 rounded-form"
+                />{/if}
+            <div class="min-w-0">
+                <p class="break-words text-ui font-semibold">
+                    {mvp.displayName} <span class="text-xs text-role-gold">MVP</span>
+                </p>
+                <p class="text-xs text-ink-2 tabular-nums">
+                    {mvp.champion.name} · {mvp.kills ?? '-'}/{mvp.deaths ?? '-'}/{mvp.assists ?? '-'} · KDA {kdaRatio(
+                        mvp
+                    )}
+                </p>
+            </div>
+        </div>
+    {/if}
+</header>

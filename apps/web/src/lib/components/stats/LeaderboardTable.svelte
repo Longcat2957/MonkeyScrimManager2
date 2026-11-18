@@ -86,7 +86,7 @@
     }
 </script>
 
-<p id={`${id}-hint`} class="px-3 py-2 text-xs text-muted xl:hidden">
+<p id={`${id}-hint`} class="px-3 py-2 text-xs text-muted @min-[50rem]/board:hidden">
     표를 가로로 스크롤해 모든 지표를 확인하세요.
 </p>
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (가로 표의 스크롤 영역에 키보드 진입점을 제공한다.) -->
@@ -95,7 +95,7 @@
     aria-labelledby={id}
     aria-describedby={`${id}-hint`}
     tabindex="0"
-    class="relative overflow-x-auto scroll-ps-[9.5rem] scroll-pe-2 sm:scroll-ps-[12.5rem]"
+    class="relative overflow-x-auto scroll-ps-[9.5rem] scroll-pe-2"
 >
     <table class="data-table min-w-[44rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
         <caption {id} class="sr-only">사용자별 지표</caption>
@@ -106,7 +106,7 @@
                 >
                 <th
                     scope="col"
-                    class="sticky left-0 z-20 w-36 min-w-36 max-w-36 bg-surface-2 px-3 py-2 text-left font-medium text-muted sm:w-48 sm:min-w-48 sm:max-w-48"
+                    class="sticky left-0 z-20 w-36 min-w-36 max-w-36 bg-surface-2 px-3 py-2 text-left font-medium text-muted"
                     >사용자</th
                 >
                 {#each COLUMNS as column (column.key)}
@@ -155,12 +155,12 @@
                         value(row, sortKey) !== null && PODIUM[index]
                     ]}
                 >
-                    <td class="px-2 py-2.5 text-right font-semibold tabular-nums lg:px-3"
+                    <td class="px-2 py-2.5 text-right font-brand text-base font-semibold tabular-nums"
                         >{value(row, sortKey) === null ? '—' : index + 1}</td
                     >
                     <th
                         scope="row"
-                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 bg-surface px-3 py-1 text-left font-normal sm:w-48 sm:min-w-48 sm:max-w-48"
+                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 bg-surface px-2 py-1 text-left font-normal"
                     >
                         <div class="flex min-w-0 flex-col">
                             <a
@@ -176,7 +176,7 @@
                                 >
                             </a>
                             {#if row.badges.length}
-                                <ul aria-label="1위 업적" class="hidden flex-wrap gap-x-2 pl-8 sm:flex">
+                                <ul aria-label="1위 업적" class="flex flex-wrap gap-x-2 pl-8">
                                     {#each row.badges as badge (badge.id)}
                                         <li class="text-micro font-medium whitespace-normal text-role-gold">
                                             {badge.title}
@@ -188,7 +188,7 @@
                     </th>
                     <td class="px-3 py-2.5 text-right tabular-nums">
                         <span class="block font-semibold">{fixed(row.kda, 2)}</span>
-                        <span class="hidden text-xs text-muted sm:block"
+                        <span class="block text-xs text-muted"
                             >{fixed(row.kills, 1)} / {fixed(row.deaths, 1)} / {fixed(row.assists, 1)}</span
                         >
                     </td>
@@ -199,9 +199,7 @@
                                 row.wins / row.games >= 0.5 ? 'text-success' : 'text-error'
                             ]}>{percent(row.wins / row.games)}</span
                         >
-                        <span class="hidden text-xs text-muted sm:block"
-                            >{row.wins}승 {row.games - row.wins}패</span
-                        >
+                        <span class="block text-xs text-muted">{row.wins}승 {row.games - row.wins}패</span>
                     </td>
                     <td class="px-3 py-2.5 text-right tabular-nums">{row.games}</td>
                     <td class="px-3 py-2.5 text-right tabular-nums">{percent(row.killParticipation)}</td>

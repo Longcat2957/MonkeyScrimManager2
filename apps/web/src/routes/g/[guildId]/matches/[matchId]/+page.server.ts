@@ -1,6 +1,6 @@
 import { dev } from '$app/env';
 import { error, fail } from '@sveltejs/kit';
-import { getMockMatch, recordMockGame, type RawGame } from '#lib/mocks/matches.ts';
+import { getMockMatch, recordMockGame, setMockMatchSide, type RawGame } from '#lib/mocks/matches.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { findMockScrim } from '#lib/mocks/scrims.ts';
 import { getScrim } from '#lib/server/scrims/queries.ts';
@@ -10,6 +10,7 @@ import { getMatchOperationContext } from '#lib/server/matches/operation-context.
 import {
     confirmMatchLineup,
     releaseMatchLineup,
+    setMatchSide,
     importMatchRofl,
     revertLastMatchGame
 } from '#lib/server/matches/service.ts';
@@ -42,24 +43,29 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
         splash: (championId: string) => (version && championId ? dataDragonSplashUrl(championId) : null)
     };
     try {
-        const result =
-            dev && findMockGuild(params.guildId)
-                ? await getMockMatch(params.guildId, params.matchId, url.searchParams.get('game'), resolvers)
-                : await getMatch(
-                      getDb(),
-                      locals.actor,
-                      params.guildId,
-                      params.matchId,
-                      url.searchParams.get('game'),
-                      resolvers
-                  );
+        if (dev && findMockGuild(params.guildId)) {
+            const result = await getMockMatch(
+                params.guildId,
+                params.matchId,
+                url.searchParams.get('game'),
+                resolvers
+            );
+            if (!result) error(404, '경기를 찾을 수 없습니다.');
+            const scrim = findMockScrim(params.guildId, result.match.scrim.id);
+            if (!scrim) error(404, '내전을 찾을 수 없습니다.');
+            return { ...result, scrim };
+        }
+        const result = await getMatch(
+            getDb(),
+            locals.actor,
+            params.guildId,
+            params.matchId,
+            url.searchParams.get('game'),
+            resolvers
+        );
         if (!result) error(404, '경기를 찾을 수 없습니다.');
-        const scrim =
-            dev && findMockGuild(params.guildId)
-                ? findMockScrim(params.guildId, result.match.scrim.id)
-                : await getScrim(getDb(), locals.actor, params.guildId, result.match.scrim.id);
+        const scrim = await getScrim(getDb(), locals.actor, params.guildId, result.match.scrim.id);
         if (!scrim) error(404, '내전을 찾을 수 없습니다.');
-        if (dev && findMockGuild(params.guildId)) return { ...result, scrim, operation: null };
         const operation = await getMatchOperationContext(
             getDb(),
             locals.actor,
@@ -145,6 +151,27 @@ export const actions: Actions = {
     confirmLineup: (event) => changeLineup('confirmLineup', event),
     releaseLineup: (event) => changeLineup('releaseLineup', event),
     revertResult: (event) => changeLineup('revertResult', event),
+    setSide: async ({ params, request, locals, setHeaders }) => {
+        try {
+            const preview = dev && findMockGuild(params.guildId);
+            if (!preview) requireUser(locals.actor);
+            const data = await request.formData();
+            const input = {
+                expectedRevision: integer(data, 'expectedRevision'),
+                nextGameNumber: integer(data, 'nextGameNumber'),
+                blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b'
+            };
+            if (preview) {
+                const failure = setMockMatchSide(params.guildId, params.matchId, input);
+                if (failure) return fail(failure.status, { message: failure.message });
+            } else {
+                await setMatchSide(getDb(), locals.actor, params.guildId, params.matchId, input);
+            }
+            return { saved: true };
+        } catch (cause) {
+            return actionFailure(cause, setHeaders);
+        }
+    },
     upload: async ({ request, params, locals, setHeaders }) => {
         let release: (() => void) | undefined;
         try {
@@ -162,13 +189,19 @@ export const actions: Actions = {
                 return fail(413, { message: '파일이 너무 커요' });
             }
             const bytes = new Uint8Array(await file.arrayBuffer());
+            const input = {
+                expectedRevision: integer(data, 'expectedRevision'),
+                nextGameNumber: integer(data, 'expectedGameNumber'),
+                blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
+                blueTeamConfirmed: data.get('blueTeamConfirmed') === 'true'
+            };
             if (preview) {
                 const raw = await toRawGame(bytes, request.signal);
                 if (typeof raw === 'string') return fail(422, { message: raw });
                 // 명시적 개발 샘플은 운영 DB와 분리된 메모리 예시만 변경한다.
-                const result = await recordMockGame(params.guildId, params.matchId, raw);
+                const result = await recordMockGame(params.guildId, params.matchId, raw, input);
                 if ('status' in result) return fail(result.status, { message: result.message });
-                return { order: result.order };
+                return result;
             }
             return await importMatchRofl(
                 getDb(),
@@ -176,11 +209,8 @@ export const actions: Actions = {
                 params.guildId,
                 params.matchId,
                 {
-                    expectedRevision: integer(data, 'expectedRevision'),
-                    nextGameNumber: integer(data, 'expectedGameNumber'),
+                    ...input,
                     lineupId: String(data.get('lineupId') ?? ''),
-                    blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
-                    blueTeamConfirmed: data.get('blueTeamConfirmed') === 'true',
                     bytes
                 },
                 {

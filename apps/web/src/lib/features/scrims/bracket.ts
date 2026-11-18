@@ -44,6 +44,22 @@ export type BracketView = {
     can: { edit: boolean; unlock: boolean };
 };
 
+/** 시작 시점에 양 팀이 정해진 경기만 1세트 진영을 정한다. */
+export function firstSetSideError(
+    matches: BracketMatch[],
+    blueTeamIds: Record<string, string>
+): string | null {
+    const resolved = matches.filter((match) => !match.matchId && match.a.teamId && match.b.teamId);
+    for (const match of resolved) {
+        const blue = blueTeamIds[match.key];
+        if (blue !== match.a.teamId && blue !== match.b.teamId)
+            return `${match.label} 1세트 블루 팀을 대진에서 골라 주세요`;
+    }
+    return Object.keys(blueTeamIds).some((key) => !resolved.some((match) => match.key === key))
+        ? '양 팀이 정해진 경기의 진영만 선택해 주세요'
+        : null;
+}
+
 /** 현재 대진 전체가 완료된 한 경기일 때만 상세를 결과의 진입점으로 쓴다. */
 export function singleCompletedMatchId(
     status: string,
@@ -70,6 +86,25 @@ export function bracketSeats(
             return [{ key: seat, label, teamId }];
         })
     );
+}
+
+/** 실제 경기 생성 전의 직접 배치 자리만 찾는다. 경매에서는 같은 경기의 두 팀을 서로 바꿀 수 있다. */
+export function bracketPlacement(
+    matches: BracketMatch[],
+    seat: string,
+    teamId: string | null,
+    auction: boolean
+) {
+    if (matches.some((match) => match.matchId)) return null;
+    const match = matches.find((match) => match.a.seat === seat || match.b.seat === seat);
+    if (!match) return null;
+    const side = match.a.seat === seat ? 'a' : 'b';
+    const other = match[side === 'a' ? 'b' : 'a'];
+    return {
+        key: match.key,
+        side,
+        swapTeamId: auction && teamId && other.seat && other.teamId === teamId ? match[side].teamId : null
+    } as const;
 }
 
 const side = (seat: string | null, from: string | null = null): BracketSide => ({ seat, from, teamId: null });

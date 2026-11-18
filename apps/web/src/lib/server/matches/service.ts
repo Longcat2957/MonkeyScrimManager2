@@ -3,13 +3,20 @@ import type { LolPosition } from '../../features/guild/types.ts';
 import { requireUser } from '../auth/guards.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
-import { games, matchLineups, matchLineupPlayers } from '../db/schema.ts';
+import { games, matchLineups, matchLineupPlayers, matchSetSides } from '../db/schema.ts';
 import type { DiscordClient } from '../discord/client.ts';
 import { DomainError } from '../errors.ts';
 import { requireGuildAdmin } from '../guild/access.ts';
 import { MMR_POSITIONS } from '../mmr/rules.ts';
 import { assertRevision, requireRevision, requireUuid } from '../scrims/validation.ts';
-import { bumpMatchRevision, conflict, lockMatch, readLineup, readRoster } from './state.ts';
+import {
+    bumpMatchRevision,
+    conflict,
+    lockMatch,
+    readLineup,
+    readRoster,
+    requireCurrentSlot
+} from './state.ts';
 
 export type MatchDependencies = {
     discord?: DiscordClient;
@@ -21,6 +28,32 @@ export type MatchLineupInput = {
     expectedRevision: number;
     players: { participantId: string; position: LolPosition }[];
 };
+
+export async function setMatchSide(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    matchId: string,
+    input: MatchSlotInput & { blueTeamSlot: 'a' | 'b' },
+    dependencies: MatchDependencies = {}
+): Promise<void> {
+    const user = requireUser(actor);
+    if (input.blueTeamSlot !== 'a' && input.blueTeamSlot !== 'b')
+        throw new DomainError('INVALID_INPUT', '이번 세트의 블루 팀을 선택해 주세요');
+    await requireGuildAdmin(user, guildId, { db, discord: dependencies.discord });
+    await db.transaction(async (tx) => {
+        const context = await lockMatch(tx, user, guildId, matchId, true);
+        await requireCurrentSlot(tx, context, input);
+        await tx
+            .insert(matchSetSides)
+            .values({ matchId, gameNumber: input.nextGameNumber, blueTeamSlot: input.blueTeamSlot })
+            .onConflictDoUpdate({
+                target: [matchSetSides.matchId, matchSetSides.gameNumber],
+                set: { blueTeamSlot: input.blueTeamSlot }
+            });
+        await bumpMatchRevision(tx, matchId, context.scrim.id);
+    });
+}
 
 function validateLineupInput(input: MatchLineupInput) {
     requireRevision(input.expectedRevision);

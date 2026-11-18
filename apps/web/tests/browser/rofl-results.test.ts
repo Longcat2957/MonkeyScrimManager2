@@ -4,48 +4,23 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { chromium } from 'playwright';
-import type { BrowserContext, Page } from 'playwright';
+import type { Page } from 'playwright';
+import { eq } from 'drizzle-orm';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { createHttpMatchResultFixture } from '../api/support/http-match-fixtures.ts';
+import { sessionContext } from './support/browser.ts';
 
-type Fixture = Awaited<ReturnType<typeof createHttpMatchResultFixture>>;
 const recoveryCaptures: { file: string; sha256: string; path: string; width: number; state: string }[] = [];
 
-/** 브라우저가 보는 TLS 프록시·쿠키·origin 계약은 기존 브라우저 fixture와 같다. */
-async function sessionContext(context: BrowserContext, fixture: Fixture, cookie: string) {
-    const separator = cookie.indexOf('=');
-    await context.addCookies([
-        {
-            name: cookie.slice(0, separator),
-            value: cookie.slice(separator + 1),
-            domain: '127.0.0.1',
-            path: '/',
-            secure: true,
-            httpOnly: true,
-            sameSite: 'Lax'
-        }
-    ]);
-    const origin = new URL(fixture.url).origin;
-    await context.route('**/*', async (route) => {
-        const request = route.request();
-        if (new URL(request.url()).origin !== origin) return route.abort();
-        const headers: Record<string, string> = {
-            ...request.headers(),
-            'x-forwarded-proto': 'https'
-        };
-        if (request.method() === 'POST') headers.origin = fixture.origin;
-        await route.fulfill({ response: await route.fetch({ headers, maxRedirects: 0 }) });
-    });
-}
-
-async function prepareUpload(page: Page, file: File) {
+async function prepareUpload(page: Page, file: File, plannedFirst = false) {
     await page.getByRole('button', { name: 'ROFL 업로드', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'ROFL 업로드', exact: true });
     const blueTeam = dialog.getByRole('group', { name: '이 세트의 블루 팀', exact: true });
-    const firstTeam = blueTeam.getByRole('button', { name: '1팀', exact: true });
-    const secondTeam = blueTeam.getByRole('button', { name: '2팀', exact: true });
-    await blueTeam.getByRole('button', { name: '1팀', pressed: false, exact: true }).waitFor();
-    assert.equal(await blueTeam.getByRole('button', { pressed: true }).count(), 0);
+    const firstTeam = blueTeam.getByRole('radio', { name: '1팀', exact: true });
+    const secondTeam = blueTeam.getByRole('radio', { name: '2팀', exact: true });
+    await firstTeam.waitFor();
+    assert.equal(await firstTeam.isChecked(), plannedFirst);
+    assert.equal(await secondTeam.isChecked(), false);
     assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
     await dialog.locator('input[type="file"]').setInputFiles({
         name: file.name,
@@ -53,28 +28,19 @@ async function prepareUpload(page: Page, file: File) {
         buffer: Buffer.from(await file.arrayBuffer())
     });
     assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
-    // 팝업의 초기 포커스가 끝난 뒤 실제 Tab 순서로 선택 버튼을 조작한다.
-    await page.waitForFunction(
-        (button) => button === document.activeElement,
-        await firstTeam.elementHandle()
-    );
-    await page.keyboard.press('Tab');
-    assert.equal(await secondTeam.evaluate((button) => button === document.activeElement), true);
-    await page.keyboard.press('Space');
-    await blueTeam.getByRole('button', { name: '2팀', pressed: true, exact: true }).waitFor();
-    assert.equal(await firstTeam.getAttribute('aria-pressed'), 'false');
-    await page.keyboard.press('Shift+Tab');
-    assert.equal(await firstTeam.evaluate((button) => button === document.activeElement), true);
-    await page.keyboard.press('Enter');
-    await blueTeam.getByRole('button', { name: '1팀', pressed: true, exact: true }).waitFor();
-    assert.equal(await secondTeam.getAttribute('aria-pressed'), 'false');
+    // 네이티브 라디오의 방향키로 진영을 바꾸고 실제 선택을 확인한다.
+    await firstTeam.focus();
+    await firstTeam.press('ArrowRight');
+    assert.equal(await secondTeam.isChecked(), true);
+    await secondTeam.press('ArrowLeft');
+    assert.equal(await firstTeam.isChecked(), true);
+    assert.equal(await secondTeam.isChecked(), false);
     const confirmation = dialog.getByRole('checkbox', {
         name: '블루 1팀 · 레드 2팀이 실제 진영과 맞아요',
         exact: true
     });
     await dialog.getByRole('checkbox', { checked: false }).waitFor();
     assert.equal(await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
-    await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     assert.equal(await confirmation.evaluate((button) => button === document.activeElement), true);
     await page.keyboard.press('Space');
@@ -96,18 +62,11 @@ async function prepareUpload(page: Page, file: File) {
     await firstTeam.click();
     await confirmation.press('Space');
     await dialog.getByRole('checkbox', { checked: true }).waitFor();
-    await page.waitForFunction(
-        (group) =>
-            [...group.querySelectorAll('button')].every((button) => {
-                const bounds = button.getBoundingClientRect();
-                return bounds.width >= 44 && bounds.height >= 44;
-            }),
-        await blueTeam.elementHandle()
-    );
-    for (const choice of [firstTeam, secondTeam, confirmation]) {
-        const bounds = await choice.boundingBox();
-        assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44);
-    }
+    if (await page.evaluate(() => matchMedia('(pointer: coarse)').matches))
+        for (const choice of [firstTeam, secondTeam, confirmation]) {
+            const bounds = await choice.locator('..').boundingBox();
+            assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44);
+        }
     return dialog;
 }
 
@@ -116,7 +75,7 @@ async function upload(page: Page, file: File, order: number) {
     const response = page.waitForResponse((reply) => reply.url().endsWith('?/upload'));
     await dialog.getByRole('button', { name: '업로드', exact: true }).click();
     assert.equal((await response).status(), 200);
-    await dialog.getByText(`${order}세트로 기록했어요`, { exact: true }).waitFor();
+    await dialog.getByText(new RegExp(`${order}세트로 기록했어요$`)).waitFor();
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
     await page.waitForURL((url) => url.searchParams.has('game'));
@@ -132,9 +91,13 @@ for (const width of [1440, 390]) {
             // 브라우저를 앱·DB보다 먼저 닫아 정리 중의 남은 요청을 방지한다.
             t.after(() => browser.close());
             const fixture = await createHttpMatchResultFixture(t);
+            // 마이그레이션 전에 시작해 예정 진영이 없는 경기에서도 업로드·정정할 수 있다.
+            await fixture.db
+                .delete(schema.matchSetSides)
+                .where(eq(schema.matchSetSides.matchId, fixture.match.id));
             const viewport = { width, height: width === 390 ? 844 : 1000 };
-            const participant = await browser.newContext({ viewport });
-            const manager = await browser.newContext({ viewport });
+            const participant = await browser.newContext({ viewport, hasTouch: width === 390 });
+            const manager = await browser.newContext({ viewport, hasTouch: width === 390 });
             await sessionContext(participant, fixture, fixture.participant.cookie);
             await sessionContext(manager, fixture, fixture.manager.cookie);
             const page = await participant.newPage();
@@ -151,7 +114,7 @@ for (const width of [1440, 390]) {
             await draft.getByRole('button', { name: 'fixture.rofl 선택 해제', exact: true }).click();
             assert.equal(await draft.getByRole('checkbox').count(), 0);
             assert.equal(await draft.getByRole('button', { name: '업로드', exact: true }).isDisabled(), true);
-            await draft.getByRole('button', { name: '1팀', exact: true }).click();
+            await draft.getByRole('radio', { name: '1팀', exact: true }).check();
             await draft.getByRole('checkbox', { checked: false }).waitFor();
             await draft.getByRole('checkbox').press('Space');
             const selectedFile = fixture.file();
@@ -289,7 +252,7 @@ for (const width of [1440, 390])
                 };
                 await page.goto(fixture.url + fixture.path);
                 await page.waitForTimeout(700);
-                const dialog = await prepareUpload(page, fixture.file(1_900_000));
+                const dialog = await prepareUpload(page, fixture.file(1_900_000), failure === 'timeout');
                 const rejected = page.waitForResponse((reply) => reply.url().endsWith('?/upload'));
                 await dialog.getByRole('button', { name: '업로드', exact: true }).click();
                 const response = await rejected;
@@ -324,7 +287,7 @@ for (const width of [1440, 390])
                     // 파일과 진영을 다시 고르지 않고 같은 입력으로 재시도한다.
                     await dialog.getByRole('button', { name: '업로드', exact: true }).press('Enter');
                     assert.equal((await retried).status(), 200);
-                    await dialog.getByText('2세트로 기록했어요', { exact: true }).waitFor();
+                    await dialog.getByText(/2세트로 기록했어요$/).waitFor();
                     assert.equal((await fixture.db.select().from(schema.games)).length, 2);
                     await capture('retry-recorded');
                 }

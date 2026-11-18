@@ -101,18 +101,21 @@
     };
 </script>
 
-<div class="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-    <section aria-labelledby={`${id}-current`} class="panel min-w-0 self-start">
-        <h2 id={`${id}-current`} class="panel-bar font-bold">현재 시즌</h2>
+<div class="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <section
+        aria-labelledby={`${id}-current`}
+        class="panel col-span-full grid items-center gap-x-4 gap-y-1 bg-surface-2 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+    >
+        <h2 id={`${id}-current`} class="text-ui font-semibold text-ink-2">현재 시즌</h2>
         {#if overview.current}
-            <p class="px-4 pt-4 text-title font-bold wrap-anywhere">{overview.current.name}</p>
-            <p class="px-4 pt-1 pb-4 text-ui text-muted">
+            <p class="min-w-0 text-title font-bold wrap-anywhere">{overview.current.name}</p>
+            <p class="text-ui text-muted tabular-nums">
                 시작 <time datetime={overview.current.startedAt}
                     >{date.format(new Date(overview.current.startedAt))}</time
                 >
             </p>
         {:else}
-            <p class="p-4 text-ui text-muted">
+            <p class="text-ui text-muted sm:col-span-2">
                 진행 중인 시즌이 없어요. Discord에서 서버 초기 설정을 확인해 주세요.
             </p>
         {/if}
@@ -155,7 +158,7 @@
         </div>
     </form>
 
-    <section aria-labelledby={`${id}-completed`} class="panel min-w-0 md:col-span-2">
+    <section aria-labelledby={`${id}-completed`} class="min-w-0 border-y border-line">
         <h2 id={`${id}-completed`} class="panel-bar font-bold">지난 시즌</h2>
         {#if overview.completed.length}
             <ol class="divide-y divide-line">

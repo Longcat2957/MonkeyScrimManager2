@@ -26,7 +26,7 @@
                 <a
                     href={link.href}
                     class={[
-                        'inline-flex min-h-9 min-w-11 items-center justify-center rounded-form px-2 underline-offset-4 hover:underline pointer-coarse:min-h-11',
+                        'inline-flex min-h-11 min-w-11 items-center justify-center rounded-form px-2 underline-offset-4 hover:underline',
                         link.href === resolve('/privacy') && 'font-semibold'
                     ]}
                 >

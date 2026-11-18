@@ -1,7 +1,9 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import {
+    bracketPlacement,
     bracketSeats,
     bracketTemplate,
+    firstSetSideError,
     isBestOf,
     resolveWinners,
     STAGE_LABEL,
@@ -16,6 +18,7 @@ import {
     games,
     matches,
     matchLineups,
+    matchSetSides,
     scrimBracketNodes,
     scrimBracketSlots,
     scrimParticipantRegistrations,
@@ -261,11 +264,11 @@ export async function createBracketDraft(tx: Transaction, row: ScrimRow): Promis
         }
 }
 
-async function editableBracket(tx: Transaction, row: ScrimRow, confirmed = false) {
-    if (row.status !== 'ready' || Boolean(row.bracketConfirmedAt) !== confirmed)
+async function editableBracket(tx: Transaction, row: ScrimRow, confirmed: boolean | 'either' = false) {
+    if (row.status !== 'ready' || (confirmed !== 'either' && Boolean(row.bracketConfirmedAt) !== confirmed))
         throw new DomainError(
             'CONFLICT',
-            confirmed
+            confirmed === true
                 ? '대진 확정을 해제할 수 없는 단계예요'
                 : '대진 준비 단계에서 확정을 해제한 뒤 변경해 주세요'
         );
@@ -290,9 +293,16 @@ export async function placeBracketTeam(
         scrimId,
         input,
         async (tx, row) => {
-            const bracket = await editableBracket(tx, row);
-            if (!bracketSeats(bracket.matches).some((seat) => seat.key === input.seat))
-                throw new DomainError('INVALID_INPUT', '배치할 자리를 다시 골라 주세요');
+            const bracket = await editableBracket(tx, row, 'either');
+            const placement = bracketPlacement(
+                bracket.matches,
+                input.seat,
+                input.teamId,
+                row.formationMethod === 'auction'
+            );
+            if (bracket.confirmed && !placement?.swapTeamId)
+                throw new DomainError('CONFLICT', '대진 확정을 해제한 뒤 배치를 변경해 주세요');
+            if (!placement) throw new DomainError('INVALID_INPUT', '배치할 자리를 다시 골라 주세요');
             if (input.teamId && !bracket.teams.some((team) => team.id === input.teamId))
                 throw new DomainError('NOT_FOUND', '이 내전의 팀을 찾을 수 없어요');
             const roundRows = await tx.select().from(scrimRounds).where(eq(scrimRounds.scrimId, row.id));
@@ -300,15 +310,13 @@ export async function placeBracketTeam(
                 .select()
                 .from(scrimBracketNodes)
                 .where(eq(scrimBracketNodes.scrimId, row.id));
-            const side = input.seat.endsWith('-a') ? 'a' : 'b';
-            const key = input.seat.slice(0, -2);
             const node = nodeRows.find(
                 (item) =>
                     nodeKey(
                         row.teamCount,
                         roundRows.find((round) => round.id === item.roundId)!.roundNumber,
                         item.matchNumber
-                    ) === key
+                    ) === placement.key
             )!;
             if (input.teamId)
                 await tx
@@ -317,16 +325,19 @@ export async function placeBracketTeam(
                     .where(
                         and(eq(scrimBracketSlots.scrimId, row.id), eq(scrimBracketSlots.teamId, input.teamId))
                     );
+            const directSlot = and(
+                eq(scrimBracketSlots.nodeId, node.id),
+                isNull(scrimBracketSlots.sourceNodeId)
+            );
             await tx
                 .update(scrimBracketSlots)
                 .set({ teamId: input.teamId })
-                .where(
-                    and(
-                        eq(scrimBracketSlots.nodeId, node.id),
-                        eq(scrimBracketSlots.slot, side),
-                        isNull(scrimBracketSlots.sourceNodeId)
-                    )
-                );
+                .where(and(directSlot, eq(scrimBracketSlots.slot, placement.side)));
+            if (placement.swapTeamId)
+                await tx
+                    .update(scrimBracketSlots)
+                    .set({ teamId: placement.swapTeamId })
+                    .where(and(directSlot, eq(scrimBracketSlots.slot, placement.side === 'a' ? 'b' : 'a')));
         },
         access
     );
@@ -396,7 +407,7 @@ export async function confirmBracket(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput & { start?: boolean },
+    input: RevisionInput & { start?: boolean; blueTeamIds?: Record<string, string> },
     access?: ScrimAccessDependencies
 ) {
     return mutateScrim(
@@ -421,7 +432,7 @@ export async function confirmBracket(
                 .set({ bracketConfirmedAt: new Date(), bracketConfirmedByUserId: user.userId })
                 .where(eq(scrims.id, row.id))
                 .returning();
-            return input.start ? startPreparedScrim(tx, confirmed!) : [];
+            return input.start ? startPreparedScrim(tx, confirmed!, input.blueTeamIds ?? {}) : [];
         },
         access
     );
@@ -454,11 +465,16 @@ export async function unlockBracket(
 }
 
 /** 확정한 대진의 시작은 편성·대진 확정과 같은 트랜잭션에서도 재사용한다. */
-export async function startPreparedScrim(tx: Transaction, row: ScrimRow): Promise<string[]> {
+export async function startPreparedScrim(
+    tx: Transaction,
+    row: ScrimRow,
+    blueTeamIds: Record<string, string>
+): Promise<string[]> {
     if (row.status !== 'ready' || !row.bracketConfirmedAt)
         throw new DomainError('CONFLICT', '대진을 확정한 뒤 내전을 시작해 주세요');
     await assertNoGames(tx, row.id);
-    if (!(await createResolvedMatches(tx, row))) throw new DomainError('CONFLICT', '시작할 경기가 없어요');
+    if (!(await createResolvedMatches(tx, row, blueTeamIds)))
+        throw new DomainError('CONFLICT', '시작할 경기가 없어요');
     await tx.update(scrims).set({ status: 'in_progress' }).where(eq(scrims.id, row.id));
     const nodes = await tx
         .select({ matchId: scrimBracketNodes.matchId })
@@ -468,11 +484,19 @@ export async function startPreparedScrim(tx: Transaction, row: ScrimRow): Promis
 }
 
 /** 시작과 결과 등록이 같은 트랜잭션에서 호출한다. 양 팀이 정해진 노드만 실제 경기를 갖는다. */
-export async function createResolvedMatches(tx: Transaction, row: ScrimRow): Promise<number> {
+export async function createResolvedMatches(
+    tx: Transaction,
+    row: ScrimRow,
+    blueTeamIds?: Record<string, string>
+): Promise<number> {
     if (row.status !== 'ready' && row.status !== 'in_progress')
         throw new DomainError('CONFLICT', '현재 단계에서 경기를 만들 수 없어요');
     const bracket = await getBracketInTransaction(tx, row, true);
     if (!bracket?.confirmed) throw new DomainError('CONFLICT', '대진을 먼저 확정해 주세요');
+    if (row.status === 'ready' || blueTeamIds) {
+        const message = firstSetSideError(bracket.matches, blueTeamIds ?? {});
+        if (message) throw new DomainError('INVALID_INPUT', message);
+    }
     const rounds = await tx.select().from(scrimRounds).where(eq(scrimRounds.scrimId, row.id));
     const nodes = await tx.select().from(scrimBracketNodes).where(eq(scrimBracketNodes.scrimId, row.id));
     let created = 0;
@@ -500,6 +524,13 @@ export async function createResolvedMatches(tx: Transaction, row: ScrimRow): Pro
                 startedAt: new Date()
             })
             .returning();
+        if (blueTeamIds) {
+            await tx.insert(matchSetSides).values({
+                matchId: match!.id,
+                gameNumber: 1,
+                blueTeamSlot: blueTeamIds[item.key] === item.a.teamId ? 'a' : 'b'
+            });
+        }
         await copyInitialMatchLineup(
             tx,
             match!,

@@ -31,9 +31,14 @@
     const rowOf = (lane: string) => LANES.indexOf(lane as (typeof LANES)[number]) + 1;
 </script>
 
-<aside aria-label={`${team.name} 시너지`} class="flex min-w-0 flex-col bg-surface">
-    <p class={['flex items-center text-xs font-semibold text-muted', compact ? 'px-3 py-2' : 'h-11 px-2']}>
-        {team.name} 시너지
+<aside aria-label={`${team.name} 시너지`} class="flex min-w-0 flex-col bg-surface-2">
+    <p
+        class={[
+            'flex min-w-0 items-center gap-1 text-xs font-semibold text-ink-2',
+            compact ? 'border-t border-line px-3 py-2' : 'h-13 border-b border-line px-2'
+        ]}
+    >
+        <span class="truncate" title={team.name}>{team.name}</span> <span class="shrink-0">시너지</span>
     </p>
     <ol class={compact ? 'grid grid-cols-3 gap-1 px-3 pb-3' : 'formation-lanes'}>
         {#each SYNERGY_PAIRS as [laneA, laneB] (`${laneA}-${laneB}`)}
@@ -44,29 +49,31 @@
             <li
                 style:grid-row={compact ? undefined : rowOf(laneA)}
                 class={[
-                    'flex flex-col justify-center self-end rounded-(--radius-small) border px-1 py-0.5 text-center',
+                    'flex min-w-0 flex-col justify-center gap-0.5 self-end rounded-small border px-1 py-1 text-center',
                     !record || !record.plays
-                        ? 'border-line'
+                        ? 'border-transparent'
                         : record.wins * 2 >= record.plays
-                          ? 'border-success/40 bg-success/5'
-                          : 'border-error/40 bg-error/5'
+                          ? 'border-success/30 bg-surface'
+                          : 'border-error/30 bg-surface'
                 ]}
             >
-                <span class="text-[0.6875rem] opacity-60">{laneText(laneA)}-{laneText(laneB)}</span>
+                <span class="text-micro leading-tight font-medium text-ink-2"
+                    >{laneText(laneA)}-{laneText(laneB)}</span
+                >
                 {#if record && record.plays}
                     <span
                         class={[
-                            'text-sm font-semibold tabular-nums',
+                            'text-sm leading-5 font-bold tabular-nums',
                             record.wins * 2 >= record.plays ? 'text-success' : 'text-error'
                         ]}
                     >
                         {record.wins}승 {record.plays - record.wins}패
                     </span>
-                    <span class="text-[0.6875rem] opacity-60 tabular-nums"
+                    <span class="text-micro leading-tight text-muted tabular-nums"
                         >{record.plays}판 · {winRate(record.plays, record.wins)}</span
                     >
                 {:else}
-                    <span class="text-xs opacity-50">{a && b ? '기록 없음' : '-'}</span>
+                    <span class="text-xs text-muted">{a && b ? '기록 없음' : '-'}</span>
                 {/if}
             </li>
         {/each}

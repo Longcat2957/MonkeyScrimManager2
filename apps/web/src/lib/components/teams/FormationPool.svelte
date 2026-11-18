@@ -18,50 +18,57 @@
 <!-- 아직 자리가 없는 선발 참가자. 끌어서 자리에 놓거나 누른 뒤 자리를 누른다. 배치된 사람을 여기로 끌면 미배정이 된다. -->
 <section
     aria-labelledby="formation-pool"
-    class={['bg-surface transition', drag.over === 'pool' && 'ring-2 ring-nexus/40 ring-inset']}
+    class={[
+        'flow-root transition-colors',
+        drag.over === 'pool' ? 'bg-selected ring-2 ring-nexus ring-inset' : 'bg-surface-2'
+    ]}
     ondragover={(event) => drag.enter(event, 'pool')}
     ondragleave={() => drag.leave('pool')}
     ondrop={(event) => drag.drop(event, 'pool')}
 >
-    <header class="flex items-center justify-between px-3 py-2">
-        <h3 id="formation-pool" class="text-sm font-semibold">
-            미배정 <span class="text-xs font-normal text-muted tabular-nums">{players.length}명</span>
+    <header class={players.length ? 'flex items-center justify-between gap-2 px-3 py-2.5' : 'sr-only'}>
+        <h3 id="formation-pool" class="flex items-baseline gap-2 text-sm font-bold">
+            미배정 <span class="text-xs font-semibold text-muted tabular-nums">{players.length}명</span>
         </h3>
         {#if interactive && players.length > 0 && !selectedId}
             <span class="text-xs text-muted">선택 후 자리 배치</span>
         {/if}
     </header>
     {#if players.length === 0}
-        {#if interactive}
-            <p class="px-3 pb-3 text-center text-ui text-muted">배정 해제는 각 자리의 × 버튼을 사용해요</p>
-        {/if}
+        <p class="border border-dashed border-nexus bg-selected px-3 py-3 text-center text-ui">
+            여기에 놓아 배정 해제
+        </p>
     {:else}
         <ul
-            class="grid max-h-48 gap-1 overflow-y-auto px-2 pb-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"
+            class="grid max-h-48 gap-1.5 overflow-y-auto px-3 pb-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"
         >
             {#each players as player (player.participantId)}
                 {#snippet content()}
                     <PlayerFace name={player.displayName} imageUrl={player.iconUrl} size="sm" />
-                    <span class="flex min-w-0 flex-1 flex-col text-left">
-                        <span class="truncate text-ui font-semibold">{player.displayName}</span>
+                    <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left">
+                        <span class="max-w-full truncate text-sm font-semibold text-ink"
+                            >{player.displayName}</span
+                        >
                         <PositionChips positions={player.positions} />
                     </span>
-                    <span class="shrink-0 text-right text-xs text-muted tabular-nums">
+                    <span
+                        class="shrink-0 border-l border-line pl-2 text-right text-xs font-semibold text-ink-2 tabular-nums"
+                    >
                         <span class="sr-only">MMR </span>{formatMmr(bestMmr(player))}
                     </span>
                 {/snippet}
-                <li>
+                <li class="min-w-0">
                     {#if interactive}
                         <button
                             type="button"
                             draggable="true"
                             aria-pressed={selectedId === player.participantId}
                             class={[
-                                'flex min-h-11 w-full cursor-grab items-center gap-2 rounded-(--radius-small) border px-2 py-1 active:cursor-grabbing',
+                                'flex min-h-12 w-full cursor-grab items-center gap-2 rounded-form border px-2 py-1.5 transition-colors active:cursor-grabbing',
                                 drag.id === player.participantId && 'opacity-50',
                                 selectedId === player.participantId
-                                    ? 'border-nexus bg-nexus/10 ring-2 ring-nexus/30 dark:bg-nexus/15'
-                                    : 'border-line bg-surface-2 hover:border-line-strong hover:bg-surface-hover'
+                                    ? 'border-nexus bg-selected ring-1 ring-nexus ring-inset'
+                                    : 'border-line bg-surface hover:border-line-strong hover:bg-surface-hover'
                             ]}
                             ondragstart={(event) => drag.start(event, player.participantId)}
                             ondragend={() => drag.end()}
@@ -71,7 +78,7 @@
                         </button>
                     {:else}
                         <span
-                            class="flex min-h-11 items-center gap-2 rounded-(--radius-small) border border-line bg-surface-2 px-2 py-1"
+                            class="flex min-h-12 items-center gap-2 rounded-form border border-line bg-surface px-2 py-1.5"
                             >{@render content()}</span
                         >
                     {/if}

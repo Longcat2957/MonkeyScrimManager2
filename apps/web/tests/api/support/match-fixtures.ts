@@ -109,7 +109,14 @@ export async function createMatchResultFixture(
         f.manager,
         f.guildId,
         f.scrimId,
-        { ...(await f.revision()), key: 'start' },
+        {
+            ...(await f.revision()),
+            key: 'start',
+            blueTeamIds:
+                teamCount === 2
+                    ? { final: f.teams[0]!.id }
+                    : { 'semi-1': f.teams[0]!.id, 'semi-2': f.teams[2]!.id }
+        },
         f.access
     );
     const matches = await f.db.select().from(schema.matches).where(eq(schema.matches.scrimId, f.scrimId));

@@ -139,9 +139,9 @@ export async function createHttpMatchResultFixture(
     );
     assertAction(
         await f.action(
-            scrimPath,
-            'advance',
-            { key: 'start', expectedRevision: await scrimRevision() },
+            scrimPath + '/bracket',
+            'start',
+            { 'blueTeamId:final': teams[0]!.id, expectedRevision: await scrimRevision() },
             manager.cookie
         ),
         200

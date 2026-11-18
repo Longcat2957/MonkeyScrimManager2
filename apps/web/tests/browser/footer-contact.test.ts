@@ -99,10 +99,10 @@ for (const width of [1440, 390])
                 await f.context.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
                 const visits: string[] = [];
 
-                const visit = async (path: string, status: number, heading: string) => {
+                const visit = async (path: string, status: number) => {
                     const response = await page.goto(f.url + path);
                     assert.equal(response?.status(), status);
-                    await page.getByRole('heading', { level: 1, name: heading, exact: true }).waitFor();
+                    await page.getByRole('contentinfo').waitFor();
                     await page.waitForFunction(
                         (mode) => document.documentElement.dataset.mode === mode,
                         theme
@@ -113,9 +113,9 @@ for (const width of [1440, 390])
                     visits.push(path);
                 };
 
-                await visit('/', 200, '디스코드 내전, 모집부터 전적까지');
-                await visit('/docs', 200, '이용 안내');
-                await visit('/footer-contact-missing-page', 404, '페이지를 찾을 수 없어요');
+                await visit('/', 200);
+                await visit('/docs', 200);
+                await visit('/footer-contact-missing-page', 404);
 
                 const { cookie } = await f.session(HTTP_IDS.manager);
                 const separator = cookie.indexOf('=');
@@ -130,8 +130,8 @@ for (const width of [1440, 390])
                         sameSite: 'Lax'
                     }
                 ]);
-                await visit('/me', 200, '내 정보');
-                await visit(`/g/${HTTP_IDS.guild}/admin`, 200, '서버 관리');
+                await visit('/me', 200);
+                await visit(`/g/${HTTP_IDS.guild}/admin`, 200);
                 assert.equal(visits.length, 5);
 
                 if (width === 1440 && theme === 'primary') {

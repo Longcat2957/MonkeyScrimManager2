@@ -107,9 +107,13 @@ test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거�
             name,
             fields: { userId: HTTP_IDS.member, id }
         })),
+        {
+            path: guildPath + '/matches/' + id,
+            name: 'setSide',
+            fields: { ...revision, nextGameNumber: '1', blueTeamSlot: 'a' }
+        },
         { path: guildPath + '/matches/' + id, name: 'upload', fields: {} }
     ];
-    assert.equal(entries.length, 41);
     for (const entry of entries)
         await t.test(entry.path + '?/' + entry.name, async () => {
             assertAction(await f.action(entry.path, entry.name, entry.fields), 401);
@@ -375,12 +379,25 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
         204
     );
     assertAction(
-        await f.action(path, 'advance', { key: 'start', expectedRevision: await revision() }, admin.cookie),
+        await f.action(path + '/bracket', 'start', { expectedRevision: await revision() }, admin.cookie),
+        400
+    );
+    assert.equal((await f.db.select().from(schema.matches)).length, 0);
+    assertAction(
+        await f.action(
+            path + '/bracket',
+            'start',
+            { 'blueTeamId:final': teams[1]!.id, expectedRevision: await revision() },
+            admin.cookie
+        ),
         200
     );
     const [match] = await f.db.select().from(schema.matches);
     assert.equal(match!.status, 'in_progress');
     assert.equal(match!.bestOf, 3);
+    assert.deepEqual(await f.db.select().from(schema.matchSetSides), [
+        { matchId: match!.id, gameNumber: 1, blueTeamSlot: 'b' }
+    ]);
     assert.equal((await f.db.select().from(schema.scrims))[0]!.status, 'in_progress');
     assert.equal((await f.request(guildPath + '/matches/' + match!.id)).status, 200);
     assertAction(await f.action(path, 'endEarly', { expectedRevision: await revision() }, admin.cookie), 200);

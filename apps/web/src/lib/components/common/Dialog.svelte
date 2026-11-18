@@ -34,17 +34,20 @@
     });
 
     function closed() {
+        // 이전 닫기 이벤트가 뒤늦게 도착해 다시 연 창을 닫지 않도록 한다.
+        if (dialog?.open) return;
         open = false;
         onclose?.();
     }
 
     function cancel(event: Event) {
-        if (!dismissible) event.preventDefault();
+        event.preventDefault();
+        if (dismissible) open = false;
         oncancel?.();
     }
 
     function backdrop(event: MouseEvent) {
-        if (dismissible && event.target === dialog) dialog?.close();
+        if (dismissible && event.target === dialog) open = false;
     }
 </script>
 
@@ -63,7 +66,7 @@
                 <button
                     type="button"
                     class="min-h-9 shrink-0 rounded-form px-2.5 text-ui font-semibold text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
-                    onclick={() => dialog?.close()}
+                    onclick={() => (open = false)}
                 >
                     닫기
                 </button>

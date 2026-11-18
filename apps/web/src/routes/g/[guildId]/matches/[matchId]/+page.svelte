@@ -1,10 +1,12 @@
 <script lang="ts">
+    import { tick } from 'svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import Button from '#lib/components/common/Button.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
+    import SelectField from '#lib/components/common/SelectField.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import GameHero from '#lib/components/matches/GameHero.svelte';
     import GamePlayerDialog from '#lib/components/matches/GamePlayerDialog.svelte';
@@ -49,8 +51,43 @@
         )
     );
     const remaining = $derived(Math.max(0, match.bestOf - match.games.length));
+    const operation = $derived(data.operation);
+    const lineupOperation = $derived('lineup' in operation ? operation : null);
+    const sideOptions = $derived([
+        { value: '', label: '팀 선택' },
+        { value: 'a', label: match.teamA },
+        { value: 'b', label: match.teamB }
+    ]);
+    let selectedSide = $state('');
+    let editingSide = $state(false);
+    let sideToggle = $state<HTMLButtonElement>();
+    let savingSide = $state(false);
+    let sideFailure = $state('');
+    $effect(() => {
+        selectedSide = operation.plannedBlueTeamSlot ?? '';
+    });
+
+    async function saveSide() {
+        if (savingSide || !selectedSide || !operation.can.setSide) return;
+        savingSide = true;
+        try {
+            sideFailure =
+                (await postAction('setSide', {
+                    expectedRevision: String(operation.revision),
+                    nextGameNumber: String(operation.nextGameNumber),
+                    blueTeamSlot: selectedSide
+                })) ?? '';
+        } finally {
+            savingSide = false;
+        }
+        if (!sideFailure) {
+            editingSide = false;
+            await tick();
+            sideToggle?.focus();
+        }
+    }
     const canRevertGame = $derived(
-        data.operation?.can.revertResult && data.operation.latestGameId === data.game?.id
+        lineupOperation?.can.revertResult && lineupOperation.latestGameId === data.game?.id
     );
 
     let uploadOpen = $state(false);
@@ -71,7 +108,7 @@
     let revertFailure = $state('');
 
     async function revertResult() {
-        if (!data.operation?.latestGameId || reverting) return;
+        if (!lineupOperation?.latestGameId || reverting) return;
         if (
             !(await confirm(
                 '마지막 세트 결과와 MMR 반영을 취소할까요? 이후 경기나 점수가 변경됐다면 취소할 수 없어요.',
@@ -83,8 +120,8 @@
         try {
             revertFailure =
                 (await postAction('revertResult', {
-                    expectedRevision: String(data.operation.revision),
-                    gameId: data.operation.latestGameId
+                    expectedRevision: String(lineupOperation.revision),
+                    gameId: lineupOperation.latestGameId
                 })) ?? '';
         } finally {
             reverting = false;
@@ -108,86 +145,163 @@
     <title>{match.teamA} vs {match.teamB} · 경기 | {SERVICE_NAME}</title>
 </svelte:head>
 
-{#snippet team(name: string, side: 'a' | 'b')}
-    <span
-        class={[
-            'min-w-0 break-words text-sm font-bold sm:text-lg',
-            winner && winner !== side && 'text-muted'
-        ]}
-    >
-        {name}{#if winner === side}
-            <span class="inline-block text-xs font-semibold text-success">승리</span>{/if}
+{#snippet team(name: string, side: 'a' | 'b', score: number)}
+    <span class={['flex min-w-0 items-baseline gap-2', side === 'a' && 'justify-end text-right']}>
+        {#if side === 'b'}<strong class="font-brand text-3xl tabular-nums sm:text-4xl">{score}</strong>{/if}
+        <span
+            class={[
+                'min-w-0 break-words text-ui font-bold sm:text-xl',
+                winner && winner !== side && 'text-muted'
+            ]}
+        >
+            {name}{#if winner === side}
+                <small class="text-xs text-success">승리</small>{/if}
+        </span>
+        {#if side === 'a'}<strong class="font-brand text-3xl tabular-nums sm:text-4xl">{score}</strong>{/if}
     </span>
 {/snippet}
 
 <ScrimSummary scrim={data.scrim} {navigation} />
 
-<div class="flex min-w-0 flex-col gap-5">
-    <!-- 시리즈 머리 -->
-    <header class="panel overflow-hidden">
-        <h2 class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 py-5 sm:gap-6">
-            <span class="min-w-0 text-right">{@render team(match.teamA, 'a')}</span>
-            <span class="whitespace-nowrap text-3xl font-bold tabular-nums sm:text-4xl"
-                >{match.scoreA} <span aria-hidden="true" class="opacity-40">:</span><span class="sr-only"
-                    >대</span
+<div class="@container/record grid min-w-0 gap-3 sm:gap-4">
+    <div
+        class={[
+            'grid min-w-0 items-start gap-2',
+            match.status === 'in_progress' &&
+                remaining > 0 &&
+                '@min-[64rem]/record:grid-cols-[minmax(0,1fr)_minmax(16rem,0.4fr)]'
+        ]}
+    >
+        <header class="panel flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 sm:px-4">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
+                <h2
+                    class="grid min-w-0 max-w-full grid-cols-[minmax(0,auto)_auto_minmax(0,auto)] items-baseline gap-2"
                 >
-                {match.scoreB}</span
-            >
-            <span class="flex min-w-0">{@render team(match.teamB, 'b')}</span>
-        </h2>
-        <div
-            class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2 px-4 py-2"
-        >
-            <p class="flex flex-wrap items-center gap-2 text-ui font-semibold">
-                <span>BO{match.bestOf}</span>
-                <StatusTag text={status.text} state={status.state} />
-            </p>
-            {#if data.can.upload}
-                <Button
-                    variant="primary"
-                    class="min-h-11 px-4"
-                    disabled={remaining === 0}
-                    onclick={() => (uploadOpen = true)}>ROFL 업로드</Button
+                    {@render team(match.teamA, 'a', match.scoreA)}
+                    <span class="self-center text-lg text-muted"
+                        ><span aria-hidden="true">:</span><span class="sr-only">대</span></span
+                    >
+                    {@render team(match.teamB, 'b', match.scoreB)}
+                </h2>
+                <p class="flex items-center gap-2 text-xs font-semibold text-ink-2">
+                    <span>BO{match.bestOf}</span><StatusTag text={status.text} state={status.state} />
+                </p>
+            </div>
+            {#if match.games.length > 1 || data.can.upload}
+                <div
+                    class={[
+                        'flex min-w-0 items-center gap-2',
+                        match.games.length > 1 && 'basis-full justify-between @min-[48rem]/record:basis-auto'
+                    ]}
                 >
-            {/if}
-        </div>
-    </header>
-
-    {#if data.operation && ['pending', 'in_progress'].includes(match.status)}
-        <MatchLineupBoard operation={data.operation} />
-    {/if}
-
-    {#if !data.game}
-        <SectionState state="empty" message="아직 기록된 세트가 없어요" />
-    {:else}
-        <section aria-labelledby="game-heading" class="flex min-w-0 flex-col gap-3" aria-busy={changing}>
-            {#if changing}<p role="status" class="text-sm text-muted">세트를 불러오는 중</p>{/if}
-            {#if match.games.length > 1 || canRevertGame}
-                <div class="flex flex-wrap items-center justify-between gap-2">
                     {#if match.games.length > 1}
-                        <div role="group" aria-label="세트 선택" class="max-w-full">
+                        <div role="group" aria-label="세트 선택" class="min-w-0">
                             <SelectionTabs {labels} active={activeGame} onchange={selectGame} />
                         </div>
+                    {/if}
+                    {#if data.can.upload}
+                        <Button
+                            variant="primary"
+                            disabled={remaining === 0}
+                            onclick={() => (uploadOpen = true)}>ROFL 업로드</Button
+                        >
+                    {/if}
+                </div>
+            {/if}
+        </header>
+        {#if match.status === 'in_progress' && remaining > 0}
+            <section
+                aria-labelledby="next-set-sides"
+                class="min-w-0 rounded-box border border-line bg-surface-2 px-3 py-1.5 sm:px-4"
+            >
+                <div class="flex min-h-8 items-center justify-between gap-2">
+                    <div class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                        <h3 id="next-set-sides" class="text-ui font-semibold">
+                            {operation.nextGameNumber}세트 예정 진영
+                        </h3>
+                        <p class="min-w-0 break-words text-xs text-ink-2" aria-live="polite">
+                            {#if operation.plannedBlueTeamSlot}
+                                블루 {operation.plannedBlueTeamSlot === 'a' ? match.teamA : match.teamB} · 레드
+                                {operation.plannedBlueTeamSlot === 'a' ? match.teamB : match.teamA}
+                            {:else}
+                                미정
+                            {/if}
+                        </p>
+                    </div>
+                    {#if operation.can.setSide}
+                        <button
+                            type="button"
+                            bind:this={sideToggle}
+                            aria-expanded={editingSide}
+                            aria-controls="next-set-editor"
+                            disabled={savingSide}
+                            class="min-h-8 shrink-0 rounded-form px-2 text-xs font-semibold text-ink-2 hover:bg-surface-hover hover:text-ink disabled:opacity-45 pointer-coarse:min-h-11"
+                            onclick={() => {
+                                selectedSide = operation.plannedBlueTeamSlot ?? '';
+                                sideFailure = '';
+                                editingSide = !editingSide;
+                            }}
+                        >
+                            {editingSide ? '설정 닫기' : '진영 설정'}
+                        </button>
+                    {/if}
+                </div>
+                {#if operation.can.setSide}
+                    <form
+                        id="next-set-editor"
+                        hidden={!editingSide}
+                        class="mt-1 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-2 border-t border-line py-2 not-[hidden]:grid"
+                        onsubmit={(event) => {
+                            event.preventDefault();
+                            saveSide();
+                        }}
+                    >
+                        <SelectField
+                            label="예정 블루 팀"
+                            options={sideOptions}
+                            bind:value={selectedSide}
+                            disabled={savingSide}
+                        />
+                        <Button
+                            type="submit"
+                            loading={savingSide}
+                            disabled={!selectedSide || selectedSide === operation.plannedBlueTeamSlot}
+                            >진영 저장</Button
+                        >
+                        {#if sideFailure}<p role="alert" class="col-span-full text-sm text-error">
+                                {sideFailure}
+                            </p>{/if}
+                    </form>
+                {/if}
+            </section>
+        {/if}
+    </div>
+
+    {#if data.game}
+        <section aria-labelledby="game-heading" class="flex min-w-0 flex-col gap-3" aria-busy={changing}>
+            {#if changing}<p role="status" class="text-sm text-muted">세트를 불러오는 중</p>{/if}
+            {#if canRevertGame || revertFailure || (lineupOperation?.blockedReason && lineupOperation.latestGameId === data.game.id)}
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    {#if revertFailure}<p role="alert" class="text-sm text-error">{revertFailure}</p>{/if}
+                    {#if lineupOperation?.blockedReason && lineupOperation.latestGameId === data.game.id}
+                        <p class="text-sm text-muted">결과 취소: {lineupOperation.blockedReason}</p>
                     {/if}
                     {#if canRevertGame}
                         <Button
                             variant="danger"
                             size="sm"
-                            class="ml-auto px-3"
+                            class="px-3"
                             loading={reverting}
                             onclick={revertResult}>마지막 세트 취소</Button
                         >
                     {/if}
                 </div>
             {/if}
-            {#if revertFailure}<p role="alert" class="text-sm text-error">{revertFailure}</p>{/if}
-            {#if data.operation?.blockedReason && data.operation.latestGameId === data.game.id}
-                <p class="text-sm text-muted">결과 취소: {data.operation.blockedReason}</p>
-            {/if}
-            <GameHero game={data.game} />
-            {#each data.game.sides as side (side.side)}
+            <div class="panel overflow-hidden">
+                <GameHero game={data.game} />
                 <GameTeamTable
-                    {side}
+                    sides={data.game.sides}
+                    lineup={lineupOperation?.lineup ?? null}
                     {guildId}
                     durationSec={data.game.durationSec}
                     {maxDamage}
@@ -196,8 +310,14 @@
                         detailOpen = true;
                     }}
                 />
-            {/each}
+            </div>
         </section>
+    {/if}
+    {#if lineupOperation && ['pending', 'in_progress'].includes(match.status)}
+        <MatchLineupBoard operation={lineupOperation} />
+    {/if}
+    {#if !data.game}
+        <SectionState state="empty" message="아직 기록된 세트가 없어요" />
     {/if}
 
     {#if data.usedChampions}
@@ -226,15 +346,15 @@
 {#if data.can.upload}
     <RoflUploadDialog
         bind:open={uploadOpen}
-        max={data.operation ? 1 : Math.max(1, remaining)}
-        teams={data.operation?.teams ?? []}
-        context={data.operation?.lineup
-            ? {
-                  expectedRevision: data.operation.revision,
-                  expectedGameNumber: data.operation.nextGameNumber,
-                  lineupId: data.operation.lineup.id
-              }
-            : undefined}
+        context={{
+            max: lineupOperation ? 1 : Math.max(1, remaining),
+            expectedRevision: operation.revision,
+            expectedGameNumber: operation.nextGameNumber,
+            lineupId: lineupOperation?.lineup?.id,
+            plannedBlueTeamSlot: operation.plannedBlueTeamSlot,
+            teamA: match.teamA,
+            teamB: match.teamB
+        }}
         onrecorded={recorded}
     />
 {/if}

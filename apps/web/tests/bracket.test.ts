@@ -15,6 +15,8 @@ import {
     unlockMockBracket
 } from '../src/lib/mocks/bracket.ts';
 import { createMockScrim, findMockScrimRecord } from '../src/lib/mocks/scrims.ts';
+import { getMockMatch, recordMockGame, type RawGame } from '../src/lib/mocks/matches.ts';
+import sample from '../src/lib/mocks/fixtures/rofl-sample.json' with { type: 'json' };
 
 const guildId = 'devGuild001';
 
@@ -35,7 +37,7 @@ test('완료된 단일 실제 경기만 결과 상세로 보내고 여러 경기
 });
 
 // 팀 편성이 끝난(대진 준비) 내전을 만든다. 참가자는 devScrim008에서 빌린다.
-async function readyScrim(teamCount: number) {
+async function readyScrim(teamCount: number, method: 'manual' | 'auction' = 'manual') {
     const scrimId = await createMockScrim(guildId, {
         title: `대진 테스트 ${teamCount}팀`,
         scheduledAt: null,
@@ -44,7 +46,7 @@ async function readyScrim(teamCount: number) {
         hardFearless: false
     });
     const scrim = findMockScrimRecord(guildId, scrimId)!;
-    scrim.formationMethod = 'manual';
+    scrim.formationMethod = method;
     scrim.status = 'ready';
     scrim.participants = findMockScrimRecord(guildId, 'devScrim008')!
         .participants.slice(0, teamCount * 5)
@@ -112,6 +114,26 @@ test('팀을 옮기면 원래 자리는 비고 도착 자리의 팀은 풀로 �
     assert.ok(bracketSeats((await view(scrimId)).matches).every((seat) => !seat.teamId));
 });
 
+test('경매 준결승 진영 교환은 두 팀을 보존하고 확정 후 결승 직행 시드는 바꿀 수 없다', async () => {
+    const id = await readyScrim(3, 'auction');
+    await fill(id);
+    const [a, b, bye] = (await view(id)).teams.map((team) => team.id) as [string, string, string];
+    const seeds = async () => bracketSeats((await view(id)).matches).map((seat) => seat.teamId);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-a', b), null);
+    assert.deepEqual(await seeds(), [b, a, bye]);
+
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-a', bye), null);
+    assert.deepEqual(await seeds(), [bye, a, null]);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'final-b', b), null);
+    assert.equal(await confirmMockBracket(guildId, id), null);
+    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-b', b))?.status, 409);
+    assert.equal((await placeMockBracketTeam(guildId, id, 'final-b', a))?.status, 409);
+    assert.equal((await placeMockBracketTeam(guildId, id, 'semi-a', null))?.status, 409);
+    assert.equal(await placeMockBracketTeam(guildId, id, 'semi-b', bye), null);
+    assert.deepEqual(await seeds(), [a, bye, b]);
+    assert.ok((await view(id)).confirmed);
+});
+
 test('잘못된 입력은 거절하고 초기화는 경기 방식을 유지한다', async () => {
     const scrimId = await readyScrim(4);
     assert.equal((await placeMockBracketTeam(guildId, scrimId, 'final-a', null))?.status, 400);
@@ -132,9 +154,55 @@ test('모든 자리를 채워야 확정되고 확정 후에는 다시 편성해�
     assert.equal(await confirmMockBracket(guildId, scrimId), null);
     assert.deepEqual((await view(scrimId)).can, { edit: false, unlock: true });
     assert.equal((await resetMockBracket(guildId, scrimId))?.status, 409);
+    const semi = (await view(scrimId)).matches[0]!;
+    assert.equal((await placeMockBracketTeam(guildId, scrimId, semi.a.seat!, semi.b.teamId))?.status, 409);
     assert.equal(await unlockMockBracket(guildId, scrimId), null);
     assert.equal((await unlockMockBracket(guildId, scrimId))?.status, 409);
     assert.equal((await view(scrimId)).can.edit, true);
+});
+
+test('미리보기는 준결승 진영을 저장하고 두 승자가 정해져야 진영 미정 결승을 연다', async () => {
+    const scrimId = await readyScrim(4);
+    await fill(scrimId);
+    assert.equal(await setMockBracketBestOf(guildId, scrimId, 'semi', 1), null);
+    const { teams } = await view(scrimId);
+    assert.equal((await confirmMockBracket(guildId, scrimId, { 'semi-1': teams[0]!.id }))?.status, 400);
+    assert.equal((await view(scrimId)).confirmed, false);
+    assert.equal(
+        await confirmMockBracket(guildId, scrimId, {
+            'semi-1': teams[0]!.id,
+            'semi-2': teams[3]!.id
+        }),
+        null
+    );
+    const resolvers = {
+        champion: (id: string) => ({ id, name: id, iconUrl: null }),
+        item: () => null,
+        spell: () => null,
+        rune: () => null,
+        splash: () => null
+    };
+    const started = await view(scrimId);
+    for (const [index, semi] of started.matches.filter((match) => match.stage === 'semi').entries()) {
+        assert.equal((await view(scrimId)).matches.at(-1)!.matchId, null);
+        const detail = (await getMockMatch(guildId, semi.matchId!, null, resolvers))!;
+        const blueTeamSlot = index === 0 ? 'a' : 'b';
+        assert.equal(detail.operation.plannedBlueTeamSlot, blueTeamSlot);
+        const result = await recordMockGame(guildId, semi.matchId!, sample as RawGame, {
+            expectedRevision: detail.operation.revision,
+            nextGameNumber: 1,
+            blueTeamSlot,
+            blueTeamConfirmed: true
+        });
+        assert.ok('completed' in result && result.completed);
+    }
+    const [semiA, semiB, final] = (await view(scrimId)).matches;
+    assert.ok(semiA?.winner && semiB?.winner && final?.matchId);
+    assert.equal(final.a.teamId, semiA[semiA.winner].teamId);
+    assert.equal(final.b.teamId, semiB[semiB.winner].teamId);
+    const detail = (await getMockMatch(guildId, final.matchId, null, resolvers))!;
+    assert.equal(detail.operation.nextGameNumber, 1);
+    assert.equal(detail.operation.plannedBlueTeamSlot, null);
 });
 
 test('편성 전·열람자·진행된 대진은 바꿀 수 없다', async () => {

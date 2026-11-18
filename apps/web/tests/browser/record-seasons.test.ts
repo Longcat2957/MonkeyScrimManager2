@@ -6,7 +6,6 @@ import type { GuildRanking } from '../../src/lib/features/guild/types.ts';
 import type { SectionResult } from '../../src/lib/features/section.ts';
 import { createHttpRecordSeasonsFixture } from '../api/support/http-record-seasons-fixtures.ts';
 
-const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 async function settled(page: Page) {
     await page.getByRole('heading', { level: 1 }).waitFor();
     await page.evaluate(() => document.fonts.ready);
@@ -14,12 +13,15 @@ async function settled(page: Page) {
     await page.waitForTimeout(700);
 }
 
-async function selectSeason(page: Page, name: string, id: string) {
-    await page.getByRole('button', { name: /^시즌:/ }).press('Enter');
-    const dialog = page.getByRole('dialog', { name: '조회할 시즌', exact: true });
-    await dialog.getByRole('button', { name: new RegExp('^' + escape(name)) }).press('Enter');
+async function selectSeason(page: Page, label: string, id: string) {
+    const select = page.getByRole('combobox', { name: '조회할 시즌', exact: true });
+    const option = select.getByRole('option', { name: label, exact: true });
+    assert.equal(await option.getAttribute('value'), id);
+    // 두 시즌 fixture에서 처음/마지막 선택은 중간 시즌으로 이동하지 않는다.
+    const first = await option.evaluate((node) => (node as HTMLOptionElement).index === 0);
+    await select.press(first ? 'Home' : 'End');
     await page.waitForURL((url) => url.searchParams.get('season') === id);
-    await page.getByRole('button', { name: '시즌: ' + name, exact: true }).waitFor();
+    assert.equal(await select.inputValue(), id);
 }
 
 for (const [width, theme] of [
@@ -102,53 +104,25 @@ for (const [width, theme] of [
                 await page.goto(f.url + path + '?' + query);
                 await settled(page);
                 assert.equal(await page.evaluate(() => document.documentElement.dataset.mode), theme);
-                const trigger = page.getByRole('button', {
-                    name: '시즌: ' + f.currentSeason.name,
-                    exact: true
-                });
-                assert.equal(await trigger.getAttribute('aria-haspopup'), 'dialog');
-                assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
-                await trigger.focus();
-                await trigger.press('Enter');
-                const menu = page.getByRole('dialog', { name: '조회할 시즌', exact: true });
-                const oldOption = menu.getByRole('button', {
-                    name: new RegExp('^' + escape(f.previousSeason.name))
-                });
-                await oldOption.waitFor();
-                assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
-                const currentOption = menu.getByRole('button', {
-                    name: new RegExp('^' + escape(f.currentSeason.name))
-                });
+                const select = page.getByRole('combobox', { name: '조회할 시즌', exact: true });
+                assert.equal(await select.inputValue(), f.currentSeason.id);
+                assert.equal(await select.getByRole('option').count(), 2);
                 assert.equal(
-                    await currentOption.evaluate((button) => {
-                        const bounds = button.getBoundingClientRect();
-                        const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
-                        while (walker.nextNode()) {
-                            if (!walker.currentNode.textContent?.trim()) continue;
-                            const range = document.createRange();
-                            range.selectNodeContents(walker.currentNode);
-                            for (const rect of range.getClientRects())
-                                if (
-                                    rect.left < bounds.left - 1 ||
-                                    rect.right > bounds.right + 1 ||
-                                    rect.top < bounds.top - 1 ||
-                                    rect.bottom > bounds.bottom + 1
-                                )
-                                    return false;
-                        }
-                        return true;
-                    }),
-                    true,
-                    '긴 시즌 이름과 상태 설명을 옵션 안에서 모두 읽을 수 있어야 한다.'
+                    await select
+                        .getByRole('option', { name: f.currentSeason.name, exact: true, selected: true })
+                        .count(),
+                    1,
+                    '네이티브 옵션은 긴 시즌 이름 전체를 제공한다.'
                 );
+                await select.focus();
+                await select.press('Alt+ArrowDown');
+                await select.press('Escape');
+                assert.equal(await select.inputValue(), f.currentSeason.id);
+                assert.equal(await select.evaluate((node) => node === document.activeElement), true);
                 assert.equal(
                     await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
                     false
                 );
-                await page.keyboard.press('Escape');
-                await oldOption.waitFor({ state: 'hidden' });
-                assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
-                assert.match(await page.evaluate(() => document.activeElement?.textContent ?? ''), /시즌:/);
                 const more =
                     name === 'home'
                         ? page.waitForRequest((request) => {
@@ -159,7 +133,7 @@ for (const [width, theme] of [
                               );
                           })
                         : null;
-                await selectSeason(page, f.previousSeason.name, f.previousSeason.id);
+                await selectSeason(page, `${f.previousSeason.name} (종료)`, f.previousSeason.id);
                 const selectedUrl = new URL(page.url());
                 for (const [key, value] of [
                     ['position', 'top'],

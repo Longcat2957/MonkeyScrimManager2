@@ -60,25 +60,26 @@ for (const width of [1440, 390])
             );
             const path = `/g/${HTTP_IDS.guild}/scrims/${scrim!.id}`;
             const manager = await f.session(HTTP_IDS.manager);
-            const navigation = async () => {
-                const local = f.page.getByRole('navigation', { name: '내전 메뉴', exact: true });
+            const navigation = async (current: string) => {
+                const local = f.page.getByRole('navigation', { name: '내전 단계', exact: true });
                 await local.waitFor();
-                assert.deepEqual(await local.getByRole('listitem').allTextContents(), [
+                assert.deepEqual(await local.getByRole('strong').allTextContents(), [
                     '모집·참가자',
                     '팀 편성',
                     '대진·경기',
                     '결과'
                 ]);
+                assert.equal(
+                    await local.locator('[aria-current="page"]').getByRole('strong').innerText(),
+                    current
+                );
                 if (width === 1440) {
                     const global = f.page.getByRole('navigation', { name: '서버 메뉴', exact: true });
                     await global.waitFor();
-                    assert.deepEqual(await global.getByRole('listitem').allTextContents(), [
-                        '서버 홈',
-                        '내전',
-                        '경기 기록',
-                        '통계',
-                        '관리'
-                    ]);
+                    assert.deepEqual(
+                        (await global.getByRole('listitem').allTextContents()).map((label) => label.trim()),
+                        ['서버 홈', '내전', '경기 기록', '통계', '관리']
+                    );
                 }
             };
             const accept = async (title: string) => {
@@ -93,11 +94,11 @@ for (const width of [1440, 390])
             };
             await f.page.goto(f.url + path);
             await f.page.waitForLoadState('networkidle');
-            await navigation();
+            await navigation('모집·참가자');
             await f.page.getByRole('button', { name: '모집 마감', exact: true }).press('Enter');
             await accept('모집 마감');
             await f.page.waitForURL(f.url + path + '/manual');
-            await navigation();
+            await navigation('팀 편성');
             const teams = await f.db
                 .select()
                 .from(schema.scrimTeams)
@@ -125,20 +126,31 @@ for (const width of [1440, 390])
             await format.getByRole('radio', { name: '3전 2선승', exact: true, checked: true }).waitFor();
             await format.getByRole('radio', { name: '5전 3선승', exact: true }).press('Space');
             await format.getByRole('radio', { name: '5전 3선승', exact: true, checked: true }).waitFor();
+            const start = f.page.getByRole('button', { name: '편성 확정·경기 시작', exact: true });
+            assert.equal(await start.isDisabled(), true);
+            await f.page
+                .getByRole('combobox', { name: '1세트 진영', exact: true })
+                .selectOption(teams[1]!.id);
             assert.equal(
                 await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
                 false
             );
-            await f.page.getByRole('button', { name: '편성 확정·경기 시작', exact: true }).press('Enter');
+            await start.press('Enter');
             await accept('편성 확정·경기 시작');
             await f.page.waitForURL(new RegExp(`/g/${HTTP_IDS.guild}/matches/[^/]+$`));
-            await navigation();
+            await navigation('대진·경기');
             const [match] = await f.db
                 .select()
                 .from(schema.matches)
                 .where(eq(schema.matches.scrimId, scrim!.id));
             assert.equal(new URL(f.page.url()).pathname, `/g/${HTTP_IDS.guild}/matches/${match!.id}`);
             assert.equal(match!.bestOf, 5);
+            const [side] = await f.db
+                .select()
+                .from(schema.matchSetSides)
+                .where(eq(schema.matchSetSides.matchId, match!.id));
+            assert.equal(side?.gameNumber, 1);
+            assert.equal(side?.blueTeamSlot, 'b');
             const [lineup] = await f.db
                 .select()
                 .from(schema.matchLineups)
@@ -175,7 +187,7 @@ for (const width of [1440, 390])
             assert.equal(observation.code, null);
             await f.page.goto(f.url + path + '/result');
             await f.page.waitForURL(`${f.url}/g/${HTTP_IDS.guild}/matches/${match!.id}`);
-            await navigation();
+            await navigation('결과');
             assert.deepEqual(f.errors, []);
         }
     );
@@ -212,26 +224,28 @@ test(
         const [scrim] = await f.db.select().from(schema.scrims).where(eq(schema.scrims.id, a.scrim.id));
         assert.equal(scrim!.status, 'ready');
         assert.equal((await f.db.select().from(schema.matches)).length, 0);
-        for (const [index, team] of a.teams.entries())
-            assertAction(
-                await f.action(
-                    bracketPath,
-                    'place',
-                    {
-                        expectedRevision: await a.revision(),
-                        seat: index === 0 ? 'final-a' : 'final-b',
-                        teamId: team.id
-                    },
-                    a.manager.cookie
-                ),
-                204
-            );
+        const blue = f.page.getByRole('group', { name: '결승 1세트 블루', exact: true });
+        const red = f.page.getByRole('group', { name: '결승 1세트 레드', exact: true });
+        const pool = f.page.getByRole('region', { name: '배치할 팀', exact: true });
+        const start = f.page.getByRole('button', { name: '대진 확정·내전 시작', exact: true });
+        const firstTeam = `[data-bracket-team="${a.teams[0]!.id}"]`;
+        const secondTeam = `[data-bracket-team="${a.teams[1]!.id}"]`;
+        await pool.getByRole('button', { name: /^1팀/ }).dragTo(blue);
+        await blue.locator(firstTeam).waitFor();
+        assert.equal(await start.isDisabled(), true);
+        await pool.getByRole('button', { name: /^2팀/ }).press('Enter');
+        await red.getByRole('button', { name: /여기에 배치/ }).press('Enter');
+        await red.locator(secondTeam).dragTo(blue);
+        await blue.locator(secondTeam).waitFor();
         await f.page.reload();
         await f.page
             .getByRole('group', { name: '결승 경기 방식', exact: true })
             .getByRole('radio', { name: '3전 2선승', exact: true, checked: true })
             .waitFor();
-        await f.page.getByRole('button', { name: '대진 확정·내전 시작', exact: true }).press('Enter');
+        await blue.locator(secondTeam).waitFor();
+        await red.locator(firstTeam).waitFor();
+        assert.equal(await f.page.getByRole('combobox', { name: '결승 1세트 진영' }).count(), 0);
+        await start.press('Enter');
         const dialog = f.page.getByRole('dialog', { name: '대진 확정·내전 시작', exact: true });
         const cancel = dialog.getByRole('button', { name: '취소', exact: true });
         await cancel.waitFor();
@@ -243,6 +257,9 @@ test(
             .from(schema.matches)
             .where(eq(schema.matches.scrimId, a.scrim.id));
         await f.page.waitForURL(`${f.url}/g/${HTTP_IDS.guild}/matches/${match!.id}`);
+        assert.equal(match!.teamAId, a.teams[1]!.id);
+        assert.equal(match!.teamBId, a.teams[0]!.id);
+        assert.equal((await f.db.select().from(schema.matchSetSides))[0]?.blueTeamSlot, 'a');
         assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 0);
         assert.equal(await f.page.getByRole('button', { name: '라인업 확정', exact: true }).count(), 1);
         assert.deepEqual(f.errors, []);
@@ -296,13 +313,23 @@ test('3팀 대진은 준결승 한 경기만 생성되어도 전체 대진에 �
             204
         );
     }
-    await f.page.goto(f.url + path);
-    await f.page
-        .getByRole('group', { name: '준결승 경기 방식', exact: true })
-        .getByRole('radio', { name: '3전 2선승', exact: true, checked: true })
-        .waitFor();
-    await f.page.getByRole('button', { name: '대진 확정·내전 시작', exact: true }).press('Enter');
-    const dialog = f.page.getByRole('dialog', { name: '대진 확정·내전 시작', exact: true });
+    const [row] = await f.db.select().from(schema.scrims).where(eq(schema.scrims.id, scrim!.id));
+    assertAction(
+        await f.action(path, 'confirm', { expectedRevision: String(row!.revision) }, manager.cookie),
+        204
+    );
+    await f.page.goto(f.url + path.replace(/\/bracket$/, ''));
+    await f.page.getByRole('link', { name: '진영 선택·내전 시작', exact: true }).press('Enter');
+    await f.page.waitForURL(f.url + path);
+    assert.equal(await f.page.getByRole('group', { name: /^결승 1세트 (블루|레드)$/ }).count(), 0);
+    const start = f.page.getByRole('button', { name: '내전 시작', exact: true });
+    const semiBlue = f.page.getByRole('group', { name: '준결승 1세트 블루', exact: true });
+    const semiRed = f.page.getByRole('group', { name: '준결승 1세트 레드', exact: true });
+    await semiBlue.getByRole('button', { name: /^1팀/ }).press('Enter');
+    await semiRed.getByRole('button').press('Enter');
+    await semiBlue.getByRole('button', { name: /^2팀/ }).waitFor();
+    await start.press('Enter');
+    const dialog = f.page.getByRole('dialog', { name: '내전 시작', exact: true });
     const cancel = dialog.getByRole('button', { name: '취소', exact: true });
     await cancel.waitFor();
     await f.page.waitForFunction((node) => node === document.activeElement, await cancel.elementHandle());

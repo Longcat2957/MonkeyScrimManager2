@@ -1097,6 +1097,22 @@ export const matches = pgTable(
     ]
 );
 
+// 세트 시작 전의 계획이다. 실제 진영은 ROFL 등록 시 Game에 별도로 확정한다.
+export const matchSetSides = pgTable(
+    'match_set_sides',
+    {
+        matchId: uuid('match_id')
+            .notNull()
+            .references(() => matches.id, { onDelete: 'cascade' }),
+        gameNumber: integer('game_number').notNull(),
+        blueTeamSlot: matchTeamSlot('blue_team_slot').notNull()
+    },
+    (table) => [
+        primaryKey({ columns: [table.matchId, table.gameNumber] }),
+        check('match_set_sides_game_number_allowed', sql`${table.gameNumber} between 1 and 5`)
+    ]
+);
+
 // 경기 전체의 출전 계획이다. 수동 편성의 확정 포지션은 복사하고, 경매는 경기별 한 번 확정한다.
 export const matchLineups = pgTable(
     'match_lineups',

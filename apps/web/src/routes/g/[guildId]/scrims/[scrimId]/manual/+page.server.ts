@@ -103,6 +103,7 @@ export const actions: Actions = {
     confirm: async ({ params, locals, request, setHeaders }) => {
         const data = await request.formData();
         const bestOf = data.has('bestOf') ? Number(data.get('bestOf')) : undefined;
+        const blueTeamId = String(data.get('blueTeamId') ?? '');
         let matchId: string | null = null;
         if (isDemo(params.guildId)) {
             if (
@@ -110,10 +111,19 @@ export const actions: Actions = {
                 (!isBestOf(bestOf) || findMockScrimRecord(params.guildId, params.scrimId)?.teamCount !== 2)
             )
                 return fail(400, { message: '2팀 경기의 방식을 골라 주세요' });
-            const failure = await confirmMockManual(params.guildId, params.scrimId);
+            const failure = await confirmMockManual(
+                params.guildId,
+                params.scrimId,
+                bestOf === undefined ? undefined : blueTeamId
+            );
             if (failure) return failWith(failure);
             if (bestOf !== undefined && isBestOf(bestOf)) {
-                const failure = await startMockManualMatch(params.guildId, params.scrimId, bestOf);
+                const failure = await startMockManualMatch(
+                    params.guildId,
+                    params.scrimId,
+                    bestOf,
+                    blueTeamId
+                );
                 if (failure) return failWith(failure);
                 matchId = (await getMockBracket(params.guildId, params.scrimId))?.matches[0]?.matchId ?? null;
             }
@@ -126,7 +136,8 @@ export const actions: Actions = {
         try {
             matchId = await confirmManualFormation(getDb(), locals.actor, params.guildId, params.scrimId, {
                 expectedRevision: Number(data.get('expectedRevision') ?? NaN),
-                bestOf
+                bestOf,
+                blueTeamId
             });
             return {
                 nextHref: matchId

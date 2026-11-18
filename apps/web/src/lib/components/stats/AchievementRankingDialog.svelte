@@ -9,9 +9,15 @@
         open = $bindable(false),
         items,
         guildId,
+        seasonId,
         current = $bindable(0)
-    }: { open: boolean; items: AchievementRanking[]; guildId: string; current: number } = $props();
-
+    }: {
+        open: boolean;
+        items: AchievementRanking[];
+        guildId: string;
+        seasonId: string | null;
+        current: number;
+    } = $props();
     const item = $derived(items[current]);
 </script>
 
@@ -50,10 +56,7 @@
                             >
                             <PlayerFace name={entry.displayName} imageUrl={entry.iconUrl} />
                             <a
-                                href={resolve('/g/[guildId]/players/[userId]', {
-                                    guildId,
-                                    userId: entry.userId
-                                })}
+                                href={`${resolve('/g/[guildId]/players/[userId]', { guildId, userId: entry.userId })}${seasonId ? `?season=${seasonId}` : ''}`}
                                 class="flex min-h-9 min-w-0 flex-1 items-center text-ui font-semibold wrap-anywhere hover:text-nexus hover:underline pointer-coarse:min-h-11"
                                 >{entry.displayName}</a
                             >

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import Button from '#lib/components/common/Button.svelte';
     import { formationPath } from '#lib/features/scrims/paths.ts';
@@ -45,7 +46,15 @@
     }
 </script>
 
-{#if phaseAction}
+{#if nextAction?.key === 'start' && !nextAction.blockedReason}
+    <a
+        class="inline-flex min-h-9 items-center rounded-form bg-nexus px-3.5 text-sm font-semibold text-nexus-ink no-underline hover:bg-nexus-hover"
+        href={resolve('/g/[guildId]/scrims/[scrimId]/bracket', {
+            guildId: page.params.guildId!,
+            scrimId: page.params.scrimId!
+        })}>진영 선택·내전 시작</a
+    >
+{:else if phaseAction}
     <div class="flex flex-col items-end gap-1">
         <Button
             variant="primary"

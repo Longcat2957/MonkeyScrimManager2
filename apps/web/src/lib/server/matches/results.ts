@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { parseRiotId } from '../../features/me/riot-id.ts';
 import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import { requireUser } from '../auth/guards.ts';
@@ -13,6 +13,7 @@ import {
     matches,
     matchLineups,
     matchRoflImports,
+    matchSetSides,
     riotAccounts,
     roflMetadata,
     roflParticipants,
@@ -797,6 +798,9 @@ export async function revertLastMatchGame(
             await tx.delete(matchLineups).where(eq(matchLineups.matchId, next.match.id));
             await tx.delete(matches).where(eq(matches.id, next.match.id));
         }
+        await tx
+            .delete(matchSetSides)
+            .where(and(eq(matchSetSides.matchId, matchId), gt(matchSetSides.gameNumber, game.gameNumber)));
         await tx.update(games).set({ status: 'cancelled', winnerSide: null }).where(eq(games.id, game.id));
         await tx
             .update(matchRoflImports)

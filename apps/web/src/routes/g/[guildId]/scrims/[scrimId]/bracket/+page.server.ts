@@ -70,11 +70,13 @@ function destination(params: { guildId: string; scrimId: string }, bracket: Brac
     };
 }
 
-async function startDemo(params: { guildId: string; scrimId: string }) {
-    const failure = await startMockBracket(params.guildId, params.scrimId);
-    if (failure) return failWith(failure);
-    const bracket = await getMockBracket(params.guildId, params.scrimId);
-    return destination(params, bracket);
+function readBlueTeamIds(data: FormData): Record<string, string> {
+    const prefix = 'blueTeamId:';
+    return Object.fromEntries(
+        Array.from(data.entries()).flatMap(([key, value]) =>
+            key.startsWith(prefix) ? [[key.slice(prefix.length), String(value)]] : []
+        )
+    );
 }
 
 export const actions: Actions = {
@@ -133,15 +135,23 @@ export const actions: Actions = {
     confirm: async ({ params, locals, request, setHeaders }) => {
         const data = await request.formData();
         const start = data.get('start') === '1';
+        const blueTeamIds = readBlueTeamIds(data);
         if (isDemo(params.guildId)) {
-            const failure = await confirmMockBracket(params.guildId, params.scrimId);
+            const failure = await confirmMockBracket(
+                params.guildId,
+                params.scrimId,
+                start ? blueTeamIds : undefined
+            );
             if (failure) return failWith(failure);
-            return start ? startDemo(params) : undefined;
+            return start
+                ? destination(params, await getMockBracket(params.guildId, params.scrimId))
+                : undefined;
         }
         try {
             await confirmBracket(getDb(), locals.actor, params.guildId, params.scrimId, {
                 expectedRevision: Number(data.get('expectedRevision') ?? NaN),
-                start
+                start,
+                blueTeamIds
             });
             if (start)
                 return destination(
@@ -153,11 +163,18 @@ export const actions: Actions = {
         }
     },
     start: async ({ params, locals, request, setHeaders }) => {
-        if (isDemo(params.guildId)) return startDemo(params);
+        const data = await request.formData();
+        const blueTeamIds = readBlueTeamIds(data);
+        if (isDemo(params.guildId)) {
+            const failure = await startMockBracket(params.guildId, params.scrimId, blueTeamIds);
+            if (failure) return failWith(failure);
+            return destination(params, await getMockBracket(params.guildId, params.scrimId));
+        }
         try {
             await advanceScrim(getDb(), locals.actor, params.guildId, params.scrimId, {
-                expectedRevision: Number((await request.formData()).get('expectedRevision') ?? NaN),
-                key: 'start'
+                expectedRevision: Number(data.get('expectedRevision') ?? NaN),
+                key: 'start',
+                blueTeamIds
             });
             return destination(
                 params,

@@ -14,27 +14,29 @@
     <meta name="description" content="리그 오브 레전드 내전 기록 관리" />
 </svelte:head>
 
-<div class="max-w-3xl">
-    <header class="mb-5">
-        <h1 class="text-title font-bold">서버 선택</h1>
-        <p class="mt-1 text-sm leading-6 text-ink-2">
-            리그 오브 레전드 내전의 모집·팀 편성·대진·기록을 Discord 서버에서 관리해요.
+<div
+    class="mx-auto grid w-full max-w-6xl items-start gap-y-8 pt-4 sm:pt-10 xl:grid-cols-[minmax(0,4fr)_minmax(0,5fr)] xl:gap-x-16 xl:pt-[8vh]"
+>
+    <header class="min-w-0">
+        <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">서버 선택</h1>
+        <p class="mt-4 max-w-sm text-base leading-relaxed text-ink-2">
+            리그 오브 레전드 내전을 운영할 Discord 서버를 선택하세요.
         </p>
     </header>
-    <section class="panel" aria-labelledby="servers">
-        <div class="panel-bar">
+    <section aria-labelledby="servers" class="min-w-0 border-y border-line-strong">
+        <header class="flex min-h-12 items-center justify-between border-b border-line px-1">
             <h2 id="servers" class="font-semibold">내 Discord 서버</h2>
             {#if data.guilds.length && !data.guildListError}
-                <span class="text-ui text-muted">{data.guilds.length}개</span>
+                <span class="font-brand font-semibold text-nexus">{data.guilds.length}개</span>
             {/if}
-        </div>
+        </header>
         {#if data.guildListError}
             <div class="space-y-3 p-5">
                 <p role="alert" class="text-sm text-error">서버 목록을 불러오지 못했어요.</p>
                 <Button onclick={() => window.location.reload()}>다시 시도</Button>
             </div>
         {:else if data.guilds.length}
-            <ul class="divide-y divide-line">
+            <ul class="divide-y divide-line bg-surface">
                 {#each data.guilds as guild (guild.id)}
                     <li>
                         <a
@@ -62,10 +64,12 @@
                 {/each}
             </ul>
         {:else if !data.authenticated}
-            <div class="space-y-4 p-5" data-sveltekit-reload data-sveltekit-preload-data="false">
-                <p class="text-sm leading-6 text-ink-2">
-                    Discord로 로그인하면 내전을 진행하는 내 서버를 선택할 수 있어요.
-                </p>
+            <div
+                class="space-y-4 bg-surface px-4 py-8"
+                data-sveltekit-reload
+                data-sveltekit-preload-data="false"
+            >
+                <p class="text-sm leading-6 text-ink-2">Discord 계정으로 로그인해 소속 서버를 불러오세요.</p>
                 <Button href={loginHref} variant="primary">Discord로 로그인</Button>
             </div>
         {:else}
@@ -74,10 +78,10 @@
                 주세요.
             </p>
         {/if}
+        {#if !data.guilds.length && !data.guildListError}
+            <p class="border-t border-line py-3 text-ui leading-6 text-muted">
+                공유받은 공개 주소가 있다면 로그인 없이 내전과 기록을 볼 수 있어요.
+            </p>
+        {/if}
     </section>
-    {#if !data.guilds.length && !data.guildListError}
-        <p class="mt-4 text-ui leading-6 text-muted">
-            공유받은 공개 주소가 있다면 로그인 없이 내전과 기록을 볼 수 있어요.
-        </p>
-    {/if}
 </div>

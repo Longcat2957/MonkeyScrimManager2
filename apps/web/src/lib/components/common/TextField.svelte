@@ -65,7 +65,7 @@
         oninput={(event) => oninput?.(event.currentTarget.value)}
     />
     {#if error}
-        <p id={`${id}-error`} class="text-xs text-error">{error}</p>
+        <p id={`${id}-error`} role="alert" class="text-xs text-error">{error}</p>
     {:else if hint}
         <p id={`${id}-hint`} class="text-xs text-muted">{hint}</p>
     {/if}

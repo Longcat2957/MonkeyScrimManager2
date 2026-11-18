@@ -74,14 +74,14 @@
     }
 </script>
 
-<search aria-label="경기 기록 필터" class="panel @container">
+<search aria-label="경기 기록 필터" class="panel @container min-w-0">
     <form
         method="GET"
         action={page.url.pathname}
         {@attach preventComposingSubmit}
         aria-label="경기 조회"
         aria-busy={busy}
-        class="flex flex-col gap-2 p-3 sm:p-4"
+        class="grid gap-3 p-3 sm:p-4"
         onsubmit={(event) => {
             event.preventDefault();
             void apply({ q: query, from: start, to: end, seasonId: season });
@@ -90,24 +90,21 @@
         <input type="hidden" name="q" value={query} />
         {#if season}<input type="hidden" name="season" value={season} />{/if}
         <fieldset disabled={locked} class="min-w-0">
-            <legend class="sr-only">조회 조건</legend>
-            <div
-                class={[
-                    'grid min-w-0 gap-3 @min-[34rem]:grid-cols-2 @min-[34rem]:items-end',
-                    seasons.length
-                        ? '@min-[56rem]:grid-cols-[minmax(9rem,1fr)_minmax(16rem,1.3fr)_minmax(8rem,.7fr)_auto]'
-                        : '@min-[45rem]:grid-cols-[minmax(10rem,1fr)_minmax(17rem,1fr)_auto]'
-                ]}
-            >
-                <TextField
-                    label="내전·팀 이름 검색"
-                    type="search"
-                    placeholder="예: 포로팀"
-                    bind:value={query}
-                    disabled={locked}
-                    maxlength={50}
-                />
-                <fieldset class="grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+            <legend class="mb-3 w-full border-b border-line pb-2 text-sm font-bold">조회 조건</legend>
+            <div class="grid min-w-0 gap-3 @min-[18rem]:grid-cols-2">
+                <div class="@min-[18rem]:col-span-2 @min-[36rem]:col-span-1">
+                    <TextField
+                        label="내전·팀 이름 검색"
+                        type="search"
+                        placeholder="예: 포로팀"
+                        bind:value={query}
+                        disabled={locked}
+                        maxlength={50}
+                    />
+                </div>
+                <fieldset
+                    class="grid min-w-0 gap-2 @min-[18rem]:col-span-2 @min-[18rem]:grid-cols-2 @min-[36rem]:col-span-1"
+                >
                     <legend class="mb-1 text-xs font-semibold text-muted">경기일 (한국 시간)</legend>
                     <DateField
                         label="시작일"
@@ -128,6 +125,16 @@
                         disabled={locked}
                     />
                 </fieldset>
+                <p id={`${id}-hint`} class="text-xs text-muted @min-[18rem]:col-span-2">
+                    기간을 지정하면 날짜가 확인된 경기만 보여요.
+                </p>
+                {#if error}<p
+                        id={`${id}-error`}
+                        role="alert"
+                        class="text-sm text-error @min-[18rem]:col-span-2"
+                    >
+                        {error}
+                    </p>{/if}
                 {#if seasons.length}
                     <SeasonSelector
                         {seasons}
@@ -137,8 +144,10 @@
                         onselect={(value) => (season = value)}
                     />
                 {/if}
-                <div class="flex flex-wrap items-center justify-end gap-2">
-                    <Button type="submit" variant="primary" class="px-4" disabled={locked}>조회</Button>
+                <div class={['flex flex-wrap items-end gap-2', !seasons.length && '@min-[18rem]:col-span-2']}>
+                    <Button type="submit" variant="primary" class="min-h-11 flex-1 px-4" disabled={locked}
+                        >조회</Button
+                    >
                     {#if hasFilters}
                         <Button type="button" variant="quiet" class="px-3" disabled={locked} onclick={reset}
                             >초기화</Button
@@ -147,7 +156,5 @@
                 </div>
             </div>
         </fieldset>
-        <p id={`${id}-hint`} class="text-xs text-muted">기간을 지정하면 날짜가 확인된 경기만 보여요.</p>
-        {#if error}<p id={`${id}-error`} role="alert" class="text-sm text-error">{error}</p>{/if}
     </form>
 </search>

@@ -260,7 +260,7 @@ export async function confirmManualFormation(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput & { bestOf?: number },
+    input: RevisionInput & { bestOf?: number; blueTeamId?: string },
     access?: ScrimAccessDependencies
 ) {
     return mutateScrim(
@@ -310,7 +310,7 @@ export async function confirmManualFormation(
                     .update(scrimBracketSlots)
                     .set({ teamId: teams[index]!.id })
                     .where(and(eq(scrimBracketSlots.scrimId, row.id), eq(scrimBracketSlots.slot, slot)));
-            const [matchId] = await startPreparedScrim(tx, prepared!);
+            const [matchId] = await startPreparedScrim(tx, prepared!, { final: input.blueTeamId ?? '' });
             return matchId!;
         },
         access

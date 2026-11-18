@@ -137,15 +137,20 @@
 <!-- 준비 목표·저장/시작을 먼저 표시하고 후보와 팀 설정을 이어서 보여 준다. -->
 <section aria-labelledby="auction-setup" aria-busy={busy} class="panel flex w-full flex-col overflow-hidden">
     <header class="panel-bar">
-        <h2 id="auction-setup" class="text-base font-bold">경매 준비</h2>
+        <h2 id="auction-setup" class="text-lg font-bold tracking-tight">경매 준비</h2>
         <div class="flex flex-wrap items-center gap-1">
             {#if editable}<ChangeMethodButton disabled={busy} />{/if}
             {@render refreshAction?.()}
         </div>
     </header>
     {#if editable}
-        <div class="flex flex-wrap items-center justify-between gap-2 bg-surface-2 px-3 py-2">
-            <p class="min-w-0 flex-[1_1_18rem] text-ui text-muted">
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-surface-2 px-4 py-2.5">
+            <p
+                class={[
+                    'min-w-0 flex-[1_1_18rem] text-ui leading-relaxed',
+                    startBlocked ? 'text-ink-2' : 'font-medium text-success'
+                ]}
+            >
                 {startBlocked ??
                     '설정이 완성됐어요. 시작한 뒤에는 경매를 초기화해야 팀장과 시작 포인트를 바꿀 수 있어요.'}
             </p>
@@ -179,9 +184,9 @@
                 aria-labelledby="captain-candidates"
                 class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-surface"
             >
-                <div class="border-b border-line px-3 py-2">
-                    <h3 id="captain-candidates" class="text-sm font-semibold">팀장 후보</h3>
-                    <p class="mt-1 text-ui text-muted">
+                <div class="border-b border-line bg-surface px-3 py-3">
+                    <h3 id="captain-candidates" class="text-base font-bold tracking-tight">팀장 후보</h3>
+                    <p class="mt-1 text-ui leading-relaxed text-muted">
                         누르는 순서대로 비어 있는 팀에 배정돼요. 다시 누르면 해제돼요.
                     </p>
                     <div class="mt-2">
@@ -205,14 +210,14 @@
                                 aria-pressed={order >= 0}
                                 disabled={busy || (order < 0 && !captains.includes(null))}
                                 class={[
-                                    'grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-1.5 text-left transition disabled:opacity-50',
-                                    order >= 0 ? 'bg-selected' : 'hover:bg-surface-hover'
+                                    'grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 px-3 py-2 text-left transition-colors focus-visible:-outline-offset-2 disabled:opacity-50',
+                                    order >= 0 ? 'bg-selected' : 'enabled:hover:bg-surface-hover'
                                 ]}
                                 onclick={() => toggleCaptain(player.participantId)}
                             >
                                 <PlayerFace name={player.displayName} imageUrl={player.iconUrl} size="sm" />
                                 <span class="min-w-0">
-                                    <span class="block truncate text-ui font-semibold"
+                                    <span class="block truncate text-sm font-semibold"
                                         >{player.displayName}</span
                                     >
                                     <span class="block truncate text-xs text-muted tabular-nums"
@@ -228,8 +233,10 @@
                                         />{/if}
                                     <span
                                         class={[
-                                            'text-xs font-semibold',
-                                            order >= 0 ? 'text-nexus' : 'text-muted'
+                                            'rounded-small text-xs font-semibold',
+                                            order >= 0
+                                                ? 'bg-nexus px-1.5 py-0.5 text-nexus-ink'
+                                                : 'text-muted'
                                         ]}
                                     >
                                         {order >= 0 ? `${teams[order]?.name} 팀장` : '후보'}
@@ -238,23 +245,26 @@
                             </button>
                         </li>
                     {:else}
-                        <li class="px-3 py-10 text-center text-sm opacity-60">검색 결과가 없어요</li>
+                        <li class="px-3 py-10 text-center text-sm text-muted">검색 결과가 없어요</li>
                     {/each}
                 </ul>
             </section>
         {/if}
 
-        <section aria-label="팀 설정" class="min-h-0 bg-surface">
+        <section aria-label="팀 설정" class="min-h-0 bg-surface-2">
             <div class="grid min-h-0 content-start gap-2 p-2 min-[23rem]:grid-cols-2">
                 {#each teams as team, index (team.id)}
                     {@const captain = playerOf(captains[index] ?? null)}
                     {@const pointsError = parsed[index] === null ? '1 이상의 정수를 입력해 주세요' : ''}
                     <section
                         aria-labelledby={`setup-${team.id}`}
-                        class="panel grid grid-rows-[auto_minmax(0,1fr)] gap-2 p-3"
+                        class="panel grid grid-rows-[auto_minmax(0,1fr)] gap-3 p-3"
                     >
                         <div class="grid gap-2">
-                            <h3 id={`setup-${team.id}`} class="text-sm font-bold">
+                            <h3
+                                id={`setup-${team.id}`}
+                                class="border-b border-line pb-2 text-base font-bold tracking-tight"
+                            >
                                 {team.name}
                             </h3>
                             {#if editable}
@@ -268,16 +278,18 @@
                                 />
                             {:else}
                                 <p class="text-sm">
-                                    <span class="opacity-60">시작 포인트</span>
-                                    <span class="font-semibold tabular-nums">{team.startPoints}P</span>
+                                    <span class="text-muted">시작 포인트</span>
+                                    <span class="font-brand text-base font-bold tabular-nums"
+                                        >{team.startPoints}P</span
+                                    >
                                 </p>
                             {/if}
                         </div>
                         {#if captain}
-                            <div class="flex min-h-0 items-center gap-2 border-t border-line pt-2">
+                            <div class="flex min-h-10 items-center gap-2 border-t border-line pt-2">
                                 <PlayerFace name={captain.displayName} imageUrl={captain.iconUrl} size="sm" />
                                 <div class="min-w-0">
-                                    <p class="truncate text-ui font-semibold">{captain.displayName}</p>
+                                    <p class="truncate text-sm font-semibold">{captain.displayName}</p>
                                     <p class="truncate text-xs text-muted">
                                         희망 · {captain.positions.map(laneText).join(' · ')}
                                     </p>
@@ -285,7 +297,7 @@
                             </div>
                         {:else}
                             <p
-                                class="flex min-h-10 items-center justify-center rounded-sm border border-dashed border-line text-ui text-muted"
+                                class="flex min-h-10 items-center justify-center rounded-form border border-dashed border-line-strong/60 bg-surface-2 text-ui text-muted"
                             >
                                 팀장 미지정
                             </p>

@@ -195,6 +195,9 @@ for (const width of [1440, 390])
                     .filter({ hasText: '서비스에 연결된 사용자를 찾을 수 없어요' });
                 await error.waitFor();
                 assert.equal(await input.inputValue(), unknownUserId);
+                assert.equal(await input.getAttribute('aria-invalid'), 'true');
+                assert.equal(await input.getAttribute('aria-describedby'), await error.getAttribute('id'));
+                assert.equal(await input.evaluate((node) => node === document.activeElement), true);
                 assert.equal(await input.isEnabled(), true);
                 assert.equal(
                     await page.getByRole('button', { name: '운영자 지정', exact: true }).isEnabled(),

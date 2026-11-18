@@ -49,6 +49,7 @@ async function state(f: Fixture) {
         'scrims',
         'matches',
         'games',
+        'match_set_sides',
         'game_mmr_applications',
         'mmr_ledger_entries',
         'user_position_mmr',
@@ -90,7 +91,7 @@ async function restartManual(f: Fixture) {
         f.manager,
         f.guildId,
         f.scrimId,
-        { ...(await f.revision()), key: 'start' },
+        { ...(await f.revision()), key: 'start', blueTeamIds: { final: f.teams[0]!.id } },
         f.access
     );
     return (

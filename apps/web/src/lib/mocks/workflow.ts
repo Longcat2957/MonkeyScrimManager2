@@ -162,6 +162,8 @@ export async function advanceMockScrim(
     const action = await nextAction(scrim);
     if (!action || action.key !== key) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
     if (action.blockedReason) return { status: 409, message: action.blockedReason };
+    if (action.key === 'start')
+        return { status: 400, message: '대진에서 1세트 블루 팀을 고른 뒤 시작해 주세요' };
     scrim.status = NEXT_STATUS[action.key];
     return null;
 }

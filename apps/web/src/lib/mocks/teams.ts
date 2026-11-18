@@ -219,12 +219,14 @@ export async function resetMockManual(guildId: string, scrimId: string) {
     return null;
 }
 
-export async function confirmMockManual(guildId: string, scrimId: string) {
+export async function confirmMockManual(guildId: string, scrimId: string, blueTeamId?: string) {
     await wait();
     const target = editableManual(guildId, scrimId);
     if ('status' in target) return target;
     const missing = selected(target.scrim).length - Object.keys(target.state.assignments).length;
     if (missing > 0) return { status: 409, message: `미배정 ${missing}명이 남았어요` };
+    if (blueTeamId !== undefined && !target.state.teams.some((team) => team.id === blueTeamId))
+        return { status: 400, message: '1세트 블루 팀을 골라 주세요' };
     target.state.confirmed = true;
     target.scrim.status = 'ready';
     return null;

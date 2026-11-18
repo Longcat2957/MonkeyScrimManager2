@@ -38,8 +38,8 @@
 
 {#snippet heading(title: string, aside?: string)}
     <div class="flex items-baseline justify-between gap-3">
-        <h4 class="text-xs font-semibold text-muted">{title}</h4>
-        {#if aside}<span class="text-xs text-muted">{aside}</span>{/if}
+        <h4 class="text-sm font-bold tracking-tight text-ink">{title}</h4>
+        {#if aside}<span class="text-xs font-medium text-muted">{aside}</span>{/if}
     </div>
 {/snippet}
 
@@ -48,7 +48,7 @@
     role="region"
     aria-label="후보 전적 상세"
     tabindex="0"
-    class="panel relative flex max-h-[28rem] flex-col gap-3 overflow-y-auto bg-surface-2 p-3 tabular-nums"
+    class="panel relative flex max-h-[28rem] flex-col gap-4 overflow-y-auto bg-surface p-3 tabular-nums focus-visible:-outline-offset-2"
 >
     <section class="flex flex-col gap-2">
         {@render heading(
@@ -56,11 +56,11 @@
             profile.summary.games ? `${profile.summary.wins}승 ${profile.summary.losses}패` : undefined
         )}
         {#if profile.summary.games}
-            <div class="grid grid-cols-3 gap-1">
+            <div class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line">
                 {#each [['내전', `${profile.summary.games}게임`], ['승률', winRate(profile.summary.games, profile.summary.wins)], ['주력 포지션', laneText(profile.mainLane)]] as [label, value] (label)}
-                    <div class="rounded-(--radius-small) bg-surface p-2">
-                        <p class="text-[0.6875rem] text-muted">{label}</p>
-                        <p class="text-sm font-semibold">{value}</p>
+                    <div class="bg-surface-2 p-2">
+                        <p class="text-xs text-muted">{label}</p>
+                        <p class="mt-0.5 text-sm font-bold">{value}</p>
                     </div>
                 {/each}
             </div>
@@ -72,22 +72,22 @@
     {#if profile.summary.games}
         <section class="flex flex-col gap-2">
             {@render heading('내전 주력 챔피언')}
-            <ul class="flex flex-col gap-1">
+            <ul class="divide-y divide-line border-y border-line">
                 {#each profile.championRecords as record (record.champion.id)}
-                    <li class="flex items-center gap-2 rounded-(--radius-small) bg-surface p-2">
+                    <li class="flex items-center gap-2 py-2">
                         {@render champ(record.champion)}
                         <span class="flex min-w-0 flex-1 flex-col">
                             <span class="truncate text-sm font-semibold">{record.champion.name}</span>
-                            <span class="text-[0.6875rem] text-muted"
+                            <span class="text-xs text-muted"
                                 >{record.games}게임 · {record.wins}승 {record.games - record.wins}패</span
                             >
                         </span>
-                        <span class="text-xs font-semibold tabular-nums"
+                        <span class="shrink-0 font-brand text-sm font-bold tabular-nums"
                             >{winRate(record.games, record.wins)}</span
                         >
                     </li>
                 {:else}
-                    <li class="text-sm text-muted">확인된 챔피언 기록이 없어요.</li>
+                    <li class="py-2 text-sm text-muted">확인된 챔피언 기록이 없어요.</li>
                 {/each}
             </ul>
         </section>
@@ -97,10 +97,10 @@
         {@render heading('라인별 MMR')}
         <ul class="grid grid-cols-[repeat(auto-fit,minmax(4.25rem,1fr))] gap-1 text-center">
             {#each LANES as lane (lane)}
-                <li class="rounded-(--radius-small) bg-surface p-1.5">
-                    <p class="text-[0.6875rem] text-muted">{laneText(lane)}</p>
-                    <p class="text-sm font-semibold tabular-nums">{formatMmr(player.mmr[lane])}</p>
-                    <p class="text-[0.6875rem] text-muted tabular-nums">{profile.laneGames[lane]}게임</p>
+                <li class="rounded-small bg-surface-2 p-1.5">
+                    <p class="text-xs font-medium text-role-gold">{laneText(lane)}</p>
+                    <p class="font-brand text-base font-bold tabular-nums">{formatMmr(player.mmr[lane])}</p>
+                    <p class="text-xs text-muted tabular-nums">{profile.laneGames[lane]}게임</p>
                 </li>
             {/each}
         </ul>
@@ -114,7 +114,7 @@
             )}
             <ul class="grid grid-cols-2 gap-1 sm:grid-cols-3">
                 {#each profile.preferredChampions as champion (champion.id)}
-                    <li class="flex min-w-0 items-center gap-2 rounded-(--radius-small) bg-surface p-2">
+                    <li class="flex min-w-0 items-center gap-2 rounded-small bg-surface-2 p-2">
                         {@render champ(champion)}
                         <span class="min-w-0 text-sm font-semibold wrap-anywhere">{champion.name}</span>
                     </li>
@@ -138,20 +138,23 @@
                     {/each}
                 </span>
             {/if}
-            <ul class="flex flex-col gap-1">
+            <ul class="divide-y divide-line border-y border-line">
                 {#each profile.recentGames as game (game.id)}
-                    <li class="flex items-center gap-2 rounded-(--radius-small) bg-surface p-2">
+                    <li class="flex items-center gap-2 py-2">
                         {@render champ(game.champion)}
                         <span class="flex min-w-0 flex-1 flex-col">
-                            <span class="truncate text-xs font-semibold">{game.champion.name}</span>
-                            <span class="text-[0.6875rem] text-muted"
+                            <span class="truncate text-sm font-semibold">{game.champion.name}</span>
+                            <span class="text-xs text-muted"
                                 >{laneText(game.lane)} · {game.playedAt
                                     ? formatShortDate(game.playedAt)
                                     : '시각 미확인'}</span
                             >
                         </span>
-                        <span class={['text-xs font-semibold', game.win ? 'text-success' : 'text-error']}
-                            >{game.win ? '승' : '패'}</span
+                        <span
+                            class={[
+                                'shrink-0 rounded-small px-1.5 py-0.5 text-xs font-semibold',
+                                game.win ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
+                            ]}>{game.win ? '승' : '패'}</span
                         >
                     </li>
                 {/each}
@@ -162,19 +165,17 @@
     {#if profile.riot}
         <section class="flex flex-col gap-2">
             {@render heading('Riot 전적')}
-            <div class="grid grid-cols-3 gap-1">
+            <div class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line">
                 {#each [['솔로 랭크', profile.riot.tier ?? '-'], ['최근', `${profile.riot.games}게임`], ['승률', winRate(profile.riot.games, profile.riot.wins)]] as [label, value] (label)}
-                    <div class="rounded-(--radius-small) bg-surface p-2">
-                        <p class="text-[0.6875rem] text-muted">{label}</p>
-                        <p class="truncate text-sm font-semibold">{value}</p>
+                    <div class="bg-surface-2 p-2">
+                        <p class="text-xs text-muted">{label}</p>
+                        <p class="mt-0.5 text-sm font-bold">{value}</p>
                     </div>
                 {/each}
             </div>
             <ul class="flex flex-wrap gap-1">
                 {#each profile.riot.champions as champion (champion.id)}
-                    <li
-                        class="flex items-center gap-1.5 rounded-(--radius-small) bg-surface py-1 pr-2 pl-1 text-xs"
-                    >
+                    <li class="flex items-center gap-1.5 rounded-small bg-surface-2 py-1 pr-2 pl-1 text-xs">
                         {@render champ(champion)}{champion.name}
                     </li>
                 {/each}

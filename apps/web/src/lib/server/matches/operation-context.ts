@@ -1,9 +1,9 @@
-import { asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { MatchOperationContext } from '../../features/matches/types.ts';
 import type { Actor } from '../auth/types.ts';
 import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database } from '../db/types.ts';
-import { games, riotAccounts, scrimTeams } from '../db/schema.ts';
+import { games, matchSetSides, riotAccounts, scrimTeams } from '../db/schema.ts';
 import { assertGuildView } from '../guild/access.ts';
 import { completedGames, findMatch, readLineup, readRoster } from './state.ts';
 import { resultReversalBlock } from './reversal.ts';
@@ -43,6 +43,17 @@ export async function getMatchOperationContext(
                 scrim.status === 'in_progress' &&
                 match.status === 'in_progress' &&
                 nextGameNumber <= match.bestOf;
+            const [side] = operating
+                ? await tx
+                      .select({ blueTeamSlot: matchSetSides.blueTeamSlot })
+                      .from(matchSetSides)
+                      .where(
+                          and(
+                              eq(matchSetSides.matchId, matchId),
+                              eq(matchSetSides.gameNumber, nextGameNumber)
+                          )
+                      )
+                : [];
             const [artifact] = await tx
                 .select({ id: games.id })
                 .from(games)
@@ -62,6 +73,7 @@ export async function getMatchOperationContext(
             return {
                 revision: match.revision,
                 nextGameNumber,
+                plannedBlueTeamSlot: side?.blueTeamSlot ?? null,
                 lineup: lineup
                     ? {
                           id: lineup.id,
@@ -96,6 +108,7 @@ export async function getMatchOperationContext(
                         })
                 })),
                 can: {
+                    setSide: operating && guild.isAdmin,
                     editLineup: operating && guild.isAdmin && !artifact && !lineup?.confirmedAt,
                     confirmLineup: operating && guild.isAdmin && !artifact && !lineup?.confirmedAt,
                     releaseLineup: operating && guild.isAdmin && !artifact && Boolean(lineup?.confirmedAt),

@@ -5,6 +5,7 @@ import type { LolPosition } from '#lib/features/guild/types.ts';
 export type MatchOperationContext = {
     revision: number;
     nextGameNumber: number;
+    plannedBlueTeamSlot: 'a' | 'b' | null;
     lineup: {
         id: string;
         status: 'draft' | 'confirmed';
@@ -23,6 +24,7 @@ export type MatchOperationContext = {
         }[];
     }[];
     can: {
+        setSide: boolean;
         editLineup: boolean;
         confirmLineup: boolean;
         releaseLineup: boolean;

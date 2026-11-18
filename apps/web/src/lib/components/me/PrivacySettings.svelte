@@ -125,8 +125,8 @@
     };
 </script>
 
-<section aria-labelledby={`${id}-privacy`} class="panel">
-    <h2 id={`${id}-privacy`} class="panel-bar font-bold">공개 설정</h2>
+<section id="privacy" aria-labelledby={`${id}-privacy`} class="min-w-0">
+    <h2 id={`${id}-privacy`} class="mb-3 text-lg font-bold">공개 설정</h2>
     <form
         method="POST"
         action={action('privacy')}
@@ -134,7 +134,7 @@
         {@attach preventComposingSubmit}
         aria-label="공개 설정 저장"
         aria-busy={busy === 'privacy'}
-        class="min-w-0"
+        class="panel min-w-0"
     >
         <input type="hidden" name="publicProfile" value={String(publicProfile)} />
         <input type="hidden" name="publicRiotIds" value={String(publicRiotIds)} />
@@ -149,16 +149,18 @@
             />
             <SwitchCell title="Riot ID 공개" bind:active={publicRiotIds} disabled={locked} />
         </fieldset>
-        <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line px-4 py-3">
-            <p class="min-w-[min(100%,16rem)] flex-1 text-ui text-muted">
+        <div
+            class="grid min-w-0 gap-3 border-t border-line px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+        >
+            <p class="max-w-prose text-ui text-muted">
                 경기 결과·MMR은 계속 공개되며, 탈퇴해도 보존돼요. 서버 관리자는 계정 운영에 필요한 정보를 계속
                 볼 수 있어요.
             </p>
-            {#if error}<p role="alert" class="basis-full text-ui text-error">{error}</p>{/if}
-            {#if notice}<p role="status" class="basis-full text-ui text-success">{notice}</p>{/if}
             <Button variant="primary" type="submit" disabled={locked || !dirty} loading={busy === 'privacy'}
                 >공개 설정 저장</Button
             >
+            {#if error}<p role="alert" class="col-span-full text-ui text-error">{error}</p>{/if}
+            {#if notice}<p role="status" class="col-span-full text-ui text-success">{notice}</p>{/if}
         </div>
     </form>
 </section>

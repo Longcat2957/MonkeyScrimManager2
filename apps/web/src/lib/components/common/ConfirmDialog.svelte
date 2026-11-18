@@ -14,7 +14,7 @@
 </script>
 
 {#if $confirmation}
-    <Dialog title={$confirmation.title} {open} dismissible={false} onclose={cancel}>
+    <Dialog title={$confirmation.title} {open} dismissible={false} oncancel={cancel} onclose={cancel}>
         <p id="confirmation-content" class="text-sm leading-relaxed text-ink-2">{$confirmation.content}</p>
         {#snippet footer()}
             <div class="flex flex-wrap justify-end gap-2">

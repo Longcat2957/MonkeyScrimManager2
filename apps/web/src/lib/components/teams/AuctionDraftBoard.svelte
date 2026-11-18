@@ -12,8 +12,7 @@
         TEAM_SIZE,
         winRate,
         type AuctionView,
-        type Celebration,
-        auctionStories
+        type Celebration
     } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { goto } from '$app/navigation';
@@ -52,11 +51,10 @@
     const open = $derived(auction.openLot);
     const lotKey = $derived(auction.openLotId ?? open?.participantId ?? null);
     const profile = $derived(auction.openProfile);
-    // 이야기 문구 앞의 이모지는 아이콘 문법에 맞지 않아 걷어 낸다.
-    const stories = $derived(auctionStories(auction).map((story) => story.replace(/^[^\p{L}\p{N}]+/u, '')));
     const canRevert = $derived(auction.canRevert ?? auction.history.some((entry) => !entry.voided));
     const canReset = $derived(auction.history.some((entry) => !entry.voided));
     const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
+    const seconds = $derived(Math.ceil(remainingMs / 1000));
     const mainLane = $derived(open?.positions[0] ?? profile?.mainLane ?? null);
     const recentWins = $derived(profile?.recentGames.filter((game) => game.win).length ?? 0);
     const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
@@ -193,7 +191,7 @@
 >
     <header class="page-head border-b border-line pb-2">
         <div class="flex shrink-0 items-center gap-2">
-            <h2 id="auction-board" class="text-base font-bold">경매</h2>
+            <h2 id="auction-board" class="text-lg font-bold tracking-tight">경매</h2>
             <StatusTag text={STATUS[auction.status].text} state={STATUS[auction.status].state} />
             {#if busy || refreshing}<Spinner />{/if}
         </div>
@@ -210,7 +208,9 @@
     </header>
 
     {#if controls && open}
-        <p class="text-ui text-muted">입찰가를 바꾸면 10초를 다시 세며, 낙찰·유찰은 직접 결정해요.</p>
+        <p class="text-ui leading-relaxed text-ink-2">
+            입찰가를 바꾸면 10초를 다시 세며, 낙찰·유찰은 직접 결정해요.
+        </p>
     {/if}
 
     <!-- 작업판: 왼쪽 현재 매물·후보 현황, 오른쪽 팀 패널. 1px 경계로 붙는다. -->
@@ -230,10 +230,10 @@
                     class="contents xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:bg-surface"
                 >
                     <div
-                        class="flex flex-wrap items-center justify-between gap-1 border-b border-line bg-surface px-3 py-2"
+                        class="flex flex-wrap items-center justify-between gap-1 border-b border-line bg-surface-2 px-3 py-2"
                     >
                         <div class="flex items-center gap-2">
-                            <h3 id="open-lot" class="text-base font-semibold">현재 매물</h3>
+                            <h3 id="open-lot" class="text-base font-bold tracking-tight">현재 매물</h3>
                             {#if open}<span class="size-2 rounded-full bg-success" aria-hidden="true"
                                 ></span>{/if}
                         </div>
@@ -249,6 +249,7 @@
                             {#if open && profile}
                                 <Button
                                     variant={details ? 'secondary' : 'quiet'}
+                                    aria-expanded={details}
                                     class="px-2 text-ui"
                                     onclick={() => (details = !details)}>상세보기</Button
                                 >
@@ -278,23 +279,55 @@
                                     'panel sticky top-(--app-header-height) z-20 isolate mx-2 flex shrink-0 flex-col overflow-hidden px-3 py-2 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:p-3',
                                     details ? 'gap-2' : 'justify-between gap-2 xl:min-h-[15rem] xl:gap-3',
                                     controls && 'cursor-grab active:cursor-grabbing',
+                                    'bg-selected',
                                     drag.id === open.participantId
-                                        ? 'border-nexus bg-selected opacity-70'
-                                        : 'border-line-strong bg-surface-2'
+                                        ? 'border-nexus opacity-70'
+                                        : 'border-nexus/40'
                                 ]}
                                 ondragstart={(event) => drag.start(event, open.participantId)}
                                 ondragend={() => drag.end()}
                             >
+                                {#if controls}
+                                    <div class="-mx-3 -mt-2 xl:-mt-3">
+                                        <div
+                                            role="progressbar"
+                                            aria-label="남은 입찰 조정 시간"
+                                            aria-valuemin={0}
+                                            aria-valuemax={TIMER_MS / 1000}
+                                            aria-valuenow={seconds}
+                                            aria-valuetext={seconds ? `${seconds}초` : '조정 시간 종료'}
+                                            class="h-1.5 overflow-hidden bg-line"
+                                        >
+                                            {#key timerStart}
+                                                <div
+                                                    class="clock-fill h-full origin-left"
+                                                    style:--duration={`${TIMER_MS}ms`}
+                                                    style:transform={`scaleX(${seconds / (TIMER_MS / 1000)})`}
+                                                    class:running={seconds > 0}
+                                                ></div>
+                                            {/key}
+                                        </div>
+                                        <p
+                                            aria-hidden="true"
+                                            class="flex items-baseline justify-between px-3 pt-1.5 text-xs font-semibold text-ink-2"
+                                        >
+                                            <span>{seconds ? '조정 시간' : '조정 시간 종료'}</span>
+                                            <strong class="text-base text-ink tabular-nums"
+                                                >{seconds}초</strong
+                                            >
+                                        </p>
+                                    </div>
+                                {/if}
                                 {#if !details && mainLane}
                                     <span
-                                        class="pointer-events-none absolute top-3 right-3 opacity-15"
+                                        class="pointer-events-none absolute top-1/2 right-4 -z-10 -translate-y-1/2 opacity-15 xl:scale-150"
                                         aria-hidden="true"
                                         ><PositionIcon position={mainLane} size="md" /></span
                                     >
                                 {/if}
                                 <div class="flex items-start justify-between gap-3">
                                     <span
-                                        class="inline-flex items-center gap-1 rounded-sm border border-line px-1.5 py-0.5 text-xs font-semibold text-role-gold"
+                                        class="inline-flex items-center gap-1 rounded-small border border-role-dim bg-surface px-1.5 py-0.5 text-xs font-semibold text-role-gold"
                                     >
                                         {#if mainLane}
                                             <PositionIcon position={mainLane} size="sm" />{open.positions
@@ -308,7 +341,7 @@
                                     </span>
                                     {#if profile?.riot?.tier}
                                         <span
-                                            class="rounded-sm border border-line px-1.5 py-0.5 text-xs font-semibold text-role-gold"
+                                            class="rounded-small border border-line bg-surface px-1.5 py-0.5 text-xs font-semibold text-ink-2"
                                             >{profile.riot.tier}</span
                                         >
                                     {/if}
@@ -316,55 +349,35 @@
                                 <div
                                     class={[
                                         'flex items-center gap-3',
-                                        details ? 'flex-row' : 'xl:flex-col xl:text-center'
+                                        details
+                                            ? 'flex-row'
+                                            : 'xl:flex-col xl:text-center xl:[&>:first-child]:size-12 xl:[&>:first-child]:text-lg'
                                     ]}
                                 >
                                     <PlayerFace name={open.displayName} imageUrl={open.iconUrl} size="md" />
                                     <div class="min-w-0">
-                                        <p class="text-lg font-bold wrap-anywhere xl:text-title">
+                                        <p
+                                            class="text-xl leading-tight font-bold tracking-tight wrap-anywhere xl:text-2xl"
+                                        >
                                             {open.displayName}
                                         </p>
-                                        <p class="text-ui font-medium text-muted tabular-nums">
-                                            MMR {formatMmr(mainLane ? open.mmr[mainLane] : null)}
+                                        <p class="mt-0.5 text-xs font-medium text-muted tabular-nums">
+                                            MMR <strong class="font-brand text-sm text-ink-2">
+                                                {formatMmr(mainLane ? open.mmr[mainLane] : null)}
+                                            </strong>
                                         </p>
                                     </div>
                                 </div>
                                 {#if profile && !details && profile.summary.games}
-                                    <div class="grid grid-cols-3 gap-px bg-line">
+                                    <div
+                                        class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line"
+                                    >
                                         {#each [['승률', winRate(profile.summary.games, profile.summary.wins)], ['승패', `${profile.summary.wins}-${profile.summary.losses}`], [profile.recentChronologyKnown === false ? '표시 기록' : '최근', `${recentWins}승 ${profile.recentGames.length - recentWins}패`]] as [label, value] (label)}
-                                            <div class="bg-surface px-2 py-1 text-center">
-                                                <p class="text-micro text-muted">{label}</p>
-                                                <p class="text-ui font-semibold tabular-nums">{value}</p>
+                                            <div class="bg-surface px-2 py-1.5 text-center">
+                                                <p class="text-xs text-muted">{label}</p>
+                                                <p class="text-sm font-bold tabular-nums">{value}</p>
                                             </div>
                                         {/each}
-                                    </div>
-                                {/if}
-                                {#if controls}
-                                    {@const seconds = Math.ceil(remainingMs / 1000)}
-                                    <!-- 남은 초 기준: 10~7초 녹색, 6~3초 주황, 3초 미만 빨간색 -->
-                                    {@const tone =
-                                        seconds >= 7 ? 'success' : seconds >= 3 ? 'warning' : 'error'}
-                                    <div
-                                        aria-hidden="true"
-                                        class="relative h-6 w-full overflow-hidden rounded-(--radius-small) bg-surface-hover"
-                                    >
-                                        <div
-                                            class={[
-                                                'h-full transition-[width,background-color] duration-200 ease-linear',
-                                                {
-                                                    success: 'bg-success',
-                                                    warning: 'bg-warning',
-                                                    error: 'bg-error'
-                                                }[tone]
-                                            ]}
-                                            style:width="{(remainingMs / TIMER_MS) * 100}%"
-                                        ></div>
-                                        <span
-                                            class={[
-                                                'absolute inset-y-0 right-0 flex items-center bg-surface-hover px-3 text-sm font-bold tabular-nums',
-                                                seconds > 0 && tone === 'error' && 'text-error'
-                                            ]}>{seconds > 0 ? `${seconds}초` : '조정 시간 종료'}</span
-                                        >
                                     </div>
                                 {/if}
                             </div>
@@ -375,9 +388,9 @@
                             {/if}
                         {:else}
                             <div
-                                class="flex min-h-36 flex-1 flex-col items-center justify-center gap-1 border border-dashed border-line bg-surface px-4 py-4 text-center"
+                                class="flex min-h-36 flex-1 flex-col items-center justify-center gap-1 rounded-form border border-dashed border-line-strong/60 bg-surface-2 px-4 py-4 text-center"
                             >
-                                <p class="font-semibold text-muted">후보 대기</p>
+                                <p class="font-semibold text-ink-2">후보 대기</p>
                                 <p class="text-sm text-muted">
                                     {auction.queue.length
                                         ? controls
@@ -432,8 +445,8 @@
                 class="flex flex-col gap-2 bg-surface p-3 xl:col-start-1 xl:row-start-2"
             >
                 <div class="flex items-center justify-between">
-                    <h3 id="candidates" class="text-base font-semibold">후보 현황</h3>
-                    <span class="text-xs opacity-60 tabular-nums"
+                    <h3 id="candidates" class="text-base font-bold tracking-tight">후보 현황</h3>
+                    <span class="text-xs font-semibold text-muted tabular-nums"
                         >{(open ? 1 : 0) + auction.queue.length + auction.unsold.length}명</span
                     >
                 </div>
@@ -453,11 +466,15 @@
                         >
                     {/if}
                 </div>
-                <div class="grid grid-cols-3 gap-px bg-line text-center">
+                <div
+                    class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line text-center"
+                >
                     {#each [['현재', open ? 1 : 0, 'text-nexus'], ['대기', auction.queue.length, ''], ['유찰 후보', auction.unsold.length, 'text-warning']] as [label, value, tone] (label)}
-                        <div class="bg-surface px-2 py-1">
-                            <p class="text-micro text-muted">{label}</p>
-                            <p class={['text-ui font-semibold tabular-nums', tone]}>{value}</p>
+                        <div class="bg-surface-2 px-2 py-1.5">
+                            <p class="text-xs text-muted">{label}</p>
+                            <p class={['font-brand text-lg leading-tight font-bold tabular-nums', tone]}>
+                                {value}
+                            </p>
                         </div>
                     {/each}
                 </div>
@@ -465,19 +482,10 @@
         {/if}
     </div>
 
-    {#if stories.length}
-        <div class="panel px-3 py-2" role="region" aria-label="경매 이야기">
-            <p class="text-xs font-semibold text-muted">경매 이야기</p>
-            <ul class="mt-1 flex flex-col gap-0.5 text-sm">
-                {#each stories as story (story)}<li>{story}</li>{/each}
-            </ul>
-        </div>
-    {/if}
-
     {#if auction.history.length}
         <details class="panel group overflow-hidden">
             <summary
-                class="flex min-h-9 cursor-pointer list-none items-center gap-2 px-3 text-ui font-semibold marker:content-none pointer-coarse:min-h-11"
+                class="flex min-h-9 cursor-pointer list-none items-center gap-2 px-3 text-ui font-semibold marker:content-none hover:bg-surface-hover focus-visible:-outline-offset-2 group-open:bg-surface-2 pointer-coarse:min-h-11"
             >
                 <svg
                     aria-hidden="true"
@@ -505,16 +513,16 @@
                     </thead>
                     <tbody>
                         {#each auction.history as entry (entry.id)}
-                            <tr class={['border-t border-line', entry.voided && 'opacity-50']}>
-                                <td class="py-2 text-right tabular-nums">{entry.order}</td>
-                                <td class={['px-3 py-2', entry.voided && 'line-through']}
+                            <tr class={['border-t border-line', entry.voided && 'text-muted']}>
+                                <td class="py-2 text-right text-muted tabular-nums">{entry.order}</td>
+                                <td class={['px-3 py-2 font-semibold', entry.voided && 'line-through']}
                                     >{entry.displayName}</td
                                 >
                                 <td class="px-3 py-2"
                                     >{RESULT[entry.result]}{entry.voided ? ' (되돌림)' : ''}</td
                                 >
                                 <td class="px-3 py-2">{entry.teamName ?? '-'}</td>
-                                <td class="py-2 text-right tabular-nums"
+                                <td class="py-2 text-right font-semibold tabular-nums"
                                     >{entry.price === null ? '-' : `${entry.price}P`}</td
                                 >
                             </tr>
@@ -539,6 +547,47 @@
 {/if}
 
 <style>
+    .clock-fill {
+        background: linear-gradient(
+            90deg,
+            var(--color-nexus),
+            var(--color-nexus-hover) 85%,
+            var(--color-nexus)
+        );
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .clock-fill.running {
+            animation: drain-clock var(--duration) linear forwards;
+        }
+
+        .clock-fill.running::after {
+            content: '';
+            display: block;
+            height: 100%;
+            background: linear-gradient(100deg, transparent 75%, var(--color-ink) 100%);
+            animation: clock-current 1.6s ease-in-out infinite alternate;
+        }
+    }
+
+    @keyframes drain-clock {
+        from {
+            transform: scaleX(1);
+        }
+        to {
+            transform: scaleX(0);
+        }
+    }
+
+    @keyframes clock-current {
+        from {
+            opacity: 0.12;
+        }
+        to {
+            opacity: 0.6;
+        }
+    }
+
     @media (width < 80rem) {
         .auction-board :global(button) {
             scroll-margin-block-start: var(--candidate-height);

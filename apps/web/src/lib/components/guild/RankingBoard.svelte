@@ -1,6 +1,6 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import LinkCell from '#lib/components/common/LinkCell.svelte';
+    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
@@ -130,64 +130,41 @@
         }
     }
 
-    const MEDAL = ['bg-medal-gold', 'bg-medal-silver', 'bg-medal-bronze'];
+    const MEDAL = ['text-medal-gold', 'text-medal-silver', 'text-medal-bronze'];
     const identityKey = (entry: RankingEntry) => entry.identityKey ?? entry.userId;
     const winRate = (entry: RankingEntry) => (entry.games ? Math.round((entry.wins / entry.games) * 100) : 0);
 </script>
 
-{#snippet row(entry: RankingEntry, line: boolean)}
-    <LinkCell
+{#snippet row(entry: RankingEntry)}
+    <a
         href={`${resolve('/g/[guildId]/players/[userId]', { guildId, userId: entry.userId })}${selectedSeasonId ? `?season=${selectedSeasonId}` : ''}`}
-        {line}
-        title={entry.displayName}
-        subTitle={`${entry.games}전 ${entry.wins}승 · 승률 ${winRate(entry)}%`}
+        class="grid min-h-12 grid-cols-[1.75rem_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-sm hover:bg-surface-hover focus-visible:-outline-offset-2 @min-[34rem]:gap-3"
     >
-        {#snippet leftChild()}
-            <span class="flex items-center gap-2">
-                <span
-                    class={[
-                        'flex h-5 min-w-6 items-center justify-center rounded-(--radius-small) px-1 text-xs font-bold tabular-nums',
-                        entry.rank <= 3 ? [MEDAL[entry.rank - 1], 'text-ground'] : 'text-muted'
-                    ]}
-                >
-                    <span class="sr-only">순위 </span>{entry.rank}
-                </span>
-                {#if entry.iconUrl}
-                    <img
-                        src={entry.iconUrl}
-                        alt=""
-                        width="28"
-                        height="28"
-                        loading="lazy"
-                        class="size-7 rounded-(--radius-small)"
-                    />
-                {:else}
-                    <span
-                        class="flex size-7 items-center justify-center rounded-(--radius-small) bg-surface-2 text-ui font-semibold"
-                        aria-hidden="true"
-                    >
-                        {entry.displayName.slice(0, 1)}
-                    </span>
-                {/if}
+        <span
+            class={['font-brand text-center font-bold tabular-nums', MEDAL[entry.rank - 1] ?? 'text-muted']}
+        >
+            <span class="sr-only">순위 </span>{entry.rank}
+        </span>
+        <PlayerFace name={entry.displayName} imageUrl={entry.iconUrl} size="sm" />
+        <span
+            class="flex min-w-0 flex-col gap-x-3 @min-[34rem]:flex-row @min-[34rem]:flex-wrap @min-[34rem]:items-baseline"
+        >
+            <span class="font-medium wrap-anywhere">
+                {entry.displayName}
+                {#if entry.isMe}<span class="text-xs font-semibold text-nexus">나</span>{/if}
             </span>
-        {/snippet}
-        {#snippet detailChild()}
-            <span class="flex items-center gap-2">
-                {#if entry.isMe}
-                    <span
-                        class="rounded-(--radius-small) bg-nexus px-1.5 py-0.5 text-[0.6875rem] font-semibold text-nexus-ink"
-                    >
-                        나
-                    </span>
-                {/if}
-                <span class="font-bold tabular-nums">{Math.round(entry.mmr).toLocaleString('ko-KR')}</span>
-            </span>
-        {/snippet}
-    </LinkCell>
+            <span class="text-xs tabular-nums text-muted"
+                >{entry.games}전 {entry.wins}승 · 승률 {winRate(entry)}%</span
+            >
+        </span>
+        <span class="font-semibold tabular-nums"
+            ><span class="sr-only">MMR </span>{Math.round(entry.mmr).toLocaleString('ko-KR')}</span
+        >
+    </a>
 {/snippet}
 
-<section aria-labelledby="ranking" class="panel min-w-0">
-    <div class="panel-bar">
+<section aria-labelledby="ranking" class="@container min-w-0 border-t border-line">
+    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
         <h2 id="ranking" class="text-base font-semibold">서버 순위</h2>
         {#if seasons.length}
             <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -204,8 +181,8 @@
     {:else if !ranking.value}
         <SectionState state="empty" message="조회할 시즌의 순위가 아직 없어요" />
     {:else}
-        <div class="overflow-hidden rounded-b-(--radius-box)">
-            <div role="group" aria-label="포지션 선택" class="border-b border-line px-3 py-2">
+        <div class="panel overflow-hidden">
+            <div role="group" aria-label="포지션 선택" class="border-b border-line p-2">
                 <SelectionTabs
                     labels={POSITIONS.map(({ text }) => text)}
                     {active}
@@ -214,10 +191,10 @@
             </div>
             {#if board && board.entries.length}
                 <!-- 카드 안에서 스크롤하며 다음 순위를 불러온다. 페이지 전체 길이는 늘어나지 않는다. -->
-                <div bind:this={scroller} class="relative max-h-[26rem] overflow-y-auto overscroll-contain">
+                <div bind:this={scroller} class="relative max-h-72 overflow-y-auto overscroll-contain">
                     <ul aria-label={`${position.text} 순위`} class="divide-y divide-line">
                         {#each board.entries as entry (identityKey(entry))}
-                            <li>{@render row(entry, false)}</li>
+                            <li>{@render row(entry)}</li>
                         {/each}
                     </ul>
                     <div
@@ -242,7 +219,7 @@
                 </div>
                 {#if pinnedMe}
                     <div class="border-t border-line bg-selected">
-                        {@render row(pinnedMe, false)}
+                        {@render row(pinnedMe)}
                     </div>
                 {/if}
             {:else}

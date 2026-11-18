@@ -59,44 +59,34 @@
             ontouchcancel={() => (touch = null)}
         >
             <div
-                class="inverse-surface relative isolate flex flex-wrap items-center gap-x-4 gap-y-3 overflow-hidden rounded-(--radius-box) border border-line bg-ground p-4 text-ink sm:p-5"
+                class="inverse-surface relative isolate flex flex-col gap-4 overflow-hidden rounded-box border border-line bg-ground p-4 text-ink"
             >
                 {#if item.splashUrl}
                     <img
                         src={item.splashUrl}
                         alt=""
                         loading="lazy"
-                        class="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] opacity-50"
+                        class="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] opacity-60"
                     />
-                    <span class="absolute inset-0 -z-10 bg-linear-to-r from-ground via-ground/80 to-ground/40"
+                    <span class="absolute inset-0 -z-10 bg-linear-to-t from-ground via-ground/80 to-ground/50"
                     ></span>
                 {/if}
-                <span class="shrink-0">
-                    {#if winner.iconUrl}
-                        <img
-                            src={winner.iconUrl}
-                            alt=""
-                            width="56"
-                            height="56"
-                            class="size-14 rounded-(--radius-small) border border-white/20"
-                        />
-                    {:else}
-                        <PlayerFace name={winner.displayName} imageUrl={null} size="lg" />
-                    {/if}
-                </span>
-                <div class="min-w-0 flex-1 basis-40">
+                <div class="min-w-0">
                     <h3 class="text-lg font-bold text-balance">{item.title}</h3>
                     <p class="mt-1 text-ui text-ink/85">{item.description}</p>
                 </div>
-                <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 sm:flex-col">
-                    <p class="text-base font-bold wrap-anywhere">
-                        <span class="text-xs text-role-gold">1위</span>
-                        {winner.displayName}
-                    </p>
-                    <p class="text-ui tabular-nums">
-                        <span class="font-bold">{winner.value}</span>
-                        <span class="text-ink/80">· {winner.games}게임</span>
-                    </p>
+                <div class="flex min-w-0 items-center gap-3 border-t border-white/20 pt-3">
+                    <PlayerFace name={winner.displayName} imageUrl={winner.iconUrl} size="lg" />
+                    <div class="min-w-0 flex-1">
+                        <p class="text-base font-bold wrap-anywhere">
+                            <span class="text-xs text-role-gold">1위</span>
+                            {winner.displayName}
+                        </p>
+                        <p class="text-ui tabular-nums">
+                            <span class="font-bold">{winner.value}</span>
+                            <span class="text-ink/80">· {winner.games}게임</span>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

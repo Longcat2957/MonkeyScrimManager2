@@ -24,6 +24,6 @@ related_targets:
 
 **FORM:** 1번 소환사의 협곡 전술 상황판(`rift-tactical.html`). 사용자 재선택으로 3번에서 전환. seed:249c1bf3170b15dd
 
-수동 편성과 경매는 기존 배정 방식과 작업 순서를 유지한다. 새 매트릭스나 팀별 탭으로 바꾸지 않고, 명부 행·포지션·조작부의 크기와 여백을 기준 목업에 맞춘다.
+모집·참가자 상세는 원본 시안의 배치를 유지한다. 수동 편성과 경매도 기존 작업 순서, 컨트롤 위치, 드래그·키보드 조작을 유지한다. 이 두 화면은 계층·표면·여백·선택 상태로 Rift 디자인을 적용한다. 길드 홈과 경기 기록은 같은 색·서체·컨트롤을 쓰되 페이지의 주요 판단에 맞춰 배치한다. 시안의 예시 인원·입찰가로 업무 규칙을 바꾸지 않는다.
 
 **FINISH:** unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

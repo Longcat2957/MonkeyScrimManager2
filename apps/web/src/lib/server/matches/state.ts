@@ -92,7 +92,7 @@ export async function requireCurrentSlot(
     assertRevision(context.match.revision, requireRevision(input.expectedRevision));
     requireGameNumber(input.nextGameNumber);
     if (context.scrim.status !== 'in_progress' || context.match.status !== 'in_progress')
-        conflict('진행 중인 경기에서만 결과를 등록할 수 있어요');
+        conflict('진행 중인 경기의 다음 세트만 변경할 수 있어요');
     if (
         input.nextGameNumber !== (await nextGameNumber(tx, context.match.id)) ||
         input.nextGameNumber > context.match.bestOf

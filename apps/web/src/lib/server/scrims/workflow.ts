@@ -113,7 +113,7 @@ export async function advanceScrim(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput & { key: string },
+    input: RevisionInput & { key: string; blueTeamIds?: Record<string, string> },
     access?: ScrimAccessDependencies
 ) {
     if (input.key === 'close') return closeRecruitment(db, actor, guildId, scrimId, input, access);
@@ -125,7 +125,7 @@ export async function advanceScrim(
         input,
         async (tx, row) => {
             if (input.key === 'start') {
-                return startPreparedScrim(tx, row);
+                return startPreparedScrim(tx, row, input.blueTeamIds ?? {});
             } else if (input.key === 'complete') {
                 if (row.status !== 'in_progress')
                     throw new DomainError('CONFLICT', '진행 중인 내전만 종료할 수 있어요');
