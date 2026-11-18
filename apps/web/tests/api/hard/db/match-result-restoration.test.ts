@@ -147,6 +147,29 @@ test('취소한 동일 ROFL은 새 revision으로 복구해 기존 자료와 귀
     assert.ok(resultJobs.every((job) => job.status === 'pending'));
 });
 
+test('2세트 ROFL을 1세트에서 취소한 뒤 올바른 순서로 등록하면 2:0으로 종료된다', async (t) => {
+    const f = await createMatchResultFixture(t, { bestOf: 3, keepAutomaticLineup: true });
+    const secondBytes = replayBytes(f.players(), { gameLengthMs: 1_900_000 });
+    const mistaken = await upload(f, secondBytes);
+    await cancel(f, mistaken.gameId);
+    const first = await upload(f, replayBytes(f.players()));
+    const input = { ...(await f.slot(2)), bytes: secondBytes };
+    const restore = (nextGameNumber: number) =>
+        importMatchRofl(f.db, f.manager, f.guildId, f.match.id, { ...input, nextGameNumber }, withoutRiot(f));
+    const second = await restore(2);
+    assert.equal(second.order, 2);
+    assert.deepEqual(await restore(2), second);
+    await assert.rejects(restore(1), errorCode('CONFLICT'));
+    const match = await f.matchRow();
+    assert.equal(match.status, 'completed');
+    assert.equal(match.winnerTeamId, match.teamAId);
+    const active = await f.db
+        .select({ gameId: schema.gameMmrApplications.gameId })
+        .from(schema.gameMmrApplications)
+        .where(isNull(schema.gameMmrApplications.reversedAt));
+    assert.deepEqual(new Set(active.map((row) => row.gameId)), new Set([first.gameId, second.gameId]));
+});
+
 test('취소한 동일 파일의 블루 팀을 바꿔 복구하면 기존 귀속과 결과를 변경하지 않는다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const bytes = replayBytes(f.players());
@@ -167,7 +190,7 @@ test('취소한 동일 파일의 블루 팀을 바꿔 복구하면 기존 귀속
     assert.deepEqual(await snapshot(f), before);
 });
 
-test('복구 요청의 오래된 revision·다른 경기/세트/라인업·출전자 밖 사용자는 기존 기록을 변경하지 못한다', async (t) => {
+test('복구 요청의 오래된 revision·다른 경기/라인업·잘못된 다음 세트·출전자 밖 사용자는 기존 기록을 변경하지 못한다', async (t) => {
     const f = await createMatchResultFixture(t, { teams: 4, keepAutomaticLineup: true });
     const originalSlot = await f.slot();
     const bytes = replayBytes(f.players());

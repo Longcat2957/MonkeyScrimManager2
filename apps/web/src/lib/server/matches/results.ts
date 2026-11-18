@@ -102,22 +102,22 @@ async function existingImport(
         .where(eq(roflMetadata.fileSha256, fileSha256))
         .orderBy(desc(matchRoflImports.submittedRevision));
     if (!stored.length) return null;
-    // 파일의 모든 채택 이력은 같은 경기·세트·라인업에만 속해야 한다.
+    // 취소로 세트 번호는 정정할 수 있지만 출전자 귀속은 같은 경기·라인업 안에서만 재사용한다.
     const receipts: StoredImport[] = stored.map(({ metadata, receipt, game }) => {
         if (
             !receipt ||
             !game ||
             receipt.matchId !== matchId ||
             receipt.lineupId !== input.lineupId ||
-            game.gameNumber !== input.nextGameNumber ||
             game.roflMetadataId !== metadata.id
         )
-            conflict('이미 등록된 ROFL은 같은 경기의 같은 세트에서만 복구할 수 있어요');
+            conflict('이미 등록된 ROFL은 같은 경기와 확정 라인업에서만 복구할 수 있어요');
         return { metadata, receipt, game };
     });
     const replay = receipts.find(
         ({ receipt, game }) =>
             receipt.submittedRevision === input.expectedRevision &&
+            game.gameNumber === input.nextGameNumber &&
             game.blueTeamSlot === input.blueTeamSlot &&
             receipt.cancelledAt === null &&
             game.status === 'completed'
