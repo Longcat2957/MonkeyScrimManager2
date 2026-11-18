@@ -97,7 +97,7 @@ export function bestMmr(player: FormationPlayer): number | null {
 }
 
 export function formatMmr(value: number | null) {
-    return value === null ? '-' : value.toLocaleString('ko-KR');
+    return value === null ? '-' : Math.round(value).toLocaleString('ko-KR');
 }
 
 export type AuctionStatus = (typeof auctionStatus.enumValues)[number];

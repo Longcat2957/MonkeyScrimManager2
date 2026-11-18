@@ -23,6 +23,7 @@ import {
 import { getAuction, startAuction } from '../../../../src/lib/server/scrims/auction.ts';
 import { concurrently, errorCode } from '../../support/domain-fixtures.ts';
 import { createMatchResultFixture, replayBytes, replayPlayer } from '../../support/match-fixtures.ts';
+import { snapshotTables } from '../../support/database.ts';
 
 type Fixture = Awaited<ReturnType<typeof createMatchResultFixture>>;
 const cancel = async (f: Fixture) =>
@@ -44,26 +45,22 @@ const upload = async (f: Fixture, number = 1, winning = true, matchId = f.match.
         f.dependencies
     );
 
-async function state(f: Fixture) {
-    const tables = [
-        'scrims',
-        'matches',
-        'games',
-        'match_set_sides',
-        'game_mmr_applications',
-        'mmr_ledger_entries',
-        'user_position_mmr',
-        'match_rofl_imports',
-        'scrim_cancellations',
-        'match_lineups',
-        'scrim_rounds',
-        'scrim_bracket_nodes',
-        'scrim_bracket_slots'
-    ];
-    const result: Record<string, unknown[]> = {};
-    for (const name of tables)
-        result[name] = (await f.pool.query(`SELECT * FROM ${name} ORDER BY to_jsonb(${name})::text`)).rows;
-    return result;
+function state(f: Fixture) {
+    return snapshotTables(f.db, [
+        schema.scrims,
+        schema.matches,
+        schema.games,
+        schema.matchSetSides,
+        schema.gameMmrApplications,
+        schema.mmrLedgerEntries,
+        schema.userPositionMmr,
+        schema.matchRoflImports,
+        schema.scrimCancellations,
+        schema.matchLineups,
+        schema.scrimRounds,
+        schema.scrimBracketNodes,
+        schema.scrimBracketSlots
+    ]);
 }
 
 async function restartManual(f: Fixture) {

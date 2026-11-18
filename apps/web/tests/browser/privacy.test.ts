@@ -1,41 +1,15 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { eq } from 'drizzle-orm';
 import { stringify } from 'devalue';
-import { chromium, type BrowserContext, type Locator, type Page } from 'playwright';
+import { chromium, type Locator, type Page } from 'playwright';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { assertAction, HTTP_IDS } from '../api/support/http.ts';
 import { createHttpMatchResultFixture } from '../api/support/http-match-fixtures.ts';
+import { appErrors, assertNoOverflow, sessionContext } from './support/browser.ts';
 
 type Fixture = Awaited<ReturnType<typeof createHttpMatchResultFixture>>;
 const saveError = '공개 설정을 저장하지 못했어요. 다시 시도해 주세요.';
-const captures: Record<string, unknown>[] = [];
-
-async function sessionContext(context: BrowserContext, fixture: Fixture, cookie: string) {
-    const separator = cookie.indexOf('=');
-    await context.addCookies([
-        {
-            name: cookie.slice(0, separator),
-            value: cookie.slice(separator + 1),
-            domain: '127.0.0.1',
-            path: '/',
-            secure: true,
-            httpOnly: true,
-            sameSite: 'Lax'
-        }
-    ]);
-    const origin = new URL(fixture.url).origin;
-    await context.route('**/*', async (route) => {
-        const request = route.request();
-        if (new URL(request.url()).origin !== origin) return route.abort();
-        const headers: Record<string, string> = { ...request.headers(), 'x-forwarded-proto': 'https' };
-        if (request.method() === 'POST') headers.origin = fixture.origin;
-        await route.fulfill({ response: await route.fetch({ headers, maxRedirects: 0 }) });
-    });
-}
 
 async function checked(control: Locator, value: boolean) {
     await control.waitFor();
@@ -47,39 +21,6 @@ async function checked(control: Locator, value: boolean) {
         });
     assert.equal(await control.getAttribute('type'), 'button');
     assert.equal(await control.getAttribute('aria-checked'), String(value));
-}
-
-async function capture(page: Page, f: Fixture, state: string) {
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    const directory = process.env.MSM2_PRIVACY_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        // 전체 페이지에서도 고정 헤더와 건너뛰기 링크가 실제 화면 위치를 유지하게 한다.
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-        await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
-    });
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const fullPage = state !== 'withdraw-confirm';
-    const bytes = await page.screenshot({ path: resolve(directory, file), fullPage, animations: 'disabled' });
-    const url = new URL(page.url());
-    const games = await f.db.select({ id: schema.games.id }).from(schema.games);
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        viewport,
-        theme,
-        state,
-        url: page.url(),
-        path: url.pathname + url.search,
-        gameIds: games.map((game) => game.id),
-        fullPage,
-        source: '실제 SSR·격리 DB·본인 세션·정상 ROFL 결과와 MMR, 외부 요청은 fixture로 제한'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
 }
 
 async function retained(f: Fixture) {
@@ -101,19 +42,22 @@ async function retained(f: Fixture) {
 async function headerModeSwitch(page: Page, theme: string) {
     await page.getByRole('button', { name: '메뉴', exact: true }).press('Enter');
     const menu = page.getByRole('dialog', { name: '메뉴', exact: true });
-    const mode = menu.getByRole('switch', { name: '다크 모드', exact: true });
-    await checked(mode, theme === 'dark');
+    await menu.getByRole('button', { name: '계정 메뉴', exact: true }).press('Enter');
+    const mode = menu.getByRole('switch', { name: '라이트 모드', exact: true });
+    await checked(mode, theme === 'primary');
     await mode.press('Space');
-    await checked(mode, theme !== 'dark');
+    await checked(mode, theme !== 'primary');
     await page.waitForFunction(
         (expected) => document.documentElement.dataset.mode === expected,
         theme === 'dark' ? 'primary' : 'dark'
     );
     await mode.press('Space');
-    await checked(mode, theme === 'dark');
+    await checked(mode, theme === 'primary');
     await page.waitForFunction((expected) => document.documentElement.dataset.mode === expected, theme);
     await page.keyboard.press('Escape');
     await mode.waitFor({ state: 'hidden' });
+    await page.keyboard.press('Escape');
+    await menu.waitFor({ state: 'hidden' });
 }
 
 async function managerFearlessSwitch(page: Page, f: Fixture) {
@@ -134,8 +78,8 @@ async function managerFearlessSwitch(page: Page, f: Fixture) {
     await page.goto(f.url + '/g/' + HTTP_IDS.guild + '/scrims/' + scrim!.id);
     await page.getByRole('button', { name: '운영 메뉴', exact: true }).click();
     await page
-        .getByRole('dialog', { name: '운영 메뉴', exact: true })
-        .getByRole('button', { name: '내전 설정 수정', exact: true })
+        .getByRole('menu', { name: '운영 메뉴', exact: true })
+        .getByRole('menuitem', { name: '내전 설정 수정', exact: true })
         .press('Enter');
     const settings = page.getByRole('dialog', { name: '내전 설정 수정', exact: true });
     const fearless = settings.getByRole('switch', { name: '하드 피어리스', exact: true });
@@ -174,12 +118,7 @@ for (const width of [1440, 390])
                 }, theme);
                 const page = await context.newPage();
                 page.setDefaultTimeout(10_000);
-                const errors: string[] = [];
-                page.on('pageerror', (error) => errors.push(error.message));
-                page.on('console', (message) => {
-                    if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:'))
-                        errors.push(message.text());
-                });
+                const errors = appErrors(page);
                 assertAction(
                     await f.action(
                         f.path,
@@ -216,7 +155,7 @@ for (const width of [1440, 390])
                     await managerFearlessSwitch(managerPage, f);
                     await managerContext.close();
                 }
-                await capture(page, f, 'active-profile');
+                await assertNoOverflow(page, 'active-profile');
                 assertAction(
                     await f.action('/me', 'withdraw', { confirm: 'true' }, f.participant.cookie),
                     409
@@ -279,7 +218,7 @@ for (const width of [1440, 390])
                         .publicProfile,
                     true
                 );
-                await capture(page, f, 'save-error');
+                await assertNoOverflow(page, 'save-error');
 
                 const saved = page.waitForResponse((reply) => reply.url().endsWith('?/privacy'));
                 await save.press('Enter');
@@ -307,7 +246,7 @@ for (const width of [1440, 390])
                 await checked(profile, false);
                 await checked(riotIds, false);
                 assert.equal(await withdraw.isDisabled(), true);
-                await capture(page, f, 'saved-private-active');
+                await assertNoOverflow(page, 'saved-private-active');
 
                 // 공개를 꺼도 서버의 실제 출전자 연결로 같은 라인업의 다음 세트를 정상 처리한다.
                 assertAction(
@@ -332,10 +271,10 @@ for (const width of [1440, 390])
                 const cancel = confirmation.getByRole('button', { name: '취소', exact: true });
                 await cancel.waitFor();
                 await cancel.press('Enter');
-                await page.waitForFunction(
-                    (node) => node === document.activeElement,
-                    await withdraw.elementHandle()
-                );
+                await confirmation.waitFor({ state: 'hidden' });
+                await t.test('탈퇴를 취소하면 서비스 탈퇴 버튼으로 포커스가 돌아간다', async () => {
+                    await withdraw.and(page.locator(':focus')).waitFor();
+                });
                 assert.equal(
                     (await f.db.select().from(schema.users).where(eq(schema.users.id, HTTP_IDS.member)))[0]!
                         .withdrawnAt,
@@ -344,12 +283,12 @@ for (const width of [1440, 390])
                 await withdraw.press('Enter');
                 const confirm = confirmation.getByRole('button', { name: '확인', exact: true });
                 await confirm.waitFor();
-                await capture(page, f, 'withdraw-confirm');
+                await assertNoOverflow(page, 'withdraw-confirm');
                 const withdrawn = page.waitForResponse((reply) => reply.url().endsWith('?/withdraw'));
                 await confirm.press('Enter');
                 assert.equal((await withdrawn).status(), 200);
                 await page.waitForURL((url) => url.pathname === '/');
-                await page.getByRole('link', { name: '로그인', exact: true }).first().waitFor();
+                await page.getByRole('link', { name: 'Discord로 로그인', exact: true }).waitFor();
                 assert.equal(
                     (await context.cookies()).some((cookie) => cookie.name === '__Host-monkeybot_session'),
                     false

@@ -1,4 +1,0 @@
-[    1754ms] [ERROR] Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/setup:1
-[    4950ms] [WARNING] %c[svelte] derived_inert
-%cReading a derived belonging to a now-destroyed effect may result in stale values
-https://svelte.dev/e/derived_inert font-weight: bold font-weight: normal @ http://127.0.0.1:5173/@vite/client:368

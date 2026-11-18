@@ -23,6 +23,7 @@ import {
     createRecruitmentFixture,
     errorCode
 } from '../../support/domain-fixtures.ts';
+import { snapshotTables } from '../../support/database.ts';
 
 type Fixture = Awaited<ReturnType<typeof createFormationFixture>>;
 const cancel = async (f: Fixture) =>
@@ -134,28 +135,20 @@ test('진행 경매 취소 복구는 낙찰 포인트·유찰·현재 후보·�
     );
     await f.draw();
     const before = await f.view();
-    const snapshots = await Promise.all([
-        f.db.select().from(schema.auctionTeams),
-        f.db.select().from(schema.auctionAcquisitions),
-        f.db.select().from(schema.auctionLots),
-        f.db.select().from(schema.auctionQueueEntries),
-        f.db.select().from(schema.auctionActions)
-    ]);
+    const tables = [
+        schema.auctionTeams,
+        schema.auctionAcquisitions,
+        schema.auctionLots,
+        schema.auctionQueueEntries,
+        schema.auctionActions
+    ];
+    const snapshots = await snapshotTables(f.db, tables);
     await cancel(f);
     assert.equal((await f.view()).status, 'cancelled');
     assert.equal((await f.row()).cancelledAuctionStatus, 'in_progress');
     await restore(f);
     assert.deepEqual(await f.view(), before);
-    assert.deepEqual(
-        await Promise.all([
-            f.db.select().from(schema.auctionTeams),
-            f.db.select().from(schema.auctionAcquisitions),
-            f.db.select().from(schema.auctionLots),
-            f.db.select().from(schema.auctionQueueEntries),
-            f.db.select().from(schema.auctionActions)
-        ]),
-        snapshots
-    );
+    assert.deepEqual(await snapshotTables(f.db, tables), snapshots);
 });
 
 test('근거 없는 과거 취소는 복구하지 않고 관리자에게 차단 이유를 제공한다', async (t) => {

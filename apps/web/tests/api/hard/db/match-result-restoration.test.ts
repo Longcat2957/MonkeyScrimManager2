@@ -6,8 +6,20 @@ import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { importMatchRofl, revertLastMatchGame } from '../../../../src/lib/server/matches/service.ts';
 import { createMatchResultFixture, replayBytes } from '../../support/match-fixtures.ts';
 import { concurrently, errorCode } from '../../support/domain-fixtures.ts';
+import { snapshotTables } from '../../support/database.ts';
 
 type Fixture = Awaited<ReturnType<typeof createMatchResultFixture>>;
+
+async function upload(f: Fixture, bytes: Uint8Array, dependencies = f.dependencies) {
+    return importMatchRofl(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.match.id,
+        { ...(await f.slot()), bytes },
+        dependencies
+    );
+}
 
 async function cancel(f: Fixture, gameId: string, matchId = f.match.id) {
     return revertLastMatchGame(
@@ -40,35 +52,27 @@ async function ratings(f: Fixture) {
         .orderBy(asc(schema.userPositionMmr.userId), asc(schema.userPositionMmr.position));
 }
 
-async function snapshot(f: Fixture) {
-    const tables = [
-        'games',
-        'game_participants',
-        'rofl_metadata',
-        'rofl_participants',
-        'rofl_game_data_v1',
-        'rofl_participant_data_v1',
-        'match_rofl_imports',
-        'game_mmr_applications',
-        'mmr_ledger_entries',
-        'user_position_mmr',
-        'matches',
-        'match_lineups',
-        'match_lineup_players',
-        'guild_riot_accounts',
-        'scrim_participants',
-        'scrims',
-        'scrim_bracket_nodes',
-        'discord_publication_jobs'
-    ];
-    const result: Record<string, string[]> = {};
-    for (const table of tables)
-        result[table] = (
-            await f.pool.query(`SELECT row_to_json(stored_row) AS value FROM ${table} AS stored_row`)
-        ).rows
-            .map((row) => JSON.stringify(row.value))
-            .sort();
-    return result;
+function snapshot(f: Fixture) {
+    return snapshotTables(f.db, [
+        schema.games,
+        schema.gameParticipants,
+        schema.roflMetadata,
+        schema.roflParticipants,
+        schema.roflGameDataV1,
+        schema.roflParticipantDataV1,
+        schema.matchRoflImports,
+        schema.gameMmrApplications,
+        schema.mmrLedgerEntries,
+        schema.userPositionMmr,
+        schema.matches,
+        schema.matchLineups,
+        schema.matchLineupPlayers,
+        schema.guildRiotAccounts,
+        schema.scrimParticipants,
+        schema.scrims,
+        schema.scrimBracketNodes,
+        schema.discordPublicationJobs
+    ]);
 }
 
 test('취소한 동일 ROFL은 새 revision으로 복구해 기존 자료와 귀속을 재사용하고 결과·MMR·게시를 다시 반영한다', async (t) => {
@@ -81,14 +85,7 @@ test('취소한 동일 ROFL은 새 revision으로 복구해 기존 자료와 귀
             set: { resultChannelId: '990000000000000091' }
         });
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     const metadata = await f.db.select().from(schema.roflMetadata);
     const originalPeople = await f.db
         .select()
@@ -97,14 +94,7 @@ test('취소한 동일 ROFL은 새 revision으로 복구해 기존 자료와 귀
         .orderBy(asc(schema.gameParticipants.roflParticipantIndex));
     const originalRatings = await ratings(f);
     await cancel(f, original.gameId);
-    const restored = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        withoutRiot(f)
-    );
+    const restored = await upload(f, bytes, withoutRiot(f));
     assert.notEqual(restored.gameId, original.gameId);
     assert.equal(restored.order, 1);
     assert.deepEqual(await f.db.select().from(schema.roflMetadata), metadata);
@@ -160,14 +150,7 @@ test('취소한 동일 ROFL은 새 revision으로 복구해 기존 자료와 귀
 test('취소한 동일 파일의 블루 팀을 바꿔 복구하면 기존 귀속과 결과를 변경하지 않는다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     await cancel(f, original.gameId);
     const before = await snapshot(f);
     await assert.rejects(
@@ -230,14 +213,7 @@ test('복구 요청의 오래된 revision·다른 경기/세트/라인업·출�
 test('취소된 결과와 같아도 바이트가 다른 ROFL은 복구로 채택하지 않는다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     await cancel(f, original.gameId);
     const slot = await f.slot();
     const before = await snapshot(f);
@@ -264,14 +240,7 @@ test('취소된 결과와 같아도 바이트가 다른 ROFL은 복구로 채택
 test('같은 복구 요청의 동시 실행과 응답 유실 재전송은 새 Game과 MMR을 한 번만 만든다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     await cancel(f, original.gameId);
     const input = { ...(await f.slot()), bytes };
     const restore = () => importMatchRofl(f.db, f.manager, f.guildId, f.match.id, input, withoutRiot(f));
@@ -301,14 +270,7 @@ test('같은 복구 요청의 동시 실행과 응답 유실 재전송은 새 Ga
 test('복구한 결과를 다시 취소해도 다음 복구는 새 Game을 만들고 모든 과거 이력을 남긴다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     const expectedRatings = await ratings(f);
     await cancel(f, original.gameId);
     const firstInput = { ...(await f.slot()), bytes };
@@ -318,14 +280,7 @@ test('복구한 결과를 다시 취소해도 다음 복구는 새 Game을 만�
         importMatchRofl(f.db, f.manager, f.guildId, f.match.id, firstInput, withoutRiot(f)),
         errorCode('CONFLICT')
     );
-    const second = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        withoutRiot(f)
-    );
+    const second = await upload(f, bytes, withoutRiot(f));
     assert.equal(new Set([original.gameId, first.gameId, second.gameId]).size, 3);
     const games = await f.db.select().from(schema.games);
     assert.equal(games.length, 3);
@@ -341,14 +296,7 @@ test('복구한 결과를 다시 취소해도 다음 복구는 새 Game을 만�
 test('복구 중 MMR 저장이 실패하면 기존 취소 이력과 점수·대진·게시 상태를 그대로 남긴다', async (t) => {
     const f = await createMatchResultFixture(t, { bestOf: 1, keepAutomaticLineup: true });
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     await cancel(f, original.gameId);
     const before = await snapshot(f);
     await f.pool.query(
@@ -357,21 +305,11 @@ test('복구 중 MMR 저장이 실패하면 기존 취소 이력과 점수·대�
     await f.pool.query(
         'CREATE TRIGGER fail_restoration_ledger BEFORE INSERT ON mmr_ledger_entries FOR EACH ROW EXECUTE FUNCTION fail_restoration_ledger()'
     );
-    await assert.rejects(
-        importMatchRofl(
-            f.db,
-            f.manager,
-            f.guildId,
-            f.match.id,
-            { ...(await f.slot()), bytes },
-            withoutRiot(f)
-        ),
-        (error: unknown) => {
-            let cause = error as { cause?: unknown; code?: string; message?: string };
-            while (cause.cause) cause = cause.cause as typeof cause;
-            return cause.code === 'P0001' && cause.message === 'fixture-restoration-rollback';
-        }
-    );
+    await assert.rejects(upload(f, bytes, withoutRiot(f)), (error: unknown) => {
+        let cause = error as { cause?: unknown; code?: string; message?: string };
+        while (cause.cause) cause = cause.cause as typeof cause;
+        return cause.code === 'P0001' && cause.message === 'fixture-restoration-rollback';
+    });
     assert.deepEqual(await snapshot(f), before);
 });
 
@@ -379,14 +317,7 @@ test('준결승 결과 복구는 이전 결승을 되살리지 않고 승자·�
     const f = await createMatchResultFixture(t, { teams: 4, bestOf: 1, keepAutomaticLineup: true });
     const other = f.matches.find((match) => match.id !== f.match.id)!;
     const bytes = replayBytes(f.players());
-    const original = await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        f.dependencies
-    );
+    const original = await upload(f, bytes);
     await importMatchRofl(
         f.db,
         f.manager,
@@ -404,14 +335,7 @@ test('준결승 결과 복구는 이전 결승을 되살리지 않고 승자·�
     assert.ok(final);
     await cancel(f, original.gameId);
     assert.equal((await f.db.select().from(schema.matches).where(eq(schema.matches.id, final.id))).length, 0);
-    await importMatchRofl(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.match.id,
-        { ...(await f.slot()), bytes },
-        withoutRiot(f)
-    );
+    await upload(f, bytes, withoutRiot(f));
     const restoredFinal = (await f.db.select().from(schema.matches)).find(
         (match) => !f.matches.some((initial) => initial.id === match.id)
     )!;

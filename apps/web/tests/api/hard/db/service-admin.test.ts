@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
@@ -210,13 +209,7 @@ test('0010은 기존 운영자·사용자·길드 권한을 보존하며 빈 전
     const memberships = await f.db.select().from(schema.guildMembers);
     // 새 테이블 제거로 0009 상태를 재현하고 생성 SQL을 기존 사용자 위에 적용한다.
     await f.pool.query('DROP TABLE service_admin_events');
-    const migration = await readFile(
-        new URL('../../../../drizzle/0010_service_admin_events.sql', import.meta.url),
-        'utf8'
-    );
-    await f.pool.query(
-        migration.replaceAll('"public".', `"${f.schemaName}".`).replace(/\bpublic\./g, `"${f.schemaName}".`)
-    );
+    await f.pool.query(f.migrationSql('0010_service_admin_events'));
     assert.deepEqual(await f.db.select().from(schema.users), before);
     assert.deepEqual(await f.db.select().from(schema.guildMembers), memberships);
     assert.equal((await f.db.select().from(schema.serviceAdminEvents)).length, 0);

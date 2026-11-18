@@ -1,33 +1,16 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { stringify, unflatten } from 'devalue';
-import { chromium, type BrowserContext, type Page } from 'playwright';
+import { chromium, type Page } from 'playwright';
 import type { StatsSnapshot } from '../../src/lib/features/stats/types.ts';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { assertAction } from '../api/support/http.ts';
 import { createHttpRecordSeasonsFixture } from '../api/support/http-record-seasons-fixtures.ts';
+import { appErrors, assertNoOverflow, sessionContext } from './support/browser.ts';
 
 type Fixture = Awaited<ReturnType<typeof createHttpRecordSeasonsFixture>>;
 const fetchError = '통계를 새로 불러오지 못했어요. 다시 시도해 주세요.';
 const timeoutError = '통계를 불러오는 시간이 길어지고 있어요. 다시 시도해 주세요.';
-const captures: Record<string, unknown>[] = [];
-
-async function localOnly(context: BrowserContext, f: Fixture) {
-    const origin = new URL(f.url).origin;
-    await context.route('**/*', async (route) => {
-        const request = route.request();
-        if (new URL(request.url()).origin !== origin) return route.abort();
-        await route.fulfill({
-            response: await route.fetch({
-                headers: { ...request.headers(), 'x-forwarded-proto': 'https' },
-                maxRedirects: 0
-            })
-        });
-    });
-}
 
 async function ready(page: Page) {
     await page.getByRole('heading', { name: '통계', level: 1, exact: true }).waitFor();
@@ -38,42 +21,6 @@ async function ready(page: Page) {
 
 function games(page: Page) {
     return page.getByText('총 게임', { exact: true }).locator('xpath=../..').locator(':scope > p');
-}
-
-async function capture(page: Page, f: Fixture, state: string, injected = false) {
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    const directory = process.env.MSM2_STATS_LIVE_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-    });
-    await page.clock.runFor(40);
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const fullPage = !injected;
-    const bytes = await page.screenshot({ path: resolve(directory, file), fullPage, animations: 'disabled' });
-    const url = new URL(page.url());
-    const rows = await f.db.select({ id: schema.games.id }).from(schema.games);
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        url: page.url(),
-        path: url.pathname + url.search,
-        viewport,
-        theme,
-        state,
-        fullPage,
-        uiInjection: injected,
-        gameIds: rows.map((game) => game.id),
-        selectedSeasonId: f.previousSeason.id,
-        source: injected
-            ? '실제 격리 SSR/live 응답에 명시적으로 추가한 UI 표본:30행·20챔피언·업적2개로 쪽/정렬/열린업적 보존만 검증. 실제 서비스 업적 제공을 주장하지 않는다.'
-            : '실제 SSR·익명 공개 통계·실제 ROFL1→2게임과 MMR 갱신. Playwright clock으로30초/시간제한/재시도 시간을 진행하며 외부 장식 에셋 요청은 차단'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
 }
 
 /** 계산 정확도가 아니라 기존 UI의 쪽·정렬·열린 항목 수명만 검증하는 명시적 화면 표본이다. */
@@ -147,17 +94,12 @@ async function injectedState(
         reducedMotion: 'reduce'
     });
     try {
-        await localOnly(context, f);
+        await sessionContext(context, f);
         await context.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
         const page = await context.newPage();
         page.setDefaultTimeout(10_000);
         await page.clock.install();
-        const errors: string[] = [];
-        page.on('pageerror', (error) => errors.push(error.message));
-        page.on('console', (entry) => {
-            if (entry.type() === 'error' && !entry.text().startsWith('Failed to load resource:'))
-                errors.push(entry.text());
-        });
+        const errors = appErrors(page);
         let liveVersion = 2;
         await context.route('**/*', async (route) => {
             const request = route.request();
@@ -216,7 +158,7 @@ async function injectedState(
         const selected = dialog.getByRole('button', { name: 'UI 주입 업적 B', exact: true });
         await selected.press('Enter');
         await dialog.getByText('테스트에서 명시 주입한 업적 B', { exact: true }).waitFor();
-        await capture(page, f, 'injected-open-achievement', true);
+        await assertNoOverflow(page, 'injected-open-achievement');
         const live = page.waitForResponse(
             (response) => new URL(response.url()).pathname === f.paths.stats + '/live'
         );
@@ -230,7 +172,7 @@ async function injectedState(
                 await page.locator(`nav[aria-label="${label}"] button[aria-current="page"]`).innerText(),
                 '2'
             );
-        await capture(page, f, 'injected-preserved-after-refresh', true);
+        await assertNoOverflow(page, 'injected-preserved-after-refresh');
         const nextVersion = async (version: number) => {
             liveVersion = version;
             const response = page.waitForResponse(
@@ -277,19 +219,14 @@ for (const width of [1440, 390])
                     viewport: { width, height: width === 390 ? 844 : 1000 },
                     reducedMotion: 'reduce'
                 });
-                await localOnly(context, f);
+                await sessionContext(context, f);
                 await context.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
                 const page = await context.newPage();
                 page.setDefaultTimeout(10_000);
                 await page.clock.install();
-                const errors: string[] = [];
+                const errors = appErrors(page);
                 const requests: URL[] = [];
                 let posts = 0;
-                page.on('pageerror', (error) => errors.push(error.message));
-                page.on('console', (entry) => {
-                    if (entry.type() === 'error' && !entry.text().startsWith('Failed to load resource:'))
-                        errors.push(entry.text());
-                });
                 const isLive = (url: string) => {
                     const target = new URL(url);
                     return (
@@ -440,14 +377,14 @@ for (const width of [1440, 390])
                 assert.equal(requests.at(-1)!.searchParams.get('season'), f.previousSeason.id);
                 assert.equal(requests.at(-1)!.searchParams.get('position'), 'top');
                 assert.equal(requests.at(-1)!.searchParams.get('min'), '2');
-                await capture(page, f, 'auto-refreshed-real-stats');
+                await assertNoOverflow(page, 'auto-refreshed-real-stats');
                 const preserved = await leaderboard.innerText();
                 fault = 'failure';
                 await responseAfter(() => page.clock.fastForward(30_100), 503);
                 await page.getByText(fetchError, { exact: true }).waitFor();
                 assert.equal(await games(page).innerText(), '2');
                 assert.equal(await leaderboard.innerText(), preserved);
-                await capture(page, f, 'refresh-error-retains-stats');
+                await assertNoOverflow(page, 'refresh-error-retains-stats');
                 const failedCount = requests.length;
                 await page.clock.fastForward(50_000);
                 assert.equal(requests.length, failedCount);

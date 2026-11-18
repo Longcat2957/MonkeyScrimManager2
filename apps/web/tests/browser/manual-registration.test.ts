@@ -1,6 +1,4 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
 import test from 'node:test';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../src/lib/server/db/schema.ts';
@@ -14,7 +12,6 @@ for (const width of [1440, 390]) {
         async (t) => {
             const f = await createBrowserFixture(t, { width, userId: HTTP_IDS.manager });
             const { page, context } = f;
-            const captureDir = process.env.MSM2_MANUAL_REGISTRATION_CAPTURE_DIR;
             await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
             const members = Array.from({ length: 22 }, (_, index) => ({
                 id: String(970000000000001000n + BigInt(index)),
@@ -145,10 +142,6 @@ for (const width of [1440, 390]) {
             await page.waitForFunction(
                 () => document.activeElement?.getAttribute('aria-label') === '참가자 추가 결과'
             );
-            if (captureDir) {
-                await mkdir(captureDir, { recursive: true });
-                await page.screenshot({ path: join(captureDir, `partial-${width}.png`) });
-            }
 
             await f.db
                 .update(schema.scrims)
@@ -200,7 +193,6 @@ for (const width of [1440, 390]) {
                 await dialog.getByRole('checkbox', { name: 'HTTP 사용자 참가 중', exact: true }).count(),
                 1
             );
-            if (captureDir) await page.screenshot({ path: join(captureDir, `recovered-${width}.png`) });
             assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
             assert.deepEqual(f.errors, []);
         }

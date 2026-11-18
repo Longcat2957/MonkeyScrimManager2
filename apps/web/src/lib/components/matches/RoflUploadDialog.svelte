@@ -258,7 +258,7 @@
                                           : 'text-muted'
                                 ]}
                             >
-                                {(item.file.size / 1024 / 1024).toFixed(1)}MB ·
+                                {Math.ceil(item.file.size / 1024)}KB ·
                                 {item.status === 'uploading' ? '업로드 중' : item.message || '등록 대기'}
                             </span>
                         </span>

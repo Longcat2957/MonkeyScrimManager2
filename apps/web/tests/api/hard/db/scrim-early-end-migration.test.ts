@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
@@ -36,11 +35,7 @@ test('0007은 기존 중도 종료·Game·MMR을 보존하며 이전 재개 경�
                     AND ((status_before_scrim_end = 'pending' AND status = 'cancelled')
                         OR (status_before_scrim_end = 'in_progress' AND status = 'ended_early'))));
     `);
-    const migration = await readFile(
-        new URL('../../../../drizzle/0007_scrim_early_end.sql', import.meta.url),
-        'utf8'
-    );
-    await f.db.transaction((tx) => tx.execute(sql.raw(migration)));
+    await f.db.transaction((tx) => tx.execute(sql.raw(f.migrationSql('0007_scrim_early_end'))));
     assert.deepEqual(await f.row(), before);
     await revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     assert.equal((await f.row()).status, 'in_progress');

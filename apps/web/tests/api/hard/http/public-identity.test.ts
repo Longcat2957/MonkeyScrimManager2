@@ -54,8 +54,7 @@ test('익명 SSR·페이지 데이터·추가 순위에 비공개 원문이 없�
         f.path,
         f.paths.home + '/scrims',
         scrim,
-        scrim + '/manual',
-        scrim + '/result'
+        scrim + '/manual'
     ];
     const forbidden = [HTTP_IDS.member, target!.username, f.identities[0]!.gameName];
     for (const path of paths) {
@@ -67,18 +66,20 @@ test('익명 SSR·페이지 데이터·추가 순위에 비공개 원문이 없�
         for (const value of forbidden)
             assert.equal(data.includes(value), false, path + ': 페이지 자료 개인정보');
     }
-    // 완료된 내전의 대진 경로는 기존 정책대로 결과 화면으로 보낸다.
-    const bracket = await f.request(scrim + '/bracket');
-    assert.equal(bracket.status, 307);
-    assert.equal(
-        new URL(bracket.headers.get('location')!, f.url + scrim + '/bracket').pathname,
-        scrim + '/result'
-    );
-    const bracketData = await f.request(scrim + '/bracket/__data.json');
-    assert.equal(bracketData.status, 200);
-    const redirected = (await bracketData.json()) as { type: string; location: string };
-    assert.equal(redirected.type, 'redirect');
-    assert.equal(new URL(redirected.location, f.url + scrim + '/bracket').pathname, scrim + '/result');
+    // 완료된 단일 경기의 대진·결과 경로는 개인정보 없이 위에서 검증한 경기 상세로 이어진다.
+    for (const [path, destination] of [
+        [scrim + '/bracket', scrim + '/result'],
+        [scrim + '/result', f.path]
+    ] as const) {
+        const redirect = await f.request(path);
+        assert.equal(redirect.status, 307);
+        assert.equal(new URL(redirect.headers.get('location')!, f.url + path).href, f.url + destination);
+        const data = await f.request(path + '/__data.json');
+        assert.equal(data.status, 200);
+        const payload = await data.json();
+        assert.equal(payload.type, 'redirect');
+        assert.equal(new URL(payload.location, f.url + path).href, f.url + destination);
+    }
     const ranking = await f.request(f.paths.ranking + '?' + past + '&position=top&offset=0');
     assert.equal(ranking.status, 200);
     const body = (await ranking.json()) as {

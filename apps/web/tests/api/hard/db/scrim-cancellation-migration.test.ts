@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
@@ -17,11 +16,7 @@ test('0006은 기존 취소·편성 자료를 보존하고 과거 취소의 복�
         ALTER TABLE scrims DROP COLUMN cancelled_from_status;
         ALTER TABLE scrims DROP COLUMN cancelled_auction_status;
     `);
-    const migration = await readFile(
-        new URL('../../../../drizzle/0006_scrim_cancellation_restore.sql', import.meta.url),
-        'utf8'
-    );
-    await f.db.transaction((tx) => tx.execute(sql.raw(migration)));
+    await f.db.transaction((tx) => tx.execute(sql.raw(f.migrationSql('0006_scrim_cancellation_restore'))));
     const after = await f.row();
     assert.deepEqual(after, before);
     assert.equal(after.cancelledFromStatus, null);

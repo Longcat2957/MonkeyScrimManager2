@@ -53,6 +53,6 @@ jobs:
                   ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "mkdir -m 700 -p '$staging'"
                   scp "${ssh_options[@]}" -P "$VPS_PORT" "$RUNNER_TEMP/deploy.tar.gz" "$destination:$staging/deploy.tar.gz"
                   ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" "tar -xzf '$staging/deploy.tar.gz' -C '$staging'"
-                  image="ghcr.io/${GITHUB_REPOSITORY,,}:dev"
+                  image="ghcr.io/${GITHUB_REPOSITORY,,}:$GITHUB_SHA"
                   printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" -p "$VPS_PORT" "$destination" \
                       "bash '$staging/deploy.sh' '$VPS_DEPLOY_PATH' '$image' '$GITHUB_ACTOR'"

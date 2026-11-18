@@ -1,6 +1,12 @@
 <script module lang="ts">
     export type LeaderboardSortKey =
-        'games' | 'kda' | 'winRate' | 'csPerMin' | 'damagePerMin' | 'visionPerGame' | 'killParticipation';
+        | 'games'
+        | 'kda'
+        | 'winRate'
+        | 'csPerMin'
+        | 'damagePerMin'
+        | 'visionPerGame'
+        | 'killParticipation';
 </script>
 
 <script lang="ts">
@@ -8,7 +14,7 @@
     import { resolve } from '$app/paths';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
-    import { fixed, percent, integer } from '#lib/features/players/format.ts';
+    import { percent, integer } from '#lib/features/players/format.ts';
     import type { StatsLeaderboardRow } from '#lib/features/stats/types.ts';
 
     type Row = StatsLeaderboardRow;
@@ -187,9 +193,9 @@
                         </div>
                     </th>
                     <td class="px-3 py-2.5 text-right tabular-nums">
-                        <span class="block font-semibold">{fixed(row.kda, 2)}</span>
+                        <span class="block font-semibold">{integer(row.kda)}</span>
                         <span class="block text-xs text-muted"
-                            >{fixed(row.kills, 1)} / {fixed(row.deaths, 1)} / {fixed(row.assists, 1)}</span
+                            >{integer(row.kills)} / {integer(row.deaths)} / {integer(row.assists)}</span
                         >
                     </td>
                     <td class="px-3 py-2.5 text-right tabular-nums">
@@ -203,9 +209,9 @@
                     </td>
                     <td class="px-3 py-2.5 text-right tabular-nums">{row.games}</td>
                     <td class="px-3 py-2.5 text-right tabular-nums">{percent(row.killParticipation)}</td>
-                    <td class="px-3 py-2.5 text-right tabular-nums">{fixed(row.csPerMin, 1)}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{integer(row.csPerMin)}</td>
                     <td class="px-3 py-2.5 text-right tabular-nums">{integer(row.damagePerMin)}</td>
-                    <td class="px-3 py-2.5 text-right tabular-nums">{fixed(row.visionPerGame, 1)}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{integer(row.visionPerGame)}</td>
                 </tr>
             {/each}
         </tbody>

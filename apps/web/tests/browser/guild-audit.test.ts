@@ -1,56 +1,24 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { eq } from 'drizzle-orm';
 import type { Locator, Page } from 'playwright';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { HTTP_IDS } from '../api/support/http.ts';
-import { createBrowserFixture } from './support/browser.ts';
+import { assertNoOverflow, createBrowserFixture } from './support/browser.ts';
 
 const adminPath = '/g/' + HTTP_IDS.guild + '/admin';
 const managerName = '브라우저 관리자';
 const memberName = '브라우저 대상자';
 const longName = '줄바꿈없이이어지는아주긴관리담당자이름'.repeat(4);
-const captures: Record<string, unknown>[] = [];
-
-async function capture(page: Page, state: string) {
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    const directory = process.env.MSM2_AUDIT_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        // 전체 화면 캡처에서도 고정 헤더·건너뛰기 링크가 실제 화면 위치를 유지하게 한다.
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-        await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
-    });
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const bytes = await page.screenshot({
-        path: resolve(directory, file),
-        fullPage: true,
-        animations: 'disabled'
-    });
-    const url = new URL(page.url());
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        viewport,
-        theme,
-        state,
-        path: url.pathname + url.search,
-        source: '실제 SSR·격리 DB·관리자 세션, 외부 요청은 fixture로 제한'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
-}
 
 async function actionResponse(page: Page, action: string, run: () => Promise<unknown>) {
-    const response = page.waitForResponse((reply) => reply.url().endsWith('?/' + action));
-    await run();
-    assert.equal((await response).status(), 200);
+    const [response] = await Promise.all([
+        page.waitForResponse(
+            (reply) => reply.request().method() === 'POST' && reply.url().endsWith('?/' + action)
+        ),
+        run()
+    ]);
+    assert.equal(response.status(), 200);
 }
 
 async function checkAdminNavigation(page: Page, mobile: boolean) {
@@ -162,7 +130,7 @@ for (const width of [1440, 390])
                     await page.getByRole('navigation', { name: '변경 이력 쪽 이동', exact: true }).count(),
                     0
                 );
-                await capture(page, 'empty');
+                await assertNoOverflow(page, 'empty');
 
                 await selectView(page, '멤버', 'Space');
                 await page
@@ -202,9 +170,9 @@ for (const width of [1440, 390])
                 await page
                     .getByRole('button', { name: '모집 채널 바꾸기, 현재 설정 안 함', exact: true })
                     .press('Enter');
-                const channels = page.getByRole('dialog', { name: '모집 채널', exact: true });
+                const channels = page.getByRole('menu', { name: '모집 채널', exact: true });
                 await actionResponse(page, 'discord', () =>
-                    channels.getByRole('button', { name: '#모집', exact: true }).press('Enter')
+                    channels.getByRole('menuitem', { name: '#모집', exact: true }).press('Enter')
                 );
                 await page
                     .getByRole('button', { name: '모집 채널 바꾸기, 현재 #모집', exact: true })
@@ -252,7 +220,7 @@ for (const width of [1440, 390])
                         .count(),
                     5
                 );
-                await capture(page, 'saved-changes');
+                await assertNoOverflow(page, 'saved-changes');
 
                 // 반복 조작 대신 과거 기록만 추가해 20건 경계와 현재 사용자 이름의 긴 표시를 검증한다.
                 await f.db
@@ -286,7 +254,7 @@ for (const width of [1440, 390])
                     'page'
                 );
                 assert.equal(await navigation.getByRole('button', { name: '2', exact: true }).count(), 1);
-                await capture(page, 'long-name-first-page');
+                await assertNoOverflow(page, 'long-name-first-page');
 
                 await navigation.getByRole('button', { name: '2', exact: true }).press('Enter');
                 await page.waitForURL(
@@ -300,7 +268,7 @@ for (const width of [1440, 390])
                         .getAttribute('aria-current'),
                     'page'
                 );
-                await capture(page, 'second-page');
+                await assertNoOverflow(page, 'second-page');
 
                 await page.goto(f.url + adminPath + '?tab=audit&page=99');
                 await page.getByText('이 쪽에는 변경 이력이 없어요', { exact: true }).waitFor();
@@ -308,7 +276,7 @@ for (const width of [1440, 390])
                     await page.getByText('아직 기록된 관리 변경이 없어요', { exact: true }).count(),
                     0
                 );
-                await capture(page, 'empty-page');
+                await assertNoOverflow(page, 'empty-page');
                 await navigation.getByRole('button', { name: '1', exact: true }).press('Enter');
                 await page.waitForURL(
                     (url) => url.searchParams.get('tab') === 'audit' && !url.searchParams.has('page')
@@ -316,7 +284,7 @@ for (const width of [1440, 390])
                 await auditEntries(page, 20);
                 assert.equal(auditPosts, 0);
                 assert.deepEqual(f.errors, []);
-                await capture(page, 'recovered-first-page');
+                await assertNoOverflow(page, 'recovered-first-page');
                 await page.goto(f.url + adminPath + '?tab=audit&page=2&q=HTTP');
                 await selectView(page, '멤버', 'Enter');
                 assert.equal(new URL(page.url()).search, '');

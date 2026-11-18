@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { prepareRoflImport, type RoflImportContext } from '../src/lib/server/rofl/import-model.ts';
+import { replayBytes } from './api/support/rofl-fixtures.ts';
 
 const ids = {
     scrim: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -28,23 +29,11 @@ function fixture(
         { TEAM: '200', WIN: 'Fail', SKIN: 'Ashe' }
     ]
 ) {
-    const version = Buffer.from('16.21.829.8620');
-    const header = Buffer.alloc(15 + version.length);
-    header.write('RIOT');
-    header.writeUInt16LE(2, 4);
-    header[14] = version.length;
-    version.copy(header, 15);
-    const metadata = Buffer.from(
-        JSON.stringify({
-            gameLength: 120_000,
-            statsJson: JSON.stringify(players),
-            unknownMetadata: 'raw-metadata-must-not-survive',
-            gameId: 'untrusted-game-id'
-        })
-    );
-    const length = Buffer.alloc(4);
-    length.writeUInt32LE(metadata.length);
-    return Buffer.concat([header, Buffer.alloc(256), metadata, length]);
+    return replayBytes(players, {
+        gameLengthMs: 120_000,
+        bodyBytes: 0,
+        metadata: { unknownMetadata: 'raw-metadata-must-not-survive', gameId: 'untrusted-game-id' }
+    });
 }
 
 function context(): RoflImportContext {
@@ -72,7 +61,6 @@ test('선별 데이터를 같은 메타 ID의 공통 행과 V1 하위 행으로 
     const data = prepareRoflImport(bytes, input);
     const roflMetadataId = data.rows.metadata.id;
     assert.match(roflMetadataId, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-    assert.equal('status' in data, false);
     assert.deepEqual(data.registration, {
         guildId: 'guild-1',
         scrimId: ids.scrim,
@@ -257,7 +245,6 @@ test('원본과 호출자 문맥을 변경하지 않고 반환 후에도 참조�
 
 test('적재 준비 함수는 제공되지 않은 서비스 연결을 임의로 만들지 않는다', () => {
     const data = prepareRoflImport(fixture(), context());
-    assert.equal('status' in data, false);
     assert.ok(data.links.teams.every(({ teamId }) => teamId === null));
     assert.ok(
         data.links.participants.every(

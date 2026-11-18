@@ -283,7 +283,7 @@ test('안내 요청 후 철회·내전 종료된 수신자는 발송 시 다시 
     );
 });
 
-test('결과 outbox는 Game별 실제 진영·스냅샷 이름·ROFL 통계와 시리즈 점수를 사용한다', async (t) => {
+test('결과 outbox는 Game별 실제 진영·현재 공개 이름·ROFL 통계와 시리즈 점수를 사용한다', async (t) => {
     const f = await createGameFixture(t);
     await f.db.insert(schema.guildDiscordSettings).values({ guildId: f.guildId, resultChannelId: channelId });
     const first = await f.createGame(f.db, 1, f.match.id, 'b', { winnerSide: 'red' });
@@ -307,13 +307,18 @@ test('결과 outbox는 Game별 실제 진영·스냅샷 이름·ROFL 통계와 �
         assert.equal(match.scoreA, 1);
         assert.equal(match.scoreB, 1);
         assert.equal(match.players.length, 10);
-        assert.ok(
-            match.players.every((player) => player.name.startsWith('당시 이름') && player.champion === 'Ahri')
+        assert.deepEqual(
+            match.players.map((player) => player.name).sort(),
+            f.users
+                .slice(0, 10)
+                .map((user) => user.username)
+                .sort()
         );
+        assert.ok(match.players.every((player) => player.champion === 'Ahri'));
         if (job.subjectId === first.id) {
             assert.equal(match.blueTeamName, f.teams[1]!.name);
             assert.equal(match.winnerSide, 'red');
-            assert.equal(match.players.find((player) => player.name === '당시 이름 0')?.kills, 0);
+            assert.equal(match.players.find((player) => player.name === f.users[0]!.username)?.kills, 0);
         }
         await completePublication(f.db, job.id, {
             leaseToken: job.leaseToken,

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { DomainError } from '../src/lib/server/errors.ts';
 import sample from '../src/lib/mocks/fixtures/rofl-sample.json' with { type: 'json' };
 import {
@@ -11,8 +11,10 @@ import {
     type GameResolvers,
     type RawGame
 } from '../src/lib/mocks/matches.ts';
+import { guildId, skipPreviewDelay } from './support/mock-scrim.ts';
 
-const guildId = 'devGuild001';
+beforeEach(skipPreviewDelay);
+
 const resolvers: GameResolvers = {
     champion: (id) => ({ id, name: id, iconUrl: null }),
     item: (id) => (id ? { id, name: String(id), iconUrl: null } : null),

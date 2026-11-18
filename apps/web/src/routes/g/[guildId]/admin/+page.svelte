@@ -19,7 +19,7 @@
     import type { PageProps } from './$types';
 
     let { data, form }: PageProps = $props();
-    const number = new Intl.NumberFormat('ko-KR');
+    const number = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
 
     let query = $state('');
     // Riot 계정을 관리 중인 멤버. 저장 후 다시 불러온 목록에서 같은 멤버를 찾아 최신 계정을 보여 준다.

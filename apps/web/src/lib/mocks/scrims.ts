@@ -15,6 +15,7 @@ import type {
     ScrimStatusFilter
 } from '#lib/features/scrims/types.ts';
 import { mockAvatarUrl } from './avatar.ts';
+import { mockLatency } from './latency.ts';
 import { mockUser } from './session.ts';
 import { mockScrimPlayers } from './scrim-players.ts';
 import {
@@ -27,8 +28,7 @@ import {
 
 // 개발 서버가 살아 있는 동안 유지되는 내전 목 저장소다. 실제 DB 연결 전까지 사용한다.
 
-const LATENCY_MS = 400;
-const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
+const wait = () => mockLatency.wait(400);
 
 export type MockFailure = { status: number; message: string };
 

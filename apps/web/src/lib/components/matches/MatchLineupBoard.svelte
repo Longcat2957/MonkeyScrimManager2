@@ -50,6 +50,7 @@
         const [teamId, position] = target.split(':');
         return (
             teamOf(participantId)?.id === teamId &&
+            (assignments[participantId] ?? 'pool') !== position &&
             (position === 'pool' || POSITIONS.some((item) => item.key === position))
         );
     }
@@ -175,14 +176,18 @@
                         )}
                         {@const targeting =
                             editable &&
+                            !drag.id &&
                             selectedId !== null &&
                             selectedId !== player?.participantId &&
                             accepts(selectedId, target)}
+                        {@const droppable = drag.id !== null && accepts(drag.id, target)}
                         <li
                             role="group"
                             aria-label={`${team.name} ${position.text}`}
                             class={[
                                 'flex min-h-12 items-stretch gap-1 px-2 py-1',
+                                drag.id && '[&>*]:pointer-events-none',
+                                (droppable || targeting) && 'bg-nexus/5',
                                 drag.over === target && 'bg-selected ring-1 ring-inset ring-nexus'
                             ]}
                             ondragover={(event) => drag.enter(event, target)}
@@ -201,7 +206,7 @@
                                     aria-pressed={player ? selectedId === player.participantId : undefined}
                                     disabled={!player && !targeting}
                                     class={[
-                                        'flex min-h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-(--radius-small) px-2 text-left text-ui enabled:hover:bg-surface-hover pointer-coarse:min-h-11',
+                                        'flex min-h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-(--radius-small) px-2 text-left text-ui enabled:hover:bg-surface-hover pointer-coarse:min-h-11 [&_img]:pointer-events-none',
                                         player && 'cursor-grab active:cursor-grabbing',
                                         selectedId === player?.participantId && 'bg-selected text-nexus'
                                     ]}
@@ -214,8 +219,13 @@
                                         else if (player) choose(player.participantId);
                                     }}
                                 >
-                                    {@render lineupPlayer(player, targeting ? '여기에 배치' : '미배정')}
-                                    {#if targeting && player}<span class="shrink-0 text-xs">교환</span>{/if}
+                                    {@render lineupPlayer(
+                                        player,
+                                        targeting || droppable ? '여기에 배치' : '미배정'
+                                    )}
+                                    {#if (targeting || droppable) && player}<span class="shrink-0 text-xs"
+                                            >교환</span
+                                        >{/if}
                                 </button>
                                 {#if player && !targeting}
                                     <Button
@@ -239,6 +249,7 @@
                         aria-label={`${team.name} 미배정 선수`}
                         class={[
                             'mx-2 mb-2 flex min-h-12 flex-wrap items-center gap-2 rounded-(--radius-form) border border-dashed p-2',
+                            drag.id && '[&>*]:pointer-events-none',
                             drag.over === `${team.id}:pool` ? 'border-nexus' : 'border-line'
                         ]}
                         ondragover={(event) => drag.enter(event, `${team.id}:pool`)}
@@ -251,7 +262,7 @@
                                 draggable="true"
                                 aria-pressed={selectedId === player.participantId}
                                 class={[
-                                    'inline-flex min-h-9 min-w-0 items-center gap-2 rounded-(--radius-small) border px-2.5 py-1 text-ui pointer-coarse:min-h-11',
+                                    'inline-flex min-h-9 min-w-0 items-center gap-2 rounded-(--radius-small) border px-2.5 py-1 text-ui pointer-coarse:min-h-11 [&_img]:pointer-events-none',
                                     selectedId === player.participantId
                                         ? 'border-nexus bg-nexus/10 text-nexus'
                                         : 'border-line'

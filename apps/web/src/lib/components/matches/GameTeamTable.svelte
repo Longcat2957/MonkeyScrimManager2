@@ -157,7 +157,7 @@
                                         >
                                         <span class="text-muted">KDA {kdaRatio(player)}</span>
                                         {#if player.score !== null}<span class="text-muted">
-                                                · 평점 {player.score.toFixed(2)}</span
+                                                · 평점 {player.score.toFixed(0)}</span
                                             >{/if}
                                     </div>
                                 </div>

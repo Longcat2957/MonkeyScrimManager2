@@ -32,6 +32,7 @@ async function fixture(t: TestContext) {
 test('공개 시즌 목록은 현재를 먼저 표시하고 선택한 과거 기록·MMR·순위만 조회한다', async (t) => {
     const f = await fixture(t);
     const before = await f.ratings();
+    assert.equal(before.length, 10);
     const selection = await getRecordSeasons(f.db, null, f.guildId);
     assert.equal(selection.selectedSeasonId, f.current.id);
     assert.deepEqual(
@@ -39,7 +40,10 @@ test('공개 시즌 목록은 현재를 먼저 표시하고 선택한 과거 기
         [f.current.id, f.season.id]
     );
     assert.equal((await f.records()).recordedGames.length, 0);
-    assert.equal((await f.player()).mmr.find((row) => row.position === 'top')!.rating, 1500);
+    const current = await f.player();
+    assert.deepEqual(current.games, []);
+    assert.equal(current.mmr.length, 5);
+    assert.ok(current.mmr.every((row) => row.rating === 1500 && row.games === 0));
     assert.deepEqual((await f.rank())!.page.entries, []);
     const old = await f.records(f.season.id.toUpperCase());
     assert.equal(old.selectedSeasonId, f.season.id);

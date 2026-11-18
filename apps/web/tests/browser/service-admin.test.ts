@@ -1,56 +1,15 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { eq } from 'drizzle-orm';
 import type { Locator, Page } from 'playwright';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { assertAction, HTTP_IDS } from '../api/support/http.ts';
-import { createBrowserFixture } from './support/browser.ts';
+import { assertNoOverflow, createBrowserFixture } from './support/browser.ts';
 
-type Fixture = Awaited<ReturnType<typeof createBrowserFixture>>;
 // 동명이인도 사용자 ID로 회수 대상을 구분하고 긴 현재 이름을 모두 읽을 수 있어야 한다.
 const operatorName = 'W'.repeat(32);
 const targetName = operatorName;
 const unknownUserId = '970000000000000099';
-const captures: Record<string, unknown>[] = [];
-
-async function capture(f: Fixture, state: string) {
-    const { page } = f;
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    const directory = process.env.MSM2_SERVICE_ADMIN_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        // 전체 페이지에서도 고정 헤더와 건너뛰기 링크가 실제 화면 위치를 유지하게 한다.
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-        await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
-    });
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const bytes = await page.screenshot({
-        path: resolve(directory, file),
-        fullPage: state !== 'self-revoke-confirm',
-        animations: 'disabled'
-    });
-    const url = new URL(page.url());
-    const audit = await f.db.select({ id: schema.serviceAdminEvents.id }).from(schema.serviceAdminEvents);
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        viewport,
-        theme,
-        state,
-        url: page.url(),
-        path: url.pathname + url.search,
-        auditIds: audit.map((entry) => entry.id),
-        source: '실제 SSR·격리 DB·서비스 운영자 세션, 외부 요청은 fixture로 제한'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
-}
 
 async function confirmation(page: Page, title: string, run: () => Promise<unknown>) {
     await run();
@@ -170,7 +129,7 @@ for (const width of [1440, 390])
                 });
                 assert.equal(await selfRevoke.isDisabled(), true);
                 assert.match(await operators.innerText(), /마지막/);
-                await capture(f, 'single-admin');
+                await assertNoOverflow(page, 'single-admin');
 
                 // 비활성 조작을 우회한 요청도 마지막 운영자를 잃거나 이력을 만들지 않아야 한다.
                 const manager = await f.session(HTTP_IDS.serviceAdmin);
@@ -203,7 +162,7 @@ for (const width of [1440, 390])
                     await page.getByRole('button', { name: '운영자 지정', exact: true }).isEnabled(),
                     true
                 );
-                await capture(f, 'unknown-user-error');
+                await assertNoOverflow(page, 'unknown-user-error');
 
                 let posts = 0;
                 page.on('request', (request) => {
@@ -327,13 +286,13 @@ for (const width of [1440, 390])
                         .count(),
                     1
                 );
-                await capture(f, 'grant-revoke-history');
+                await assertNoOverflow(page, 'grant-revoke-history');
 
                 const self = await confirmation(page, '서비스 운영자 권한 해제', () =>
                     selfRevoke.press('Enter')
                 );
                 assert.match(await self.dialog.innerText(), /내 서비스 운영 권한/);
-                await capture(f, 'self-revoke-confirm');
+                await assertNoOverflow(page, 'self-revoke-confirm');
                 await save(page, self.confirm);
                 await page.waitForURL((url) => url.pathname === '/me');
                 await page.getByRole('heading', { level: 1, name: '내 정보', exact: true }).waitFor();

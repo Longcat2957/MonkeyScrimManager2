@@ -17,11 +17,11 @@
 
 실행 스크립트는 `apps/web/tests/run.mjs`다. 파일 경로·실행 순서를 셸 glob에 맡기지 않고 범위별로 정렬해 전달한다.
 테스트 프로세스 병렬 수는 2, 브라우저 범위는 1로 제한하고, DB 경합은 해당 시나리오 안에서 여러 실제 연결로 만든다.
-Node의 이름 필터는 다음처럼 전달한다.
+웹 테스트 하나를 고칠 때는 `--file=`로 `apps/web/tests/` 기준 경로를 지정한다. 여러 파일은 옵션을 반복한다. 현재 범위에 없는 파일은 빌드 전에 오류로 처리한다. 파일을 지정하지 않으면 기존 범위 전체를 실행한다. `--test-name-pattern`을 함께 쓰면 선택한 파일 안에서 시나리오까지 좁힐 수 있다.
 
 ```sh
-pnpm --filter @msm2/web test:lite --test-name-pattern=MMR
-pnpm test:hard:db --test-name-pattern=세션
+pnpm --filter @msm2/web test:lite --file=api/lite/mmr.test.ts
+pnpm test:hard:db --file=api/hard/db/auction.test.ts --test-name-pattern=낙찰
 ```
 
 ## lite
@@ -32,6 +32,7 @@ pnpm test:hard:db --test-name-pattern=세션
 
 외부 API 계약은 메모리의 `Response`를 주입한다. 실제 Riot·Discord 연결 성공을 뜻하지 않는다.
 실제 시간을 짧게 기다리는 대신 명시적인 시계·타이머·Promise gate를 사용한다.
+개발용 목 화면을 사용하는 모델 테스트에서는 화면 표시 지연만 가상 시각으로 진행한다. 네트워크 제한 시간이나 재시도를 검사하는 테스트의 타이머는 바꾸지 않는다.
 Drizzle 조회 체인을 흉내 내는 가짜 DB는 사용하지 않는다. SQL 조건과 저장 검증은 hard에 둔다.
 
 ## 브라우저
@@ -63,7 +64,7 @@ DB 설정·접속 또는 Chromium 실행 파일이 없으면 실패하며 건너
 `support/database.ts`는 다음 생명주기를 공유한다.
 
 1. 시나리오마다 `msm2_api_test_<난수>` schema를 생성한다.
-2. 실제 Drizzle journal의 SQL을 순서대로 적용한다. `public` 한정 참조는 생성한 schema로만 옮긴다.
+2. 실제 Drizzle journal의 SQL을 순서대로 적용한다. 파일 내용만 테스트 프로세스 안에서 재사용한다. `public` 한정 참조는 생성한 schema로만 옮긴다.
 3. 모든 업무 연결의 `search_path`를 해당 schema로 고정한다. 연결·statement·lock timeout을 지정한다.
 4. 실제 서비스가 자신의 트랜잭션을 커밋하게 한다. 바깥 테스트 트랜잭션이나 `Transaction as Database`로 커밋을 대체하지 않는다.
 5. 준비 실패·테스트 실패·정상 종료 모두 정리 hook을 통해 연결을 닫고 자신이 만든 schema만 삭제한다. HTTP fixture는 앱을 먼저 종료한다.

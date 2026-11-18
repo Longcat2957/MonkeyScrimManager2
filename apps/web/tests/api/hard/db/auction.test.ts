@@ -56,7 +56,7 @@ function assertPartition(view: AuctionView) {
     assert.equal(new Set(ids).size, ids.length);
 }
 
-test('경매 조회는 공개이며 부분 팀장 저장과 관리자 권한을 검증한다', async (t) => {
+test('공개 경매는 관리자만 설정·시작하고 진행 중에는 팀장·예산을 다시 설정하지 못한다', async (t) => {
     const f = await fixture(t);
     assert.equal((await f.view()).status, 'setup');
     assert.equal((await f.db.select().from(schema.auctions)).length, 0);
@@ -89,16 +89,12 @@ test('경매 조회는 공개이며 부분 팀장 저장과 관리자 권한을 
         f.access
     );
     await startAuction(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    const started = await f.view();
     assert.deepEqual(
-        (await f.view()).teams.map((team) => team.captainId),
+        started.teams.map((team) => team.captainId),
         [...f.setup].reverse().map((team) => team.captainId)
     );
-    assertPartition(await f.view());
-});
-
-test('진행 중에는 팀장과 예산을 다시 설정할 수 없다', async (t) => {
-    const f = await fixture(t);
-    await f.start();
+    assertPartition(started);
     await assert.rejects(
         saveAuctionSetup(
             f.db,
@@ -110,7 +106,7 @@ test('진행 중에는 팀장과 예산을 다시 설정할 수 없다', async (
         ),
         errorCode('CONFLICT')
     );
-    assertPartition(await f.view());
+    assert.deepEqual(await f.view(), started);
 });
 
 test('후보 순서는 서버의 실제 유상 낙찰 평균을 따르고 공개 대기 명단은 이름순이다', async (t) => {
@@ -311,53 +307,31 @@ test('잘못된 lot와 예산 초과 낙찰은 후보·포인트·revision을 �
             errorCode('CONFLICT')
         );
     }
+    const state = await f.view();
     assert.deepEqual(await f.revision(), revision);
-    assert.equal((await f.view()).openLotId, lotId);
+    assert.equal(state.openLotId, lotId);
     assert.deepEqual(
-        (await f.view()).teams.map((team) => team.remainingPoints),
+        state.teams.map((team) => team.remainingPoints),
         [100, 100]
     );
     assert.equal((await f.db.select().from(schema.auctionAcquisitions)).length, 0);
 });
 
-for (const manual of [false, true])
-    test(`${manual ? '수동 영입' : '0점 낙찰'}은 가격 근거를 구분하고 되돌리면 후보를 복원한다`, async (t) => {
-        const f = await fixture(t);
-        await f.start();
-        const lotId = await f.draw();
-        const participantId = (await f.view()).openLot!.participantId;
-        const input = { ...(await f.revision()), lotId, teamId: f.teams[0]!.id };
-        if (manual) await assignAuctionCurrent(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
-        else await awardAuctionLot(f.db, f.manager, f.guildId, f.scrimId, { ...input, price: 0 }, f.access);
-        assert.equal((await f.view()).history.at(-1)?.price, manual ? null : 0);
-        assert.equal((await f.view()).teams[0]?.remainingPoints, 100);
-        await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
-        const restored = await f.view();
-        assert.equal(restored.openLot?.participantId, participantId);
-        assert.ok(restored.history.every((entry) => entry.voided));
-        assertPartition(restored);
-    });
-
-test('유찰 복귀를 되돌리면 원래 유찰 목록으로 복원한다', async (t) => {
+test('0점 낙찰은 가격을 기록하고 되돌리면 후보를 복원한다', async (t) => {
     const f = await fixture(t);
     await f.start();
     const lotId = await f.draw();
     const participantId = (await f.view()).openLot!.participantId;
-    await passAuctionLot(f.db, f.manager, f.guildId, f.scrimId, { ...(await f.revision()), lotId }, f.access);
-    assert.equal((await f.view()).unsold[0]?.participantId, participantId);
-    await restoreAuctionUnsold(
-        f.db,
-        f.manager,
-        f.guildId,
-        f.scrimId,
-        { ...(await f.revision()), participantId },
-        f.access
-    );
+    const input = { ...(await f.revision()), lotId, teamId: f.teams[0]!.id, price: 0 };
+    await awardAuctionLot(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
+    const awarded = await f.view();
+    assert.equal(awarded.history.at(-1)?.price, 0);
+    assert.equal(awarded.teams[0]?.remainingPoints, 100);
     await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
-    assert.equal((await f.view()).openLot, null);
-    assert.equal((await f.view()).unsold[0]?.participantId, participantId);
-    assert.equal((await f.view()).canRevert, false);
-    assertPartition(await f.view());
+    const restored = await f.view();
+    assert.equal(restored.openLot?.participantId, participantId);
+    assert.ok(restored.history.every((entry) => entry.voided));
+    assertPartition(restored);
 });
 
 test('낙찰 후 다음 추첨을 되돌리면 낙찰과 포인트를 유지한다', async (t) => {
@@ -728,6 +702,10 @@ for (const kind of ['draw', 'pass', 'award', 'assign_current', 'assign_unsold', 
                 );
         }
         const before = operationalState(await f.view());
+        if (kind === 'restore') {
+            assert.equal(before.open, null);
+            assert.deepEqual(before.unsold, [participantId]);
+        }
         const input = {
             ...(await f.revision()),
             lotId: lotId!,
@@ -761,13 +739,19 @@ for (const kind of ['draw', 'pass', 'award', 'assign_current', 'assign_unsold', 
                 await restoreAuctionUnsold(f.db, f.manager, f.guildId, f.scrimId, input, f.access);
                 break;
         }
-        assert.equal((await f.view()).canRevert, true);
+        const applied = await f.view();
+        assert.equal(applied.canRevert, true);
+        if (kind === 'assign_current') {
+            assert.equal(applied.history.at(-1)?.price, null);
+            assert.equal(applied.teams[0]?.remainingPoints, 100);
+        }
         const originals = await f.db.select().from(schema.auctionActions);
         const original = originals.at(-1)!;
         assert.equal(original.kind, kind);
         await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
         const after = await f.view();
         assert.deepEqual(operationalState(after), before);
+        if (kind === 'assign_current') assert.ok(after.history.every((entry) => entry.voided));
         assertPartition(after);
         assert.equal(after.canRevert, false);
         const actions = await f.db.select().from(schema.auctionActions);

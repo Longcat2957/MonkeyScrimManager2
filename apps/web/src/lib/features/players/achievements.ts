@@ -1,4 +1,5 @@
 import type { PlayerSummary } from './types.ts';
+import { integer } from './format.ts';
 
 // 업적은 서버 사람들의 요약 지표를 한 기준으로 줄 세워 1위에게 준다.
 // 기준과 이름은 임시이며 업적 정책이 정해지면 바꾼다.
@@ -17,9 +18,6 @@ type Definition = {
     ascending?: boolean;
 };
 
-const fixed = (value: number | null, digits = 1) => value?.toFixed(digits) ?? '—';
-const thousands = (value: number | null) =>
-    value === null ? '—' : Math.round(value).toLocaleString('ko-KR');
 const efficiency = (s: PlayerSummary) =>
     s.damagePerMin !== null && s.goldPerMin !== null && s.goldPerMin > 0
         ? s.damagePerMin / s.goldPerMin
@@ -32,7 +30,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '딜량 왕',
         description: '분당 챔피언 피해량이 가장 많은 사람',
         value: (s) => s.damagePerMin,
-        format: (s) => `${thousands(s.damagePerMin)} /분`
+        format: (s) => `${integer(s.damagePerMin)} /분`
     },
     {
         id: 'gold',
@@ -40,7 +38,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '골드 왕',
         description: '분당 골드 획득이 가장 많은 사람',
         value: (s) => s.goldPerMin,
-        format: (s) => `${thousands(s.goldPerMin)} G/분`
+        format: (s) => `${integer(s.goldPerMin)} G/분`
     },
     {
         id: 'cs',
@@ -48,7 +46,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: 'CS 왕',
         description: '분당 CS가 가장 많은 사람',
         value: (s) => s.csPerMin,
-        format: (s) => `${fixed(s.csPerMin)} CS/분`
+        format: (s) => `${integer(s.csPerMin)} CS/분`
     },
     {
         id: 'vision',
@@ -56,7 +54,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '천리안',
         description: '게임당 시야 점수가 가장 높은 사람',
         value: (s) => s.visionPerGame,
-        format: (s) => `시야 ${fixed(s.visionPerGame)}`
+        format: (s) => `시야 ${integer(s.visionPerGame)}`
     },
     {
         id: 'tank',
@@ -64,7 +62,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '샌드백',
         description: '분당 받은 피해량이 가장 많은 사람',
         value: (s) => s.damageTakenPerMin,
-        format: (s) => `${thousands(s.damageTakenPerMin)} /분`
+        format: (s) => `${integer(s.damageTakenPerMin)} /분`
     },
     {
         id: 'efficiency',
@@ -72,7 +70,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '가성비 왕',
         description: '골드 대비 피해량이 가장 높은 사람',
         value: (s) => efficiency(s),
-        format: (s) => `골드당 피해 ${fixed(efficiency(s), 2)}`
+        format: (s) => `골드당 피해 ${integer(efficiency(s))}`
     },
     {
         id: 'slayer',
@@ -80,7 +78,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '학살자',
         description: '게임당 킬이 가장 많은 사람',
         value: (s) => s.kills,
-        format: (s) => `게임당 ${fixed(s.kills)}킬`
+        format: (s) => `게임당 ${integer(s.kills)}킬`
     },
     {
         id: 'helper',
@@ -88,7 +86,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '도우미',
         description: '게임당 어시스트가 가장 많은 사람',
         value: (s) => s.assists,
-        format: (s) => `게임당 ${fixed(s.assists)}어시`
+        format: (s) => `게임당 ${integer(s.assists)}어시`
     },
     {
         id: 'survivor',
@@ -96,7 +94,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '불사신',
         description: '게임당 데스가 가장 적은 사람',
         value: (s) => s.deaths,
-        format: (s) => `게임당 ${fixed(s.deaths)}데스`,
+        format: (s) => `게임당 ${integer(s.deaths)}데스`,
         ascending: true
     },
     {
@@ -105,7 +103,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: '우물 밖은 위험해',
         description: '게임당 데스가 가장 많은 사람',
         value: (s) => s.deaths,
-        format: (s) => `게임당 ${fixed(s.deaths)}데스`
+        format: (s) => `게임당 ${integer(s.deaths)}데스`
     },
     {
         id: 'teamfight',
@@ -121,7 +119,7 @@ export const ACHIEVEMENTS: Definition[] = [
         title: 'KDA 장인',
         description: 'KDA가 가장 높은 사람',
         value: (s) => s.kda,
-        format: (s) => `KDA ${fixed(s.kda, 2)}`
+        format: (s) => `KDA ${integer(s.kda)}`
     },
     {
         id: 'pool',

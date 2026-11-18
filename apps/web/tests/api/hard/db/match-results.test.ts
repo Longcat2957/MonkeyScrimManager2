@@ -28,10 +28,8 @@ async function storedCounts(f: Fixture) {
         'mmr_ledger_entries',
         'match_rofl_imports'
     ];
-    const result: Record<string, number> = {};
-    for (const name of names)
-        result[name] = Number((await f.pool.query(`SELECT count(*) FROM ${name}`)).rows[0].count);
-    return result;
+    const counts = names.map((table) => `(SELECT count(*)::int FROM ${table}) AS ${table}`);
+    return (await f.pool.query<Record<string, number>>(`SELECT ${counts.join(', ')}`)).rows[0]!;
 }
 
 const upload = (
@@ -75,17 +73,11 @@ async function revert(f: Fixture, gameId: string, matchId = f.match.id) {
     );
 }
 
-test('수동으로 확정한 편성은 경기 생성 시 그대로 확정되며 별도 재확정 없이 결과를 저장한다', async (t) => {
+test('수동 편성의 자동 라인업은 유효한 진영 확인만 받아 별도 재확정 없이 ROFL을 저장한다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const [lineup] = await f.db.select().from(schema.matchLineups);
     assert.ok(lineup?.confirmedAt);
     assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 10);
-    await upload(f, await f.slot());
-    assert.equal((await f.db.select().from(schema.games)).length, 1);
-});
-
-test('진영 확인값이 true가 아니면 ROFL·계정 연결·결과·MMR을 변경하지 않는다', async (t) => {
-    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const slot = await f.slot();
     const before = {
         counts: await storedCounts(f),
@@ -103,6 +95,8 @@ test('진영 확인값이 true가 아니면 ROFL·계정 연결·결과·MMR을 
     assert.deepEqual(await f.matchRow(), before.match);
     assert.deepEqual(await f.db.select().from(schema.guildRiotAccounts), before.accounts);
     assert.deepEqual(await f.db.select().from(schema.scrimParticipants), before.participants);
+    await upload(f, slot);
+    assert.equal((await f.db.select().from(schema.games)).length, 1);
 });
 
 test('경매 편성은 희망 포지션을 자동 복사하지 않고 경기 라인업을 한 번 확정한 뒤 사용한다', async (t) => {
@@ -176,8 +170,8 @@ test('확정 해제 후 이전 라인업 요청은 저장되지 않고 결과가
 });
 
 test('확정 라인업의 실제 출전자는 업로드할 수 있고 출전하지 않는 멤버와 다른 서버 요청은 차단한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     await assert.rejects(upload(f, slot, undefined, f.match.id, f.actors[15]!), errorCode('FORBIDDEN'));
     await assert.rejects(
         importMatchRofl(
@@ -207,8 +201,8 @@ test('확정 라인업의 실제 출전자는 업로드할 수 있고 출전하�
 });
 
 test('ROFL 저장은 선별 자료·확정 포지션·원장·점수를 함께 반영하고 실제 0과 알 수 없는 시각을 보존한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const result = await upload(f, await f.confirm());
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const result = await upload(f, await f.slot());
     const [game] = await f.db.select().from(schema.games);
     assert.equal(game?.id, result.gameId);
     assert.equal(game?.status, 'completed');
@@ -235,8 +229,8 @@ test('ROFL 저장은 선별 자료·확정 포지션·원장·점수를 함께 �
 });
 
 test('같은 파일의 동시 업로드와 성공 응답 유실 재전송은 Game과 MMR을 한 번만 적용한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const bytes = replayBytes(f.players());
     const results = await concurrently([() => upload(f, slot, bytes), () => upload(f, slot, bytes)]);
     assert.ok(results.every((result) => result.status === 'fulfilled'));
@@ -286,8 +280,8 @@ test('파일 진영과 명시적으로 확정한 포지션을 사용하며 팀 �
 });
 
 test('같은 결과의 바이트 변형·참가자 순서 변경·다음 세트 재사용은 파일 해시가 달라도 중복 채택하지 않는다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const first = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const first = await f.slot();
     await upload(f, first);
     const variants = [replayBytes(f.players(), { bodyByte: 0x43 }), replayBytes([...f.players()].reverse())];
     for (const bytes of variants) await assert.rejects(upload(f, first, bytes), errorCode('CONFLICT'));
@@ -298,8 +292,8 @@ test('같은 결과의 바이트 변형·참가자 순서 변경·다음 세트 
 });
 
 test('팀 대응을 확인할 기존 계정이 없으면 원본 PUUID나 표시 이름만으로 사용자를 추정하지 않는다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const riot = { getAccountByRiotId: async () => ({ puuid: '다른-계정의-실제-PUUID' }) };
     await assert.rejects(
         importMatchRofl(
@@ -321,8 +315,8 @@ test('팀 대응을 확인할 기존 계정이 없으면 원본 PUUID나 표시 
 });
 
 test('명시된 팀·포지션의 미연결 부계정도 서버에 연결하되 기존 대표와 신청 계정은 바꾸지 않는다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const beforeLinks = await f.db.select().from(schema.guildRiotAccounts);
     const beforeAccounts = (await f.db.select().from(schema.riotAccounts)).length;
     const alternate = alternateAccount(f);
@@ -379,8 +373,8 @@ test('명시된 팀·포지션의 미연결 부계정도 서버에 연결하되 
 });
 
 test('미연결 계정의 누락·중복·잘못된 포지션과 기존 타 사용자 계정은 자동 귀속하지 않는다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const alternate = alternateAccount(f);
     const before = await f.db.select().from(schema.riotAccounts);
     for (const position of [undefined, null, '', 'NONE', 'SUPPORT', 'JUNGLE']) {
@@ -409,8 +403,8 @@ test('미연결 계정의 누락·중복·잘못된 포지션과 기존 타 사�
 });
 
 test('한 팀의 연결 근거만 있어도 반대 팀을 확인하고 명시된 포지션으로 부계정을 연결한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     await f.db.delete(schema.guildRiotAccounts).where(eq(schema.guildRiotAccounts.guildId, f.guildId));
     await f.db.insert(schema.guildRiotAccounts).values({
         guildId: f.guildId,
@@ -452,26 +446,20 @@ test('전원 계정 미연결이어도 선택한 블루 팀과 실제 포지션�
         .from(schema.guildRiotAccounts)
         .where(eq(schema.guildRiotAccounts.guildId, f.guildId));
     assert.equal(links.length, 10);
+    const participants = await f.db.select().from(schema.scrimParticipants);
+    const appearances = await f.db
+        .select()
+        .from(schema.gameParticipants)
+        .where(eq(schema.gameParticipants.gameId, game.gameId));
     for (let index = 0; index < 10; index++) {
         const account = f.accounts[index]!;
         const link = links.find((row) => row.riotAccountId === account.id)!;
         assert.equal(link.userId, f.participants[index]!.userId);
         assert.equal(link.isPrimary, true);
         assert.equal(link.linkedByUserId, f.manager.userId);
-        const [participant] = await f.db
-            .select()
-            .from(schema.scrimParticipants)
-            .where(eq(schema.scrimParticipants.id, f.participants[index]!.id));
+        const participant = participants.find((row) => row.id === f.participants[index]!.id);
         assert.equal(participant?.riotAccountId, account.id);
-        const [played] = await f.db
-            .select()
-            .from(schema.gameParticipants)
-            .where(
-                and(
-                    eq(schema.gameParticipants.gameId, game.gameId),
-                    eq(schema.gameParticipants.scrimParticipantId, participant!.id)
-                )
-            );
+        const played = appearances.find((row) => row.scrimParticipantId === participant!.id);
         assert.equal(played?.riotAccountId, account.id);
         assert.equal(played?.position, MMR_POSITIONS[index % 5]);
     }
@@ -519,16 +507,16 @@ test('첫 자동 연결에 포지션이나 표준 진영 근거가 없거나 기
 });
 
 test('포지션이 누락된 구형 파일은 열 명 모두 기존 계정으로 확인될 때만 확정 출전을 사용한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const players = f.players().map((player) => ({ ...player, TEAM_POSITION: undefined }));
     await upload(f, slot, replayBytes(players));
     assert.equal((await f.db.select().from(schema.gameParticipants)).length, 10);
 });
 
 test('잘못된 참가자 수·팀 배치·승패·필수 성적은 라인업과 점수를 변경하지 않는다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const original = f.players();
     const variants = [
         original.slice(0, 9),
@@ -585,8 +573,8 @@ test('Riot 조회 도중 라인업을 바꾸면 잠금 이후 재검증이 이�
 });
 
 test('MMR 원장 쓰기가 실패하면 ROFL·출전·시리즈·게시 작업을 모두 롤백한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const slot = await f.confirm();
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
     const match = await f.matchRow();
     const scrim = await f.row();
     const publications = await f.db.select().from(schema.discordPublicationJobs);
@@ -626,8 +614,8 @@ test('MMR 원장 쓰기가 실패하면 ROFL·출전·시리즈·게시 작업�
 });
 
 test('이전 챔피언을 다시 쓴 정상 ROFL도 저장하며 BO 선승 시 내전까지 자동 종료한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    await upload(f, await f.confirm());
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    await upload(f, await f.slot());
     const next = await f.slot(2);
     const result = await upload(f, next, replayBytes(f.players(), { gameLengthMs: 1_900_000 }));
     assert.equal(result.order, 2);
@@ -643,8 +631,8 @@ test('이전 챔피언을 다시 쓴 정상 ROFL도 저장하며 BO 선승 시 �
 });
 
 test('정정은 마지막 Game만 취소하고 원장 역분개·내전 재개·재전송 차단을 함께 반영한다', async (t) => {
-    const f = await createMatchResultFixture(t);
-    const first = await upload(f, await f.confirm());
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const first = await upload(f, await f.slot());
     const slot = await f.slot(2);
     const bytes = replayBytes(f.players(), { gameLengthMs: 1_900_000 });
     const last = await upload(f, slot, bytes);

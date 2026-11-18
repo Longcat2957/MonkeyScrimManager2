@@ -92,7 +92,8 @@ export function renderForm(form: RegistrationForm) {
     if (!form.context.canEdit)
         parts.push(`희망 포지션: ${preferredPositionLabel(form.positions) || '미설정'}`);
     const components: (
-        ReturnType<typeof card> | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+        | ReturnType<typeof card>
+        | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
     )[] = [card(parts[0]!, parts.slice(1).join('\n\n'))];
     const message = {
         flags: MessageFlags.IsComponentsV2 as const,

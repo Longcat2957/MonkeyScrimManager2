@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>경매에서 누가 먼저 불릴까?</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            :root {
+                color-scheme: dark;
+                --bg: #112727;
+                --ink: #f3f6ee;
+                --muted: #bad0c8;
+                --line: #46625c;
+                --mint: #91e9c6;
+                --sand: #e8c996;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font:
+                    18px/1.65 'Noto Sans CJK KR',
+                    'Noto Sans KR',
+                    sans-serif;
+                word-break: keep-all;
+                font-variant-numeric: tabular-nums;
+            }
+            main {
+                max-width: 1000px;
+                margin: auto;
+                padding: 44px 48px 34px;
+            }
+            h1,
+            h2,
+            h3,
+            p,
+            ol,
+            dl,
+            dd,
+            figure {
+                margin: 0;
+            }
+            h1,
+            h2,
+            h3 {
+                line-height: 1.35;
+                letter-spacing: -0.035em;
+            }
+            h1 {
+                font-size: clamp(32px, 5vw, 57px);
+            }
+            header p {
+                font-size: 21px;
+                margin-top: 10px;
+                color: var(--muted);
+            }
+            section {
+                margin-top: 30px;
+                padding-top: 21px;
+                border-top: 1px solid var(--line);
+            }
+            header + section {
+                border-top: 3px solid var(--mint);
+            }
+            h2 {
+                font-size: 28px;
+            }
+            h2 span {
+                color: var(--mint);
+                font: 600 15px/1 monospace;
+                letter-spacing: 0;
+                vertical-align: middle;
+                margin-right: 13px;
+            }
+            section > p {
+                margin-top: 9px;
+            }
+            .note,
+            figcaption,
+            footer {
+                color: var(--muted);
+                font-size: 16px;
+            }
+            .pair {
+                display: flex;
+                margin: 18px 0 8px;
+                font-weight: 700;
+                border-radius: 5px;
+                overflow: hidden;
+                color: #142e28;
+            }
+            .pair div {
+                padding: 10px 16px;
+            }
+            .pair b {
+                display: block;
+                font-size: 29px;
+                line-height: 1.25;
+            }
+            .higher {
+                width: 72%;
+                background: var(--mint);
+            }
+            .lower {
+                flex: 1;
+                background: var(--sand);
+            }
+            .charts {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 36px;
+                margin: 18px 0 14px;
+            }
+            h3 {
+                font-size: 22px;
+            }
+            h3 small {
+                font-size: 15px;
+                color: var(--muted);
+                font-weight: 400;
+                margin-left: 8px;
+            }
+            dl {
+                margin-top: 10px;
+            }
+            dl > div {
+                display: grid;
+                grid-template-columns: 88px minmax(0, 1fr) 62px;
+                gap: 9px;
+                align-items: center;
+                margin-top: 7px;
+            }
+            dt {
+                font-size: 15px;
+            }
+            dd {
+                display: contents;
+            }
+            .track {
+                background: #263f3a;
+                height: 12px;
+            }
+            .track i {
+                display: block;
+                height: 100%;
+                width: var(--w);
+                background: var(--mint);
+            }
+            .even i {
+                background: #a7bab5;
+            }
+            .low i {
+                background: var(--sand);
+            }
+            dd b {
+                text-align: right;
+            }
+            ol {
+                padding: 0;
+                list-style: none;
+                margin-top: 13px;
+            }
+            li {
+                display: grid;
+                grid-template-columns: 112px 1fr;
+                gap: 12px;
+                padding: 7px 0;
+            }
+            li + li {
+                border-top: 1px solid #2e4943;
+            }
+            li b {
+                color: var(--mint);
+            }
+            footer {
+                margin-top: 20px;
+                border-top: 1px solid var(--line);
+                padding-top: 12px;
+            }
+            @media (max-width: 700px) {
+                main {
+                    padding: 24px 18px;
+                }
+                body {
+                    font-size: 16px;
+                }
+                header p {
+                    font-size: 18px;
+                }
+                h2 {
+                    font-size: 23px;
+                }
+                .charts {
+                    grid-template-columns: 1fr;
+                    gap: 20px;
+                }
+                .pair div {
+                    padding: 9px;
+                }
+                .pair {
+                    font-size: 14px;
+                }
+                .pair b {
+                    font-size: 23px;
+                }
+                li {
+                    grid-template-columns: 80px 1fr;
+                    gap: 6px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>경매에서 누가 먼저 불릴까?</h1>
+                <p>
+                    평균 낙찰가가 높을수록 앞자리에 뽑히기 쉽습니다. 그래도 누구나 첫 후보가 될 수 있습니다.
+                </p>
+            </header>
+            <section>
+                <h2><span>01</span>내 평균 낙찰가는 어떻게 정할까?</h2>
+                <p>
+                    같은 서버에서 40점과 80점에 낙찰됐다면 평균은 <strong>60점</strong>입니다. 시즌이 달라도
+                    합칩니다.
+                </p>
+                <p class="note">
+                    취소되지 않은 내전에서 끝난 경매의 유효한 1점 이상 낙찰만 셉니다. 0점 낙찰과 수동 배치는
+                    제외합니다. 이력이 없으면 가장 낮게 보고, 평균이 같은 후보끼리는 확률도 같습니다.
+                </p>
+            </section>
+            <section>
+                <h2><span>02</span>두 사람 중 누가 앞자리를 받을까?</h2>
+                <p>
+                    팀장을 빼고 후보를 무작위로 두 명씩 짝짓습니다. 호명 자리도 무작위로 두 개씩
+                    짝짓습니다.<br />예를 들어 <strong>평균 80점인 민수와 40점인 지우</strong>에게
+                    <strong>2번과 7번</strong> 자리가 주어졌다면:
+                </p>
+                <figure>
+                    <div class="pair">
+                        <div class="higher">민수가 2번<b>72%</b></div>
+                        <div class="lower">지우가 2번<b>28%</b></div>
+                    </div>
+                    <figcaption>
+                        나머지 한 명은 7번입니다. 80점 대 79점이어도 확률은 같고, 동점이면 반반입니다.
+                    </figcaption>
+                </figure>
+            </section>
+            <section>
+                <h2><span>03</span>그렇다면 전체에서 첫 번째일 확률은?</h2>
+                <p>
+                    72%는 <strong>짝보다 먼저</strong> 불릴 확률이지, <strong>전체에서 첫 번째</strong>일
+                    확률이 아닙니다.
+                </p>
+                <div class="charts">
+                    <figure>
+                        <h3>10인 내전<small>팀장 2명 제외 · 후보 8명</small></h3>
+                        <dl>
+                            <div>
+                                <dt>단독 1위</dt>
+                                <dd>
+                                    <span class="track"><i style="--w: 90%"></i></span><b>18%</b>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>모두 동점</dt>
+                                <dd>
+                                    <span class="track even"><i style="--w: 62.5%"></i></span><b>12.5%</b>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>단독 8위</dt>
+                                <dd>
+                                    <span class="track low"><i style="--w: 35%"></i></span><b>7%</b>
+                                </dd>
+                            </div>
+                        </dl>
+                    </figure>
+                    <figure>
+                        <h3>20인 내전<small>팀장 4명 제외 · 후보 16명</small></h3>
+                        <dl>
+                            <div>
+                                <dt>단독 1위</dt>
+                                <dd>
+                                    <span class="track"><i style="--w: 45%"></i></span><b>9%</b>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>모두 동점</dt>
+                                <dd>
+                                    <span class="track even"><i style="--w: 31.25%"></i></span><b>6.25%</b>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>단독 16위</dt>
+                                <dd>
+                                    <span class="track low"><i style="--w: 17.5%"></i></span><b>3.5%</b>
+                                </dd>
+                            </div>
+                        </dl>
+                    </figure>
+                </div>
+                <p class="note">
+                    평균이 모두 다르면 순위 한 칸마다 첫 호명 확률이 같은 폭으로 낮아집니다. 표의 확률은
+                    대기자를 미리 배치하기 전, 처음 만든 순서 기준입니다.
+                </p>
+            </section>
+            <section>
+                <h2><span>04</span>호명부터 팀 완성까지</h2>
+                <ol>
+                    <li>
+                        <b>경매 시작</b
+                        ><span
+                            >팀장을 정하고 팀별 예산을 설정합니다(기본 1,000점). 시작할 때 호명 순서를 한 번
+                            정해 저장합니다.</span
+                        >
+                    </li>
+                    <li>
+                        <b>다음 후보</b
+                        ><span
+                            >저장된 순서에서 한 명만 공개합니다. 대기 명단은 이름순이므로 다음 차례를 뜻하지
+                            않습니다.</span
+                        >
+                    </li>
+                    <li>
+                        <b>낙찰·유찰</b
+                        ><span
+                            >운영자가 팀 잔액 안에서 낙찰하거나 유찰합니다. 10초 타이머가 끝나도 자동
+                            낙찰되지는 않습니다.</span
+                        >
+                    </li>
+                    <li>
+                        <b>직접 배치</b
+                        ><span
+                            >대기자는 호명 전에도 빈자리에 배치할 수 있습니다. 다른 후보의 입찰은 계속됩니다.
+                            직전 배치를 되돌리면 원래 순번으로 돌아갑니다.</span
+                        >
+                    </li>
+                    <li>
+                        <b>편성 완료</b
+                        ><span
+                            >유찰자는 나중에 다시 올리거나 배치합니다. 팀장 포함 모든 팀이 5명을 채우면 대진을
+                            준비합니다.</span
+                        >
+                    </li>
+                </ol>
+            </section>
+        </main>
+    </body>
+</html>

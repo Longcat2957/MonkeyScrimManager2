@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import {
     bracketSeats,
     bracketTemplate,
@@ -14,7 +14,7 @@ import {
     setMockBracketBestOf,
     unlockMockBracket
 } from '../src/lib/mocks/bracket.ts';
-import { createMockScrim, findMockScrimRecord } from '../src/lib/mocks/scrims.ts';
+import { findMockScrimRecord } from '../src/lib/mocks/scrims.ts';
 import { getMockMatch, recordMockGame, type RawGame } from '../src/lib/mocks/matches.ts';
 import {
     awardMockLot,
@@ -27,7 +27,9 @@ import {
 import { reopenMockReadyFormation } from '../src/lib/mocks/workflow.ts';
 import sample from '../src/lib/mocks/fixtures/rofl-sample.json' with { type: 'json' };
 
-const guildId = 'devGuild001';
+import { guildId, mockScrim, skipPreviewDelay } from './support/mock-scrim.ts';
+
+beforeEach(skipPreviewDelay);
 
 test('완료된 단일 실제 경기만 결과 상세로 보내고 여러 경기·미완료·중도 종료는 대진을 유지한다', () => {
     const single = { matches: bracketTemplate(2) };
@@ -47,24 +49,10 @@ test('완료된 단일 실제 경기만 결과 상세로 보내고 여러 경기
 
 // 팀 편성이 끝난(대진 준비) 내전을 만든다. 참가자는 devScrim008에서 빌린다.
 async function readyScrim(teamCount: 2 | 4) {
-    const scrimId = await createMockScrim(guildId, {
-        title: `대진 테스트 ${teamCount}팀`,
-        scheduledAt: null,
-        teamCount,
-        reserveCapacity: 0,
-        hardFearless: false
-    });
-    const scrim = findMockScrimRecord(guildId, scrimId)!;
+    const scrim = await mockScrim({ teamCount });
     scrim.formationMethod = 'manual';
     scrim.status = 'ready';
-    scrim.participants = findMockScrimRecord(guildId, 'devScrim008')!
-        .participants.slice(0, teamCount * 5)
-        .map((participant, index) => ({
-            ...participant,
-            registrationId: `${scrimId}-r${index}`,
-            userId: `${scrimId}-u${index}`
-        }));
-    return scrimId;
+    return scrim.id;
 }
 
 const view = async (scrimId: string) => (await getMockBracket(guildId, scrimId))!;

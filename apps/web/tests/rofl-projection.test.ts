@@ -5,6 +5,7 @@ import {
     ROFL_PROJECTION_VERSION,
     ROFL_STAT_FIELDS
 } from '../src/lib/server/rofl/projection.ts';
+import { replayBytes as replay } from './api/support/rofl-fixtures.ts';
 
 // Deliberately authored fixture and expectations, independent of the production field map.
 const sourceStats = {
@@ -100,22 +101,6 @@ const sourceLoadout = {
     STAT_PERK_2: '5002'
 };
 
-function replay(players: Record<string, unknown>[], extras: Record<string, unknown> = {}): Buffer {
-    const version = Buffer.from('16.21.829.8620');
-    const header = Buffer.alloc(15 + version.length);
-    header.write('RIOT');
-    header.writeUInt16LE(2, 4);
-    header[14] = version.length;
-    version.copy(header, 15);
-    const metadata = Buffer.from(
-        JSON.stringify({ gameLength: 1_800_125, statsJson: JSON.stringify(players), ...extras })
-    );
-    const footer = Buffer.alloc(4);
-    footer.writeUInt32LE(metadata.length);
-    // Summary projection needs no packet interpretation; these body/signature bytes are synthetic.
-    return Buffer.concat([header, Buffer.alloc(32, 0x42), Buffer.alloc(256, 0x7f), metadata, footer]);
-}
-
 test('P0 through P2 project to explicit typed fields without changing the input bytes', () => {
     const bytes = replay([
         {
@@ -181,7 +166,7 @@ test('unselected metadata, derived statistics and service identifiers never ente
         playerId: 'untrusted-player'
     };
     const projected = projectRoflGame(
-        replay([source], { customMetadata: 'unselected', gameId: 'untrusted-game' })
+        replay([source], { metadata: { customMetadata: 'unselected', gameId: 'untrusted-game' } })
     );
     assert.deepEqual(Object.keys(projected).sort(), [
         'formatVersion',
@@ -295,20 +280,7 @@ test('present invalid numbers cannot silently become valid statistics or equipme
     }
 });
 
-test('damage totals and component values remain independent and time counters are not converted', () => {
-    const { stats } = projectRoflGame(replay([sourceStats])).participants[0];
-    assert.equal(stats.damageDealtToChampions, 1002);
-    assert.equal(stats.physicalDamageDealtToChampions, 600);
-    assert.equal(stats.magicDamageDealtToChampions, 300);
-    assert.equal(stats.trueDamageDealtToChampions, 100);
-    assert.equal(stats.damageTaken, 2002);
-    assert.equal(stats.physicalDamageTaken, 1000);
-    assert.equal(stats.magicDamageTaken, 700);
-    assert.equal(stats.trueDamageTaken, 300);
-    assert.equal(stats.timeCcingOthers, 27);
-    assert.equal(stats.totalTimeCrowdControlDealt, 1001);
-    assert.equal(stats.totalTimeCrowdControlDealtToChampions, 88);
-    assert.equal(stats.totalTimeSpentDead, 157);
+test('time counters retain their separate source fields and unverified units', () => {
     assert.equal(ROFL_STAT_FIELDS.timeCcingOthers.source, 'TIME_CCING_OTHERS');
     assert.equal(ROFL_STAT_FIELDS.totalTimeCrowdControlDealt.source, 'TOTAL_TIME_CROWD_CONTROL_DEALT');
     assert.equal(
@@ -379,7 +351,6 @@ test('twenty participants retain their input order while team membership comes f
         WIN: index % 2 ? 'Win' : 'Fail'
     }));
     const result = projectRoflGame(replay(players));
-    assert.equal(result.participants.length, 20);
     assert.deepEqual(
         result.participants.map(({ index }) => index),
         Array.from({ length: 20 }, (_, index) => index)

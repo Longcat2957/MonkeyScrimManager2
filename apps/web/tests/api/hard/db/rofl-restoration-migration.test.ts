@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
@@ -48,13 +47,9 @@ test('0004는 이전 취소 결과의 근거·역분개 시각을 보존하며 �
         ALTER TABLE match_rofl_imports DROP COLUMN cancelled_at;
         ALTER TABLE match_rofl_imports ADD CONSTRAINT match_rofl_imports_result_fingerprint_unique UNIQUE (result_fingerprint);
     `);
-    const migration = await readFile(
-        new URL('../../../../drizzle/0004_rofl_result_restoration.sql', import.meta.url),
-        'utf8'
-    );
     await f.db.transaction(async (tx) => {
         // 실행할 SQL은 실제 배포 마이그레이션 파일 그대로 사용한다.
-        await tx.execute(sql.raw(migration));
+        await tx.execute(sql.raw(f.migrationSql('0004_rofl_result_restoration')));
     });
     const [upgraded] = await f.db.select().from(schema.matchRoflImports);
     assert.deepEqual(upgraded, { ...original, cancelledAt: application.reversedAt });

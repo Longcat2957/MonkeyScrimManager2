@@ -16,7 +16,8 @@ export type ServiceStatus = { checkedAt: string; services: ServiceCheck[] };
 
 // 확인 시도 결과. 설정 누락·시간 초과·그 외 실패를 구분한다.
 export type Probe<T> =
-    { ok: true; value: T; latencyMs: number } | { ok: false; reason: 'unconfigured' | 'timeout' | 'error' };
+    | { ok: true; value: T; latencyMs: number }
+    | { ok: false; reason: 'unconfigured' | 'timeout' | 'error' };
 
 export const SERVICE_STATE_LABEL: Record<ServiceState, { text: string; state: StatusState }> = {
     normal: { text: '정상', state: 'success' },

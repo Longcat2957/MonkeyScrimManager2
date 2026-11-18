@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -27,24 +26,25 @@ import {
     errorCode
 } from '../../support/domain-fixtures.ts';
 import { createMatchResultFixture, replayBytes } from '../../support/match-fixtures.ts';
+import { snapshotTables } from '../../support/database.ts';
 
 const confirm = { confirm: true };
 
-async function retained(db: Database) {
-    return Promise.all([
-        db.select().from(schema.scrimParticipants),
-        db.select().from(schema.scrimParticipantRegistrations),
-        db.select().from(schema.scrimParticipantPreferences),
-        db.select().from(schema.games),
-        db.select().from(schema.gameParticipants),
-        db.select().from(schema.matchLineups),
-        db.select().from(schema.matchLineupPlayers),
-        db.select().from(schema.gameMmrApplications),
-        db.select().from(schema.mmrLedgerEntries),
-        db.select().from(schema.userPositionMmr),
-        db.select().from(schema.roflMetadata),
-        db.select().from(schema.roflParticipantDataV1),
-        db.select().from(schema.matchRoflImports)
+function retained(db: Database) {
+    return snapshotTables(db, [
+        schema.scrimParticipants,
+        schema.scrimParticipantRegistrations,
+        schema.scrimParticipantPreferences,
+        schema.games,
+        schema.gameParticipants,
+        schema.matchLineups,
+        schema.matchLineupPlayers,
+        schema.gameMmrApplications,
+        schema.mmrLedgerEntries,
+        schema.userPositionMmr,
+        schema.roflMetadata,
+        schema.roflParticipantDataV1,
+        schema.matchRoflImports
     ]);
 }
 
@@ -570,18 +570,12 @@ test('0011은 기존 사용자·식별·점수를 보존하고 기존 계정은 
         .values({ puuid: 'keep-canonical', gameName: '보존', tagLine: 'KR1' })
         .returning();
     const before = await f.db.select().from(schema.users);
-    const migration = await readFile(
-        new URL('../../../../drizzle/0011_account_privacy.sql', import.meta.url),
-        'utf8'
-    );
     // 새 열·제약을 제거해 직전 상태를 만들고 생성 SQL을 기존 프로필에 적용한다.
     await f.pool.query('ALTER TABLE users DROP CONSTRAINT users_withdrawn_private');
     await f.pool.query(
         'ALTER TABLE users DROP COLUMN withdrawn_at, DROP COLUMN public_profile, DROP COLUMN public_riot_ids, DROP COLUMN public_id'
     );
-    await f.pool.query(
-        migration.replaceAll('"public".', `"${f.schemaName}".`).replace(/\bpublic\./g, `"${f.schemaName}".`)
-    );
+    await f.pool.query(f.migrationSql('0011_account_privacy'));
     const after = await f.db.select().from(schema.users);
     const existing = ({ publicId, ...row }: typeof schema.users.$inferSelect) => row;
     assert.deepEqual(after.map(existing), before.map(existing));

@@ -27,6 +27,8 @@ const channel = {
 const client = (value: unknown) =>
     createDiscordClient({ token: 'test-token', fetch: async () => Response.json(value) });
 
+const overwrite = { id: roleId, type: 0, allow: '0', deny: '0' };
+
 for (const token of ['', 'bad token', 'bad\ntoken']) {
     test(`잘못된 봇 읽기 토큰은 요청하지 않는다: ${JSON.stringify(token)}`, async () => {
         await assert.rejects(
@@ -41,7 +43,7 @@ for (const token of ['', 'bad token', 'bad\ntoken']) {
     });
 }
 
-test('길드 목록은 페이지 경계와 헤더를 검증하고 모든 페이지를 반환한다', async () => {
+test('길드 목록은 페이지 경계·헤더를 검증하고 반복된 페이지를 부분 성공으로 처리하지 않는다', async () => {
     const page = Array.from({ length: 200 }, (_, index) => ({
         id: String(BigInt(guildId) + BigInt(index)),
         name: '서버',
@@ -61,14 +63,6 @@ test('길드 목록은 페이지 경계와 헤더를 검증하고 모든 페이�
     });
     assert.equal((await discord.listGuilds()).length, 200);
     assert.equal(calls, 2);
-});
-
-test('반복된 목록 페이지를 부분 성공으로 처리하지 않는다', async () => {
-    const page = Array.from({ length: 200 }, (_, index) => ({
-        id: String(BigInt(guildId) + BigInt(index)),
-        name: '서버',
-        icon: null
-    }));
     await assert.rejects(client(page).listGuilds(), discordError(502));
 });
 
@@ -153,25 +147,9 @@ test('멤버 timeout 시각은 선택 필드이고 null·정확한 ISO 형식을
 for (const [name, value] of [
     ['다른 길드', [{ ...channel, guild_id: userId }]],
     ['중복 채널', [channel, channel]],
-    ['숫자 allow', [{ ...channel, permission_overwrites: [{ id: roleId, type: 0, allow: 1, deny: '0' }] }]],
-    [
-        '잘못된 overwrite 종류',
-        [{ ...channel, permission_overwrites: [{ id: roleId, type: 3, allow: '0', deny: '0' }] }]
-    ],
-    [
-        '중복 overwrite',
-        [
-            {
-                ...channel,
-                permission_overwrites: Array.from({ length: 2 }, () => ({
-                    id: roleId,
-                    type: 0,
-                    allow: '0',
-                    deny: '0'
-                }))
-            }
-        ]
-    ]
+    ['숫자 allow', [{ ...channel, permission_overwrites: [{ ...overwrite, allow: 1 }] }]],
+    ['잘못된 overwrite 종류', [{ ...channel, permission_overwrites: [{ ...overwrite, type: 3 }] }]],
+    ['중복 overwrite', [{ ...channel, permission_overwrites: [overwrite, overwrite] }]]
 ] as const) {
     test(`채널 응답 검증: ${name}`, async () =>
         assert.rejects(client(value).listChannels(guildId), discordError(502)));

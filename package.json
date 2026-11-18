@@ -28,13 +28,13 @@
         "test:hard:http": "pnpm --filter @msm2/web test:hard:http",
         "test:browser": "pnpm --filter @msm2/web test:browser",
         "check:tests": "pnpm --filter @msm2/web check:tests && pnpm --filter @msm2/bot check:tests",
-        "format": "prettier --write .",
-        "check:format": "prettier --check .",
+        "format": "oxfmt --write .",
+        "check:format": "oxfmt --check .",
         "test:bot": "pnpm --filter @msm2/bot test",
         "bot:register": "pnpm --filter @msm2/bot register:commands"
     },
     "devDependencies": {
-        "prettier": "^3.9.10",
-        "prettier-plugin-svelte": "^4.1.1"
+        "oxfmt": "0.79.0",
+        "svelte": "^5.57.1"
     }
 }

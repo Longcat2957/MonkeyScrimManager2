@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import test, { type TestContext } from 'node:test';
 import { eq } from 'drizzle-orm';
 import { setMyPrivacy, withdrawAccount } from '../../../../src/lib/server/accounts/privacy.ts';
@@ -248,13 +247,7 @@ test('0012는 기존 게시 작업을 보존하고 개인정보 수정 제약만
         .values({ scrimId: f.scrimId, kind: 'recruitment', nonce: 'preserved-before-migration' });
     const before = await f.db.select().from(schema.discordPublicationJobs);
     await f.pool.query('ALTER TABLE discord_publication_jobs DROP COLUMN privacy_refresh_message_id');
-    const migration = await readFile(
-        new URL('../../../../drizzle/0012_privacy_publication_refresh.sql', import.meta.url),
-        'utf8'
-    );
-    await f.pool.query(
-        migration.replaceAll('"public".', `"${f.schemaName}".`).replace(/\bpublic\./g, `"${f.schemaName}".`)
-    );
+    await f.pool.query(f.migrationSql('0012_privacy_publication_refresh'));
     assert.deepEqual(await f.db.select().from(schema.discordPublicationJobs), before);
     await assert.rejects(
         f.db.insert(schema.discordPublicationJobs).values({

@@ -5,6 +5,7 @@ import type {
     ScrimStatus
 } from '#lib/features/scrims/types.ts';
 import { formationReturnAction } from '#lib/features/scrims/formation.ts';
+import { mockLatency } from './latency.ts';
 import { hasMockScrimMatch } from './matches.ts';
 import { dropMockBracket, getMockBracketProgress, setMockBracketEnded } from './bracket.ts';
 import {
@@ -19,7 +20,7 @@ import { dropMockFormation, isMockFormationConfirmed, reopenMockFormation } from
 
 // 내전 단계 진행·되돌리기·중도 종료의 개발용 규칙이다. 편성·대진 목을 함께 고치므로 내전 목과 나눠 둔다.
 
-const wait = () => new Promise((resolve) => setTimeout(resolve, 300));
+const wait = () => mockLatency.wait(300);
 
 const NEXT_STATUS: Record<ScrimNextAction['key'], ScrimStatus> = {
     close: 'preparing',

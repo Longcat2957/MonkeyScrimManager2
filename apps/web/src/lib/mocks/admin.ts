@@ -10,6 +10,7 @@ import type { MockFailure } from './scrims.ts';
 import { mockMembers as members, type MockMember } from './members.ts';
 import { mockAuctionPurchaseTotals } from './teams.ts';
 import { mockAvatarUrl } from './avatar.ts';
+import { mockLatency } from './latency.ts';
 
 type GuildDiscord = { roles: DiscordRole[]; channels: DiscordChannel[]; settings: GuildDiscordSettings };
 
@@ -41,7 +42,6 @@ const discord = new Map<string, GuildDiscord>([
     ]
 ]);
 
-const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
 const auditEntries = new Map<string, GuildAuditEntry[]>();
 
 function mockIdentity(guildId: string, userId: string) {
@@ -155,7 +155,7 @@ export async function setMockDiscordSetting(
     key: GuildDiscordSettingKey,
     value: string | null
 ): Promise<MockFailure | null> {
-    await wait();
+    await mockLatency.wait(200);
     const guild = discord.get(guildId);
     const actor = members.get(guildId)?.find((member) => member.userId === actorId);
     if (!guild || !actor || !isAdmin(actor, guild.settings.operatorRoleId))

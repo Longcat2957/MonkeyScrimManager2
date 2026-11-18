@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import test, { type TestContext } from 'node:test';
 import { createTestDatabase } from '../../support/database.ts';
 
 /** 제약 검증도 각 사례의 독립 스키마에서 실제 커밋 경계를 사용한다. */
 async function constraintFixture(t: TestContext) {
-    const { pool: client } = await createTestDatabase(t);
+    const { pool: client, migrationSql } = await createTestDatabase(t);
     const guildId = randomUUID();
     await client.query('INSERT INTO guilds (id, name) VALUES ($1, $2)', [guildId, '제약 검증 서버']);
     async function insertId(query: string, values: unknown[] = []): Promise<string> {
@@ -43,6 +42,7 @@ async function constraintFixture(t: TestContext) {
     }
     return {
         client,
+        migrationSql,
         guildId,
         insertId,
         rejectsSql,
@@ -224,16 +224,17 @@ test('세션은 해시·만료를 검증하고 사용자 삭제 시 함께 폐�
 });
 
 test('0019는 3팀 내전이 남아 있으면 기존 행과 제약을 바꾸지 않는다', async (t) => {
-    const { client, createScrim, rejectsSql } = await constraintFixture(t);
+    const { client, createScrim, rejectsSql, migrationSql } = await constraintFixture(t);
     const id = await createScrim();
     await client.query(`ALTER TABLE scrims DROP CONSTRAINT scrims_team_count_supported,
         ADD CONSTRAINT scrims_team_count_range CHECK (team_count BETWEEN 2 AND 4)`);
     await client.query('UPDATE scrims SET team_count = 3 WHERE id = $1', [id]);
-    const migration = await readFile(
-        new URL('../../../../drizzle/0019_supported_scrim_team_counts.sql', import.meta.url),
-        'utf8'
+    await rejectsSql(
+        migrationSql('0019_supported_scrim_team_counts'),
+        [],
+        '23514',
+        'scrims_team_count_supported'
     );
-    await rejectsSql(migration, [], '23514', 'scrims_team_count_supported');
     assert.deepEqual((await client.query('SELECT team_count FROM scrims WHERE id = $1', [id])).rows, [
         { team_count: 3 }
     ]);

@@ -36,10 +36,16 @@ jobs:
                   cache-dependency-path: pnpm-lock.yaml
             - name: 잠금 파일로 의존성 설치
               run: pnpm install --frozen-lockfile
-            - name: 포맷·브랜딩·앱 타입 검사
-              run: pnpm check
-            - name: 기본 웹·봇 테스트
-              run: pnpm test
+            - name: 정적 검사 및 기본 웹·봇 테스트
+              run: |
+                  pnpm check &
+                  check_pid=$!
+                  pnpm test &
+                  test_pid=$!
+                  status=0
+                  wait "$check_pid" || status=1
+                  wait "$test_pid" || status=1
+                  exit "$status"
             - name: Docker Buildx 준비
               uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
             - name: 이미지 이름 준비

@@ -33,7 +33,11 @@ trap cleanup EXIT
 docker login ghcr.io --username "$registry_user" --password-stdin
 docker pull "$image"
 resolved_image=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")
-revision=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")
+revision=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$resolved_image")
+if [[ ! "$revision" =~ ^[0-9a-f]{40}$ || "${image##*:}" != "$revision" ]]; then
+    printf '배포 중단: 요청 이미지 %s와 이미지 revision %s가 일치하지 않습니다.\n' "$image" "$revision" >&2
+    exit 1
+fi
 
 backup_dir=$(mktemp -d /var/backups/monkeybot/release-"$(date -u +%Y%m%dT%H%M%SZ)"-XXXXXX)
 for path in .env compose.yml compose.app.yml deploy.sh nginx caddy; do

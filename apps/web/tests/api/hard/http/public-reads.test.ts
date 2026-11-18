@@ -79,17 +79,16 @@ test('HTTP: 순위 endpoint는 공개 JSON을 반환하고 잘못된 URL 상태�
     assert.equal((await f.request(path + '?position=mid&offset=0')).status, 404);
 });
 
-for (const [name, userId] of [
-    ['일반 멤버', HTTP_IDS.member],
-    ['서비스 운영자', HTTP_IDS.serviceAdmin]
-] as const) {
-    test('HTTP: ' + name + '도 서버 관리 권한 없이 관리 페이지에 접근하지 못한다', async (t) => {
-        const f = await createHttpFixture(t);
-        const session = await f.session(userId);
-        assert.equal(
-            (await f.request('/g/' + HTTP_IDS.guild + '/admin', { headers: { cookie: session.cookie } }))
-                .status,
-            403
-        );
-    });
-}
+test('HTTP: 서버 관리 권한 없이는 관리 페이지에 접근하지 못한다', async (t) => {
+    const f = await createHttpFixture(t);
+    for (const [name, userId] of [
+        ['일반 멤버', HTTP_IDS.member],
+        ['서비스 운영자', HTTP_IDS.serviceAdmin]
+    ] as const) {
+        await t.test(name, async () => {
+            const { cookie } = await f.session(userId);
+            const response = await f.request('/g/' + HTTP_IDS.guild + '/admin', { headers: { cookie } });
+            assert.equal(response.status, 403);
+        });
+    }
+});

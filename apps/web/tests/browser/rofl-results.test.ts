@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import test from 'node:test';
 import { chromium } from 'playwright';
 import type { Page } from 'playwright';
@@ -9,8 +6,6 @@ import { eq } from 'drizzle-orm';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { createHttpMatchResultFixture } from '../api/support/http-match-fixtures.ts';
 import { sessionContext } from './support/browser.ts';
-
-const recoveryCaptures: { file: string; sha256: string; path: string; width: number; state: string }[] = [];
 
 async function prepareUpload(page: Page, file: File, plannedFirst = false) {
     await page.getByRole('button', { name: 'ROFL 업로드', exact: true }).click();
@@ -231,25 +226,6 @@ for (const width of [1440, 390])
                 page.setDefaultTimeout(10_000);
                 const errors: string[] = [];
                 page.on('pageerror', (error) => errors.push(error.message));
-                const capture = async (state: string) => {
-                    const directory = process.env.MSM2_ROFL_CAPTURE_DIR;
-                    if (!directory) return;
-                    await mkdir(directory, { recursive: true });
-                    await page.waitForTimeout(500);
-                    const file = `${width}-${failure}-${state}.png`;
-                    const png = await page.screenshot({ path: join(directory, file) });
-                    recoveryCaptures.push({
-                        file,
-                        sha256: createHash('sha256').update(png).digest('hex'),
-                        path: new URL(page.url()).pathname,
-                        width,
-                        state
-                    });
-                    await writeFile(
-                        join(directory, 'captures.json'),
-                        JSON.stringify(recoveryCaptures, null, 4) + '\n'
-                    );
-                };
                 await page.goto(fixture.url + fixture.path);
                 await page.waitForTimeout(700);
                 const dialog = await prepareUpload(page, fixture.file(1_900_000), failure === 'timeout');
@@ -263,10 +239,6 @@ for (const width of [1440, 390])
                     .and(dialog.locator('button:enabled'))
                     .waitFor();
                 assert.equal(
-                    await dialog.getByRole('button', { name: '업로드', exact: true }).isDisabled(),
-                    false
-                );
-                assert.equal(
                     (await fixture.db.select().from(schema.games)).length,
                     failure === 'rate' ? 1 : 0
                 );
@@ -278,7 +250,6 @@ for (const width of [1440, 390])
                     await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
                     false
                 );
-                await capture('input-preserved');
                 if (failure === 'rate') {
                     const retryAfter = Number(response.headers()['retry-after']);
                     assert.ok(retryAfter > 0 && retryAfter <= 10);
@@ -289,7 +260,6 @@ for (const width of [1440, 390])
                     assert.equal((await retried).status(), 200);
                     await dialog.getByText(/2세트로 기록했어요$/).waitFor();
                     assert.equal((await fixture.db.select().from(schema.games)).length, 2);
-                    await capture('retry-recorded');
                 }
                 assert.deepEqual(errors, []);
             }

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { and, asc, eq } from 'drizzle-orm';
@@ -282,12 +281,7 @@ test('0013은 기존 미정 순서를 생성시각·식별자로 채우고 10개
             'SELECT user_id,position,champion_id,created_at FROM user_champion_preferences ORDER BY user_id,position,champion_id'
         )
     ).rows;
-    await f.pool.query(
-        await readFile(
-            new URL('../../../../drizzle/0013_champion_preference_order.sql', import.meta.url),
-            'utf8'
-        )
-    );
+    await f.pool.query(f.migrationSql('0013_champion_preference_order'));
     const after = await f.db
         .select()
         .from(schema.userChampionPreferences)

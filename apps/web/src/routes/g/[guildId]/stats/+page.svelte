@@ -16,7 +16,7 @@
     import StatsRefreshControls from '#lib/components/stats/StatsRefreshControls.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
-    import { fixed, integer } from '#lib/features/players/format.ts';
+    import { integer } from '#lib/features/players/format.ts';
     import { formatDuration } from '#lib/features/matches/format.ts';
     import {
         normalizeStatsFilters,
@@ -278,8 +278,8 @@
     {:else}
         {@const kpis = [
             ['평균 게임 시간', formatDuration(data.kpis.averageDurationSec), null],
-            ['분당 킬', fixed(data.kpis.killsPerMinute, 2), null],
-            ['평균 KDA', fixed(data.kpis.kda, 2), '(킬+어시스트) / 데스'],
+            ['분당 킬', integer(data.kpis.killsPerMinute), null],
+            ['평균 KDA', integer(data.kpis.kda), '(킬+어시스트) / 데스'],
             ['사용한 챔피언', integer(data.kpis.champions), null]
         ] as const}
         <section
@@ -483,7 +483,7 @@
                                                     : '-'}</td
                                             >
                                             <td class="px-4 py-2 text-right tabular-nums"
-                                                >{fixed(record.kda, 2)}</td
+                                                >{integer(record.kda)}</td
                                             >
                                         </tr>
                                     {/each}

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import type { TestContext } from 'node:test';
+import { getTableName, sql, type Table } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client, Pool } from 'pg';
 import * as schema from '../../../src/lib/server/db/schema.ts';
@@ -12,7 +13,35 @@ export interface TestDatabase {
     schemaName: string;
     /** 테스트가 소유한 schema로 연결이 제한된 주소다. 로그에 출력하지 않는다. */
     connectionString: string;
+    migrationSql(tag: string): string;
     close(): Promise<void>;
+}
+
+async function loadMigrations() {
+    const directory = new URL('../../../drizzle/', import.meta.url);
+    const journal = JSON.parse(await readFile(new URL('meta/_journal.json', directory), 'utf8')) as {
+        entries: { tag: string }[];
+    };
+    if (!journal.entries.length) throw new Error('테스트에 적용할 DB 초기 SQL이 없습니다.');
+    return Promise.all(
+        journal.entries.map(async ({ tag }) => {
+            if (!/^\d+_[a-zA-Z0-9_]+$/.test(tag))
+                throw new Error('DB journal의 SQL 파일 이름이 올바르지 않습니다.');
+            return { tag, sql: await readFile(new URL(`${tag}.sql`, directory), 'utf8') };
+        })
+    );
+}
+let sources: Promise<{ tag: string; sql: string }[]> | undefined;
+
+/** 호출자가 지정한 테스트 테이블의 모든 행을 한 SQL 스냅샷에서 비교한다. */
+export async function snapshotTables(db: Database, tables: readonly Table[]) {
+    const columns = tables.map(
+        (table) => sql`
+        ARRAY(SELECT row_to_json(r)::text COLLATE "C" FROM ${table} r ORDER BY 1)
+        AS ${sql.identifier(getTableName(table))}`
+    );
+    const { rows } = await db.execute<Record<string, string[]>>(sql`SELECT ${sql.join(columns, sql`, `)}`);
+    return rows[0]!;
 }
 
 export function testDatabaseUrl(): string {
@@ -41,6 +70,15 @@ export async function createTestDatabase(
     const base = testDatabaseUrl();
     const schemaName = `msm2_api_test_${randomUUID().replaceAll('-', '')}`;
     const quoted = `"${schemaName}"`;
+    const migrations = await (sources ??= loadMigrations());
+    // 실제 배포 SQL을 재사용하며 public 한정 참조만 이번 테스트의 schema로 옮긴다.
+    const scopedSql = (sql: string) =>
+        sql.replaceAll('"public".', `${quoted}.`).replace(/\bpublic\./g, `${quoted}.`);
+    function migrationSql(tag: string) {
+        const migration = migrations.find((entry) => entry.tag === tag);
+        if (!migration) throw new Error(`DB journal에 없는 마이그레이션: ${tag}`);
+        return scopedSql(migration.sql);
+    }
     const admin = new Client({ connectionString: base, connectionTimeoutMillis: 10_000 });
     let connected = false;
     let created = false;
@@ -76,20 +114,7 @@ export async function createTestDatabase(
         try {
             await admin.query(`SET LOCAL search_path TO ${quoted}`);
             await admin.query("SET LOCAL statement_timeout = '15s'");
-            const directory = new URL('../../../drizzle/', import.meta.url);
-            const journal = JSON.parse(await readFile(new URL('meta/_journal.json', directory), 'utf8')) as {
-                entries: { tag: string }[];
-            };
-            if (!journal.entries.length) throw new Error('테스트에 적용할 DB 초기 SQL이 없습니다.');
-            for (const { tag } of journal.entries) {
-                if (!/^\d+_[a-zA-Z0-9_]+$/.test(tag))
-                    throw new Error('DB journal의 SQL 파일 이름이 올바르지 않습니다.');
-                const sql = await readFile(new URL(`${tag}.sql`, directory), 'utf8');
-                // 실제 배포 SQL을 재사용하며 public 한정 참조만 이번 테스트의 schema로 옮긴다.
-                await admin.query(
-                    sql.replaceAll('"public".', `${quoted}.`).replace(/\bpublic\./g, `${quoted}.`)
-                );
-            }
+            for (const { sql } of migrations) await admin.query(scopedSql(sql));
             await admin.query('COMMIT');
         } catch (cause) {
             await admin.query('ROLLBACK');
@@ -106,7 +131,7 @@ export async function createTestDatabase(
             connectionTimeoutMillis: 10_000
         });
         const db = drizzle({ client: pool, schema });
-        return { db, pool, schemaName, connectionString: scoped.href, close };
+        return { db, pool, schemaName, migrationSql, connectionString: scoped.href, close };
     } catch (cause) {
         try {
             await close();

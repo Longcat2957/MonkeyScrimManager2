@@ -12,6 +12,7 @@ import {
     type BracketView
 } from '#lib/features/scrims/bracket.ts';
 import { parseSlot } from '#lib/features/scrims/formation.ts';
+import { mockLatency } from './latency.ts';
 import { bumpMockRevision, findMockScrimRecord, type MockFailure, type MockScrim } from './scrims.ts';
 import { cancelMockMatchResults, createMockMatch, setMockMatchStatus } from './matches.ts';
 import { getMockAuction, getMockManualFormation } from './teams.ts';
@@ -26,7 +27,6 @@ type BracketState = {
 // 개발 서버가 살아 있는 동안만 보관한다.
 const states = new Map<string, BracketState>();
 const cancelledStates = new Map<string, BracketState[]>();
-const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
 
 // 이미 진행·종료된 조회용 내전의 경기 결과. 자리 순서대로 팀을 놓은 뒤 적용한다.
 const RESULTS: Record<string, Record<string, Partial<BracketMatch>>> = {
@@ -140,7 +140,7 @@ async function mutate(
     update: (state: BracketState, teams: BracketTeam[], scrim: MockScrim) => MockFailure | null,
     locked: boolean | 'either' = false
 ) {
-    await wait();
+    await mockLatency.wait(200);
     const target = await load(guildId, scrimId);
     if (!target) return { status: 404, message: '내전을 찾을 수 없어요' };
     if (!target.scrim.canManage) return { status: 403, message: '대진을 바꿀 권한이 없어요' };

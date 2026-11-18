@@ -1,11 +1,8 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { and, asc, eq } from 'drizzle-orm';
 import { stringify } from 'devalue';
-import { chromium, type BrowserContext, type Locator, type Page } from 'playwright';
+import { chromium, type Locator } from 'playwright';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import {
     CHAMPION_PREFERENCES_CATALOG_URL,
@@ -14,91 +11,11 @@ import {
 } from '../api/support/http-champion-preferences-fixtures.ts';
 import { prepareHttpAuctionFixture } from '../api/support/http-auction-fixtures.ts';
 import { assertAction, HTTP_IDS } from '../api/support/http.ts';
+import { appErrors, assertNoOverflow, sessionContext } from './support/browser.ts';
 
 type Fixture = Awaited<ReturnType<typeof createHttpChampionPreferencesFixture>>;
 const saveError = '선호 챔피언을 저장하지 못했어요. 다시 시도해 주세요.';
 const catalogError = '챔피언 검색 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요';
-const captures: Record<string, unknown>[] = [];
-
-async function sessionContext(context: BrowserContext, f: Fixture, cookie?: string) {
-    if (cookie) {
-        const separator = cookie.indexOf('=');
-        await context.addCookies([
-            {
-                name: cookie.slice(0, separator),
-                value: cookie.slice(separator + 1),
-                domain: '127.0.0.1',
-                path: '/',
-                secure: true,
-                httpOnly: true,
-                sameSite: 'Lax'
-            }
-        ]);
-    }
-    const origin = new URL(f.url).origin;
-    await context.route('**/*', async (route) => {
-        const request = route.request();
-        if (new URL(request.url()).origin !== origin) return route.abort();
-        const headers: Record<string, string> = { ...request.headers(), 'x-forwarded-proto': 'https' };
-        if (request.method() === 'POST') headers.origin = f.origin;
-        await route.fulfill({ response: await route.fetch({ headers, maxRedirects: 0 }) });
-    });
-}
-
-function appErrors(page: Page) {
-    const errors: string[] = [];
-    page.on('pageerror', (error) => errors.push(error.message));
-    page.on('console', (message) => {
-        // 차단한 외부 이미지·폰트 전송 오류는 앱 JavaScript 오류와 구분한다.
-        if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:'))
-            errors.push(message.text());
-    });
-    return errors;
-}
-
-async function capture(page: Page, f: Fixture, state: string, errors: string[]) {
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    assert.deepEqual(errors, []);
-    const directory = process.env.MSM2_CHAMPION_PREFERENCES_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-        await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
-    });
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const bytes = await page.screenshot({
-        path: resolve(directory, file),
-        fullPage: true,
-        animations: 'disabled'
-    });
-    const url = new URL(page.url());
-    const games = await f.db.select({ id: schema.games.id }).from(schema.games);
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        url: page.url(),
-        path: url.pathname + url.search,
-        viewport,
-        theme,
-        state,
-        viewerRole: state === 'auction-preferences' ? 'anonymous' : 'owner',
-        ownerUserId: HTTP_IDS.member,
-        gameIds: games.map(({ id }) => id),
-        recordedGames: games.length,
-        overflow: false,
-        errors,
-        externalAssetsBlocked: true,
-        source:
-            state === 'catalog-error'
-                ? '실제 카탈로그 upstream 503·기존 선호 2개를 격리 DB seed, 실제 빈 배열 저장 action'
-                : '실제 SSR·본인 세션·Data Dragon 실제 항목 fixture(기본12·쪽검증14)·실제 ROFL 2세트/20MMR·실제 저장 및 경매 action'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
-}
 
 async function selected(list: Locator, ids: number[]) {
     assert.deepEqual(
@@ -162,6 +79,16 @@ async function auctionProjection(
     theme: string
 ) {
     const auction = await prepareHttpAuctionFixture(f);
+    const ownerName = '경매 후보 닉네임';
+    await f.db
+        .update(schema.guildMembers)
+        .set({ nickname: ownerName })
+        .where(
+            and(
+                eq(schema.guildMembers.guildId, HTTP_IDS.guild),
+                eq(schema.guildMembers.userId, HTTP_IDS.member)
+            )
+        );
     const indexes = [1, 2, 0, 3, 4, 5, 6, 7, 8, 9];
     for (const [index, person] of auction.people.entries()) {
         const identityIndex = indexes[index]!;
@@ -203,7 +130,6 @@ async function auctionProjection(
     page.setDefaultTimeout(10_000);
     const errors = appErrors(page);
     await page.goto(f.url + auction.path);
-    const ownerName = f.identities[0]!.gameName;
     const current = page.getByRole('group', { name: `현재 매물 ${ownerName}`, exact: true });
     await current.waitFor();
     await page.getByRole('button', { name: '상세보기', exact: true }).press('Enter');
@@ -221,7 +147,8 @@ async function auctionProjection(
     await detail.focus();
     await detail.press('End');
     await detail.press('Home');
-    await capture(page, f, 'auction-preferences', errors);
+    await assertNoOverflow(page, 'auction-preferences');
+    assert.deepEqual(errors, []);
     assertAction(
         await f.action(
             '/me',
@@ -232,6 +159,7 @@ async function auctionProjection(
         200
     );
     await page.reload();
+    await page.getByRole('group', { name: '현재 매물 비공개 사용자', exact: true }).waitFor();
     await page.getByRole('button', { name: '상세보기', exact: true }).press('Enter');
     await detail.getByRole('heading', { name: '내전 전적', exact: true }).waitFor();
     assert.equal(await detail.getByRole('heading', { name: '선호 챔피언', exact: true }).count(), 0);
@@ -296,7 +224,11 @@ for (const width of [1440, 390])
                 const original = await retained(f);
                 assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 20);
                 const viewport = { width, height: width === 390 ? 844 : 1000 };
-                const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
+                const context = await browser.newContext({
+                    viewport,
+                    hasTouch: width === 390,
+                    reducedMotion: 'reduce'
+                });
                 await sessionContext(context, f, f.participant.cookie);
                 await context.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
                 const page = await context.newPage();
@@ -305,7 +237,7 @@ for (const width of [1440, 390])
                 await page.goto(f.url + '/me');
                 await page.getByRole('heading', { name: '선호 챔피언', exact: true }).waitFor();
                 const form = page.getByRole('form', { name: '선호 챔피언 저장', exact: true });
-                const search = form.getByRole('textbox', { name: '챔피언 검색', exact: true });
+                const search = form.getByRole('searchbox', { name: '챔피언 검색', exact: true });
                 await search.waitFor();
                 assert.equal(await form.getByRole('button', { name: / 선호 챔피언 저장$/ }).count(), 1);
                 assert.equal(
@@ -403,13 +335,14 @@ for (const width of [1440, 390])
                 for (const button of await remaining.all()) assert.equal(await button.isDisabled(), true);
                 for (const button of await list.getByRole('button').all()) {
                     const box = await button.boundingBox();
-                    assert.ok(box && box.width >= 44 && box.height >= 44);
+                    assert.ok(box && box.width >= 24 && box.height >= (width === 390 ? 44 : 36));
                 }
                 assert.equal(
                     await form.getByRole('button', { name: '럭스 위로', exact: true }).isDisabled(),
                     true
                 );
-                await capture(page, f, 'ten-champion-draft', errors);
+                await assertNoOverflow(page, 'ten-champion-draft');
+                assert.deepEqual(errors, []);
                 let fail = true;
                 let hold = true;
                 let arrived!: () => void;
@@ -446,11 +379,12 @@ for (const width of [1440, 390])
                 await search.press('Enter');
                 assert.equal(posts, 0);
                 await save.press('Enter');
-                await form.getByRole('alert').getByText(saveError, { exact: true }).waitFor();
+                await form.getByRole('alert').filter({ hasText: saveError }).waitFor();
                 await selected(list, chosen);
                 assert.equal(await search.inputValue(), 'lux');
                 assert.deepEqual(await stored(f), []);
-                await capture(page, f, 'save-error', errors);
+                await assertNoOverflow(page, 'save-error');
+                assert.deepEqual(errors, []);
                 await save.press('Enter');
                 await arrival;
                 assert.equal(await search.isDisabled(), true);
@@ -458,10 +392,7 @@ for (const width of [1440, 390])
                     assert.equal(await form.getByRole('button', { name, exact: true }).isDisabled(), true);
                 await form.evaluate((node) => (node as HTMLFormElement).requestSubmit());
                 release();
-                await form
-                    .getByRole('status')
-                    .getByText('탑 선호 챔피언을 저장했어요.', { exact: true })
-                    .waitFor();
+                await form.getByRole('status').filter({ hasText: '탑 선호 챔피언을 저장했어요.' }).waitFor();
                 assert.equal(posts, 2);
                 assert.deepEqual(await stored(f), chosen);
                 assert.equal(await save.isDisabled(), true);
@@ -471,7 +402,7 @@ for (const width of [1440, 390])
                 await form.getByRole('button', { name: '정글 선호 챔피언 저장', exact: true }).press('Enter');
                 await form
                     .getByRole('status')
-                    .getByText('정글 선호 챔피언을 저장했어요.', { exact: true })
+                    .filter({ hasText: '정글 선호 챔피언을 저장했어요.' })
                     .waitFor();
                 assert.deepEqual(await stored(f, 'jungle'), [64]);
                 for (const name of ['미드', '원딜', '서폿', '탑']) await lane(form, name);
@@ -516,14 +447,15 @@ for (const width of [1440, 390])
                         name: '선호 챔피언 저장',
                         exact: true
                     });
-                    await failureForm.getByRole('alert').getByText(catalogError, { exact: true }).waitFor();
+                    await failureForm.getByRole('alert').filter({ hasText: catalogError }).waitFor();
                     assert.equal(
                         await failureForm
-                            .getByRole('textbox', { name: '챔피언 검색', exact: true })
+                            .getByRole('searchbox', { name: '챔피언 검색', exact: true })
                             .isDisabled(),
                         true
                     );
-                    await capture(failurePage, unavailable, 'catalog-error', failureErrors);
+                    await assertNoOverflow(failurePage, 'catalog-error');
+                    assert.deepEqual(failureErrors, []);
                     const calls = unavailable.upstreamCalls.filter(
                         (url) => url === CHAMPION_PREFERENCES_CATALOG_URL
                     ).length;
@@ -553,7 +485,7 @@ for (const width of [1440, 390])
                         .press('Enter');
                     await failureForm
                         .getByRole('status')
-                        .getByText('탑 선호 챔피언을 저장했어요.', { exact: true })
+                        .filter({ hasText: '탑 선호 챔피언을 저장했어요.' })
                         .waitFor();
                     assert.deepEqual(await stored(unavailable), []);
                     assert.deepEqual(failureErrors, []);

@@ -140,31 +140,6 @@ test('현재 Riot 계정 소유자가 바뀌어도 과거 출전자는 재귀속
     assert.deepEqual(otherGuild.player.riotIds, ['선수0#KR1']);
 });
 
-test('새 시즌은 과거 시즌 기록·점수를 합산하지 않는다', async (t) => {
-    const f = await fixture(t);
-    await f.db
-        .update(schema.mmrSeasons)
-        .set({ endedAt: new Date('2026-11-03T12:00:00Z') })
-        .where(eq(schema.mmrSeasons.id, f.season.id));
-    await f.db.insert(schema.mmrSeasons).values({ guildId: f.guildId, name: '다음 시즌' });
-    assert.deepEqual((await f.records()).recordedGames, []);
-    const profile = await f.profile();
-    assert.deepEqual(profile.games, []);
-    assert.equal(profile.mmr.length, 5);
-    assert.ok(profile.mmr.every((rating) => rating.rating === 1500 && rating.games === 0));
-    assert.equal((await f.ratings()).length, 10);
-});
-
-test('활성 시즌이 없으면 임의의 전체 시즌 집계를 만들지 않는다', async (t) => {
-    const f = await fixture(t);
-    await f.db
-        .update(schema.mmrSeasons)
-        .set({ endedAt: new Date('2026-11-03T12:00:00Z') })
-        .where(eq(schema.mmrSeasons.id, f.season.id));
-    assert.deepEqual((await f.records()).recordedGames, []);
-    assert.deepEqual((await f.profile()).mmr, []);
-});
-
 for (const parent of ['scrim', 'match'] as const)
     test(`취소한 ${parent} 기록은 제외하고 중도 종료의 정상 기록은 유지한다`, async (t) => {
         const f = await fixture(t);

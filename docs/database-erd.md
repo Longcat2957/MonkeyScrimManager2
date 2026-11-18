@@ -1,6 +1,6 @@
 # MSM2 데이터베이스 ERD
 
-기준은 [Drizzle 스키마](../apps/web/src/lib/server/db/schema.ts)의 44개 업무 테이블과 104개 외래키다. 조회용 `relations`와 격리 복원 검사 전용 `msm2_deploy_probe`는 집계하지 않는다.
+기준은 [Drizzle 스키마](../apps/web/src/lib/server/db/schema.ts)의 45개 업무 테이블과 105개 외래키다. 조회용 `relations`와 격리 복원 검사 전용 `msm2_deploy_probe`는 집계하지 않는다.
 변경 이력과 적용 순서는 [migration 디렉터리](../apps/web/drizzle/)의 SQL과 journal을 따른다. 적용한 SQL은 수정하지 않으며, 운영 자료가 있는 DB의 변경은 [백업·복원 절차](deployment.md#db-migration과-백업복원)를 따른다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
@@ -45,6 +45,7 @@ erDiagram
     scrims ||--o{ scrim_discord_messages : 종류별_게시물
     scrims ||..o{ discord_publication_jobs : 게시_작업
     matches ||..o| match_lineups : 경기_전체_라인업
+    matches ||--o{ match_set_sides : 세트별_예정_진영
     match_lineups ||--o{ match_lineup_players : 출전_포지션
     matches ||..o{ match_rofl_imports : ROFL_등록_이력
     guilds ||..o{ discord_interaction_receipts : 요청_처리_기록
@@ -86,7 +87,7 @@ erDiagram
 - 실선은 부모 키가 자식 기본키에 포함되는 식별 관계, 점선은 그 외 관계다.
 - `PK`가 여러 열에 있으면 하나의 복합 기본키다. `FK`는 외래키 구성 열이며, `UK`는 단일 열 고유키다.
 - 필드는 관계와 주요 상태 위주로 발췌했다. `NULL 허용` 표시가 없는 표시 필드는 필수다.
-- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. 전체 FK 제약은 104개이며 Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
+- 상세 ERD의 연결선은 스키마의 외래키를 나타낸다. Drizzle 조회용 `relations` 자체가 DB 제약을 추가하지는 않는다.
 
 ## 사용자·길드·계정
 
@@ -573,6 +574,11 @@ erDiagram
         timestamptz ended_at_before_scrim_end "NULL 허용"
         text end_reason_before_scrim_end "NULL 허용"
     }
+    match_set_sides {
+        uuid match_id PK, FK
+        integer game_number PK "1~5"
+        enum blue_team_slot "A 또는 B"
+    }
     games {
         uuid id PK
         uuid scrim_id FK
@@ -604,6 +610,7 @@ erDiagram
     scrims ||..o{ matches : scrim_id
     scrim_teams ||..o{ matches : "scrim_id, team_a_id"
     scrim_teams ||..o{ matches : "scrim_id, team_b_id"
+    matches ||--o{ match_set_sides : match_id
     matches ||..o{ games : "scrim_id, match_id"
     rofl_metadata |o..o{ games : rofl_metadata_id
     games ||--o{ game_participants : "scrim_id, game_id"
@@ -615,6 +622,7 @@ erDiagram
 
 `Match`는 두 팀이 BO 전체를 진행하는 경기이고 `Game`은 그 안의 한 판이다. 점수는 완료 Game에서 집계한다.
 `matches.revision`은 라인업·결과 변경의 동시 수정 검사에 사용하며 내전의 revision과 구분한다.
+`match_set_sides`는 세트별 예정 블루 팀을 저장한다. 실제 진영은 결과 등록 시 `games.blue_team_slot`에 기록한다.
 `winner_team_id`는 별도 FK가 아니라 A/B 팀 중 하나인지 확인하는 `CHECK`로 제한한다.
 `matches_winner_requires_completion`은 정상 완료의 승자를 필수로 두고 중도 종료에는 현재 점수 우세 또는 동점 null을 허용한다. 다른 상태에서는 승자가 null이어야 한다.
 대진 자리는 직접 지정한 팀 또는 이전 대진의 승자 중 하나를 참조하며 둘 다 미정일 수도 있다.

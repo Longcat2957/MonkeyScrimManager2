@@ -20,6 +20,7 @@ import { isBestOf } from '#lib/features/scrims/bracket.ts';
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
 import { byCandidateName, orderAuctionCandidates } from '#lib/server/scrims/auction-order.ts';
 import { mockAvatarUrl } from './avatar.ts';
+import { mockLatency } from './latency.ts';
 import { seedMockManualFinal } from './bracket.ts';
 import {
     bumpMockRevision,
@@ -31,8 +32,7 @@ import {
 
 // 수동 편성·경매의 개발용 저장소다. 내전 목(scrims.ts)의 선발 참가자를 대상으로 하며 개발 서버를 재시작하면 처음 상태로 돌아간다.
 
-const LATENCY_MS = 300;
-const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
+const wait = () => mockLatency.wait(300);
 
 function selected(scrim: MockScrim) {
     return scrim.participants.filter((participant) => participant.status === 'selected');

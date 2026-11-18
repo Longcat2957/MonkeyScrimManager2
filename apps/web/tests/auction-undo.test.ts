@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { listMockMembers } from '../src/lib/mocks/admin.ts';
-import { createMockScrim, findMockScrimRecord } from '../src/lib/mocks/scrims.ts';
+import { guildId, mockScrim, skipPreviewDelay } from './support/mock-scrim.ts';
 import {
     assignMockCurrent,
     assignMockCandidate,
@@ -16,26 +16,10 @@ import {
     startMockAuction
 } from '../src/lib/mocks/teams.ts';
 
-const guildId = 'devGuild001';
+beforeEach(skipPreviewDelay);
 
 async function auctionScrim() {
-    const id = await createMockScrim(guildId, {
-        title: '경매 회귀',
-        scheduledAt: null,
-        teamCount: 2,
-        reserveCapacity: 2,
-        hardFearless: false
-    });
-    const scrim = findMockScrimRecord(guildId, id)!;
-    scrim.participants = findMockScrimRecord(guildId, 'devScrim008')!
-        .participants.slice(0, 10)
-        .map((person, index) => ({
-            ...person,
-            registrationId: `${id}-r${index}`,
-            userId: `${id}-u${index}`,
-            riotAccountId: `${id}-a${index}`,
-            status: 'selected'
-        }));
+    const scrim = await mockScrim({ reserveCapacity: 2 });
     scrim.status = 'preparing';
     scrim.formationMethod = 'auction';
     return scrim;
@@ -54,17 +38,11 @@ for (const kind of [
         const scrim = await auctionScrim();
         const scrimId = scrim.id;
         const view = async () => (await getMockAuction(guildId, scrimId))!;
-        assert.equal(
-            await saveMockAuctionSetup(
-                guildId,
-                scrimId,
-                (await view()).teams.map((_, index) => ({
-                    captainId: scrim.participants[index]!.registrationId,
-                    startPoints: 100
-                }))
-            ),
-            null
-        );
+        const captains = scrim.participants.slice(0, 2).map((p) => ({
+            captainId: p.registrationId,
+            startPoints: 100
+        }));
+        assert.equal(await saveMockAuctionSetup(guildId, scrimId, captains), null);
         assert.equal(await startMockAuction(guildId, scrimId), null);
         let participantId: string | undefined;
         if (kind !== 'draw') {

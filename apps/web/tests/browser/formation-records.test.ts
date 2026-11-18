@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { createHttpMatchResultFixture } from '../api/support/http-match-fixtures.ts';
 import { assertAction, HTTP_IDS } from '../api/support/http.ts';
+import { appErrors, sessionContext } from './support/browser.ts';
 
 test(
     '정상 ROFL 기록이 수동 편성의 시너지·라인 맞대결과 경매 후보 상세에 연결된다',
@@ -28,39 +29,10 @@ test(
         assert.equal(game!.startedAt, null);
 
         const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-        const separator = fixture.manager.cookie.indexOf('=');
-        await context.addCookies([
-            {
-                name: fixture.manager.cookie.slice(0, separator),
-                value: fixture.manager.cookie.slice(separator + 1),
-                domain: '127.0.0.1',
-                path: '/',
-                secure: true,
-                httpOnly: true,
-                sameSite: 'Lax'
-            }
-        ]);
-        const origin = new URL(fixture.url).origin;
-        await context.route('**/*', async (route) => {
-            const request = route.request();
-            if (new URL(request.url()).origin !== origin) return route.abort();
-            const headers: Record<string, string> = {
-                ...request.headers(),
-                'x-forwarded-proto': 'https'
-            };
-            if (request.method() === 'POST') headers.origin = fixture.origin;
-            await route.fulfill({ response: await route.fetch({ headers, maxRedirects: 0 }) });
-        });
+        await sessionContext(context, fixture, fixture.manager.cookie);
         const page = await context.newPage();
         page.setDefaultTimeout(10_000);
-        const errors: string[] = [];
-        page.on('pageerror', (error) => errors.push(error.message));
-        page.on('console', (message) => {
-            // 차단한 외부 장식 이미지·폰트의 전송 오류는 앱 JavaScript 오류와 구분한다.
-            if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:')) {
-                errors.push(message.text());
-            }
-        });
+        const errors = appErrors(page);
 
         await page.goto(fixture.url + '/g/' + HTTP_IDS.guild + '/scrims/' + fixture.scrim.id + '/manual');
         await page.getByRole('button', { name: '상세', exact: true }).click();

@@ -15,6 +15,7 @@ const origin = new URL('https://monkeybot.example');
 interface MessageComponent {
     type: number;
     content?: string;
+    disabled?: boolean;
     divider?: boolean;
     label?: string;
     style?: number;
@@ -27,65 +28,36 @@ function messageComponents(components: readonly MessageComponent[]): MessageComp
     return components.flatMap((component) => [component, ...messageComponents(component.components ?? [])]);
 }
 
-for (const kind of ['recruitment', 'entry'] as const) {
-    test(`${kind} 링크는 게시 작업을 식별하고 기존 목적지를 유지한다`, () => {
-        const job = publication({ kind });
-        const rendered = kind === 'recruitment' ? renderRecruitment(job, origin) : renderEntry(job, origin);
-        const row = rendered.components[kind === 'recruitment' ? 2 : 1]!.toJSON();
-        assert.ok('components' in row);
-        const button = row.components.find((component) => 'url' in component);
-        assert.ok(button && 'url' in button && typeof button.url === 'string');
-        const url = new URL(button.url);
-        assert.equal(url.origin, origin.origin);
-        assert.equal(
-            url.pathname,
-            `/g/${job.guildId}/scrims/${job.scrimId}${kind === 'entry' ? '/bracket' : ''}`
-        );
-        assert.equal(url.searchParams.get('publication'), job.id);
-    });
-}
-
 test('선발 정원이 차도 신청할 수 있고 모집 마감 후에는 웹 링크만 활성화한다', () => {
     const job = publication();
     job.data.selected = 10;
-    const value = renderRecruitment(job, origin);
-    const controls = value.components[1]!.toJSON();
-    assert.ok('components' in controls);
-    const registration = controls.components.find(
-        (component) => 'custom_id' in component && component.custom_id === `registration:${job.scrimId}`
-    );
-    assert.ok(registration && (!('disabled' in registration) || !registration.disabled));
-    assert.equal(controls.components.length, 3);
-    const navigation = value.components[2]!.toJSON();
-    assert.ok('components' in navigation);
-    assert.equal(navigation.components.length, 2);
-    assert.match(JSON.stringify(navigation), /웹에서 내전 보기/);
-    assert.match(JSON.stringify(navigation), /참가자 추가/);
-    for (const action of ['standby', 'withdraw']) {
-        assert.ok(
-            controls.components.some(
-                (component) =>
-                    'custom_id' in component &&
-                    component.custom_id === `registration-${action}:${job.scrimId}`
-            )
+    const actions = [
+        'registration',
+        'registration-standby',
+        'registration-withdraw',
+        'manual-registration:open'
+    ];
+    for (const closed of [false, true]) {
+        job.data.status = closed ? 'preparing' : 'recruit';
+        const value = renderRecruitment(job, origin);
+        const parts = messageComponents(value.components.map((component) => component.toJSON()));
+        const buttons = parts.filter((part) => part.type === ComponentType.Button);
+        const links = buttons.filter((button) => button.url);
+        assert.equal(links.length, 1);
+        assert.ok(!links[0]!.disabled);
+        const controls = buttons.filter((button) => button.custom_id);
+        assert.deepEqual(
+            controls.map((button) => button.custom_id).sort(),
+            actions.map((action) => `${action}:${job.scrimId}`).sort()
         );
-    }
-    assert.match(JSON.stringify(controls), /참가하기/);
-    assert.match(JSON.stringify(value), /<t:/);
-    assert.deepEqual(value.allowedMentions, { parse: [] });
-    const parts = messageComponents(value.components.map((component) => component.toJSON()));
-    assert.equal(parts.filter((part) => part.type === ComponentType.Separator && part.divider).length, 2);
-    const paragraphs = parts.filter((part) => part.type === ComponentType.TextDisplay);
-    assert.match(paragraphs[0]!.content!, /모집 중/);
-    assert.match(paragraphs[1]!.content!, /선발 10\/10/);
-    assert.match(paragraphs[2]!.content!, /대기/);
-    job.data.status = 'preparing';
-    for (const row of renderRecruitment(job, origin).components.slice(1)) {
-        const closed = row.toJSON();
-        assert.ok('components' in closed);
-        for (const button of closed.components) {
-            if ('custom_id' in button) assert.ok('disabled' in button && button.disabled);
-            else if ('url' in button) assert.ok(!('disabled' in button) || !button.disabled);
+        assert.ok(controls.every((button) => Boolean(button.disabled) === closed));
+        if (!closed) {
+            const text = parts.map((part) => part.content).join('\n');
+            assert.match(text, /모집 중/);
+            assert.match(text, /선발 10\/10/);
+            assert.match(text, /대기/);
+            assert.match(text, /<t:/);
+            assert.deepEqual(value.allowedMentions, { parse: [] });
         }
     }
 });
@@ -122,13 +94,13 @@ function matchJob(kind: 'lineup' | 'result') {
 test('모든 게시·DM 웹 링크는 목적지를 밝히고 참가 버튼은 Discord 안에서 처리한다', () => {
     const job = publication();
     const messages = [
-        renderRecruitment(job, origin),
-        renderEntry(publication({ kind: 'entry' }), origin),
-        renderConfirmation(publication({ kind: 'confirmation_dm' }), origin),
-        renderMatch(matchJob('lineup'), origin),
-        renderMatch(matchJob('result'), origin)
-    ];
-    for (const message of messages) {
+        [renderRecruitment(job, origin), `/g/${job.guildId}/scrims/${job.scrimId}`],
+        [renderEntry({ ...job, kind: 'entry' }, origin), `/g/${job.guildId}/scrims/${job.scrimId}/bracket`],
+        [renderConfirmation({ ...job, kind: 'confirmation_dm' }, origin), null],
+        [renderMatch(matchJob('lineup'), origin), null],
+        [renderMatch(matchJob('result'), origin), null]
+    ] as const;
+    for (const [message, pathname] of messages) {
         const components = messageComponents(message.components.map((component) => component.toJSON()));
         const links = components.filter((component) => component.url);
         assert.ok(links.length);
@@ -138,11 +110,14 @@ test('모든 게시·DM 웹 링크는 목적지를 밝히고 참가 버튼은 Di
             const target = new URL(link.url!);
             assert.equal(target.origin, origin.origin);
             assert.ok(target.pathname.startsWith(`/g/${job.guildId}/`));
-            assert.equal(target.pathname.startsWith('/auth/'), false);
+            if (pathname) {
+                assert.equal(target.pathname, pathname);
+                assert.equal(target.searchParams.get('publication'), job.id);
+            }
             assert.equal(target.searchParams.has('token'), false);
         }
     }
-    const buttons = messageComponents(messages[0]!.components.map((component) => component.toJSON()));
+    const buttons = messageComponents(messages[0][0].components.map((component) => component.toJSON()));
     const join = buttons.filter((button) => button.label === '참가하기');
     assert.equal(join.length, 1);
     assert.equal(join[0]!.style, ButtonStyle.Primary);

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const webRoot = fileURLToPath(new URL('../', import.meta.url));
 const mode = process.argv[2] ?? 'default';
-const extra = process.argv.slice(3);
+const args = process.argv.slice(3);
 const scopes = {
     default: ['.', 'api/lite'],
     lite: ['api/lite'],
@@ -16,10 +16,25 @@ const scopes = {
 if (!Object.hasOwn(scopes, mode))
     throw new Error('테스트 범위는 default, lite, hard, hard:db, hard:http, browser 중 하나여야 합니다.');
 
+// 이름 필터와 달리 파일 필터는 선택하지 않은 테스트의 프로세스와 모듈을 시작하지 않는다.
+const selected = new Set(args.filter((arg) => arg.startsWith('--file=')).map((arg) => arg.slice(7)));
+const runAll = selected.size === 0;
+const files = [];
+for (const scope of scopes[mode]) {
+    const directory = new URL(scope + '/', import.meta.url);
+    const names = (await readdir(directory)).filter((name) => name.endsWith('.test.ts')).sort();
+    if (!names.length) throw new Error('비어 있는 테스트 범위: ' + scope);
+    for (const name of names) {
+        const path = scope === '.' ? name : `${scope}/${name}`;
+        if (runAll || selected.delete(path)) files.push(`tests/${path}`);
+    }
+}
+if (selected.size) throw new Error(`${mode} 범위에 없는 테스트 파일: ${[...selected].join(', ')}`);
+
 const hard = mode.startsWith('hard');
 const browser = mode === 'browser';
 const database = hard || browser;
-const http = mode === 'hard' || mode === 'hard:http' || browser;
+const http = browser || files.some((file) => file.startsWith('tests/api/hard/http/'));
 if (database) {
     try {
         process.loadEnvFile(fileURLToPath(new URL('../.env.test', import.meta.url)));
@@ -85,20 +100,13 @@ if (http) {
     const result = await execute(['node_modules/vite/bin/vite.js', 'build']);
     if (result !== 0) process.exit(result);
 }
-const files = [];
-for (const scope of scopes[mode]) {
-    const directory = new URL(scope + '/', import.meta.url);
-    const names = (await readdir(directory)).filter((name) => name.endsWith('.test.ts')).sort();
-    if (!names.length) throw new Error('비어 있는 테스트 범위: ' + scope);
-    files.push(...names.map((name) => fileURLToPath(new URL(name, directory))));
-}
 const result = await execute([
     '--experimental-strip-types',
     '--import',
     './tests/api/support/network-guard.mjs',
     '--test',
     `--test-concurrency=${browser ? 1 : 2}`,
-    ...extra,
+    ...args.filter((arg) => !arg.startsWith('--file=')),
     ...files
 ]);
 process.exitCode = result;

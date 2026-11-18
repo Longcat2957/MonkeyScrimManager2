@@ -8,7 +8,7 @@
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
-    const points = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 });
+    const points = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
     const point = (value: number) => `${points.format(value)}P`;
     const share = (price: number, budget: number) => `${points.format((100 * price) / budget)}%`;
     function replay(auctionId: string, signingId?: string) {

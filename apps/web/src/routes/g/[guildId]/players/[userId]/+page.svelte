@@ -15,7 +15,7 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import DuoList from '#lib/components/players/DuoList.svelte';
     import RadarChart from '#lib/components/players/RadarChart.svelte';
-    import { fixed, percent, integer, withUnit } from '#lib/features/players/format.ts';
+    import { percent, integer, withUnit } from '#lib/features/players/format.ts';
     import type { RankedMetric } from '#lib/features/players/stats.ts';
     import { formatShortDate, POSITIONS } from '#lib/features/labels.ts';
     import type { LolPosition } from '#lib/features/guild/types.ts';
@@ -57,20 +57,20 @@
         if (!s) return [];
         return [
             ['winRate', '승률', percent(s.wins / s.games), top('winRate')],
-            ['kda', 'KDA', fixed(s.kda, 2), top('kda')],
+            ['kda', 'KDA', integer(s.kda), top('kda')],
             ['killParticipation', '킬 관여', percent(s.killParticipation), top('killParticipation')],
             ['winStreak', '최장 연승', withUnit(s.winStreak, '연승'), top('winStreak')],
             ['lossStreak', '최장 연패', withUnit(s.lossStreak, '연패'), null],
-            ['kills', '평균 킬', fixed(s.kills, 1), top('kills')],
-            ['deaths', '평균 데스', fixed(s.deaths, 1), top('deaths')],
-            ['assists', '평균 어시스트', fixed(s.assists, 1), top('assists')],
+            ['kills', '평균 킬', integer(s.kills), top('kills')],
+            ['deaths', '평균 데스', integer(s.deaths), top('deaths')],
+            ['assists', '평균 어시스트', integer(s.assists), top('assists')],
             ['maxKills', '최다 킬', withUnit(s.maxKills, '킬'), top('maxKills')],
             ['champions', '챔피언 폭', withUnit(s.champions, '개'), top('champions')],
-            ['csPerMin', '분당 CS', fixed(s.csPerMin, 1), top('csPerMin')],
+            ['csPerMin', '분당 CS', integer(s.csPerMin), top('csPerMin')],
             ['goldPerMin', '분당 골드', integer(s.goldPerMin), top('goldPerMin')],
             ['damagePerMin', '분당 피해량', integer(s.damagePerMin), top('damagePerMin')],
             ['damageTakenPerMin', '분당 받은 피해', integer(s.damageTakenPerMin), top('damageTakenPerMin')],
-            ['visionPerGame', '게임당 시야', fixed(s.visionPerGame, 1), top('visionPerGame')]
+            ['visionPerGame', '게임당 시야', integer(s.visionPerGame), top('visionPerGame')]
         ];
     });
     const primaryTiles = $derived(tiles.filter(([key]) => PRIMARY_METRICS.has(key)));
@@ -223,9 +223,7 @@
                                     </dt>
                                     <dd class="flex flex-wrap items-baseline gap-x-2 text-ui tabular-nums">
                                         <strong class={row.position === data.position ? 'text-nexus' : ''}
-                                            >{row.rating.toLocaleString('ko-KR')}<span class="sr-only">
-                                                MMR</span
-                                            ></strong
+                                            >{integer(row.rating)}<span class="sr-only"> MMR</span></strong
                                         >
                                         <span class="text-xs text-muted">{row.games}게임</span>
                                     </dd>
@@ -432,7 +430,7 @@
                                                 >{percent(record.wins / record.games)}</td
                                             >
                                             <td class="text-right text-ink-2 tabular-nums"
-                                                >{fixed(record.kda, 2)}</td
+                                                >{integer(record.kda)}</td
                                             >
                                         </tr>
                                     {/each}

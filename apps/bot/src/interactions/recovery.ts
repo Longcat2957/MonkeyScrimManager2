@@ -122,7 +122,8 @@ export function recoveryPanel(form: RecoveryForm) {
                 (selected.targetLabel ? `\n${label(selected.targetLabel, 250)}` : '')
         );
     const components: (
-        ReturnType<typeof card> | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+        | ReturnType<typeof card>
+        | ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
     )[] = [card('## 게시 복구', ...sections)];
     const reply = {
         flags: MessageFlags.IsComponentsV2 as const,

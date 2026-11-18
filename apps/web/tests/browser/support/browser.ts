@@ -1,6 +1,11 @@
+import assert from 'node:assert/strict';
 import type { TestContext } from 'node:test';
-import { chromium, type BrowserContext } from 'playwright';
+import { chromium, type BrowserContext, type Page } from 'playwright';
 import { createHttpFixture } from '../../api/support/http.ts';
+
+export async function assertNoOverflow(page: Page, state: string) {
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, state);
+}
 
 /** 실제 배포의 TLS 프록시와 같은 origin·쿠키로 격리 앱에만 접근한다. */
 export async function sessionContext(
@@ -50,6 +55,10 @@ export async function createBrowserFixture(t: TestContext, options: { width: num
     );
     const page = await context.newPage();
     page.setDefaultTimeout(10_000);
+    return { ...fixture, browser, context, page, errors: appErrors(page) };
+}
+
+export function appErrors(page: Page) {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -58,5 +67,5 @@ export async function createBrowserFixture(t: TestContext, options: { width: num
             errors.push(message.text());
         }
     });
-    return { ...fixture, browser, context, page, errors };
+    return errors;
 }

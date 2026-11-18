@@ -27,7 +27,13 @@ export interface BotRotateSeasonInput {
 
 export type BotPosition = 'top' | 'jungle' | 'mid' | 'bot' | 'support';
 export type BotScrimStatus =
-    'recruit' | 'preparing' | 'ready' | 'in_progress' | 'completed' | 'ended_early' | 'cancelled';
+    | 'recruit'
+    | 'preparing'
+    | 'ready'
+    | 'in_progress'
+    | 'completed'
+    | 'ended_early'
+    | 'cancelled';
 
 export interface BotRegistrationContext {
     guildId: string;

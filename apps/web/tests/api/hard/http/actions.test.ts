@@ -20,111 +20,75 @@ test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거�
     const id = randomUUID();
     const scrimPath = guildPath + '/scrims/' + id;
     const revision = { expectedRevision: '0' };
-    const entries: { path: string; name: string; fields: Record<string, string> }[] = [
-        { path: guildPath + '/scrims', name: 'create', fields: { ...settings, requestId: randomUUID() } },
-        ...['register', 'registration'].map((name) => ({
-            path: scrimPath,
-            name,
-            fields: { riotAccountId: id, positions: 'mid' }
-        })),
-        { path: scrimPath, name: 'withdraw', fields: {} },
-        { path: scrimPath, name: 'participants', fields: { ...revision, ids: id, status: 'selected' } },
-        { path: scrimPath, name: 'advance', fields: { ...revision, key: 'close' } },
-        { path: scrimPath, name: 'chooseMethod', fields: { ...revision, method: 'manual' } },
-        ...['revert', 'endEarly', 'cancel', 'restore'].map((name) => ({
-            path: scrimPath,
-            name,
-            fields: revision
-        })),
-        { path: scrimPath, name: 'settings', fields: { ...revision, ...settings } },
-        {
-            path: scrimPath + '/manual',
-            name: 'move',
-            fields: { ...revision, participantId: id, slot: id + ':top' }
+    const denied = async (path: string, actions: Record<string, Record<string, string>>) => {
+        for (const [name, fields] of Object.entries(actions))
+            await t.test(`${path}?/${name}`, async () => {
+                assertAction(await f.action(path, name, fields), 401);
+            });
+    };
+    await denied(guildPath + '/scrims', { create: { ...settings, requestId: randomUUID() } });
+    const registration = { riotAccountId: id, positions: 'mid' };
+    await denied(scrimPath, {
+        register: registration,
+        registration,
+        withdraw: {},
+        participants: { ...revision, ids: id, status: 'selected' },
+        advance: { ...revision, key: 'close' },
+        chooseMethod: { ...revision, method: 'manual' },
+        revert: revision,
+        endEarly: revision,
+        cancel: revision,
+        restore: revision,
+        settings: { ...revision, ...settings }
+    });
+    await denied(scrimPath + '/manual', {
+        move: { ...revision, participantId: id, slot: id + ':top' },
+        reset: revision,
+        confirm: revision,
+        changeMethod: revision
+    });
+    await denied(scrimPath + '/bracket', {
+        place: { ...revision, seat: 'final-a', teamId: id },
+        reopenFormation: { ...revision, formationMethod: 'manual' },
+        bestOf: { ...revision, stage: 'final', bestOf: '3' },
+        reset: revision,
+        confirm: revision,
+        start: revision,
+        unlock: revision
+    });
+    await denied(scrimPath + '/auction', {
+        setup: {
+            ...revision,
+            teams: JSON.stringify([
+                { captainId: null, startPoints: 100 },
+                { captainId: null, startPoints: 100 }
+            ])
         },
-        ...['reset', 'confirm', 'changeMethod'].map((name) => ({
-            path: scrimPath + '/manual',
-            name,
-            fields: revision
-        })),
-        { path: scrimPath + '/bracket', name: 'place', fields: { ...revision, seat: 'final-a', teamId: id } },
-        {
-            path: scrimPath + '/bracket',
-            name: 'reopenFormation',
-            fields: { ...revision, formationMethod: 'manual' }
-        },
-        {
-            path: scrimPath + '/bracket',
-            name: 'bestOf',
-            fields: { ...revision, stage: 'final', bestOf: '3' }
-        },
-        ...['reset', 'confirm', 'start', 'unlock'].map((name) => ({
-            path: scrimPath + '/bracket',
-            name,
-            fields: revision
-        })),
-        {
-            path: scrimPath + '/auction',
-            name: 'setup',
-            fields: {
-                ...revision,
-                teams: JSON.stringify([
-                    { captainId: null, startPoints: 100 },
-                    { captainId: null, startPoints: 100 }
-                ])
-            }
-        },
-        ...['start', 'draw', 'revert', 'reset', 'reopenSetup', 'changeMethod', 'confirmFormation'].map(
-            (name) => ({
-                path: scrimPath + '/auction',
-                name,
-                fields: revision
-            })
-        ),
-        {
-            path: scrimPath + '/auction',
-            name: 'award',
-            fields: { ...revision, lotId: id, teamId: id, price: '0' }
-        },
-        { path: scrimPath + '/auction', name: 'pass', fields: { ...revision, lotId: id } },
-        {
-            path: scrimPath + '/auction',
-            name: 'assign',
-            fields: { ...revision, participantId: id, teamId: id }
-        },
-        {
-            path: scrimPath + '/auction',
-            name: 'assignCurrent',
-            fields: { ...revision, lotId: id, teamId: id }
-        },
-        { path: scrimPath + '/auction', name: 'restore', fields: { ...revision, participantId: id } },
-        {
-            path: guildPath + '/admin',
-            name: 'discord',
-            fields: { key: 'recruitmentChannelId', value: HTTP_IDS.channel }
-        },
-        { path: guildPath + '/admin', name: 'lookup', fields: { riotId: 'HttpPlayer#KR1' } },
-        {
-            path: guildPath + '/admin',
-            name: 'link',
-            fields: { userId: HTTP_IDS.member, riotId: 'HttpPlayer#KR1' }
-        },
-        ...['primary', 'unlink'].map((name) => ({
-            path: guildPath + '/admin',
-            name,
-            fields: { userId: HTTP_IDS.member, id }
-        })),
-        {
-            path: guildPath + '/matches/' + id,
-            name: 'setSide',
-            fields: { ...revision, nextGameNumber: '1', blueTeamSlot: 'a' }
-        },
-        { path: guildPath + '/matches/' + id, name: 'upload', fields: {} }
-    ];
-    for (const entry of entries)
-        await t.test(entry.path + '?/' + entry.name, async () => {
-            assertAction(await f.action(entry.path, entry.name, entry.fields), 401);
-        });
+        start: revision,
+        draw: revision,
+        revert: revision,
+        reset: revision,
+        reopenSetup: revision,
+        changeMethod: revision,
+        confirmFormation: revision,
+        award: { ...revision, lotId: id, teamId: id, price: '0' },
+        pass: { ...revision, lotId: id },
+        assign: { ...revision, participantId: id, teamId: id },
+        assignCurrent: { ...revision, lotId: id, teamId: id },
+        restore: { ...revision, participantId: id }
+    });
+    const account = { userId: HTTP_IDS.member, id };
+    await denied(guildPath + '/admin', {
+        discord: { key: 'recruitmentChannelId', value: HTTP_IDS.channel },
+        lookup: { riotId: 'HttpPlayer#KR1' },
+        link: { userId: HTTP_IDS.member, riotId: 'HttpPlayer#KR1' },
+        primary: account,
+        unlink: account
+    });
+    await denied(guildPath + '/matches/' + id, {
+        setSide: { ...revision, nextGameNumber: '1', blueTeamSlot: 'a' },
+        upload: {}
+    });
     assert.equal((await f.db.select().from(schema.scrims)).length, 0);
     assert.equal((await f.db.select().from(schema.guildRiotAccounts)).length, 0);
     assert.equal(f.upstreamCalls.length, 0);

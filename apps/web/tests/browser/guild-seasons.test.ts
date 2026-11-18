@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { and, eq, isNull } from 'drizzle-orm';
 import { stringify } from 'devalue';
@@ -9,12 +6,12 @@ import { chromium, type Locator, type Page } from 'playwright';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { assertAction, HTTP_BOT_TOKEN, HTTP_IDS } from '../api/support/http.ts';
 import { createHttpRecordSeasonsFixture } from '../api/support/http-record-seasons-fixtures.ts';
+import { appErrors, assertNoOverflow, sessionContext } from './support/browser.ts';
 
 type Fixture = Awaited<ReturnType<typeof createHttpRecordSeasonsFixture>>;
 const nextName = 'W'.repeat(100);
 const concurrentName = '다른 관리자가 먼저 시작한 시즌';
 const unavailableMessage = '시즌을 시작하지 못했어요. 다시 시도해 주세요.';
-const captures: Record<string, unknown>[] = [];
 const isRotation = (url: string) => new URL(url).searchParams.has('/rotateSeason');
 
 async function retained(f: Fixture) {
@@ -41,40 +38,6 @@ async function currentSeason(f: Fixture) {
             .from(schema.mmrSeasons)
             .where(and(eq(schema.mmrSeasons.guildId, HTTP_IDS.guild), isNull(schema.mmrSeasons.endedAt)))
     )[0];
-}
-
-async function capture(page: Page, f: Fixture, state: string) {
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    const directory = process.env.MSM2_GUILD_SEASONS_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-        await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
-    });
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const fullPage = state !== 'rotation-confirm';
-    const bytes = await page.screenshot({ path: resolve(directory, file), fullPage, animations: 'disabled' });
-    const url = new URL(page.url());
-    const seasons = await f.db.select({ id: schema.mmrSeasons.id }).from(schema.mmrSeasons);
-    const games = await f.db.select({ id: schema.games.id }).from(schema.games);
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        url: page.url(),
-        path: url.pathname + url.search,
-        viewport,
-        theme,
-        state,
-        fullPage,
-        seasonIds: seasons.map((season) => season.id),
-        gameIds: games.map((game) => game.id),
-        source: '실제 SSR·manager 세션·실제 ROFL3세트와 두 시즌·실제 웹/봇 시즌 전환. 외부 API 요청은 격리 fixture로 제한'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
 }
 
 async function confirmation(page: Page, submit: Locator, currentName: string) {
@@ -123,41 +86,14 @@ for (const width of [1440, 390])
                     viewport: { width, height: width === 390 ? 844 : 1000 },
                     reducedMotion: 'reduce'
                 });
-                const separator = f.manager.cookie.indexOf('=');
-                await context.addCookies([
-                    {
-                        name: f.manager.cookie.slice(0, separator),
-                        value: f.manager.cookie.slice(separator + 1),
-                        domain: '127.0.0.1',
-                        path: '/',
-                        secure: true,
-                        httpOnly: true,
-                        sameSite: 'Lax'
-                    }
-                ]);
+                await sessionContext(context, f, f.manager.cookie);
                 await context.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
-                const origin = new URL(f.url).origin;
-                await context.route('**/*', async (route) => {
-                    const request = route.request();
-                    if (new URL(request.url()).origin !== origin) return route.abort();
-                    const headers: Record<string, string> = {
-                        ...request.headers(),
-                        'x-forwarded-proto': 'https'
-                    };
-                    if (request.method() === 'POST') headers.origin = f.origin;
-                    await route.fulfill({ response: await route.fetch({ headers, maxRedirects: 0 }) });
-                });
                 const page = await context.newPage();
                 page.setDefaultTimeout(10_000);
-                const errors: string[] = [];
+                const errors = appErrors(page);
                 let posts = 0;
                 page.on('request', (request) => {
                     if (request.method() === 'POST' && isRotation(request.url())) posts++;
-                });
-                page.on('pageerror', (error) => errors.push(error.message));
-                page.on('console', (entry) => {
-                    if (entry.type() === 'error' && !entry.text().startsWith('Failed to load resource:'))
-                        errors.push(entry.text());
                 });
                 const path = '/g/' + HTTP_IDS.guild + '/admin';
                 await page.goto(f.url + path + '?q=' + encodeURIComponent('지워질 검색') + '&page=9');
@@ -220,7 +156,7 @@ for (const width of [1440, 390])
                 assert.equal(posts, 0);
                 await input.fill(nextName);
                 const cancelled = await confirmation(page, submit, f.currentSeason.name);
-                await capture(page, f, 'rotation-confirm');
+                await assertNoOverflow(page, 'rotation-confirm');
                 await cancelled.dialog.getByRole('button', { name: '취소', exact: true }).press('Enter');
                 await cancelled.accept.waitFor({ state: 'hidden' });
                 await page.waitForFunction(
@@ -301,7 +237,7 @@ for (const width of [1440, 390])
                 assert.equal(await input.isEnabled(), true);
                 assert.equal(await submit.isEnabled(), true);
                 assert.equal((await currentSeason(f))!.id, concurrent.current.id);
-                await capture(page, f, 'rotation-error');
+                await assertNoOverflow(page, 'rotation-error');
 
                 const retry = await confirmation(page, submit, concurrentName);
                 const response = page.waitForResponse((reply) => isRotation(reply.url()));
@@ -346,7 +282,7 @@ for (const width of [1440, 390])
                     0
                 );
                 assert.deepEqual(await retained(f), before);
-                await capture(page, f, 'new-current-season');
+                await assertNoOverflow(page, 'new-current-season');
                 await page.reload();
                 await current.getByText(nextName, { exact: true }).waitFor();
                 assert.equal(

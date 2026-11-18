@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { eq } from 'drizzle-orm';
 import {
@@ -243,10 +242,7 @@ test('0009는 기존 계정·연결·설정을 보존하며 빈 감사 원장과
     const settings = await f.db.select().from(schema.guildDiscordSettings);
     // 새 테이블을 제거해 0008 상태를 재현하고 생성 도구의 실제 SQL을 기존 데이터 위에 적용한다.
     await f.pool.query('DROP TABLE guild_audit_entries');
-    const sql = await readFile(new URL('../../../../drizzle/0009_guild_audit.sql', import.meta.url), 'utf8');
-    await f.pool.query(
-        sql.replaceAll('"public".', `"${f.schemaName}".`).replace(/\bpublic\./g, `"${f.schemaName}".`)
-    );
+    await f.pool.query(f.migrationSql('0009_guild_audit'));
     assert.deepEqual(await f.db.select().from(schema.riotAccounts), accounts);
     assert.deepEqual(await f.db.select().from(schema.guildRiotAccounts), links);
     assert.deepEqual(await f.db.select().from(schema.guildDiscordSettings), settings);

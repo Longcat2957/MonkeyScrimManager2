@@ -11,7 +11,7 @@
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
-    const number = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 });
+    const number = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
     const changing = $derived(navigating.to?.route.id === page.route.id);
 
     function href(changes: Record<string, string | null>, hash = '') {

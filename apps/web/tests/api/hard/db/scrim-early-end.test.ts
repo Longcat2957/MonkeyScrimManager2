@@ -16,6 +16,7 @@ import {
     errorCode
 } from '../../support/domain-fixtures.ts';
 import { createMatchResultFixture, replayBytes, replayPlayer } from '../../support/match-fixtures.ts';
+import { snapshotTables } from '../../support/database.ts';
 
 type Fixture = Awaited<ReturnType<typeof createMatchResultFixture>>;
 const end = async (f: Fixture) =>
@@ -23,16 +24,16 @@ const end = async (f: Fixture) =>
 const resume = async (f: Fixture) =>
     revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
 
-async function retained(f: Fixture) {
-    return Promise.all([
-        f.db.select().from(schema.games),
-        f.db.select().from(schema.gameParticipants),
-        f.db.select().from(schema.gameMmrApplications),
-        f.db.select().from(schema.mmrLedgerEntries),
-        f.db.select().from(schema.userPositionMmr),
-        f.db.select().from(schema.matchLineups),
-        f.db.select().from(schema.matchLineupPlayers),
-        f.db.select().from(schema.matchRoflImports)
+function retained(f: Fixture) {
+    return snapshotTables(f.db, [
+        schema.games,
+        schema.gameParticipants,
+        schema.gameMmrApplications,
+        schema.mmrLedgerEntries,
+        schema.userPositionMmr,
+        schema.matchLineups,
+        schema.matchLineupPlayers,
+        schema.matchRoflImports
     ]);
 }
 

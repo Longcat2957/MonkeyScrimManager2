@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
@@ -27,12 +26,8 @@ test('0008은 기존 결과·출전·MMR을 보존하고 과거 취소의 배치
     await f.pool.query(
         `ALTER TABLE matches DROP CONSTRAINT matches_cancellation_batch_fk; ALTER TABLE matches DROP CONSTRAINT matches_cancellation_batch_state; ALTER TABLE matches DROP COLUMN cancellation_batch_id; DROP TABLE scrim_cancellations;`
     );
-    const migration = await readFile(
-        new URL('../../../../drizzle/0008_scrim_result_cancellation.sql', import.meta.url),
-        'utf8'
-    );
     // 격리 스키마에서는 배포 SQL의 public 참조만 현재 search_path로 바꾼다. 업무 DDL은 그대로 실행한다.
-    await f.db.transaction((tx) => tx.execute(sql.raw(migration.replaceAll('"public".', ''))));
+    await f.db.transaction((tx) => tx.execute(sql.raw(f.migrationSql('0008_scrim_result_cancellation'))));
     assert.deepEqual(await f.db.select().from(schema.matches), before.matches);
     assert.deepEqual(await f.db.select().from(schema.games), before.games);
     assert.deepEqual(await f.db.select().from(schema.matchLineupPlayers), before.lineups);

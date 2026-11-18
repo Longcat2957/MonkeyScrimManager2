@@ -1,4 +1,0 @@
-[    1425ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://127.0.0.1:5173/g/devGuild001/scrims/devScrim002/auction?/saveSetup:1
-[    1509ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/me:1
-[    2208ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://127.0.0.1:5173/g/devGuild002/admin:1
-[    2879ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:5173/dev/error?status=500:1

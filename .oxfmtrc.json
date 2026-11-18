@@ -1,0 +1,33 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "tabWidth": 4,
+    "useTabs": false,
+    "singleQuote": true,
+    "trailingComma": "none",
+    "printWidth": 110,
+    "sortPackageJson": false,
+    "svelte": { "sortOrder": "none" },
+    "ignorePatterns": [
+        "node_modules",
+        "build",
+        "dist",
+        ".svelte-kit",
+        ".tmp",
+        "samples",
+        "pnpm-lock.yaml",
+        "apps/web/drizzle",
+        ".agents/skills/impeccable",
+        ".codex/hooks.json",
+        ".github/hooks/impeccable.json",
+        ".github/skills/impeccable",
+        "**/.impeccable/config.local.json",
+        "**/.impeccable/hook.cache.json",
+        "**/.impeccable/live/",
+        "**/.impeccable/critique/",
+        "**/.impeccable/mocks/",
+        "**/.impeccable/review/",
+        "**/.impeccable/questions/",
+        "**/.impeccable/tmp/",
+        "*.md"
+    ]
+}

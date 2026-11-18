@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { getMockBracket } from '../src/lib/mocks/bracket.ts';
 import {
     createMockScrim,
@@ -28,28 +28,14 @@ import {
     revertMockScrim
 } from '../src/lib/mocks/workflow.ts';
 
-const guildId = 'devGuild001';
+import { guildId, mockScrim, skipPreviewDelay } from './support/mock-scrim.ts';
+
+beforeEach(skipPreviewDelay);
 
 // 실출전 10명 중 9명이 이미 선발된 모집을 만든다. 참가자는 devScrim008에서 빌린다.
 async function nearlyFullScrim() {
-    const scrimId = await createMockScrim(guildId, {
-        title: '자동 선발 테스트',
-        scheduledAt: null,
-        teamCount: 2,
-        reserveCapacity: 2,
-        hardFearless: false
-    });
-    const scrim = findMockScrimRecord(guildId, scrimId)!;
-    scrim.participants = findMockScrimRecord(guildId, 'devScrim008')!
-        .participants.slice(0, 9)
-        .map((participant, index) => ({
-            ...participant,
-            registrationId: `${scrimId}-r${index}`,
-            userId: `${scrimId}-u${index}`,
-            riotAccountId: `${scrimId}-a${index}`,
-            status: 'selected'
-        }));
-    return { scrimId, scrim };
+    const scrim = await mockScrim({ selected: 9, reserveCapacity: 2 });
+    return { scrimId: scrim.id, scrim };
 }
 
 const register = (scrimId: string, key: string) =>

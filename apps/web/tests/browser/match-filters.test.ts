@@ -1,46 +1,8 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import test from 'node:test';
 import { chromium, type Page } from 'playwright';
 import { createHttpMatchFiltersFixture } from '../api/support/http-match-filter-fixtures.ts';
-
-type Fixture = Awaited<ReturnType<typeof createHttpMatchFiltersFixture>>;
-const captures: Record<string, unknown>[] = [];
-
-async function capture(page: Page, fixture: Fixture, state: string) {
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    const directory = process.env.MSM2_MATCH_FILTER_CAPTURE_DIR;
-    if (!directory) return;
-    await page.evaluate(async () => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        await document.fonts.ready;
-    });
-    await mkdir(directory, { recursive: true });
-    const viewport = page.viewportSize()!;
-    const theme = await page.locator('html').getAttribute('data-mode');
-    const file = `${viewport.width}-${theme}-${state}.png`;
-    const bytes = await page.screenshot({
-        path: resolve(directory, file),
-        fullPage: true,
-        animations: 'disabled'
-    });
-    const url = new URL(page.url());
-    captures.push({
-        file,
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        url: page.url(),
-        path: url.pathname + url.search,
-        viewport,
-        theme,
-        state,
-        seasonIds: [fixture.previousSeason.id, fixture.currentSeason.id, fixture.emptySeason.id],
-        fixtureMatchIds: Object.values(fixture.cases).map((match) => match.id),
-        source: '실제 SSR·익명 기록 목록·정상 ROFL과 두 시즌. 기간 경계의 games.startedAt은 격리 DB에 명시한 테스트 시각이며 ROFL 제공 시각이 아니다.'
-    });
-    await writeFile(resolve(directory, 'captures.json'), JSON.stringify(captures, null, 4) + '\n');
-}
+import { assertNoOverflow, sessionContext } from './support/browser.ts';
 
 function recordLinks(page: Page) {
     return page.locator('main li a[href*="/matches/"]');
@@ -60,28 +22,26 @@ async function expectRows(page: Page, expected: string[]) {
     );
 }
 
-for (const width of [1440, 390])
-    for (const theme of ['primary', 'dark'])
-        test(`경기 기록의 검색·쪽 이동·복구: ${width}px ${theme}`, { timeout: 90_000 }, async (t) => {
-            const browser = await chromium.launch();
-            t.after(() => browser.close());
-            const f = await createHttpMatchFiltersFixture(t);
+test('경기 기록의 검색·쪽 이동·복구', { timeout: 360_000 }, async (t) => {
+    // 익명 GET만 쓰는 네 가지 화면 조건은 같은 경기 자료를 읽고 새 브라우저 문맥에서 시작한다.
+    const browser = await chromium.launch();
+    t.after(() => browser.close());
+    const f = await createHttpMatchFiltersFixture(t);
+    for (const [width, theme] of [
+        [1440, 'primary'],
+        [1440, 'dark'],
+        [390, 'primary'],
+        [390, 'dark']
+    ] as const)
+        await t.test(`${width}px ${theme}`, { timeout: 90_000 }, async (scenario) => {
             const context = await browser.newContext({
                 viewport: { width, height: width === 390 ? 844 : 1000 },
                 reducedMotion: 'reduce',
                 javaScriptEnabled: width !== 390 || theme !== 'primary'
             });
+            scenario.after(() => context.close());
             await context.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
-            const origin = new URL(f.url).origin;
-            await context.route('**/*', async (route) => {
-                if (new URL(route.request().url()).origin !== origin) return route.abort();
-                await route.fulfill({
-                    response: await route.fetch({
-                        headers: { ...route.request().headers(), 'x-forwarded-proto': 'https' },
-                        maxRedirects: 0
-                    })
-                });
-            });
+            await sessionContext(context, f);
             const page = await context.newPage();
             page.setDefaultTimeout(10_000);
             const errors: string[] = [];
@@ -128,7 +88,7 @@ for (const width of [1440, 390])
             await page.waitForURL((url) => url.searchParams.get('page') === '2');
             await expectRows(page, dayResults.slice(20));
             assert.equal(new URL(page.url()).searchParams.get('season'), f.currentSeason.id);
-            await capture(page, f, 'filtered-page-two');
+            await assertNoOverflow(page, 'filtered-page-two');
 
             await openFilters();
             await bo.selectOption('3');
@@ -142,13 +102,13 @@ for (const width of [1440, 390])
             await champion.fill('Lux');
             await search('champion', 'Lux');
             await expectRows(page, []);
-            await capture(page, f, 'empty-filter-results');
+            await assertNoOverflow(page, 'empty-filter-results');
             await page.goBack();
             await expectRows(page, [f.match.id]);
             await page.goto(base + '?from=2026-02-30&to=' + day);
             await page.getByRole('alert').waitFor();
             await expectRows(page, []);
-            await capture(page, f, 'invalid-date-correction');
+            await assertNoOverflow(page, 'invalid-date-correction');
             await openFilters();
             await from.fill(day);
             await search('from', day);
@@ -157,6 +117,7 @@ for (const width of [1440, 390])
             await page.waitForURL(base);
             assert.equal(await query.inputValue(), '');
             assert.equal(await recordLinks(page).count(), 20);
-            await capture(page, f, 'archive');
+            await assertNoOverflow(page, 'archive');
             assert.deepEqual(errors, []);
         });
+});

@@ -96,7 +96,7 @@ Caddy의 HTTP `/healthz` 200은 프록시 생존 확인이다. 앱 구성의 웹
 
 [ci.yml](../.github/workflows/ci.yml)은 **dev push**에서 Ubuntu 24.04·Node 24·pnpm 10.20.0으로 검사하고 GHCR에 이미지를 발행한다. main은 아래 CD의 배포 트리거다. CI에는 저장소 읽기와 GHCR 발행에 필요한 `packages: write`만 부여한다. 운영 서버 접속·명령 등록·실제 봇 기동은 하지 않는다.
 
-실행 순서는 잠금 파일로 의존성 설치 → `pnpm check` → `pnpm test` → 공통 이미지 빌드·GHCR 발행이다. `check`는 포맷·브랜딩·웹/봇 타입을, `test`는 DB 없이 실행하는 기본 웹·봇 단위 테스트를 검사한다. 검사나 빌드가 실패하면 이미지를 발행하지 않는다.
+잠금 파일로 의존성을 한 번 설치한 뒤 같은 러너에서 `pnpm check`와 `pnpm test`를 병렬 실행한다. `check`는 포맷·브랜딩·웹/봇 타입을, `test`는 DB 없이 실행하는 기본 웹·봇 단위 테스트를 검사한다. 두 명령이 모두 성공해야 공통 이미지 빌드·GHCR 발행을 시작한다. 병렬화 효과는 별도 실행 없이 변경 전후 정상 dev push 각 5회의 검사 시작부터 이미지 발행 완료까지 걸린 시간의 중앙값으로 비교한다.
 
 CI에는 PostgreSQL 서비스·Chromium 설치·테스트 타입 검사·DB/HTTP 통합·브라우저·환경 분리·이미지 기동 검사를 넣지 않는다. 필요한 통합 검사는 개발자가 기존 `pnpm test:hard`, `pnpm test:browser`, 아래 격리 배포 도구로 별도 실행한다. 운영 DB 접속 정보·Discord/Riot 자격 증명·배포 키도 CI에 전달하지 않는다. 원격 Actions 통과 여부는 해당 push의 실제 실행 결과로 확인한다.
 
@@ -104,20 +104,20 @@ CI에는 PostgreSQL 서비스·Chromium 설치·테스트 타입 검사·DB/HTTP
 
 [Dockerfile](../Dockerfile)은 잠금 파일로 의존성을 설치하고 웹·봇을 함께 빌드한다. Node 24의 고정 digest를 사용하고 최종 컨테이너는 `node` 사용자로 실행한다. 웹·봇·migration은 같은 이미지에서 서로 다른 명령과 환경으로 실행하며 Drizzle Kit와 pnpm workspace 의존성 구조를 유지한다.
 
-발행 주소는 `ghcr.io/longcat2957/monkeyscrimmanager2:dev`와 같은 경로의 `:<dev 커밋 SHA>`다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. 타입·기본 단위 테스트를 통과한 소스를 한 번 빌드해 두 태그로 발행한다. main CD는 마지막으로 발행한 `dev` 이미지를 가져온다. 이때 main은 배포 요청이며 실제 앱 소스 revision은 이미지의 dev 커밋이다. 특정 버전으로 돌아갈 때는 보관된 SHA 태그를 선택한다.
+CI는 검증된 커밋을 한 번 빌드해 `ghcr.io/longcat2957/monkeyscrimmanager2:<커밋 SHA>`와 `:dev`로 발행한다. GHCR 로그인에는 Actions의 기본 `GITHUB_TOKEN`을 사용한다. `:dev`는 개발용이며 운영 배포 대상을 선택하는 데 사용하지 않는다.
 
 Compose의 이미지 설정은 `MSM2_APP_IMAGE` 하나다. 실제 서비스 비밀 값은 기존 VPS 환경 파일에서 읽는다.
 
 ## main 배포
 
-[cd.yml](../.github/workflows/cd.yml)은 **main push**에서 `production` Environment의 SSH 설정으로 VPS에 배포한다. 이미지를 새로 빌드하거나 CI 검사를 반복하지 않는다. dev CI 완료 후 main으로 반영하면 된다. CD는 동시에 하나만 실행하며 진행 중 배포를 취소하지 않는다.
+[cd.yml](../.github/workflows/cd.yml)은 **main push**에서 `production` Environment의 SSH 설정으로 VPS에 배포한다. dev CI가 성공한 커밋으로 main을 fast-forward한다. 별도 merge·squash 커밋을 만들면 SHA가 달라져 해당 이미지가 없으므로 배포되지 않는다. CD는 재빌드하거나 CI 검사를 반복하지 않으며 진행 중인 배포를 취소하지 않는다.
 
 `monkeybot.lol`의 A 레코드는 VPS `141.164.46.191`을 가리키고 Cloudflare 프록시는 **DNS only**로 둔다. 권한 DNS는 Cloudflare에 유지하고 HTTP 프록시 경유만 해제한다. AAAA는 VPS에서 실제로 서비스하는 공개 IPv6가 있을 때만 유지한다. Caddy에 도메인과 외부 80·443 접근을 제공하면 공인 인증서를 자동 발급·갱신한다. DNS only에서는 Cloudflare SSL/TLS 모드가 브라우저와 VPS 사이의 TLS를 처리하지 않으며 Cloudflare Origin CA 인증서를 직접 서비스하지 않는다. 기존 프록시 상태에서 전환할 때는 공인 인증서 준비를 확인하고 DNS를 변경한다. [Caddy 자동 HTTPS](https://caddyserver.com/docs/automatic-https), [Cloudflare 프록시 상태](https://developers.cloudflare.com/dns/proxy-status/)
 
 Discord 앱은 멤버 동기화에 필요한 **Server Members Intent**를 활성화한다. [Discord 앱 설정](https://discord.com/developers/docs/resources/application#edit-current-application)
 
 1. Compose·Caddy 설정과 [deploy.sh](../deploy/deploy.sh)를 임시 디렉터리로 전송한다.
-2. Actions의 `GITHUB_TOKEN`으로 GHCR에 로그인하고 `:dev` 이미지를 받는다. 받은 digest를 Compose에 고정해 웹·봇·migration이 같은 이미지를 사용한다.
+2. Actions의 `GITHUB_TOKEN`으로 GHCR에 로그인해 main 커밋 SHA 태그를 받는다. 이미지가 없거나 받은 digest의 revision 라벨이 해당 SHA와 다르면 백업·설정 변경 전에 중단한다. 일치하면 같은 digest를 웹·봇·migration에 고정한다.
 3. `/var/backups/monkeybot/release-<UTC시각>-…`에 기존 Compose·프록시 설정과 `msm2_main` custom dump·SHA256을 보관한다. 백업 검사가 실패하면 배포를 중단한다.
 4. migration 성공·웹/봇 healthy를 기다리고 Caddy 설정을 검사한다. 최초 전환에서는 기존 nginx를 중지해 80·443을 넘긴 뒤 Caddy를 올린다. 전환이 실패하면 Caddy를 중지하고 이전 nginx를 다시 시작하며 성공한 뒤 이전 nginx 컨테이너를 제거한다.
 5. Caddy를 reload하고 인증서 검증을 켠 VPS 직접 HTTPS와 공개 `/docs`의 HTTP 200을 확인한다. 리다이렉트 응답이나 인증서 검증 생략은 배포 성공으로 처리하지 않는다.

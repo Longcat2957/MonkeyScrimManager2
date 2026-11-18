@@ -14,6 +14,7 @@ import { DomainError } from '#lib/server/errors.ts';
 import { mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import sample from './fixtures/rofl-sample.json' with { type: 'json' };
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
+import { mockLatency } from './latency.ts';
 import { findMockScrim, findMockScrimRecord, type MockFailure } from './scrims.ts';
 import { syncMockBracketResult } from './bracket.ts';
 
@@ -73,7 +74,6 @@ export type GameResolvers = {
     splash: (championId: string) => string | null;
 };
 
-const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
 const signatureOf = (raw: RawGame) =>
     `${raw.gameLengthMs}:${raw.participants.map((player) => player.champion).join(',')}`;
 
@@ -511,7 +511,7 @@ export async function recordMockGame(
     raw: RawGame,
     input: SideInput & { blueTeamConfirmed: boolean }
 ): Promise<MockFailure | { order: number; revision: number; completed: boolean }> {
-    await wait();
+    await mockLatency.wait(200);
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
     if (!match) return { status: 404, message: '경기를 찾을 수 없어요' };
     const failure = checkNextSet(match, input);
