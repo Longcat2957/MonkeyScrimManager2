@@ -1,7 +1,10 @@
 <script lang="ts">
     import { asset, resolve } from '$app/paths';
     import { page } from '$app/state';
+    import { onMount, tick } from 'svelte';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import Button from '#lib/components/common/Button.svelte';
+    import Dialog from '#lib/components/common/Dialog.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import { overlay } from '#lib/ui/overlay.ts';
     import { currentMode, setMode, type ThemeMode } from '#lib/ui/theme.ts';
@@ -13,6 +16,26 @@
     let { accountHeight = $bindable(0) }: { accountHeight?: number } = $props();
     let mode: ThemeMode = $state('dark');
     let menuOpen = $state(false);
+    let gamesOpen = $state(false);
+    let railCollapsed = $state(false);
+    const railLabel = $derived(railCollapsed ? '사이드바 펼치기' : '사이드바 접기');
+
+    onMount(() => {
+        try {
+            railCollapsed = localStorage.getItem('rail-collapsed') === 'true';
+        } catch {
+            // 저장소를 쓸 수 없으면 펼친 상태로 시작한다.
+        }
+    });
+
+    function toggleRail() {
+        railCollapsed = !railCollapsed;
+        try {
+            localStorage.setItem('rail-collapsed', String(railCollapsed));
+        } catch {
+            // 저장할 수 없어도 현재 화면에서는 접기와 펼치기가 동작한다.
+        }
+    }
 
     // 하이드레이션 뒤 첫 페인트에서 복원한 모드를 스위치에 반영한다.
     $effect(() => {
@@ -68,6 +91,14 @@
         setMode(mode);
     }
 
+    async function openGames() {
+        if (menuOpen) {
+            menuOpen = false;
+            await tick();
+        }
+        gamesOpen = true;
+    }
+
     function logout() {
         const form = document.getElementById('logout-form');
         if (form instanceof HTMLFormElement) form.requestSubmit();
@@ -82,6 +113,19 @@
     }
 </script>
 
+{#snippet sessionIcon()}
+    <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        class="size-5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+    >
+        <path d="M13 4h6v16h-6M3 12h12m-5-5 5 5-5 5" />
+    </svg>
+{/snippet}
+
 {#snippet brand(rail: boolean)}
     <a
         href={resolve('/')}
@@ -95,7 +139,7 @@
             height="34"
             class="size-8.5 rounded-full border border-nexus"
         />
-        {#if rail || desktop.current}
+        {#if rail && !railCollapsed}
             <span class="font-brand text-[1.3125rem] leading-none font-bold tracking-[-0.02em]"
                 >{SERVICE_NAME}</span
             >
@@ -113,9 +157,13 @@
             href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + page.url.search)}`}
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
+            title={desktop.current && railCollapsed ? '로그인' : undefined}
             class="inline-flex min-h-9 items-center justify-center rounded-form bg-nexus px-3 text-ui font-semibold text-nexus-ink hover:bg-nexus-hover pointer-coarse:min-h-11"
-            >로그인</a
         >
+            {#if desktop.current && railCollapsed}
+                {@render sessionIcon()}<span class="sr-only">로그인</span>
+            {:else}로그인{/if}
+        </a>
     {/if}
 {/snippet}
 
@@ -131,15 +179,29 @@
                 ? 'min-h-9.5 w-full not-hover:bg-surface'
                 : 'max-w-[55vw] not-hover:bg-surface'}
         >
-            <span class="min-w-0 flex-1 truncate text-left">{guild?.name ?? '서버 선택'}</span>
-            <svg
-                aria-hidden="true"
-                viewBox="0 0 16 16"
-                class="size-4 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"><path d="m4 6 4 4 4-4" /></svg
-            >
+            {#if wide && railCollapsed}
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    class="size-5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                >
+                    <title>서버 선택</title>
+                    <path stroke-linejoin="round" d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5" />
+                </svg>
+            {:else}
+                <span class="min-w-0 flex-1 truncate text-left">{guild?.name ?? '서버 선택'}</span>
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    class="size-4 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"><path d="m4 6 4 4 4-4" /></svg
+                >
+            {/if}
         </MenuButton>
     {/if}
 {/snippet}
@@ -164,8 +226,30 @@
                 ]}
             ></span>
         </span>
-        <span aria-hidden="true">라이트 모드</span>
+        <span aria-hidden="true" class:hidden={desktop.current && railCollapsed && !user}>라이트 모드</span>
     </button>
+{/snippet}
+
+{#snippet gameTool()}
+    <Button
+        variant="quiet"
+        class={desktop.current && railCollapsed ? 'w-full' : 'w-full justify-start'}
+        onclick={openGames}
+    >
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            class="size-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+        >
+            {#if desktop.current && railCollapsed}<title>미니게임</title>{/if}
+            <rect x="3" y="3" width="18" height="18" rx="4" />
+            <path stroke-linecap="round" stroke-width="3" d="M8 8h.01M12 12h.01M16 16h.01" />
+        </svg>
+        <span class:sr-only={desktop.current && railCollapsed}>미니게임</span>
+    </Button>
 {/snippet}
 
 {#snippet accountMenu()}
@@ -184,15 +268,17 @@
             footer={themeToggle}
         >
             <PlayerFace name={user.displayName} imageUrl={user.avatarUrl} size="sm" />
-            <span class="min-w-0 flex-1 truncate text-left text-ui">{user.displayName}</span>
-            <svg
-                aria-hidden="true"
-                viewBox="0 0 16 16"
-                class={['size-4 shrink-0 text-muted', !desktop.current && 'rotate-180']}
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"><path d="m4 10 4-4 4 4" /></svg
-            >
+            {#if !desktop.current || !railCollapsed}
+                <span class="min-w-0 flex-1 truncate text-left text-ui">{user.displayName}</span>
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    class={['size-4 shrink-0 text-muted', !desktop.current && 'rotate-180']}
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"><path d="m4 10 4-4 4 4" /></svg
+                >
+            {/if}
         </MenuButton>
     {/if}
 {/snippet}
@@ -200,32 +286,74 @@
 {#if desktop.current}
     <!-- 좌측 서버 레일: 목업의 사이드 내비게이션. 현재 서버·메뉴·계정을 한 곳에 둔다. -->
     <aside
-        class="sticky top-0 z-40 flex h-dvh w-56 shrink-0 flex-col gap-4.5 border-r border-line bg-rail px-3.5 pt-4.5 text-ink"
+        class={[
+            'sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-4.5 border-r border-line bg-rail pt-4.5 text-ink motion-safe:transition-[width,padding-inline] motion-safe:duration-250 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]',
+            railCollapsed ? 'w-16 px-2' : 'w-56 px-3.5'
+        ]}
     >
-        {@render brand(true)}
-        {@render guildSwitcher(true)}
-        {#if guildItems.length}
-            <ContextNav items={guildItems} label="서버 메뉴" />
-        {/if}
-        <div
-            bind:offsetHeight={accountHeight}
-            class="-mx-3.5 mt-auto flex min-h-16 shrink-0 flex-col justify-center gap-2 border-t border-line px-3.5 py-2"
-        >
-            {#if user}
-                {@render accountMenu()}
-            {:else}
-                {@render themeToggle()}
-                {@render sessionControl()}
+        <div class="flex items-center overflow-hidden">
+            {@render brand(true)}
+        </div>
+        <div id="desktop-rail-content" class="contents">
+            {@render guildSwitcher(true)}
+            {#if guildItems.length}
+                <ContextNav items={guildItems} label="서버 메뉴" compact={railCollapsed} />
+                {@render gameTool()}
             {/if}
-            {#if page.data.authenticated && !user}
-                <button
-                    type="button"
-                    class="min-h-9 w-full rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
-                    onclick={logout}
+            <button
+                type="button"
+                aria-label={railLabel}
+                title={railLabel}
+                aria-expanded={!railCollapsed}
+                aria-controls="desktop-rail-content"
+                class={[
+                    'mt-auto flex min-h-11 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-form px-3 text-ui font-medium text-muted hover:bg-surface-hover hover:text-ink',
+                    railCollapsed && 'justify-center'
+                ]}
+                onclick={toggleRail}
+            >
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    class={[
+                        'size-4 shrink-0 motion-safe:transition-transform motion-safe:duration-250',
+                        railCollapsed && 'rotate-180'
+                    ]}
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                 >
-                    로그아웃
-                </button>
-            {/if}
+                    <path d="m12 6-6 6 6 6m6-12-6 6 6 6" />
+                </svg>
+                {#if !railCollapsed}<span>사이드바 접기</span>{/if}
+            </button>
+            <div
+                bind:offsetHeight={accountHeight}
+                class={[
+                    'flex min-h-16 shrink-0 flex-col justify-center gap-2 border-t border-line py-2',
+                    railCollapsed ? '-mx-2 px-2' : '-mx-3.5 px-3.5'
+                ]}
+            >
+                {#if user}
+                    {@render accountMenu()}
+                {:else}
+                    {@render themeToggle()}
+                    {@render sessionControl()}
+                {/if}
+                {#if page.data.authenticated && !user}
+                    <button
+                        type="button"
+                        title={railCollapsed ? '로그아웃' : undefined}
+                        class="min-h-9 w-full rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
+                        onclick={logout}
+                    >
+                        {#if railCollapsed}{@render sessionIcon()}<span class="sr-only">로그아웃</span
+                            >{:else}로그아웃{/if}
+                    </button>
+                {/if}
+            </div>
         </div>
     </aside>
 {:else}
@@ -274,6 +402,7 @@
             >
             {#if guildItems.length}
                 <ContextNav items={guildItems} label="서버 메뉴" onnavigate={() => (menuOpen = false)} />
+                {@render gameTool()}
             {/if}
             {#if user}
                 {@render accountMenu()}
@@ -300,4 +429,20 @@
             {/if}
         </aside>
     </div>
+{/if}
+
+{#if guild}
+    <Dialog title="미니게임" bind:open={gamesOpen}>
+        {#if gamesOpen}
+            {#await import('#lib/components/minigames/MiniGames.svelte')}
+                <p role="status" class="text-sm text-muted">미니게임을 불러오는 중이에요.</p>
+            {:then module}
+                <module.default />
+            {:catch}
+                <p role="alert" class="text-sm text-error">
+                    미니게임을 불러오지 못했어요. 창을 닫고 다시 열어 주세요.
+                </p>
+            {/await}
+        {/if}
+    </Dialog>
 {/if}

@@ -215,6 +215,12 @@ const matches: StoredMatch[] = [
     })
 ];
 
+export function hasMockScrimMatch(guildId: string, scrimId: string): boolean {
+    return matches.some(
+        (match) => match.guildId === guildId && match.scrimId === scrimId && !match.cancelledByScrim
+    );
+}
+
 function score(match: StoredMatch): [number, number] {
     if (match.cancelledByScrim) return [0, 0];
     if (match.fixedScore) return match.fixedScore;

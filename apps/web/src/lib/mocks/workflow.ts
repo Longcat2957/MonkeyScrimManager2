@@ -4,15 +4,18 @@ import type {
     ScrimRevertAction,
     ScrimStatus
 } from '#lib/features/scrims/types.ts';
+import { formationReturnAction } from '#lib/features/scrims/formation.ts';
+import { hasMockScrimMatch } from './matches.ts';
 import { dropMockBracket, getMockBracketProgress, setMockBracketEnded } from './bracket.ts';
 import {
+    bumpMockRevision,
     counts,
     findMockScrimRecord,
     mockCancellationRestoreBlock,
     type MockFailure,
     type MockScrim
 } from './scrims.ts';
-import { dropMockFormation, reopenMockFormation } from './teams.ts';
+import { dropMockFormation, isMockFormationConfirmed, reopenMockFormation } from './teams.ts';
 
 // 내전 단계 진행·되돌리기·중도 종료의 개발용 규칙이다. 편성·대진 목을 함께 고치므로 내전 목과 나눠 둔다.
 
@@ -71,11 +74,7 @@ async function revertAction(scrim: MockScrim): Promise<ScrimRevertAction | null>
                 blockedReason: null
             };
         case 'ready':
-            return {
-                label: '팀 편성 다시 하기',
-                message: '대진 배치가 지워지고 팀 편성을 다시 고칠 수 있어요.',
-                blockedReason: null
-            };
+            return scrim.formationMethod ? formationReturnAction(scrim.formationMethod) : null;
         case 'in_progress': {
             const bracket = await getMockBracketProgress(scrim.guildId, scrim.id);
             return {
@@ -165,15 +164,52 @@ export async function advanceMockScrim(
     if (action.key === 'start')
         return { status: 400, message: '대진에서 1세트 블루 팀을 고른 뒤 시작해 주세요' };
     scrim.status = NEXT_STATUS[action.key];
+    bumpMockRevision(scrim);
     return null;
 }
 
+function reopenReady(scrim: MockScrim, method: FormationMethod | null): MockFailure | null {
+    if (
+        scrim.status !== 'ready' ||
+        !method ||
+        method !== scrim.formationMethod ||
+        !isMockFormationConfirmed(scrim)
+    )
+        return { status: 409, message: '확정한 팀 편성만 다시 열 수 있어요' };
+    if (hasMockScrimMatch(scrim.guildId, scrim.id))
+        return { status: 409, message: '이미 경기가 생성되어 팀 편성을 바꿀 수 없어요' };
+    reopenMockFormation(scrim);
+    dropMockBracket(scrim.guildId, scrim.id);
+    scrim.status = 'preparing';
+    bumpMockRevision(scrim);
+    return null;
+}
+
+export async function reopenMockReadyFormation(
+    guildId: string,
+    scrimId: string,
+    input: { formationMethod: FormationMethod; expectedRevision: number }
+): Promise<MockFailure | null> {
+    await wait();
+    const scrim = target(guildId, scrimId);
+    if ('message' in scrim) return scrim;
+    if (input.expectedRevision !== (scrim.revision ?? 0))
+        return { status: 409, message: '다른 사람이 먼저 변경했어요' };
+    return reopenReady(scrim, input.formationMethod);
+}
+
 /** 이전 단계로 되돌린다. 기록된 게임은 어느 단계에서도 지우지 않는다. */
-export async function revertMockScrim(guildId: string, scrimId: string): Promise<MockFailure | null> {
+export async function revertMockScrim(
+    guildId: string,
+    scrimId: string,
+    expectedRevision?: number
+): Promise<MockFailure | null> {
     await wait();
     const scrim = target(guildId, scrimId);
     if ('message' in scrim) return scrim;
     const action = await revertAction(scrim);
+    if (expectedRevision !== undefined && expectedRevision !== (scrim.revision ?? 0))
+        return { status: 409, message: '다른 사람이 먼저 변경했어요' };
     if (!action) return { status: 409, message: '되돌릴 단계가 없어요' };
     if (action.blockedReason) return { status: 409, message: action.blockedReason };
     switch (scrim.status) {
@@ -182,10 +218,7 @@ export async function revertMockScrim(guildId: string, scrimId: string): Promise
             scrim.status = 'recruit';
             break;
         case 'ready':
-            reopenMockFormation(scrim);
-            dropMockBracket(guildId, scrimId);
-            scrim.status = 'preparing';
-            break;
+            return reopenReady(scrim, scrim.formationMethod);
         case 'in_progress':
             scrim.status = 'ready';
             break;
@@ -198,6 +231,7 @@ export async function revertMockScrim(guildId: string, scrimId: string): Promise
             scrim.status = 'in_progress';
             break;
     }
+    bumpMockRevision(scrim);
     return null;
 }
 
@@ -244,5 +278,6 @@ export async function endMockScrimEarly(guildId: string, scrimId: string): Promi
     await setMockBracketEnded(guildId, scrimId, true);
     scrim.endedEarlyFromStatus = scrim.status;
     scrim.status = 'ended_early';
+    bumpMockRevision(scrim);
     return null;
 }

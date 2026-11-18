@@ -16,11 +16,19 @@ import {
     type FormationTeam,
     type SlotKey
 } from '#lib/features/scrims/formation.ts';
+import { isBestOf } from '#lib/features/scrims/bracket.ts';
 import { TEAM_NAMES } from '#lib/features/scrims/settings.ts';
 import { byCandidateName, orderAuctionCandidates } from '#lib/server/scrims/auction-order.ts';
 import { mockMembers } from './members.ts';
 import { mockAvatarUrl } from './avatar.ts';
-import { findMockScrimRecord, listMockAuctionScrims, type MockFailure, type MockScrim } from './scrims.ts';
+import { seedMockManualFinal } from './bracket.ts';
+import {
+    bumpMockRevision,
+    findMockScrimRecord,
+    listMockAuctionScrims,
+    type MockFailure,
+    type MockScrim
+} from './scrims.ts';
 
 // 수동 편성·경매의 개발용 저장소다. 내전 목(scrims.ts)의 선발 참가자를 대상으로 하며 개발 서버를 재시작하면 처음 상태로 돌아간다.
 
@@ -181,7 +189,7 @@ function editableManual(
     if (!scrim) return { status: 404, message: '내전을 찾을 수 없어요' };
     if (!scrim.canManage) return { status: 403, message: '편성할 권한이 없어요' };
     const state = manualState(scrim);
-    if (state.confirmed || scrim.status !== 'preparing')
+    if (scrim.formationMethod !== 'manual' || state.confirmed || scrim.status !== 'preparing')
         return { status: 409, message: '편성이 이미 확정됐어요' };
     return { scrim, state };
 }
@@ -213,17 +221,31 @@ export async function resetMockManual(guildId: string, scrimId: string) {
     return null;
 }
 
-export async function confirmMockManual(guildId: string, scrimId: string, blueTeamId?: string) {
+export async function confirmMockManual(guildId: string, scrimId: string, bestOf?: number) {
     await wait();
     const target = editableManual(guildId, scrimId);
     if ('status' in target) return target;
     const missing = selected(target.scrim).length - Object.keys(target.state.assignments).length;
     if (missing > 0) return { status: 409, message: `미배정 ${missing}명이 남았어요` };
-    if (blueTeamId !== undefined && !target.state.teams.some((team) => team.id === blueTeamId))
-        return { status: 400, message: '1세트 블루 팀을 골라 주세요' };
+    if (bestOf !== undefined) {
+        if (!isBestOf(bestOf) || target.scrim.teamCount !== 2)
+            return { status: 400, message: '2팀 경기의 방식을 골라 주세요' };
+        seedMockManualFinal(
+            target.scrim,
+            target.state.teams.map((team) => team.id),
+            bestOf
+        );
+    }
     target.state.confirmed = true;
     target.scrim.status = 'ready';
+    bumpMockRevision(target.scrim);
     return null;
+}
+
+export function isMockFormationConfirmed(scrim: MockScrim): boolean {
+    return scrim.formationMethod === 'manual'
+        ? manualState(scrim).confirmed
+        : scrim.formationMethod === 'auction' && auctionState(scrim).status === 'completed';
 }
 
 // ─── 경매 ────────────────────────────────────────────────────
@@ -318,6 +340,13 @@ function auctionState(scrim: MockScrim): AuctionState {
                 voided: false
             });
         });
+        const last = state.lots.at(-1);
+        if (last)
+            state.lastAction = {
+                kind: last.result === 'sold' ? 'award' : 'assign_current',
+                participantId: last.participantId,
+                lotId: last.id
+            };
         state.status = 'completed';
     }
     auctionStates.set(scrim.id, state);
@@ -430,6 +459,8 @@ function auctionTarget(
     const scrim = findMockScrimRecord(guildId, scrimId);
     if (!scrim) return { status: 404, message: '내전을 찾을 수 없어요' };
     if (!scrim.canManage) return { status: 403, message: '경매를 진행할 권한이 없어요' };
+    if (scrim.formationMethod !== 'auction' || scrim.status !== 'preparing')
+        return { status: 409, message: '편성 중인 경매만 바꿀 수 있어요' };
     const state = auctionState(scrim);
     if (state.status !== status) return { status: 409, message: '다른 사람이 먼저 변경했어요' };
     return { scrim, state };
@@ -502,11 +533,31 @@ export async function startMockAuction(guildId: string, scrimId: string) {
 }
 
 function completeIfFull(scrim: MockScrim, state: AuctionState) {
-    if (state.teams.every((team) => membersOf(state, team.id) >= TEAM_SIZE)) {
-        state.status = 'completed';
-        state.open = null;
-        scrim.status = 'ready';
-    }
+    if (
+        state.teams.length !== scrim.teamCount ||
+        !state.teams.every((team) => membersOf(state, team.id) === TEAM_SIZE)
+    )
+        return false;
+    state.status = 'completed';
+    state.open = null;
+    scrim.status = 'ready';
+    bumpMockRevision(scrim);
+    return true;
+}
+
+export async function confirmMockAuctionFormation(
+    guildId: string,
+    scrimId: string,
+    expectedRevision: number
+) {
+    await wait();
+    const target = auctionTarget(guildId, scrimId, 'in_progress');
+    if ('status' in target) return target;
+    if (expectedRevision !== (target.scrim.revision ?? 0))
+        return { status: 409, message: '다른 사람이 먼저 변경했어요' };
+    return completeIfFull(target.scrim, target.state)
+        ? null
+        : { status: 409, message: '모든 팀에 5명씩 배치해 주세요' };
 }
 
 export async function drawMockLot(guildId: string, scrimId: string) {

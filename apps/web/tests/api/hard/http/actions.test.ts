@@ -50,6 +50,11 @@ test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거�
         { path: scrimPath + '/bracket', name: 'place', fields: { ...revision, seat: 'final-a', teamId: id } },
         {
             path: scrimPath + '/bracket',
+            name: 'reopenFormation',
+            fields: { ...revision, formationMethod: 'manual' }
+        },
+        {
+            path: scrimPath + '/bracket',
             name: 'bestOf',
             fields: { ...revision, stage: 'final', bestOf: '3' }
         },
@@ -69,11 +74,13 @@ test('HTTP: form action은 유효한 입력이어도 비로그인 조작을 거�
                 ])
             }
         },
-        ...['start', 'draw', 'revert', 'reset', 'reopenSetup', 'changeMethod'].map((name) => ({
-            path: scrimPath + '/auction',
-            name,
-            fields: revision
-        })),
+        ...['start', 'draw', 'revert', 'reset', 'reopenSetup', 'changeMethod', 'confirmFormation'].map(
+            (name) => ({
+                path: scrimPath + '/auction',
+                name,
+                fields: revision
+            })
+        ),
         {
             path: scrimPath + '/auction',
             name: 'award',
@@ -400,6 +407,35 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
         200
     );
     assert.equal((await f.db.select().from(schema.scrims))[0]!.status, 'ready');
+    const readyRevision = await revision();
+    const returnFields = { expectedRevision: readyRevision, formationMethod: 'manual' };
+    const bracketPath = path + '/bracket';
+    const member = await f.session(HTTP_IDS.member);
+    const placements = await f.db
+        .select()
+        .from(schema.scrimParticipants)
+        .orderBy(schema.scrimParticipants.id);
+    assertAction(await f.action(bracketPath, 'reopenFormation', returnFields, member.cookie), 403);
+    assertAction(
+        await f.action(
+            bracketPath,
+            'reopenFormation',
+            { ...returnFields, formationMethod: 'auction' },
+            admin.cookie
+        ),
+        409
+    );
+    assertAction(await f.action(bracketPath, 'reopenFormation', returnFields, admin.cookie), 200);
+    assertAction(await f.action(bracketPath, 'reopenFormation', returnFields, admin.cookie), 409);
+    assert.equal((await f.db.select().from(schema.scrims))[0]!.status, 'preparing');
+    assert.deepEqual(
+        await f.db.select().from(schema.scrimParticipants).orderBy(schema.scrimParticipants.id),
+        placements
+    );
+    assertAction(
+        await f.action(path + '/manual', 'confirm', { expectedRevision: await revision() }, admin.cookie),
+        200
+    );
     for (const [index, team] of teams.entries())
         assertAction(
             await f.action(
@@ -444,6 +480,15 @@ test('HTTP: 수동 배정부터 대진 확정·시작까지 실제 form action�
     const [match] = await f.db.select().from(schema.matches);
     assert.equal(match!.status, 'in_progress');
     assert.equal(match!.bestOf, 3);
+    assertAction(
+        await f.action(
+            bracketPath,
+            'reopenFormation',
+            { ...returnFields, expectedRevision: await revision() },
+            admin.cookie
+        ),
+        409
+    );
     assert.deepEqual(await f.db.select().from(schema.matchSetSides), [
         { matchId: match!.id, gameNumber: 1, blueTeamSlot: 'b' }
     ]);

@@ -20,7 +20,7 @@
     <meta name="application-name" content={SERVICE_NAME} />
 </svelte:head>
 
-<div class="min-h-dvh lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
+<div class="min-h-dvh lg:grid lg:grid-cols-[auto_minmax(0,1fr)]">
     <a
         href="#main-content"
         class="fixed top-2 left-4 z-[60] -translate-y-24 border border-line bg-surface px-4 py-2 focus:translate-y-0"

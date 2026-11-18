@@ -5,8 +5,7 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { toast } from '#lib/ui/toast.ts';
     import BracketFormatControl from '#lib/components/bracket/BracketFormatControl.svelte';
-    import FirstSetSideField from '#lib/components/bracket/FirstSetSideField.svelte';
-    import { bestOfLabel, type BestOf } from '#lib/features/scrims/bracket.ts';
+    import type { BestOf } from '#lib/features/scrims/bracket.ts';
     import {
         moveAssignment,
         type Assignments,
@@ -43,7 +42,6 @@
     let busy = $state(false);
     let details = $state(false);
     let bestOf = $state<BestOf>(3);
-    let blueTeamId = $state('');
     let selectionHeight = $state(0);
     let queue: { participantId: string; slot: SlotKey | null }[] = [];
     let processing = false;
@@ -61,14 +59,7 @@
     const selectedName = $derived(
         players.find((player) => player.participantId === selectedId)?.displayName ?? ''
     );
-    const startsMatch = $derived(teams.length === 2);
-    const confirmBlocked = $derived(
-        unassigned.length
-            ? '모든 참가자를 배치해야 확정할 수 있어요'
-            : startsMatch && !teams.some((team) => team.id === blueTeamId)
-              ? '경기를 시작하려면 1세트 블루 팀을 골라 주세요'
-              : null
-    );
+    const confirmBlocked = $derived(unassigned.length ? '모든 참가자를 배치해야 확정할 수 있어요' : null);
 
     function select(participantId: string) {
         if (!editable || busy) return;
@@ -118,7 +109,7 @@
         try {
             const message = await postAction(
                 name,
-                name === 'confirm' && startsMatch ? { bestOf: String(bestOf), blueTeamId } : {}
+                name === 'confirm' && teams.length === 2 ? { bestOf: String(bestOf) } : {}
             );
             if (message) toast.error(message);
         } finally {
@@ -131,14 +122,7 @@
     }
 
     async function confirmFormation() {
-        if (
-            await confirm(
-                startsMatch
-                    ? `${bestOfLabel(bestOf)} 경기를 시작해요. 지금 배치한 선수와 포지션을 경기 전체에 적용할까요?`
-                    : '확정하면 대진 배치로 이동해요. 확정할까요?',
-                startsMatch ? '편성 확정·경기 시작' : '편성 확정'
-            )
-        )
+        if (await confirm('지금 배치한 팀과 포지션을 확정하고 대진으로 이동할까요?', '편성 확정'))
             await run('confirm');
     }
 
@@ -283,7 +267,7 @@
                 >
             </div>
             <div class="flex flex-wrap items-end gap-x-8 gap-y-4 border-t border-line bg-surface-2 px-4 py-4">
-                {#if startsMatch}
+                {#if teams.length === 2}
                     <div>
                         <p aria-hidden="true" class="text-xs font-semibold text-ink-2">경기 방식</p>
                         <BracketFormatControl
@@ -295,12 +279,6 @@
                             }}
                         />
                     </div>
-                    <FirstSetSideField
-                        teamA={teams[0]!}
-                        teamB={teams[1]!}
-                        bind:value={blueTeamId}
-                        disabled={busy || pending > 0}
-                    />
                 {/if}
                 <div
                     role="group"
@@ -314,7 +292,7 @@
                     <Button
                         variant="primary"
                         disabled={Boolean(confirmBlocked) || busy || pending > 0}
-                        onclick={confirmFormation}>{startsMatch ? '편성 확정·경기 시작' : '편성 확정'}</Button
+                        onclick={confirmFormation}>편성 확정</Button
                     >
                 </div>
             </div>

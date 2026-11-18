@@ -53,6 +53,9 @@
     const profile = $derived(auction.openProfile);
     const canRevert = $derived(auction.canRevert ?? auction.history.some((entry) => !entry.voided));
     const canReset = $derived(auction.history.some((entry) => !entry.voided));
+    const fullyAssigned = $derived(
+        auction.teams.length > 0 && auction.teams.every((team) => team.members.length === TEAM_SIZE)
+    );
     const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
     const seconds = $derived(Math.ceil(remainingMs / 1000));
     const mainLane = $derived(open?.positions[0] ?? profile?.mainLane ?? null);
@@ -162,6 +165,11 @@
             await run('revert');
     }
 
+    async function confirmFormation() {
+        if (await confirm('현재 팀과 경매 기록을 그대로 확정하고 대진으로 이동할까요?', '경매 편성 확정'))
+            await run('confirmFormation');
+    }
+
     async function reset() {
         if (
             await confirm(
@@ -254,7 +262,7 @@
                                     onclick={() => (details = !details)}>상세보기</Button
                                 >
                             {/if}
-                            {#if controls}
+                            {#if controls && !fullyAssigned}
                                 <Button
                                     variant={!open && auction.queue.length > 0 ? 'primary' : 'quiet'}
                                     class="px-2 text-ui"
@@ -390,16 +398,25 @@
                             <div
                                 class="flex min-h-36 flex-1 flex-col items-center justify-center gap-1 rounded-form border border-dashed border-line-strong/60 bg-surface-2 px-4 py-4 text-center"
                             >
-                                <p class="font-semibold text-ink-2">후보 대기</p>
-                                <p class="text-sm text-muted">
-                                    {auction.queue.length
-                                        ? controls
-                                            ? '다음 후보를 뽑아 입찰을 시작해요'
-                                            : '다음 후보를 기다리고 있어요'
-                                        : controls
-                                          ? '대기 후보가 없어요. 후보 목록에서 유찰 후보를 배치하거나 다시 올려 주세요'
-                                          : '대기 중인 후보가 없어요'}
-                                </p>
+                                {#if fullyAssigned}
+                                    <p class="font-semibold text-ink-2">모든 팀에 5명씩 배치됐어요</p>
+                                    {#if controls}
+                                        <Button variant="primary" disabled={busy} onclick={confirmFormation}>
+                                            경매 편성 확정
+                                        </Button>
+                                    {/if}
+                                {:else}
+                                    <p class="font-semibold text-ink-2">후보 대기</p>
+                                    <p class="text-sm text-muted">
+                                        {auction.queue.length
+                                            ? controls
+                                                ? '다음 후보를 뽑아 입찰을 시작해요'
+                                                : '다음 후보를 기다리고 있어요'
+                                            : controls
+                                              ? '대기 후보가 없어요. 후보 목록에서 유찰 후보를 배치하거나 다시 올려 주세요'
+                                              : '대기 중인 후보가 없어요'}
+                                    </p>
+                                {/if}
                             </div>
                         {/if}
                     </div>

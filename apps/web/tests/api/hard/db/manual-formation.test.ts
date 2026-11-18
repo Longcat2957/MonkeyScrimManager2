@@ -8,90 +8,188 @@ import {
     moveManualPlayer,
     resetManualFormation
 } from '../../../../src/lib/server/scrims/manual.ts';
+import { advanceScrim, reopenFormation } from '../../../../src/lib/server/scrims/workflow.ts';
 import { createFormationFixture, concurrently, errorCode } from '../../support/domain-fixtures.ts';
 
-test('2팀 편성 확정·경기 시작은 선택한 BO와 확정 라인업을 한 번에 저장한다', async (t) => {
+test('2팀 편성 확정은 대진만 준비하고 별도 시작 작업이 BO와 확정 라인업을 적용한다', async (t) => {
     const f = await createFormationFixture(t);
     await f.fill();
     const revision = await f.revision();
+    await confirmManualFormation(f.db, f.manager, f.guildId, f.scrimId, { ...revision, bestOf: 5 }, f.access);
+    const ready = await f.row();
+    assert.equal(ready.status, 'ready');
+    assert.ok(ready.bracketConfirmedAt);
+    assert.equal(ready.revision, revision.expectedRevision + 1);
     for (const blueTeamId of ['', f.scrimId]) {
         await assert.rejects(
-            confirmManualFormation(
+            advanceScrim(
                 f.db,
                 f.manager,
                 f.guildId,
                 f.scrimId,
-                { ...revision, bestOf: 5, blueTeamId },
+                { expectedRevision: ready.revision, key: 'start', blueTeamIds: { final: blueTeamId } },
                 f.access
             ),
             errorCode('INVALID_INPUT')
         );
-        assert.equal((await f.row()).status, 'preparing');
+        assert.equal((await f.row()).status, 'ready');
         assert.equal((await f.db.select().from(schema.matches)).length, 0);
     }
-    const matchId = await confirmManualFormation(
+    const ids = await advanceScrim(
         f.db,
         f.manager,
         f.guildId,
         f.scrimId,
-        { ...revision, bestOf: 5, blueTeamId: f.teams[1]!.id },
+        { expectedRevision: ready.revision, key: 'start', blueTeamIds: { final: f.teams[1]!.id } },
         f.access
     );
     const row = await f.row();
     assert.equal(row.status, 'in_progress');
-    assert.equal(row.revision, revision.expectedRevision + 1);
+    assert.equal(row.revision, ready.revision + 1);
     assert.ok(row.bracketConfirmedAt);
     const [match] = await f.db.select().from(schema.matches);
-    assert.equal(match?.id, matchId);
+    assert.deepEqual(ids, [match!.id]);
     assert.equal(match?.bestOf, 5);
     assert.equal(match?.teamAId, f.teams[0]!.id);
     assert.equal(match?.teamBId, f.teams[1]!.id);
     const [side] = await f.db.select().from(schema.matchSetSides);
-    assert.equal(side?.matchId, matchId);
+    assert.equal(side?.matchId, match!.id);
     assert.equal(side?.gameNumber, 1);
     assert.equal(side?.blueTeamSlot, 'b');
     const [lineup] = await f.db.select().from(schema.matchLineups);
     assert.ok(lineup?.confirmedAt);
-    assert.equal(lineup?.matchId, matchId);
+    assert.equal(lineup?.matchId, match!.id);
     assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 10);
     await assert.rejects(
-        confirmManualFormation(
+        reopenFormation(
             f.db,
             f.manager,
             f.guildId,
             f.scrimId,
-            { ...revision, bestOf: 5, blueTeamId: f.teams[1]!.id },
+            { expectedRevision: row.revision, formationMethod: 'manual' },
             f.access
-        )
+        ),
+        errorCode('CONFLICT')
     );
     assert.equal((await f.db.select().from(schema.matches)).length, 1);
 });
 
-test('2팀 시작의 라인업 검증 실패는 편성 상태·대진·경기를 모두 되돌린다', async (t) => {
+test('확정한 2팀 대진에서 편성으로 돌아가도 모든 팀과 포지션은 그대로 편집할 수 있다', async (t) => {
+    const f = await createFormationFixture(t);
+    await f.fill();
+    const before = await getManualFormation(f.db, null, f.guildId, f.scrimId);
+    await confirmManualFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), bestOf: 3 },
+        f.access
+    );
+    const revision = await f.revision();
+    await reopenFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...revision, formationMethod: 'manual' },
+        f.access
+    );
+    const row = await f.row();
+    assert.equal(row.status, 'preparing');
+    assert.equal(row.revision, revision.expectedRevision + 1);
+    assert.equal(row.bracketConfirmedAt, null);
+    assert.equal(row.bracketConfirmedByUserId, null);
+    assert.equal((await f.db.select().from(schema.scrimBracketSlots)).length, 0);
+    assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 0);
+    assert.equal((await f.db.select().from(schema.scrimRounds)).length, 0);
+    assert.deepEqual(await getManualFormation(f.db, null, f.guildId, f.scrimId), before);
+    await moveManualPlayer(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), participantId: f.participants[0]!.id, slot: `${f.teams[1]!.id}:top` },
+        f.access
+    );
+    await confirmManualFormation(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.row()).status, 'ready');
+});
+
+test('같은 revision의 경기 시작과 편성 복귀 중 하나만 반영한다', async (t) => {
+    const f = await createFormationFixture(t);
+    await f.fill();
+    await confirmManualFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), bestOf: 3 },
+        f.access
+    );
+    const revision = await f.revision();
+    const [start, reopen] = await concurrently<unknown>([
+        () =>
+            advanceScrim(
+                f.db,
+                f.manager,
+                f.guildId,
+                f.scrimId,
+                { ...revision, key: 'start', blueTeamIds: { final: f.teams[0]!.id } },
+                f.access
+            ),
+        () =>
+            reopenFormation(
+                f.db,
+                f.manager,
+                f.guildId,
+                f.scrimId,
+                { ...revision, formationMethod: 'manual' },
+                f.access
+            )
+    ]);
+    assert.notEqual(start!.status, reopen!.status);
+    const started = start!.status === 'fulfilled';
+    const row = await f.row();
+    assert.equal(row.revision, revision.expectedRevision + 1);
+    assert.equal(row.status, started ? 'in_progress' : 'preparing');
+    assert.equal((await f.db.select().from(schema.matches)).length, started ? 1 : 0);
+    assert.equal((await f.db.select().from(schema.scrimRounds)).length, started ? 1 : 0);
+});
+
+test('2팀 시작의 라인업 검증 실패는 확정 대진을 유지하고 경기를 남기지 않는다', async (t) => {
     const f = await createFormationFixture(t);
     await f.fill();
     await f.db
         .update(schema.scrimParticipants)
         .set({ userId: null })
         .where(eq(schema.scrimParticipants.id, f.participants[0]!.id));
+    await confirmManualFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), bestOf: 3 },
+        f.access
+    );
     const revision = await f.revision();
     await assert.rejects(
-        confirmManualFormation(
+        advanceScrim(
             f.db,
             f.manager,
             f.guildId,
             f.scrimId,
-            { ...revision, bestOf: 3, blueTeamId: f.teams[0]!.id },
+            { ...revision, key: 'start', blueTeamIds: { final: f.teams[0]!.id } },
             f.access
         ),
         errorCode('CONFLICT')
     );
     const row = await f.row();
-    assert.equal(row.status, 'preparing');
+    assert.equal(row.status, 'ready');
     assert.equal(row.revision, revision.expectedRevision);
-    assert.equal(row.bracketConfirmedAt, null);
-    assert.equal((await f.db.select().from(schema.scrimRounds)).length, 0);
-    assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 0);
+    assert.ok(row.bracketConfirmedAt);
+    assert.equal((await f.db.select().from(schema.scrimRounds)).length, 1);
+    assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 1);
     assert.equal((await f.db.select().from(schema.matches)).length, 0);
     assert.equal((await f.db.select().from(schema.matchLineups)).length, 0);
 });

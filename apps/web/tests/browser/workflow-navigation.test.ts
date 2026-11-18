@@ -35,7 +35,7 @@ for (const width of [1440, 390])
                 .insert(schema.scrims)
                 .values({
                     guildId: HTTP_IDS.guild,
-                    title: '한 번에 경기 시작',
+                    title: '편성 확정 후 경기 시작',
                     status: 'recruit',
                     formationMethod: 'manual',
                     teamCount: 2,
@@ -126,17 +126,31 @@ for (const width of [1440, 390])
             await format.getByRole('radio', { name: '3전 2선승', exact: true, checked: true }).waitFor();
             await format.getByRole('radio', { name: '5전 3선승', exact: true }).press('Space');
             await format.getByRole('radio', { name: '5전 3선승', exact: true, checked: true }).waitFor();
-            const start = f.page.getByRole('button', { name: '편성 확정·경기 시작', exact: true });
+            const confirmTeams = f.page.getByRole('button', { name: '편성 확정', exact: true });
+            await confirmTeams.press('Enter');
+            await accept('편성 확정');
+            await f.page.waitForURL(f.url + path + '/bracket');
+            const reopen = f.page.getByRole('button', { name: '수동 편성 다시 열기', exact: true });
+            await reopen.press('Enter');
+            await accept('수동 편성 다시 열기');
+            await f.page.waitForURL(f.url + path + '/manual');
+            assert.equal(await confirmTeams.isEnabled(), true);
+            await format.getByRole('radio', { name: '5전 3선승', exact: true }).press('Space');
+            await confirmTeams.press('Enter');
+            await accept('편성 확정');
+            await f.page.waitForURL(f.url + path + '/bracket');
+            const start = f.page.getByRole('button', { name: '내전 시작', exact: true });
             assert.equal(await start.isDisabled(), true);
+            assert.equal((await f.db.select().from(schema.matches)).length, 0);
             await f.page
-                .getByRole('combobox', { name: '1세트 진영', exact: true })
+                .getByRole('combobox', { name: '결승 1세트 진영', exact: true })
                 .selectOption(teams[1]!.id);
             assert.equal(
                 await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
                 false
             );
             await start.press('Enter');
-            await accept('편성 확정·경기 시작');
+            await accept('내전 시작');
             await f.page.waitForURL(new RegExp(`/g/${HTTP_IDS.guild}/matches/[^/]+$`));
             await navigation('대진·경기');
             const [match] = await f.db
@@ -224,6 +238,20 @@ test(
         const [scrim] = await f.db.select().from(schema.scrims).where(eq(schema.scrims.id, a.scrim.id));
         assert.equal(scrim!.status, 'ready');
         assert.equal((await f.db.select().from(schema.matches)).length, 0);
+        const reopen = f.page.getByRole('button', { name: '경매 다시 열기', exact: true });
+        await reopen.press('Enter');
+        const confirmation = f.page.getByRole('dialog', { name: '경매 다시 열기', exact: true });
+        await confirmation.getByRole('button', { name: '취소', exact: true }).press('Enter');
+        await reopen.press('Enter');
+        await confirmation.getByRole('button', { name: '확인', exact: true }).press('Enter');
+        await f.page.waitForURL(f.url + a.path);
+        await f.page.getByRole('button', { name: '되돌리기', exact: true }).waitFor();
+        await f.page.getByRole('button', { name: '경매 편성 확정', exact: true }).press('Enter');
+        await f.page
+            .getByRole('dialog', { name: '경매 편성 확정', exact: true })
+            .getByRole('button', { name: '확인', exact: true })
+            .press('Enter');
+        await f.page.waitForURL(f.url + bracketPath);
         const blue = f.page.getByRole('group', { name: '결승 1세트 블루', exact: true });
         const red = f.page.getByRole('group', { name: '결승 1세트 레드', exact: true });
         const pool = f.page.getByRole('region', { name: '배치할 팀', exact: true });

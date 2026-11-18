@@ -1,9 +1,23 @@
 import type { auctionStatus } from '#lib/server/db/schema.ts';
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import { POSITIONS } from '#lib/features/labels.ts';
+import type { FormationMethod, ScrimRevertAction } from './types.ts';
 
 export const TEAM_SIZE = 5;
 export const LANES: LolPosition[] = POSITIONS.map((position) => position.key);
+
+export function formationReturnAction(method: FormationMethod): ScrimRevertAction {
+    const auction = method === 'auction';
+    return {
+        label: auction ? '경매 다시 열기' : '수동 편성 다시 열기',
+        message:
+            (auction
+                ? '팀장, 낙찰·수동 배치 기록과 남은 포인트는 유지돼요.'
+                : '참가자의 팀과 포지션 배정은 유지돼요.') +
+            ' 대진 배치와 확정은 해제되고 경기 방식은 초기화돼요.',
+        blockedReason: null
+    };
+}
 
 // 팀 편성·경매 화면의 선발 참가자다. mmr은 현재 시즌의 포지션별 값이다.
 export type FormationPlayer = {

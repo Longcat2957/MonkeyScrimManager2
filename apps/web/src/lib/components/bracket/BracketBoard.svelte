@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { page } from '$app/state';
     import { tick } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
@@ -13,6 +14,7 @@
         type BracketMatch,
         type BracketView
     } from '#lib/features/scrims/bracket.ts';
+    import { formationReturnAction } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import BracketFormatControl from './BracketFormatControl.svelte';
@@ -41,6 +43,7 @@
     );
 
     const editing = $derived(Boolean(bracket?.can.edit));
+    const returnAction = $derived(formationReturnAction(auction ? 'auction' : 'manual'));
     const openingSides = (match: BracketMatch) =>
         Boolean(auction && match.a.seat && match.b.seat && !match.matchId && match.status === 'pending');
     const canSwap = (match: BracketMatch) =>
@@ -118,6 +121,14 @@
     async function reset() {
         if (await confirm('배치한 팀을 모두 팀 풀로 돌릴까요? 경기 방식은 그대로 둬요.', '배치 초기화'))
             await run('reset');
+    }
+
+    async function reopenFormation() {
+        const fields = {
+            formationMethod: auction ? 'auction' : 'manual',
+            expectedRevision: String(page.data.scrim?.revision ?? '')
+        };
+        if (await confirm(returnAction.message, returnAction.label)) await run('reopenFormation', fields);
     }
 
     async function confirmBracket() {
@@ -302,6 +313,9 @@
                 {/if}
                 <div class="flex flex-wrap items-center gap-2">
                     {#if busy}<Spinner label="대진 처리 중" />{/if}
+                    <Button variant="secondary" disabled={busy} onclick={reopenFormation}>
+                        {returnAction.label}
+                    </Button>
                     {#if editing}
                         <Button variant="quiet" disabled={busy || placed === 0} onclick={reset}>초기화</Button
                         >
@@ -313,7 +327,7 @@
                     {:else}
                         <StatusTag text="확정" state="success" />
                         <Button variant="secondary" disabled={busy} onclick={() => run('unlock')}
-                            >다시 편성</Button
+                            >대진 확정 해제</Button
                         >
                         <Button variant="primary" disabled={busy || !sidesReady} onclick={start}
                             >내전 시작</Button

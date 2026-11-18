@@ -13,7 +13,12 @@ import {
     setBracketBestOf,
     unlockBracket
 } from '../../../../src/lib/server/scrims/bracket.ts';
-import { advanceScrim, endScrimEarly, revertScrim } from '../../../../src/lib/server/scrims/workflow.ts';
+import {
+    advanceScrim,
+    endScrimEarly,
+    reopenFormation,
+    revertScrim
+} from '../../../../src/lib/server/scrims/workflow.ts';
 import { createFormationFixture, errorCode } from '../../support/domain-fixtures.ts';
 import { createMatchResultFixture } from '../../support/match-fixtures.ts';
 
@@ -284,6 +289,23 @@ test('결과가 없는 시작은 되돌릴 수 있지만 Game이 있으면 삭�
         errorCode('CONFLICT')
     );
     assert.equal((await f.db.select().from(schema.games))[0]?.id, game!.id);
+    // 단계 값만 잘못 복구된 경우에도 실제 경기와 게임이 편성 복귀보다 우선한다.
+    await f.db.update(schema.scrims).set({ status: 'ready' }).where(eq(schema.scrims.id, f.scrimId));
+    const revision = await f.revision();
+    await assert.rejects(
+        reopenFormation(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { ...revision, formationMethod: 'manual' },
+            f.access
+        ),
+        errorCode('CONFLICT')
+    );
+    assert.deepEqual(await f.revision(), revision);
+    assert.equal((await f.view()).matches[0]?.matchId, match!.id);
+    assert.deepEqual(await f.db.select().from(schema.games), [game]);
 });
 
 test('중도 종료와 재개는 Match 이전 상태와 Game을 보존한다', async (t) => {

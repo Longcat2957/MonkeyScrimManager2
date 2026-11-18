@@ -65,6 +65,7 @@ import {
     endScrimEarly,
     getScrimOperations
 } from '#lib/server/scrims/workflow.ts';
+import { reopenFormationAction } from './reopen-formation.server.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 const DONE = ['completed', 'ended_early', 'cancelled'];
@@ -312,11 +313,12 @@ const previewActions: Actions = {
         return failWith(await chooseMockFormationMethod(params.guildId, params.scrimId, method));
     },
 
-    revert: async ({ params }) => {
+    revert: async ({ params, request }) => {
         requireDev();
         const denied = requireManager(params.guildId, params.scrimId);
         if (denied) return denied;
-        return failWith(await revertMockScrim(params.guildId, params.scrimId));
+        const revision = Number((await request.formData()).get('expectedRevision') ?? NaN);
+        return failWith(await revertMockScrim(params.guildId, params.scrimId, revision));
     },
 
     restore: async ({ params }) => {
@@ -432,6 +434,7 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
 
 // 개발 샘플 ID만 메모리 저장소를 사용한다. 실제 요청은 같은 이름의 DB 업무 함수로 연결한다.
 export const actions: Actions = {
+    reopenFormation: reopenFormationAction,
     ...Object.fromEntries(
         Object.entries(previewActions).map(([name, preview]) => [
             name,

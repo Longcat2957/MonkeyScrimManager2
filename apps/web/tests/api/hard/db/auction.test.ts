@@ -9,6 +9,7 @@ import {
     assignAuctionCurrent,
     assignAuctionUnsold,
     awardAuctionLot,
+    confirmAuctionFormation,
     drawAuctionLot,
     getAuction,
     passAuctionLot,
@@ -19,7 +20,7 @@ import {
     saveAuctionSetup,
     startAuction
 } from '../../../../src/lib/server/scrims/auction.ts';
-import { chooseFormationMethod, revertScrim } from '../../../../src/lib/server/scrims/workflow.ts';
+import { chooseFormationMethod, reopenFormation } from '../../../../src/lib/server/scrims/workflow.ts';
 import { createFormationFixture, concurrently, errorCode } from '../../support/domain-fixtures.ts';
 
 async function fixture(t: TestContext) {
@@ -515,10 +516,54 @@ test('모든 팀이 다섯 명이면 편성을 완료하고 복귀·방식 변�
         resetAuction(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
         errorCode('CONFLICT')
     );
-    await revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    const ledger = () =>
+        f.db.select().from(schema.auctionAcquisitions).orderBy(schema.auctionAcquisitions.id);
+    const before = await f.view();
+    const purchases = await ledger();
+    const actions = await f.db
+        .select()
+        .from(schema.auctionActions)
+        .orderBy(schema.auctionActions.sequenceNumber);
+    await reopenFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), formationMethod: 'auction' },
+        f.access
+    );
+    assert.deepEqual((await f.view()).teams, before.teams);
+    assert.deepEqual(await ledger(), purchases);
+    assert.deepEqual(
+        await f.db.select().from(schema.auctionActions).orderBy(schema.auctionActions.sequenceNumber),
+        actions
+    );
     assert.equal((await f.view()).canRevert, true);
+    await confirmAuctionFormation(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await f.row()).status, 'ready');
+    assert.equal((await f.view()).status, 'completed');
+    assert.deepEqual(await ledger(), purchases);
+    assert.deepEqual((await f.view()).teams, before.teams);
+    await reopenFormation(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        { ...(await f.revision()), formationMethod: 'auction' },
+        f.access
+    );
     await revertAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    assert.equal((await ledger()).filter((entry) => !entry.voidedAt).length, 7);
+    assert.deepEqual(
+        (await f.view()).teams.map((team) => team.remainingPoints),
+        [96, 97]
+    );
+    assert.ok((await f.view()).openLotId);
     assert.equal((await f.db.select().from(schema.scrimBracketNodes)).length, 0);
+    await assert.rejects(
+        confirmAuctionFormation(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
+        errorCode('CONFLICT')
+    );
     await chooseFormationMethod(
         f.db,
         f.manager,

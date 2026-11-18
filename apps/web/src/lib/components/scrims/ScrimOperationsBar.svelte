@@ -1,7 +1,13 @@
 <script lang="ts">
+    import { page } from '$app/state';
     import MenuButton from '#lib/components/layout/MenuButton.svelte';
     import type { MenuAction } from '#lib/components/common/menu.ts';
-    import type { ScrimRevertAction, ScrimSettings, ScrimSettingsField } from '#lib/features/scrims/types.ts';
+    import type {
+        FormationMethod,
+        ScrimRevertAction,
+        ScrimSettings,
+        ScrimSettingsField
+    } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { toast } from '#lib/ui/toast.ts';
@@ -9,6 +15,7 @@
 
     type Props = {
         revert: ScrimRevertAction | null;
+        readyMethod: FormationMethod | null;
         restore?: ScrimRevertAction | null;
         endEarly: boolean;
         cancellable: boolean;
@@ -20,6 +27,7 @@
 
     let {
         revert,
+        readyMethod,
         restore = null,
         endEarly,
         cancellable,
@@ -66,12 +74,13 @@
         return items;
     });
 
-    async function run(name: string, message: string, title: string) {
+    async function run(name: string, message: string, title: string, fields: Record<string, string> = {}) {
         if (busy) return;
+        const expectedRevision = String(page.data.scrim?.revision ?? '');
         if (!(await confirm(message, title))) return;
         working = true;
         try {
-            const failure = await postAction(name, {});
+            const failure = await postAction(name, { ...fields, expectedRevision });
             if (failure) toast.error(failure);
         } finally {
             working = false;
@@ -97,8 +106,11 @@
             } finally {
                 notifying = false;
             }
-        } else if (key === 'revert' && revert) await run('revert', revert.message, revert.label);
-        else if (key === 'restore' && restore) await run('restore', restore.message, restore.label);
+        } else if (key === 'revert' && revert) {
+            if (readyMethod)
+                await run('reopenFormation', revert.message, revert.label, { formationMethod: readyMethod });
+            else await run('revert', revert.message, revert.label);
+        } else if (key === 'restore' && restore) await run('restore', restore.message, restore.label);
         else if (key === 'endEarly')
             await run(
                 'endEarly',

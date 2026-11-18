@@ -26,6 +26,7 @@ import {
     confirmBracket,
     unlockBracket
 } from '#lib/server/scrims/bracket.ts';
+import { reopenFormationAction } from '../reopen-formation.server.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 const isDemo = (guildId: string) => dev && Boolean(findMockGuild(guildId));
@@ -75,6 +76,7 @@ function readBlueTeamIds(data: FormData): Record<string, string> {
 }
 
 export const actions: Actions = {
+    reopenFormation: reopenFormationAction,
     place: async ({ request, params, locals, setHeaders }) => {
         const data = await request.formData();
         if (isDemo(params.guildId))

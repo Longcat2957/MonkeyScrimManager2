@@ -12,7 +12,7 @@ import {
     type BracketView
 } from '#lib/features/scrims/bracket.ts';
 import { parseSlot } from '#lib/features/scrims/formation.ts';
-import { findMockScrimRecord, type MockFailure, type MockScrim } from './scrims.ts';
+import { bumpMockRevision, findMockScrimRecord, type MockFailure, type MockScrim } from './scrims.ts';
 import { cancelMockMatchResults, createMockMatch, setMockMatchStatus } from './matches.ts';
 import { getMockAuction, getMockManualFormation } from './teams.ts';
 
@@ -154,7 +154,9 @@ async function mutate(
                 ? '아직 확정하지 않은 대진이에요'
                 : '확정된 대진이에요. 다시 편성한 뒤 바꿔 주세요'
         };
-    return update(target.state, target.teams, target.scrim);
+    const failure = update(target.state, target.teams, target.scrim);
+    if (!failure) bumpMockRevision(target.scrim);
+    return failure;
 }
 
 export function placeMockBracketTeam(guildId: string, scrimId: string, seat: string, teamId: string | null) {
@@ -294,20 +296,11 @@ export async function syncMockBracketResult(
     }
 }
 
-export async function startMockManualMatch(
-    guildId: string,
-    scrimId: string,
-    bestOf: BestOf,
-    blueTeamId: string
-): Promise<MockFailure | null> {
-    const target = await load(guildId, scrimId);
-    if (!target?.state || target.teams.length !== 2)
-        return { status: 409, message: '2팀 수동 편성을 먼저 확정해 주세요' };
-    bracketSeats(target.state.matches).forEach((seat, index) =>
-        placeTeam(target.state!, seat.key, target.teams[index]!.id)
-    );
-    target.state.bestOf.final = bestOf;
-    return startBracket(target.state, target.teams, target.scrim, { final: blueTeamId });
+export function seedMockManualFinal(scrim: MockScrim, teamIds: string[], bestOf: BestOf) {
+    const matches = bracketTemplate(2);
+    matches[0]!.a.teamId = teamIds[0]!;
+    matches[0]!.b.teamId = teamIds[1]!;
+    states.set(`${scrim.guildId}/${scrim.id}`, { matches, bestOf: { final: bestOf }, confirmed: true });
 }
 
 /** 내전 단계 판단에 쓰는 대진 요약. 대진이 없으면 null이다. */

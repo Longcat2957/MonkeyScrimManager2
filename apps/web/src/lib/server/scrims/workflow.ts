@@ -1,4 +1,5 @@
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { formationReturnAction } from '../../features/scrims/formation.ts';
 import type { FormationMethod, ScrimNextAction, ScrimRevertAction } from '../../features/scrims/types.ts';
 import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -18,7 +19,6 @@ import { DomainError } from '../errors.ts';
 import { invalidateAuctionActions } from './auction-actions.ts';
 import { activeScrimCancellation } from './cancellation.ts';
 import {
-    assertNoGames,
     startPreparedScrim,
     deleteDraftBracket,
     getBracketInTransaction,
@@ -90,7 +90,6 @@ export async function chooseFormationMethod(
             if (!['recruit', 'preparing'].includes(row.status))
                 throw new DomainError('CONFLICT', '편성 방식은 팀 편성을 확정하기 전에만 바꿀 수 있어요');
             if (row.formationMethod === input.method) return;
-            await assertNoGames(tx, row.id);
             await deleteDraftBracket(tx, row.id);
             await invalidateAuctionFormation(tx, row, user, '편성 방식 변경', input.method === 'auction');
             await tx
@@ -142,6 +141,40 @@ export async function advanceScrim(
     );
 }
 
+async function reopenReadyFormation(tx: Transaction, row: ScrimRow, method: FormationMethod | null) {
+    if (row.status !== 'ready' || !method || row.formationMethod !== method)
+        throw new DomainError('CONFLICT', '확정한 팀 편성만 다시 열 수 있어요');
+    if (method === 'auction') {
+        const [auction] = await tx
+            .update(auctions)
+            .set({ status: 'in_progress', endedAt: null })
+            .where(and(eq(auctions.scrimId, row.id), eq(auctions.status, 'completed')))
+            .returning({ id: auctions.id });
+        if (!auction) throw new DomainError('CONFLICT', '완료된 경매를 찾을 수 없어요');
+    }
+    await deleteDraftBracket(tx, row.id);
+    await tx.update(scrims).set({ status: 'preparing' }).where(eq(scrims.id, row.id));
+}
+
+export async function reopenFormation(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    scrimId: string,
+    input: RevisionInput & { formationMethod: FormationMethod },
+    access?: ScrimAccessDependencies
+) {
+    return mutateScrim(
+        db,
+        actor,
+        guildId,
+        scrimId,
+        input,
+        (tx, row) => reopenReadyFormation(tx, row, input.formationMethod),
+        access
+    );
+}
+
 export async function revertScrim(
     db: Database,
     actor: Actor | null,
@@ -178,13 +211,7 @@ export async function revertScrim(
                     await tx.update(scrims).set({ status: 'recruit' }).where(eq(scrims.id, row.id));
                     break;
                 case 'ready':
-                    await deleteDraftBracket(tx, row.id);
-                    if (row.formationMethod === 'auction')
-                        await tx
-                            .update(auctions)
-                            .set({ status: 'in_progress', endedAt: null })
-                            .where(eq(auctions.scrimId, row.id));
-                    await tx.update(scrims).set({ status: 'preparing' }).where(eq(scrims.id, row.id));
+                    await reopenReadyFormation(tx, row, row.formationMethod);
                     break;
                 case 'in_progress':
                     await removeUnplayedMatches(tx, row.id);
@@ -396,12 +423,8 @@ export async function getScrimOperations(
                     message: '팀 편성을 초기화하고 다시 신청을 받아요. 편성 방식은 유지돼요.',
                     blockedReason: null
                 };
-            else if (row.status === 'ready')
-                revert = {
-                    label: '팀 편성 다시 하기',
-                    message: '대진을 초기화하고 팀 편성을 다시 고칠 수 있어요.',
-                    blockedReason: null
-                };
+            else if (row.status === 'ready' && row.formationMethod)
+                revert = formationReturnAction(row.formationMethod);
             else if (row.status === 'in_progress') {
                 const [game] = await tx
                     .select({ id: games.id })

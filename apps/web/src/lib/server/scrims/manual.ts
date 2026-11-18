@@ -17,7 +17,7 @@ import {
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
 import { INITIAL_MMR } from '../mmr/rules.ts';
-import { createBracketDraft, startPreparedScrim } from './bracket.ts';
+import { createBracketDraft } from './bracket.ts';
 import { formationPairRecords } from './formation-records.ts';
 import { mutateScrim, type ScrimRow } from './operation.ts';
 import { findScrim, readGuild } from './queries.ts';
@@ -258,7 +258,7 @@ export async function confirmManualFormation(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RevisionInput & { bestOf?: number; blueTeamId?: string },
+    input: RevisionInput & { bestOf?: number },
     access?: ScrimAccessDependencies
 ) {
     return mutateScrim(
@@ -295,21 +295,18 @@ export async function confirmManualFormation(
                 input.bestOf === undefined
                     ? {}
                     : { bracketConfirmedAt: new Date(), bracketConfirmedByUserId: user.userId };
-            const [prepared] = await tx
+            await tx
                 .update(scrims)
                 .set({ status: 'ready', ...confirmation })
-                .where(eq(scrims.id, row.id))
-                .returning();
-            if (input.bestOf === undefined) return null;
-            // 2팀은 별도 시드 선택 없이 확정한 팀 순서와 실제 포지션으로 한 경기를 시작한다.
+                .where(eq(scrims.id, row.id));
+            if (input.bestOf === undefined) return;
+            // 2팀은 시드를 자동 배치하지만 실제 경기는 별도의 시작 작업에서 만든다.
             await tx.update(scrimRounds).set({ bestOf: input.bestOf }).where(eq(scrimRounds.scrimId, row.id));
             for (const [index, slot] of (['a', 'b'] as const).entries())
                 await tx
                     .update(scrimBracketSlots)
                     .set({ teamId: teams[index]!.id })
                     .where(and(eq(scrimBracketSlots.scrimId, row.id), eq(scrimBracketSlots.slot, slot)));
-            const [matchId] = await startPreparedScrim(tx, prepared!, { final: input.blueTeamId ?? '' });
-            return matchId!;
         },
         access
     );

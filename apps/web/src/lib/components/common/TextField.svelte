@@ -19,6 +19,7 @@
         autocomplete?: HTMLInputAttributes['autocomplete'];
         inputmode?: HTMLInputAttributes['inputmode'];
         oninput?: (value: string) => void;
+        onkeydown?: HTMLInputAttributes['onkeydown'];
     };
 
     let {
@@ -38,7 +39,8 @@
         step,
         autocomplete,
         inputmode,
-        oninput
+        oninput,
+        onkeydown
     }: Props = $props();
 
     const id = $props.id();
@@ -61,6 +63,7 @@
         {step}
         {autocomplete}
         {inputmode}
+        {onkeydown}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
         class={[

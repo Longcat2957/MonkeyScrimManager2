@@ -44,6 +44,7 @@ export type MockScrim = ScrimSettings & {
     guildId: string;
     id: string;
     status: ScrimStatus;
+    revision?: number;
     cancelledFromStatus?: ScrimStatus | null;
     cancelledAuctionStatus?: AuctionStatus | null;
     endedEarlyFromStatus?: ScrimStatus | null;
@@ -290,6 +291,10 @@ export function findMockScrimRecord(guildId: string, scrimId: string) {
     return find(guildId, scrimId);
 }
 
+export function bumpMockRevision(scrim: MockScrim) {
+    scrim.revision = (scrim.revision ?? 0) + 1;
+}
+
 export function listMockAuctionScrims(guildId: string) {
     return scrims.filter(
         (scrim) =>
@@ -344,6 +349,7 @@ function toContext(scrim: MockScrim): ScrimContext {
         formationMethod,
         hardFearless,
         canManage,
+        revision: scrim.revision ?? 0,
         endedEarlyFromStatus: scrim.endedEarlyFromStatus ?? null
     };
 }
@@ -551,6 +557,7 @@ export async function updateMockScrimSettings(
         return { status: 409, message: '선발 인원보다 실출전 정원을 작게 바꿀 수 없어요' };
     }
     Object.assign(scrim, settings);
+    bumpMockRevision(scrim);
     if (scrim.status === 'recruit') fillSelected(scrim);
     return null;
 }
@@ -672,6 +679,7 @@ export async function cancelMockScrim(guildId: string, scrimId: string): Promise
         scrim.cancelledFromStatus = null;
         scrim.cancelledAuctionStatus = null;
         scrim.status = 'cancelled';
+        bumpMockRevision(scrim);
         return null;
     }
     if (!['recruit', 'preparing', 'ready'].includes(scrim.status))
@@ -681,6 +689,7 @@ export async function cancelMockScrim(guildId: string, scrimId: string): Promise
     scrim.cancelledAuctionStatus = getMockAuctionStatus(scrimId);
     if (scrim.cancelledAuctionStatus !== null) setMockAuctionStatus(scrimId, 'cancelled');
     scrim.status = 'cancelled';
+    bumpMockRevision(scrim);
     return null;
 }
 
@@ -708,6 +717,7 @@ export async function restoreMockCancelledScrim(
     if (!scrim.canManage) return { status: 403, message: '내전을 운영할 권한이 없어요' };
     const blocked = mockCancellationRestoreBlock(scrim);
     if (blocked) return { status: 409, message: blocked };
+    bumpMockRevision(scrim);
     if (scrim.fullCancellation && !scrim.fullCancellation.restored) {
         if (scrim.formationMethod === 'auction') setMockAuctionStatus(scrimId, 'setup');
         scrim.fullCancellation.restored = true;

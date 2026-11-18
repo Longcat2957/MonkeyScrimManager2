@@ -7,7 +7,7 @@ import {
     createRegistration,
     restoreCancelledScrim
 } from '../../../../src/lib/server/scrims/service.ts';
-import { getScrimOperations } from '../../../../src/lib/server/scrims/workflow.ts';
+import { getScrimOperations, reopenFormation } from '../../../../src/lib/server/scrims/workflow.ts';
 import { confirmManualFormation } from '../../../../src/lib/server/scrims/manual.ts';
 import {
     awardAuctionLot,
@@ -91,6 +91,17 @@ for (const status of ['preparing', 'ready'] as const)
         const nodes = await f.db.select().from(schema.scrimBracketNodes);
         const slots = await f.db.select().from(schema.scrimBracketSlots);
         await cancel(f);
+        await assert.rejects(
+            reopenFormation(
+                f.db,
+                f.manager,
+                f.guildId,
+                f.scrimId,
+                { ...(await f.revision()), formationMethod: 'manual' },
+                f.access
+            ),
+            errorCode('CONFLICT')
+        );
         await restore(f);
         assert.equal((await f.row()).status, status);
         assert.equal((await f.row()).formationMethod, before.formationMethod);

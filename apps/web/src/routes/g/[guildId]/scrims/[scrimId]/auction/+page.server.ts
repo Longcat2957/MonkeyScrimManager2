@@ -7,6 +7,7 @@ import {
     assignMockCurrent,
     assignMockUnsold,
     awardMockLot,
+    confirmMockAuctionFormation,
     drawMockLot,
     getMockAuction,
     passMockLot,
@@ -33,6 +34,7 @@ import {
     assignAuctionCurrent,
     assignAuctionUnsold,
     awardAuctionLot,
+    confirmAuctionFormation,
     drawAuctionLot,
     getAuction,
     passAuctionLot,
@@ -93,7 +95,7 @@ export const load: PageServerLoad = async ({ parent, params, depends, locals }) 
     const version = await latestDataDragonVersion();
     const auction = await getMockAuction(params.guildId, params.scrimId, await championResolver(version));
     if (!auction) error(404, '내전을 찾을 수 없습니다.');
-    return { scrim, auction, can: { manage: scrim.canManage } };
+    return { scrim, auction, can: { manage: scrim.canManage && scrim.status === 'preparing' } };
 };
 
 function failWith(failure: MockFailure | null) {
@@ -103,6 +105,13 @@ function failWith(failure: MockFailure | null) {
 const field = (data: FormData, name: string) => String(data.get(name) ?? '');
 
 const previewActions: Actions = {
+    confirmFormation: async ({ params, request }) => {
+        requireDev();
+        const revision = Number((await request.formData()).get('expectedRevision') ?? NaN);
+        const failure = await confirmMockAuctionFormation(params.guildId, params.scrimId, revision);
+        if (failure) return failWith(failure);
+        return { nextHref: resolve('/g/[guildId]/scrims/[scrimId]/bracket', params) };
+    },
     setup: async ({ request, params }) => {
         requireDev();
         let teams: { captainId: string | null; startPoints: number }[];
@@ -195,6 +204,9 @@ async function runAction(name: string, { request, params, locals, setHeaders }: 
         const actor = locals.actor;
         const { guildId, scrimId } = params;
         switch (name) {
+            case 'confirmFormation':
+                await confirmAuctionFormation(db, actor, guildId, scrimId, input);
+                return { nextHref: resolve('/g/[guildId]/scrims/[scrimId]/bracket', params) };
             case 'setup': {
                 let teams: unknown;
                 try {

@@ -16,6 +16,15 @@ import {
 } from '../src/lib/mocks/bracket.ts';
 import { createMockScrim, findMockScrimRecord } from '../src/lib/mocks/scrims.ts';
 import { getMockMatch, recordMockGame, type RawGame } from '../src/lib/mocks/matches.ts';
+import {
+    awardMockLot,
+    confirmMockAuctionFormation,
+    confirmMockManual,
+    getMockAuction,
+    getMockManualFormation,
+    revertMockLot
+} from '../src/lib/mocks/teams.ts';
+import { reopenMockReadyFormation } from '../src/lib/mocks/workflow.ts';
 import sample from '../src/lib/mocks/fixtures/rofl-sample.json' with { type: 'json' };
 
 const guildId = 'devGuild001';
@@ -161,6 +170,80 @@ test('모든 자리를 채워야 확정되고 확정 후에는 다시 편성해�
     assert.equal((await view(scrimId)).can.edit, true);
 });
 
+test('시작 전 수동 편성을 다시 열면 대진만 지우고 팀과 포지션은 남긴다', async () => {
+    const id = await readyScrim(2);
+    const scrim = findMockScrimRecord(guildId, id)!;
+    const before = (await getMockManualFormation(guildId, id))!;
+    await fill(id);
+    assert.equal(await confirmMockBracket(guildId, id), null);
+    const input = { formationMethod: 'manual' as const, expectedRevision: scrim.revision! };
+    assert.equal((await reopenMockReadyFormation('other', id, input))?.status, 404);
+    scrim.canManage = false;
+    assert.equal((await reopenMockReadyFormation(guildId, id, input))?.status, 403);
+    scrim.canManage = true;
+    assert.equal(
+        (await reopenMockReadyFormation(guildId, id, { ...input, formationMethod: 'auction' }))?.status,
+        409
+    );
+    assert.equal(
+        (await reopenMockReadyFormation(guildId, id, { ...input, expectedRevision: 0 }))?.status,
+        409
+    );
+    assert.equal(await reopenMockReadyFormation(guildId, id, input), null);
+    assert.equal(
+        (await reopenMockReadyFormation(guildId, id, { ...input, expectedRevision: scrim.revision! }))
+            ?.status,
+        409
+    );
+    assert.equal(scrim.status, 'preparing');
+    assert.equal(await getMockBracket(guildId, id), null);
+    assert.deepEqual(await getMockManualFormation(guildId, id), { ...before, confirmed: false });
+    assert.equal(await confirmMockManual(guildId, id, 5), null);
+    const prepared = await view(id);
+    assert.equal(prepared.confirmed, true);
+    assert.equal(prepared.bestOf.final, 5);
+    assert.equal(prepared.matches[0]!.matchId, null);
+    assert.deepEqual(
+        bracketSeats(prepared.matches).map((seat) => seat.teamId),
+        before.teams.map((team) => team.id)
+    );
+    assert.equal((await reopenMockReadyFormation(guildId, id, input))?.status, 409);
+});
+
+test('경매 복귀는 원장을 유지하고 전원 재확정 또는 직전 낙찰 수정을 허용한다', async () => {
+    const id = await readyScrim(4);
+    const scrim = findMockScrimRecord(guildId, id)!;
+    scrim.formationMethod = 'auction';
+    const reopen = () =>
+        reopenMockReadyFormation(guildId, id, {
+            formationMethod: 'auction',
+            expectedRevision: scrim.revision ?? 0
+        });
+    const before = (await getMockAuction(guildId, id))!;
+    await fill(id);
+    assert.equal(await setMockBracketBestOf(guildId, id, 'final', 1), null);
+    assert.equal(await reopen(), null);
+    const opened = (await getMockAuction(guildId, id))!;
+    assert.deepEqual(opened, { ...before, status: 'in_progress', canRevert: true });
+    assert.equal(await confirmMockAuctionFormation(guildId, id, scrim.revision!), null);
+    assert.deepEqual(await getMockAuction(guildId, id), before);
+    const draft = await view(id);
+    assert.equal(draft.bestOf.final, 5);
+    assert.ok(bracketSeats(draft.matches).every((seat) => !seat.teamId));
+    assert.equal(await reopen(), null);
+    assert.equal(await revertMockLot(guildId, id), null);
+    const corrected = (await getMockAuction(guildId, id))!;
+    assert.ok(corrected.openLot);
+    assert.ok(corrected.history.at(-1)!.voided);
+    assert.equal((await confirmMockAuctionFormation(guildId, id, scrim.revision!))?.status, 409);
+    const team = corrected.teams.find((team) => team.members.length < 5)!;
+    const previousTeam = before.teams.find((entry) => entry.id === team.id)!;
+    assert.equal(team.remainingPoints, previousTeam.remainingPoints + before.history.at(-1)!.price!);
+    assert.equal(await awardMockLot(guildId, id, team.id, 1), null);
+    assert.equal(scrim.status, 'ready');
+    assert.equal((await getMockAuction(guildId, id))!.history.at(-1)!.price, 1);
+});
+
 test('미리보기는 준결승 진영을 저장하고 두 승자가 정해져야 진영 미정 결승을 연다', async () => {
     const scrimId = await readyScrim(4);
     await fill(scrimId);
@@ -183,6 +266,15 @@ test('미리보기는 준결승 진영을 저장하고 두 승자가 정해져�
         splash: () => null
     };
     const started = await view(scrimId);
+    assert.equal(
+        (
+            await reopenMockReadyFormation(guildId, scrimId, {
+                formationMethod: 'manual',
+                expectedRevision: findMockScrimRecord(guildId, scrimId)!.revision!
+            })
+        )?.status,
+        409
+    );
     for (const [index, semi] of started.matches.filter((match) => match.stage === 'semi').entries()) {
         assert.equal((await view(scrimId)).matches.at(-1)!.matchId, null);
         const detail = (await getMockMatch(guildId, semi.matchId!, null, resolvers))!;

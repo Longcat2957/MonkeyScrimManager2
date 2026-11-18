@@ -48,3 +48,48 @@ test('실제 경매 action은 추첨·유찰 복귀의 취소와 권한·revisio
     );
     assert.equal((await f.request(path)).status, 200);
 });
+
+test('행위 원장 도입 전의 완료 경매도 포인트와 배정을 유지한 채 다시 확정할 수 있다', async (t) => {
+    const f = await createHttpFixture(t);
+    const { path, teams, manager, revision, action, setup } = await prepareHttpAuctionFixture(f);
+    assertAction(await setup(), 200);
+    assertAction(await action('start'), 200);
+    for (let index = 0; index < 8; index++) {
+        assertAction(await action('draw'), 200);
+        const [lot] = await f.db
+            .select()
+            .from(schema.auctionLots)
+            .where(eq(schema.auctionLots.status, 'open'));
+        assertAction(
+            await action('award', { lotId: lot!.id, teamId: teams[Math.floor(index / 4)]!.id, price: '3' }),
+            200
+        );
+    }
+    await f.db.delete(schema.auctionActions);
+    const purchases = await f.db
+        .select()
+        .from(schema.auctionAcquisitions)
+        .orderBy(schema.auctionAcquisitions.id);
+    const bracketPath = path.slice(0, -'/auction'.length) + '/bracket';
+    assertAction(
+        await f.action(
+            bracketPath,
+            'reopenFormation',
+            {
+                expectedRevision: await revision(),
+                formationMethod: 'auction'
+            },
+            manager.cookie
+        ),
+        200
+    );
+    assertAction(await action('revert'), 409);
+    assertAction(await action('confirmFormation'), 200);
+    assert.deepEqual(
+        await f.db.select().from(schema.auctionAcquisitions).orderBy(schema.auctionAcquisitions.id),
+        purchases
+    );
+    assert.equal((await f.db.select().from(schema.auctions))[0]?.status, 'completed');
+    assert.equal((await f.db.select().from(schema.scrims))[0]?.status, 'ready');
+    assert.equal((await f.db.select().from(schema.matches)).length, 0);
+});

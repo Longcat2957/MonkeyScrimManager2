@@ -4,10 +4,11 @@
     type Props = {
         items: NavItem[];
         label: string;
+        compact?: boolean;
         onnavigate?: () => void;
     };
 
-    let { items, label, onnavigate }: Props = $props();
+    let { items, label, compact = false, onnavigate }: Props = $props();
 </script>
 
 {#snippet navIcon(label: string)}
@@ -43,6 +44,7 @@
         {#each items as item (item.label)}
             {@const itemClass = [
                 'flex min-h-9.5 w-full items-center gap-2.5 rounded-form border px-2.5 text-sm no-underline focus-visible:-outline-offset-2 pointer-coarse:min-h-11',
+                compact && 'min-h-11 justify-center',
                 item.current
                     ? 'border-nexus bg-selected font-bold text-ink'
                     : 'border-transparent font-medium text-muted hover:bg-surface-hover hover:text-ink',
@@ -52,21 +54,23 @@
                 {#if item.static || item.disabled}
                     <span
                         class={itemClass}
+                        title={compact ? item.label : undefined}
                         aria-current={item.current ? 'page' : undefined}
                         aria-disabled={item.disabled || undefined}
                     >
                         {@render navIcon(item.label)}
-                        {item.label}
+                        <span class:sr-only={compact}>{item.label}</span>
                     </span>
                 {:else}
                     <a
                         href={item.href}
+                        title={compact ? item.label : undefined}
                         aria-current={item.current ? 'page' : undefined}
                         onclick={onnavigate}
                         class={itemClass}
                     >
                         {@render navIcon(item.label)}
-                        {item.label}
+                        <span class:sr-only={compact}>{item.label}</span>
                     </a>
                 {/if}
             </li>

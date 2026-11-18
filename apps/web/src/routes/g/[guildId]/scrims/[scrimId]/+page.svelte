@@ -54,6 +54,7 @@
     {#if showOperations && data.settings}
         <ScrimOperationsBar
             revert={data.can.revert}
+            readyMethod={data.scrim.status === 'ready' ? data.scrim.formationMethod : null}
             restore={data.can.restore}
             endEarly={data.can.endEarly}
             cancellable={['recruit', 'preparing', 'ready', 'in_progress'].includes(data.scrim.status)}

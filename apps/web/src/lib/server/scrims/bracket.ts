@@ -213,7 +213,12 @@ export async function removeUnplayedMatches(tx: Transaction, scrimId: string): P
 }
 
 export async function deleteDraftBracket(tx: Transaction, scrimId: string): Promise<void> {
-    await removeUnplayedMatches(tx, scrimId);
+    const [match] = await tx
+        .select({ id: matches.id })
+        .from(matches)
+        .where(and(eq(matches.scrimId, scrimId), isNull(matches.cancellationBatchId)))
+        .limit(1);
+    if (match) throw new DomainError('CONFLICT', '이미 경기가 생성되어 대진을 삭제할 수 없어요');
     await tx.delete(scrimBracketSlots).where(eq(scrimBracketSlots.scrimId, scrimId));
     await tx.delete(scrimBracketNodes).where(eq(scrimBracketNodes.scrimId, scrimId));
     await tx.delete(scrimRounds).where(eq(scrimRounds.scrimId, scrimId));

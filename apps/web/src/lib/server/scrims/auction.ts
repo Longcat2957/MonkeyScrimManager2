@@ -556,21 +556,55 @@ async function acquire(
         lotId: lot.id,
         acquisitionId: acquisition!.id
     });
-    const complete = state.teams.every(
-        (entry) =>
-            (entry.captainId ? 1 : 0) +
-                state.active.filter((value) => value.teamId === entry.id).length +
-                (entry.id === teamId ? 1 : 0) ===
-            TEAM_SIZE
+    state.active.push(acquisition!);
+    if (auctionRosterFull(state)) await finishAuction(tx, row, state.auction.id);
+}
+
+function auctionRosterFull(state: MutableState): boolean {
+    return state.teams.every(
+        (team) =>
+            team.captainId !== null &&
+            1 + state.active.filter((entry) => entry.teamId === team.id).length === TEAM_SIZE
     );
-    if (complete) {
-        await tx
-            .update(auctions)
-            .set({ status: 'completed', endedAt: new Date() })
-            .where(eq(auctions.id, state.auction.id));
-        await createBracketDraft(tx, row);
-        await tx.update(scrims).set({ status: 'ready' }).where(eq(scrims.id, row.id));
-    }
+}
+
+async function finishAuction(tx: Transaction, row: ScrimRow, auctionId: string) {
+    await tx
+        .update(auctions)
+        .set({ status: 'completed', endedAt: new Date() })
+        .where(eq(auctions.id, auctionId));
+    await createBracketDraft(tx, row);
+    await tx.update(scrims).set({ status: 'ready' }).where(eq(scrims.id, row.id));
+}
+
+export async function confirmAuctionFormation(
+    db: Database,
+    actor: Actor | null,
+    guildId: string,
+    scrimId: string,
+    input: RevisionInput,
+    access?: ScrimAccessDependencies
+) {
+    return mutateAuction(
+        db,
+        actor,
+        guildId,
+        scrimId,
+        input,
+        'in_progress',
+        async (tx, row, _user, state) => {
+            const assigned = new Map(state.active.map((entry) => [entry.scrimParticipantId, entry.teamId]));
+            for (const team of state.teams) if (team.captainId) assigned.set(team.captainId, team.id);
+            if (
+                state.open ||
+                !auctionRosterFull(state) ||
+                state.selected.some(({ participant }) => assigned.get(participant.id) !== participant.teamId)
+            )
+                throw new DomainError('CONFLICT', '모든 팀의 배정을 마친 뒤 확정해 주세요');
+            await finishAuction(tx, row, state.auction.id);
+        },
+        access
+    );
 }
 
 export async function awardAuctionLot(
