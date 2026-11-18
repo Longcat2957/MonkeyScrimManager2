@@ -45,12 +45,14 @@ const upload = (
 function alternateAccount(f: Fixture) {
     const players = f
         .players()
-        .map((player, index) => (index === 0 ? { ...player, RIOT_ID_GAME_NAME: 'AlternateTop' } : player));
+        .map((player, index) =>
+            index === 0 ? { ...player, RIOT_ID_GAME_NAME: 'AlternateTop', RIOT_ID_TAG_LINE: '무 신' } : player
+        );
     const dependencies = {
         ...f.dependencies,
         riot: {
             getAccountByRiotId: async (input: { gameName: string; tagLine: string }) =>
-                input.gameName === 'AlternateTop'
+                input.gameName === 'AlternateTop' && input.tagLine === '무 신'
                     ? { puuid: 'fixture-alternate-top', gameName: input.gameName, tagLine: input.tagLine }
                     : f.dependencies.riot.getAccountByRiotId(input)
         }

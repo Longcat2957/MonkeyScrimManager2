@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
-import { parseRiotId } from '../../features/me/riot-id.ts';
 import { lockUserLifecycleChanges } from '../accounts/lifecycle.ts';
 import { requireUser } from '../auth/guards.ts';
 import type { Actor } from '../auth/types.ts';
@@ -147,9 +146,8 @@ function validateProjection(prepared: RoflImportData) {
     }
     for (const player of participantData) {
         if (
-            !player.gameName ||
-            !player.tagLine ||
-            !parseRiotId(`${player.gameName}#${player.tagLine}`) ||
+            !player.gameName?.trim() ||
+            !player.tagLine?.trim() ||
             !player.champion ||
             player.champion.length > 128 ||
             [
@@ -181,11 +179,6 @@ async function resolveReplayAccounts(prepared: RoflImportData, dependencies: Mat
                         throw new DomainError('SERVICE_UNAVAILABLE', 'Riot 계정 식별자를 확인할 수 없어요');
                     const gameName = account.gameName?.trim() || player.gameName!;
                     const tagLine = account.tagLine?.trim() || player.tagLine!;
-                    if (!parseRiotId(`${gameName}#${tagLine}`))
-                        throw new DomainError(
-                            'SERVICE_UNAVAILABLE',
-                            'Riot 계정의 현재 이름을 확인할 수 없어요'
-                        );
                     return { index: player.participantIndex, puuid: account.puuid, gameName, tagLine };
                 } catch (error) {
                     if (error instanceof RiotError && error.code === 'NOT_FOUND')
