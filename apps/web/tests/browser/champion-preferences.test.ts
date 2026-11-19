@@ -212,15 +212,7 @@ for (const width of [1440, 390])
                         : []
                 );
                 for (const game of [1, 2])
-                    assertAction(
-                        await f.action(
-                            f.path,
-                            'upload',
-                            { ...(await f.confirm(game)), file: f.file(1_800_125 + game * 100_000) },
-                            f.participant.cookie
-                        ),
-                        200
-                    );
+                    assertAction(await f.record(game, f.file(1_800_125 + game * 100_000)), 200);
                 const original = await retained(f);
                 assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 20);
                 const viewport = { width, height: width === 390 ? 844 : 1000 };

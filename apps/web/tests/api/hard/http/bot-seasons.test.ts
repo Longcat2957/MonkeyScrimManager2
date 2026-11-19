@@ -65,10 +65,7 @@ test('시즌을 전환해도 진행 중인 경기의 정상 ROFL은 고정한 �
     });
     assert.equal(response.status, 200);
     const next: BotSeasonSnapshot = await response.json();
-    assertAction(
-        await f.action(f.path, 'upload', { ...(await f.confirm()), file: f.file() }, f.participant.cookie),
-        200
-    );
+    assertAction(await f.record(), 200);
     const rows = await f.db.select().from(schema.userPositionMmr);
     assert.equal(rows.length, 10);
     assert.ok(rows.every((row) => row.seasonId === f.season.id));

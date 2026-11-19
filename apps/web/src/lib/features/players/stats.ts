@@ -41,6 +41,7 @@ export function summarize(games: PlayerGame[]): PlayerSummary | null {
     const participation = games.filter(
         (game) => known(game.kills) && known(game.assists) && known(game.teamKills)
     );
+    const teamKills = sum(participation.map((game) => game.teamKills!));
     const champions = new Set(
         games.filter((game) => game.champion.id !== 'unknown').map((game) => game.champion.id)
     );
@@ -58,10 +59,8 @@ export function summarize(games: PlayerGame[]): PlayerSummary | null {
         goldPerMin: perMinute(games, (game) => game.gold),
         damageTakenPerMin: perMinute(games, (game) => game.damageTaken),
         visionPerGame: mean(games.map((game) => game.visionScore)),
-        killParticipation: participation.length
-            ? sum(participation.map((game) => game.kills! + game.assists!)) /
-              Math.max(1, sum(participation.map((game) => game.teamKills!)))
-            : null,
+        killParticipation:
+            teamKills > 0 ? sum(participation.map((game) => game.kills! + game.assists!)) / teamKills : null,
         champions: champions.size || null,
         maxKills: kills.length ? Math.max(...kills) : null,
         winStreak: chronologyKnown ? streaks.win : null,
@@ -146,7 +145,7 @@ export function topPercents(
         if (mine === null) return [key, null];
         const values = others.map((other) => metric.value(other)).filter(known);
         const ahead = values.filter((value) => ('ascending' in metric ? value < mine : value > mine)).length;
-        return [key, Math.max(1, Math.ceil(((ahead + 1) / Math.max(1, values.length)) * 100))];
+        return [key, Math.ceil(((ahead + 1) * 100) / values.length)];
     });
     return Object.fromEntries(entries) as Record<RankedMetric, number | null>;
 }

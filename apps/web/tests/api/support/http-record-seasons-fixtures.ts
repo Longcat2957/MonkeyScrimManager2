@@ -11,10 +11,7 @@ export async function createHttpRecordSeasonsFixture(
     options: { games?: 1 | 3; upstreams?: UpstreamRule[] } = {}
 ) {
     const f = await createHttpMatchResultFixture(t, options.upstreams);
-    assertAction(
-        await f.action(f.path, 'upload', { ...(await f.confirm()), file: f.file() }, f.participant.cookie),
-        200
-    );
+    assertAction(await f.record(), 200);
     if (options.games === 3) {
         // 듀오의 기존 3게임 기준도 실제 2:1 시리즈 결과로 충족한다.
         const second = new File(
@@ -31,19 +28,8 @@ export async function createHttpRecordSeasonsFixture(
             'fixture-season-2.rofl',
             { type: 'application/octet-stream' }
         );
-        assertAction(
-            await f.action(f.path, 'upload', { ...(await f.confirm(2)), file: second }, f.participant.cookie),
-            200
-        );
-        assertAction(
-            await f.action(
-                f.path,
-                'upload',
-                { ...(await f.confirm(3)), file: f.file(2_000_125) },
-                f.participant.cookie
-            ),
-            200
-        );
+        assertAction(await f.record(2, second), 200);
+        assertAction(await f.record(3, f.file(2_000_125)), 200);
     }
     const response = await f.request('/internal/bot/guilds/' + HTTP_IDS.guild + '/seasons', {
         method: 'POST',

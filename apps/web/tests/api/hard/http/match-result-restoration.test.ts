@@ -8,7 +8,7 @@ import { createHttpMatchResultFixture } from '../../support/http-match-fixtures.
 type Fixture = Awaited<ReturnType<typeof createHttpMatchResultFixture>>;
 
 async function cancelledResult(f: Fixture) {
-    const original = await f.confirm();
+    const original = await f.review(await f.confirm());
     assertAction(
         await f.action(f.path, 'upload', { ...original, file: f.file() }, f.participant.cookie),
         200
@@ -26,7 +26,7 @@ async function cancelledResult(f: Fixture) {
     return {
         original,
         game: game!,
-        current: { ...original, expectedRevision: String((await f.matchRow()).revision) }
+        current: await f.review({ ...original, expectedRevision: String((await f.matchRow()).revision) })
     };
 }
 

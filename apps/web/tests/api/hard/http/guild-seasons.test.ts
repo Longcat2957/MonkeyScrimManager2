@@ -107,10 +107,7 @@ test('웹 시즌 관리의 SSR·부분 자료·전환은 실효 서버 관리자
 
 test('웹 전환은 기존 ROFL·MMR·내전 시즌을 보존하고 이후 기존 경기와 새 모집을 각각 원래·새 시즌에 귀속한다', async (t) => {
     const f = await createHttpMatchResultFixture(t);
-    assertAction(
-        await f.action(f.path, 'upload', { ...(await f.confirm()), file: f.file() }, f.participant.cookie),
-        200
-    );
+    assertAction(await f.record(), 200);
     const before = await preserved(f);
     assertAction(
         await f.action(adminPath, 'rotateSeason', fields(f.season.id, '  새 웹 시즌  '), f.manager.cookie),
@@ -125,15 +122,7 @@ test('웹 전환은 기존 ROFL·MMR·내전 시즌을 보존하고 이후 기�
     assert.equal(next.completed[0]!.endedAt, next.current.startedAt);
     assert.deepEqual(await preserved(f), before);
     assert.deepEqual(await f.db.select().from(schema.discordInteractionReceipts), []);
-    assertAction(
-        await f.action(
-            f.path,
-            'upload',
-            { ...(await f.confirm(2)), file: f.file(1_900_125) },
-            f.participant.cookie
-        ),
-        200
-    );
+    assertAction(await f.record(2, f.file(1_900_125)), 200);
     const scores = await f.db.select().from(schema.userPositionMmr);
     assert.equal(scores.length, 10);
     assert.ok(scores.every((row) => row.seasonId === f.season.id));

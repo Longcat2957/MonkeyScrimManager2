@@ -10,16 +10,7 @@ import { appErrors, sessionContext } from './support/browser.ts';
 type Fixture = Awaited<ReturnType<typeof createHttpMatchResultFixture>>;
 
 async function completeSeries(f: Fixture) {
-    for (const order of [1, 2])
-        assertAction(
-            await f.action(
-                f.path,
-                'upload',
-                { ...(await f.confirm(order)), file: f.file(1_800_125 + order * 100_000) },
-                f.participant.cookie
-            ),
-            200
-        );
+    for (const order of [1, 2]) assertAction(await f.record(order, f.file(1_800_125 + order * 100_000)), 200);
     const games = (await f.db.select().from(schema.games)).sort(
         (left, right) => left.gameNumber - right.gameNumber
     );

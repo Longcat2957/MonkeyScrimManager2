@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import type { ButtonInteraction, ChatInputCommandInteraction, ModalSubmitInteraction } from 'discord.js';
 import { BotApiError, type BotApi } from '../api/client.js';
-import { scheduleFromKst } from '../commands/schedule.js';
+import { formatKstMinute, scheduleFromKst } from '../commands/schedule.js';
 import { card, label, linkRow, notice, scrimUrl } from '../messages/shared.js';
 
 interface CreationDraft {
@@ -42,17 +42,18 @@ export class ScrimCreationForms {
     ) {}
 
     create(actorId: string, guildId: string, interactionId: string): ScrimCreationForm {
-        for (const [id, form] of this.forms) if (form.expiresAt <= this.now()) this.forms.delete(id);
+        const now = this.now();
+        for (const [id, form] of this.forms) if (form.expiresAt <= now) this.forms.delete(id);
         if (this.forms.size >= this.maximum) this.forms.delete(this.forms.keys().next().value!);
         const form: ScrimCreationForm = {
             id: randomBytes(12).toString('hex'),
             actorId,
             guildId,
             interactionId,
-            expiresAt: this.now() + 10 * 60_000,
+            expiresAt: now + 10 * 60_000,
             draft: {
                 title: '',
-                scheduledAt: '',
+                scheduledAt: formatKstMinute(now + 30 * 60_000),
                 teamCount: '2',
                 reserveCapacity: '0',
                 hardFearless: 'false'

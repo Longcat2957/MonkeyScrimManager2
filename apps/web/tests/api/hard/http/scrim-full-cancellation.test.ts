@@ -7,10 +7,7 @@ import { createHttpMatchResultFixture } from '../../support/http-match-fixtures.
 
 test('HTTP 진행 내전 전체 취소·복구는 기존 action으로 원본 결과를 보존하고 편성 준비로 돌아간다', async (t) => {
     const f = await createHttpMatchResultFixture(t);
-    assertAction(
-        await f.action(f.path, 'upload', { ...(await f.confirm()), file: f.file() }, f.participant.cookie),
-        200
-    );
+    assertAction(await f.record(), 200);
     const path = '/g/' + HTTP_IDS.guild + '/scrims/' + f.scrim.id;
     const row = async () =>
         (await f.db.select().from(schema.scrims).where(eq(schema.scrims.id, f.scrim.id)))[0]!;
@@ -51,10 +48,7 @@ test('HTTP 진행 내전 전체 취소·복구는 기존 action으로 원본 결
 
 test('HTTP 안전하지 않은 후속 점수 보정은 전체 취소 409로 남고 결과·MMR은 바뀌지 않는다', async (t) => {
     const f = await createHttpMatchResultFixture(t);
-    assertAction(
-        await f.action(f.path, 'upload', { ...(await f.confirm()), file: f.file() }, f.participant.cookie),
-        200
-    );
+    assertAction(await f.record(), 200);
     const [rating] = await f.db.select().from(schema.userPositionMmr);
     await f.db.insert(schema.mmrLedgerEntries).values({
         seasonId: f.season.id,

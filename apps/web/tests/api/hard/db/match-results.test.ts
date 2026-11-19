@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import {
     confirmMatchLineup,
@@ -10,8 +10,9 @@ import {
 } from '../../../../src/lib/server/matches/service.ts';
 import { createMatchResultFixture, replayBytes } from '../../support/match-fixtures.ts';
 import { concurrently, errorCode } from '../../support/domain-fixtures.ts';
+import { snapshotTables } from '../../support/database.ts';
 import { MMR_POSITIONS } from '../../../../src/lib/server/mmr/rules.ts';
-import type { MatchRoflInput } from '../../../../src/lib/server/matches/results.ts';
+import { previewMatchRofl, type MatchRoflInput } from '../../../../src/lib/server/matches/results.ts';
 
 type Fixture = Awaited<ReturnType<typeof createMatchResultFixture>>;
 const replayPositions = { top: 'TOP', jungle: 'JUNGLE', mid: 'MIDDLE', bot: 'BOTTOM', support: 'UTILITY' };
@@ -172,6 +173,17 @@ test('확정 해제 후 이전 라인업 요청은 저장되지 않고 결과가
 test('확정 라인업의 실제 출전자는 업로드할 수 있고 출전하지 않는 멤버와 다른 서버 요청은 차단한다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const slot = await f.slot();
+    await assert.rejects(
+        previewMatchRofl(
+            f.db,
+            f.actors[15]!,
+            f.guildId,
+            f.match.id,
+            { ...slot, bytes: replayBytes(f.players()) },
+            f.dependencies
+        ),
+        errorCode('FORBIDDEN')
+    );
     await assert.rejects(upload(f, slot, undefined, f.match.id, f.actors[15]!), errorCode('FORBIDDEN'));
     await assert.rejects(
         importMatchRofl(
@@ -232,13 +244,29 @@ test('같은 파일의 동시 업로드와 성공 응답 유실 재전송은 Gam
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const slot = await f.slot();
     const bytes = replayBytes(f.players());
-    const results = await concurrently([() => upload(f, slot, bytes), () => upload(f, slot, bytes)]);
+    const { digest } = await previewMatchRofl(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.match.id,
+        { ...slot, bytes },
+        f.dependencies
+    );
+    const confirmed = { ...slot, previewDigest: digest };
+    const results = await concurrently([
+        () => upload(f, confirmed, bytes),
+        () => upload(f, confirmed, bytes)
+    ]);
     assert.ok(results.every((result) => result.status === 'fulfilled'));
     const first = results[0];
     const second = results[1];
     assert.ok(first?.status === 'fulfilled' && second?.status === 'fulfilled');
     assert.deepEqual(first.value, second.value);
-    assert.deepEqual(await upload(f, slot, bytes), first.value);
+    assert.deepEqual(await upload(f, confirmed, bytes), first.value);
+    await assert.rejects(
+        previewMatchRofl(f.db, f.manager, f.guildId, f.match.id, { ...slot, bytes }, f.dependencies),
+        errorCode('CONFLICT')
+    );
     assert.equal((await f.db.select().from(schema.games)).length, 1);
     assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 10);
 });
@@ -314,19 +342,83 @@ test('팀 대응을 확인할 기존 계정이 없으면 원본 PUUID나 표시 
     assert.ok(Object.values(await storedCounts(f)).every((count) => count === 0));
 });
 
-test('명시된 팀·포지션의 미연결 부계정도 서버에 연결하되 기존 대표와 신청 계정은 바꾸지 않는다', async (t) => {
+test('미리보기는 부계정·결과를 쓰지 않고, 확정하면 미리 본 열 명의 기록과 새 연결만 반영한다', async (t) => {
     const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
     const slot = await f.slot();
     const beforeLinks = await f.db.select().from(schema.guildRiotAccounts);
     const beforeAccounts = (await f.db.select().from(schema.riotAccounts)).length;
     const alternate = alternateAccount(f);
+    const bytes = replayBytes([...alternate.players].reverse());
+    const snapshot = () =>
+        snapshotTables(f.db, [
+            schema.guilds,
+            schema.guildMembers,
+            schema.users,
+            schema.riotAccounts,
+            schema.guildRiotAccounts,
+            schema.guildAuditEntries,
+            schema.scrims,
+            schema.matches,
+            schema.scrimParticipants,
+            schema.matchLineups,
+            schema.matchLineupPlayers,
+            schema.matchRoflImports,
+            schema.discordPublicationJobs,
+            schema.userPositionMmr
+        ]);
+    const before = await snapshot();
+    const preview = () =>
+        previewMatchRofl(f.db, f.manager, f.guildId, f.match.id, { ...slot, bytes }, alternate.dependencies);
+    const shown = await preview();
+    assert.match(shown.digest, /^[a-f0-9]{64}$/);
+    assert.deepEqual(await preview(), shown);
+    assert.equal(shown.players.length, 10);
+    assert.deepEqual(
+        shown.players.filter((row) => row.newConnection).map((row) => row.riotId),
+        ['AlternateTop#무 신']
+    );
+    assert.deepEqual(await snapshot(), before);
+    assert.ok(Object.values(await storedCounts(f)).every((count) => count === 0));
     const result = await importMatchRofl(
         f.db,
         f.manager,
         f.guildId,
         f.match.id,
-        { ...slot, bytes: replayBytes([...alternate.players].reverse()) },
+        { ...slot, bytes, previewDigest: shown.digest },
         alternate.dependencies
+    );
+    const [game] = await f.db.select().from(schema.games).where(eq(schema.games.id, result.gameId));
+    assert.equal(game?.gameNumber, shown.order);
+    assert.equal(game?.blueTeamSlot, shown.blueTeamSlot);
+    assert.equal(game?.winnerSide, shown.winner);
+    const stored = await f.db
+        .select({ player: schema.gameParticipants, data: schema.roflParticipantDataV1 })
+        .from(schema.gameParticipants)
+        .innerJoin(
+            schema.roflParticipantDataV1,
+            and(
+                eq(schema.gameParticipants.roflMetadataId, schema.roflParticipantDataV1.roflMetadataId),
+                eq(
+                    schema.gameParticipants.roflParticipantIndex,
+                    schema.roflParticipantDataV1.participantIndex
+                )
+            )
+        )
+        .where(eq(schema.gameParticipants.gameId, result.gameId))
+        .orderBy(asc(schema.gameParticipants.roflParticipantIndex));
+    assert.deepEqual(
+        shown.players,
+        stored.map(({ player, data }) => ({
+            side: player.side,
+            displayName: player.displayName,
+            riotId: `${player.riotGameName}#${player.riotTagLine}`,
+            position: player.position,
+            champion: data.champion,
+            kills: data.stats.kills,
+            deaths: data.stats.deaths,
+            assists: data.stats.assists,
+            newConnection: !beforeLinks.some((link) => link.riotAccountId === player.riotAccountId)
+        }))
     );
     const [account] = await f.db
         .select()
@@ -370,6 +462,56 @@ test('명시된 팀·포지션의 미연결 부계정도 서버에 연결하되 
         )[0]!.riotAccountId,
         f.accounts[0]!.id
     );
+});
+
+test('파일·실제 Riot 식별자·계정 연결이 바뀐 미리보기로는 결과를 저장할 수 없다', async (t) => {
+    const f = await createMatchResultFixture(t, { keepAutomaticLineup: true });
+    const slot = await f.slot();
+    const alternate = alternateAccount(f);
+    const input = { ...slot, bytes: replayBytes(alternate.players) };
+    const preview = () =>
+        previewMatchRofl(f.db, f.manager, f.guildId, f.match.id, input, alternate.dependencies);
+    const shown = await preview();
+    const submit = (bytes = input.bytes, dependencies = alternate.dependencies) =>
+        importMatchRofl(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.match.id,
+            { ...input, bytes, previewDigest: shown.digest },
+            dependencies
+        );
+    await assert.rejects(submit(replayBytes(alternate.players, { bodyByte: 0x43 })), errorCode('CONFLICT'));
+    await assert.rejects(
+        submit(input.bytes, {
+            ...alternate.dependencies,
+            riot: {
+                getAccountByRiotId: async (riotId) => {
+                    const account = await alternate.dependencies.riot.getAccountByRiotId(riotId);
+                    return riotId.gameName === 'AlternateTop'
+                        ? { ...account, puuid: 'changed-lookup' }
+                        : account;
+                }
+            }
+        }),
+        errorCode('CONFLICT')
+    );
+    const accountId = f.accounts[1]!.id;
+    await f.db
+        .delete(schema.guildRiotAccounts)
+        .where(
+            and(
+                eq(schema.guildRiotAccounts.guildId, f.guildId),
+                eq(schema.guildRiotAccounts.riotAccountId, accountId)
+            )
+        );
+    const updated = await preview();
+    assert.notEqual(updated.digest, shown.digest);
+    assert.equal(updated.players.filter((player) => player.newConnection).length, 2);
+    await assert.rejects(submit(), errorCode('CONFLICT'));
+    assert.ok(Object.values(await storedCounts(f)).every((count) => count === 0));
+    assert.equal((await f.db.select().from(schema.riotAccounts)).length, f.accounts.length);
+    assert.equal((await f.matchRow()).revision, slot.expectedRevision);
 });
 
 test('미연결 계정의 누락·중복·잘못된 포지션과 기존 타 사용자 계정은 자동 귀속하지 않는다', async (t) => {
@@ -439,7 +581,27 @@ test('전원 계정 미연결이어도 선택한 블루 팀과 실제 포지션�
         TEAM: player.TEAM === '100' ? '200' : '100'
     });
     const bytes = replayBytes(f.players().map(swapTeam).reverse());
-    const game = await upload(f, first, bytes);
+    const previewSide = (blueTeamSlot: 'a' | 'b') =>
+        previewMatchRofl(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.match.id,
+            { ...first, blueTeamSlot, bytes },
+            f.dependencies
+        );
+    const wrong = await previewSide('a');
+    const corrected = await previewSide('b');
+    assert.notEqual(corrected.digest, wrong.digest);
+    assert.equal(corrected.winner, 'red');
+    assert.equal(corrected.blueTeamSlot, 'b');
+    assert.ok(corrected.players.every((player) => player.newConnection));
+    assert.notDeepEqual(
+        corrected.players.map((player) => player.displayName),
+        wrong.players.map((player) => player.displayName)
+    );
+    await assert.rejects(upload(f, { ...first, previewDigest: wrong.digest }, bytes), errorCode('CONFLICT'));
+    const game = await upload(f, { ...first, previewDigest: corrected.digest }, bytes);
     assert.deepEqual(await upload(f, first, bytes), game);
     const links = await f.db
         .select()

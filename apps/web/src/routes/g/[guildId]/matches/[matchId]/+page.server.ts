@@ -1,12 +1,20 @@
+import { createHash } from 'node:crypto';
 import { dev } from '$app/env';
 import { error, fail } from '@sveltejs/kit';
-import { getMockMatch, recordMockGame, setMockMatchSide, type RawGame } from '#lib/mocks/matches.ts';
+import {
+    getMockMatch,
+    previewMockGame,
+    recordMockGame,
+    setMockMatchSide,
+    type RawGame
+} from '#lib/mocks/matches.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { findMockScrim } from '#lib/mocks/scrims.ts';
 import { getScrim } from '#lib/server/scrims/queries.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { getMatch } from '#lib/server/matches/queries.ts';
 import { getMatchOperationContext } from '#lib/server/matches/operation-context.ts';
+import { previewMatchRofl } from '#lib/server/matches/results.ts';
 import {
     confirmMatchLineup,
     releaseMatchLineup,
@@ -19,6 +27,7 @@ import { actionFailure } from '#lib/server/actions.ts';
 import { DomainError } from '#lib/server/errors.ts';
 import { RiotError } from '#lib/server/riot/errors.ts';
 import type { LolPosition } from '#lib/features/guild/types.ts';
+import type { RoflPreview } from '#lib/features/matches/rofl-preview.ts';
 import { routeError } from '#lib/server/http.ts';
 import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
@@ -83,6 +92,20 @@ async function toRawGame(bytes: Uint8Array, signal: AbortSignal): Promise<RawGam
         const { projectRoflInWorker } = await import('#lib/server/rofl/processing-worker.ts');
         const projection = await projectRoflInWorker(bytes, { timeoutMs: uploadLimits.parseMs, signal });
         if (projection.result.status !== 'consistent') return '결과를 확인할 수 없어 기록하지 않았어요';
+        if (
+            projection.participants.length !== 10 ||
+            [100, 200].some((id) => projection.participants.filter((p) => p.teamId === id).length !== 5) ||
+            projection.participants.some(
+                (p) =>
+                    !p.riotId.gameName ||
+                    !p.riotId.tagLine ||
+                    !p.champion ||
+                    p.stats.kills === null ||
+                    p.stats.deaths === null ||
+                    p.stats.assists === null
+            )
+        )
+            return '양 팀 다섯 명의 계정과 최종 성적이 필요해요';
         return {
             gameVersion: projection.gameVersion,
             gameLengthMs: projection.gameLengthMs,
@@ -147,6 +170,89 @@ async function changeLineup(name: 'confirmLineup' | 'releaseLineup' | 'revertRes
     }
 }
 
+async function previewResponse(preview: RoflPreview) {
+    const champion = await championResolver(await latestDataDragonVersion());
+    for (const player of preview.players) player.champion = champion(player.champion).name;
+    return { preview };
+}
+
+async function processRofl({ request, params, locals, setHeaders }: ActionEvent, previewOnly: boolean) {
+    let release: (() => void) | undefined;
+    try {
+        const demo = dev && Boolean(findMockGuild(params.guildId));
+        const user = demo ? null : requireUser(locals.actor);
+        release = uploadAdmission.claim(user?.userId ?? `demo:${params.guildId}`);
+        const data = await readRoflForm(request, uploadLimits.bodyMs);
+        const file = data.get('file');
+        if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl')) {
+            noteOperationIssue('INVALID_INPUT');
+            return fail(400, { message: 'ROFL 파일을 골라 주세요' });
+        }
+        if (file.size > MAX_ROFL_BYTES) {
+            noteOperationIssue('ROFL_BODY_TOO_LARGE');
+            return fail(413, { message: '파일이 너무 커요' });
+        }
+        const previewDigest = String(data.get('previewDigest') ?? '');
+        if (!previewOnly && !/^[a-f0-9]{64}$/.test(previewDigest))
+            throw new DomainError('INVALID_INPUT', '먼저 등록값을 미리 확인해 주세요');
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const input = {
+            expectedRevision: integer(data, 'expectedRevision'),
+            nextGameNumber: integer(data, 'expectedGameNumber'),
+            blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
+            blueTeamConfirmed: data.get('blueTeamConfirmed') === 'true'
+        };
+        if (demo) {
+            const raw = await toRawGame(bytes, request.signal);
+            if (typeof raw === 'string') return fail(422, { message: raw });
+            // 명시적 개발 샘플은 운영 DB와 분리된 메모리 예시만 변경한다.
+            const digest = createHash('sha256')
+                .update(JSON.stringify([params.guildId, params.matchId, input]))
+                .update(bytes)
+                .digest('hex');
+            if (previewOnly) {
+                const candidate = previewMockGame(params.guildId, params.matchId, raw, input);
+                if ('status' in candidate) return fail(candidate.status, { message: candidate.message });
+                return await previewResponse({ ...candidate, digest });
+            }
+            if (digest !== previewDigest)
+                throw new DomainError('CONFLICT', '등록값이 달라졌어요. 다시 확인해 주세요');
+            const result = await recordMockGame(params.guildId, params.matchId, raw, input);
+            if ('status' in result) return fail(result.status, { message: result.message });
+            return result;
+        }
+        const db = getDb();
+        const slot = { ...input, lineupId: String(data.get('lineupId') ?? ''), bytes };
+        const deps = { roflProcessing: { timeoutMs: uploadLimits.parseMs, signal: request.signal } };
+        if (previewOnly)
+            return await previewResponse(
+                await previewMatchRofl(db, locals.actor, params.guildId, params.matchId, slot, deps)
+            );
+        return await importMatchRofl(
+            db,
+            locals.actor,
+            params.guildId,
+            params.matchId,
+            { ...slot, previewDigest },
+            deps
+        );
+    } catch (cause) {
+        noteRequestError(cause);
+        if (cause instanceof OperationLimitError && [408, 413, 429].includes(cause.status))
+            setHeaders({ Connection: 'close' });
+        if (cause instanceof RoflError) return fail(422, { message: '읽을 수 없는 ROFL 파일이에요' });
+        if (cause instanceof RiotError) {
+            if (cause.retryAfterSeconds) setHeaders({ 'Retry-After': String(cause.retryAfterSeconds) });
+            return fail(cause.status, {
+                message: 'Riot 계정 정보를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요'
+            });
+        }
+        return actionFailure(cause, setHeaders);
+    } finally {
+        release?.();
+    }
+}
+
 export const actions: Actions = {
     confirmLineup: (event) => changeLineup('confirmLineup', event),
     releaseLineup: (event) => changeLineup('releaseLineup', event),
@@ -172,65 +278,6 @@ export const actions: Actions = {
             return actionFailure(cause, setHeaders);
         }
     },
-    upload: async ({ request, params, locals, setHeaders }) => {
-        let release: (() => void) | undefined;
-        try {
-            const preview = dev && Boolean(findMockGuild(params.guildId));
-            const user = preview ? null : requireUser(locals.actor);
-            release = uploadAdmission.claim(user?.userId ?? `demo:${params.guildId}`);
-            const data = await readRoflForm(request, uploadLimits.bodyMs);
-            const file = data.get('file');
-            if (!(file instanceof File) || !file.name.toLowerCase().endsWith('.rofl')) {
-                noteOperationIssue('INVALID_INPUT');
-                return fail(400, { message: 'ROFL 파일을 골라 주세요' });
-            }
-            if (file.size > MAX_ROFL_BYTES) {
-                noteOperationIssue('ROFL_BODY_TOO_LARGE');
-                return fail(413, { message: '파일이 너무 커요' });
-            }
-            const bytes = new Uint8Array(await file.arrayBuffer());
-            const input = {
-                expectedRevision: integer(data, 'expectedRevision'),
-                nextGameNumber: integer(data, 'expectedGameNumber'),
-                blueTeamSlot: String(data.get('blueTeamSlot') ?? '') as 'a' | 'b',
-                blueTeamConfirmed: data.get('blueTeamConfirmed') === 'true'
-            };
-            if (preview) {
-                const raw = await toRawGame(bytes, request.signal);
-                if (typeof raw === 'string') return fail(422, { message: raw });
-                // 명시적 개발 샘플은 운영 DB와 분리된 메모리 예시만 변경한다.
-                const result = await recordMockGame(params.guildId, params.matchId, raw, input);
-                if ('status' in result) return fail(result.status, { message: result.message });
-                return result;
-            }
-            return await importMatchRofl(
-                getDb(),
-                locals.actor,
-                params.guildId,
-                params.matchId,
-                {
-                    ...input,
-                    lineupId: String(data.get('lineupId') ?? ''),
-                    bytes
-                },
-                {
-                    roflProcessing: { timeoutMs: uploadLimits.parseMs, signal: request.signal }
-                }
-            );
-        } catch (cause) {
-            noteRequestError(cause);
-            if (cause instanceof OperationLimitError && [408, 413, 429].includes(cause.status))
-                setHeaders({ Connection: 'close' });
-            if (cause instanceof RoflError) return fail(422, { message: '읽을 수 없는 ROFL 파일이에요' });
-            if (cause instanceof RiotError) {
-                if (cause.retryAfterSeconds) setHeaders({ 'Retry-After': String(cause.retryAfterSeconds) });
-                return fail(cause.status, {
-                    message: 'Riot 계정 정보를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요'
-                });
-            }
-            return actionFailure(cause, setHeaders);
-        } finally {
-            release?.();
-        }
-    }
+    preview: (event) => processRofl(event, true),
+    upload: (event) => processRofl(event, false)
 };

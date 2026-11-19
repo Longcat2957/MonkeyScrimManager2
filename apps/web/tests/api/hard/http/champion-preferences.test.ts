@@ -231,16 +231,7 @@ test('실제 경기 종료 후 탈퇴는 선호를 정리하며 stale withdrawn 
     const f = await createHttpChampionPreferencesFixture(t);
     assertAction(await f.champions('top', [103, 266], f.participant.cookie), 200);
     assertAction(await f.champions('top', [99], f.manager.cookie), 200);
-    for (const order of [1, 2])
-        assertAction(
-            await f.action(
-                f.path,
-                'upload',
-                { ...(await f.confirm(order)), file: f.file(1_800_125 + order * 100_000) },
-                f.participant.cookie
-            ),
-            200
-        );
+    for (const order of [1, 2]) assertAction(await f.record(order, f.file(1_800_125 + order * 100_000)), 200);
     const games = await f.db.select().from(schema.gameParticipants);
     const scores = await f.db.select().from(schema.userPositionMmr);
     const managerPrefs = (await rows(f)).filter((row) => row.userId === HTTP_IDS.manager);

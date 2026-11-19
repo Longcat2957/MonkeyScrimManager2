@@ -15,15 +15,7 @@ test(
         // 브라우저를 앱·DB보다 먼저 닫아 정리 중의 남은 요청을 방지한다.
         t.after(() => browser.close());
         const fixture = await createHttpMatchResultFixture(t);
-        assertAction(
-            await fixture.action(
-                fixture.path,
-                'upload',
-                { ...(await fixture.confirm()), file: fixture.file() },
-                fixture.participant.cookie
-            ),
-            200
-        );
+        assertAction(await fixture.record(), 200);
         const [game] = await fixture.db.select().from(schema.games);
         assert.equal(game!.status, 'completed');
         assert.equal(game!.startedAt, null);

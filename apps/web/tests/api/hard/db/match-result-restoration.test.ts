@@ -4,6 +4,7 @@ import test from 'node:test';
 import { asc, eq, isNull } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { importMatchRofl, revertLastMatchGame } from '../../../../src/lib/server/matches/service.ts';
+import { previewMatchRofl } from '../../../../src/lib/server/matches/results.ts';
 import { createMatchResultFixture, replayBytes } from '../../support/match-fixtures.ts';
 import { concurrently, errorCode } from '../../support/domain-fixtures.ts';
 import { snapshotTables } from '../../support/database.ts';
@@ -266,7 +267,20 @@ test('같은 복구 요청의 동시 실행과 응답 유실 재전송은 새 Ga
     const original = await upload(f, bytes);
     await cancel(f, original.gameId);
     const input = { ...(await f.slot()), bytes };
-    const restore = () => importMatchRofl(f.db, f.manager, f.guildId, f.match.id, input, withoutRiot(f));
+    const before = await snapshot(f);
+    const preview = await previewMatchRofl(f.db, f.manager, f.guildId, f.match.id, input, withoutRiot(f));
+    assert.equal(preview.players.length, 10);
+    assert.ok(preview.players.every((player) => !player.newConnection));
+    assert.deepEqual(await snapshot(f), before);
+    const restore = () =>
+        importMatchRofl(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.match.id,
+            { ...input, previewDigest: preview.digest },
+            withoutRiot(f)
+        );
     const results = await concurrently([restore, restore]);
     for (const result of results)
         assert.equal(result.status, 'fulfilled', result.status === 'rejected' ? String(result.reason) : '');

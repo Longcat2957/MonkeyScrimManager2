@@ -52,17 +52,7 @@ Prometheus는 `web:3000/metrics`만 내부 네트워크에서 수집하며 공�
 
 앱은 프로세스 누적 Prometheus 메트릭을 `/metrics`에 노출한다. Caddy와 nginx 예제는 이 경로를 공개하지 않으며 Prometheus만 Compose 내부 `web:3000`에 접속한다. Prometheus는 `web` 서비스의 DNS A 레코드로 replica 주소를 30초마다 갱신하므로 `web` scale-out 시 별도 target 등록 없이 각 인스턴스를 수집한다. 메트릭은 HTTP 요청·지연, DB 쿼리·풀 대기, Riot·Discord·Data Dragon·봇 호출, DB 풀 연결 수, 프로세스 메모리·가동 시간을 포함한다.
 
-| 메트릭 | 의미 |
-| --- | --- |
-| `msm2_http_requests_total` | route 템플릿·method·kind·status·code별 요청 수 |
-| `msm2_http_request_duration_seconds` | route 템플릿·method·kind별 요청 지연 histogram |
-| `msm2_db_queries_total` | DB 쿼리 성공·오류 수 |
-| `msm2_db_query_duration_seconds` | DB 쿼리 지연 histogram |
-| `msm2_db_pool_wait_seconds` | DB 풀 연결 대기 histogram |
-| `msm2_upstream_requests_total` | `riot`·`discord`·`ddragon`·`bot` 호출 성공·오류 수 |
-| `msm2_upstream_request_duration_seconds` | 외부 대상별 호출 지연 histogram |
-| `msm2_db_pool_connections` | 현재 DB 풀 total·idle·waiting |
-| `msm2_process_*` | RSS·heap·가동 시간 |
+메트릭 이름·label·패널·PromQL·요청 로그 읽기 방법은 [모니터링 안내](monitoring.md)를 따른다.
 
 메트릭은 앱 프로세스가 재시작하면 0부터 다시 시작하며 replica별로 별도 값이다. 장기 이력은 Prometheus가 보관한다. `monkeybot-prometheus-data` 볼륨은 30일 보존이며 삭제하지 않는다. Grafana 대시보드는 저장소의 프로비저닝 파일로 만들고 `monkeybot-grafana-data`에는 로그인·세션 상태만 둔다.
 

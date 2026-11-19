@@ -35,7 +35,19 @@ test('실제 HTTP 요청 ID·업무 오류·부분 실패 로그는 비밀·원�
     assert.ok(Number.isFinite(entry.durationMs));
     assert.deepEqual(
         Object.keys(entry).sort(),
-        ['event', 'requestId', 'route', 'method', 'status', 'code', 'durationMs'].sort()
+        [
+            'event',
+            'requestId',
+            'route',
+            'kind',
+            'method',
+            'status',
+            'code',
+            'durationMs',
+            'phases',
+            'db',
+            'upstream'
+        ].sort()
     );
     const denied = await f.request(
         `/internal/bot/guilds/${HTTP_IDS.guild}/seasons?actorId=${HTTP_IDS.member}`,
@@ -73,7 +85,7 @@ test('실제 upload 동시성 초과는 429·Retry-After로 거절하고 진행 
     const f = await createHttpMatchResultFixture(t, [], {
         operations: { ROFL_MAX_CONCURRENT: '1' }
     });
-    const firstFields = await f.confirm();
+    const firstFields = await f.review(await f.confirm());
     const blocker = await f.pool.connect();
     let first: ReturnType<typeof f.action> | undefined;
     try {
@@ -111,12 +123,7 @@ test('실제 upload 동시성 초과는 429·Retry-After로 거절하고 진행 
     assert.ok(first);
     assertAction(await first, 200);
     assert.equal((await f.db.select().from(schema.games)).length, 1);
-    const next = await f.action(
-        f.path,
-        'upload',
-        { ...(await f.confirm(2)), file: f.file(1_900_000) },
-        f.participant.cookie
-    );
+    const next = await f.record(2, f.file(1_900_000));
     assertAction(next, 200);
     assert.equal(
         (await f.db.select().from(schema.games).where(eq(schema.games.status, 'completed'))).length,

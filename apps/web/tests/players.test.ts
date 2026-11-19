@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { achievementBadges, rankAchievements } from '../src/lib/features/players/achievements.ts';
+import { percent } from '../src/lib/features/players/format.ts';
 import { championRecords, duoRecords, summarize, topPercents } from '../src/lib/features/players/stats.ts';
 import type { PlayerGame } from '../src/lib/features/players/types.ts';
 import { findMockPlayer, listMockPlayerGames } from '../src/lib/mocks/players.ts';
@@ -40,6 +41,22 @@ test('요약 지표를 게임 기준으로 계산하고 게임이 없으면 null
     assert.equal(summary.csPerMin, 400 / 40);
     assert.equal(summary.killParticipation, 12 / 40);
     assert.equal(summary.mainPosition, 'mid');
+});
+
+test('승률과 킬 관여는 원비율을 유지하고 표시할 때만 1%p 단위로 반올림한다', () => {
+    const games = Array.from({ length: 12 }, (_, index) =>
+        game({ win: index < 7, kills: 3, assists: 4, teamKills: 12 })
+    );
+    const summary = summarize(games)!;
+    assert.equal(percent(summary.wins / summary.games), '58%');
+    assert.equal(summary.killParticipation, 7 / 12);
+    assert.equal(percent(summary.killParticipation), '58%');
+
+    const noKills = game({ kills: 0, assists: 0 });
+    assert.equal(percent(summarize([noKills])!.killParticipation), '0%');
+    for (const teamKills of [0, null]) {
+        assert.equal(percent(summarize([{ ...noKills, teamKills }])!.killParticipation), '—');
+    }
 });
 
 test('챔피언은 게임 수 순으로, 듀오는 표본 기준을 넘긴 사람만 겹치지 않게 고른다', () => {
@@ -92,6 +109,22 @@ test('연승·연패와 최다 킬을 세고, 상위 %는 동점을 같은 순�
     const percents = topPercents(summary, [summary, summary, weaker, weaker]);
     assert.equal(percents.winRate, 25);
     assert.equal(topPercents(weaker, [summary, summary, weaker, weaker]).deaths, 75);
+});
+
+test('같게 표시되는 승률도 원비율로 순위를 정하고 공동 순위와 표본 크기를 반영한다', () => {
+    const mine = { ...summarize([game({})])!, wins: 7, games: 12 };
+    const ahead = { ...mine, wins: 73, games: 125 };
+    const tied = { ...mine, wins: 14, games: 24 };
+    const behind = { ...mine, wins: 6 };
+    assert.equal(percent(ahead.wins / ahead.games), percent(mine.wins / mine.games));
+    const peers = (total: number, rank: number) => [
+        mine,
+        tied,
+        ...Array.from({ length: total - 2 }, (_, i) => (i < rank - 1 ? ahead : behind))
+    ];
+    assert.equal(topPercents(mine, peers(17, 3)).winRate, 18);
+    assert.equal(topPercents(mine, peers(10, 3)).winRate, 30);
+    assert.equal(topPercents(mine, peers(25, 7)).winRate, 28);
 });
 
 test('업적은 최소 게임 수를 넘긴 사람만 줄 세우고 1위에게 배지를 준다', () => {

@@ -5,6 +5,7 @@ import sample from '../src/lib/mocks/fixtures/rofl-sample.json' with { type: 'js
 import {
     getMockMatch,
     listMockMatches,
+    previewMockGame,
     recordMockGame,
     setMockMatchStatus,
     setMockMatchSide,
@@ -133,6 +134,12 @@ test('업로드한 게임을 기록하고 같은 파일·종료된 경기는 거
     const unconfirmed = await recordMockGame(guildId, 'devMatch001', raw, actual);
     assert.ok('status' in unconfirmed && unconfirmed.status === 400);
     actual.blueTeamConfirmed = true;
+    const preview = previewMockGame(guildId, 'devMatch001', raw, actual);
+    assert.ok(!('status' in preview));
+    assert.equal(
+        (await getMockMatch(guildId, 'devMatch001', null, resolvers))!.match.games.length,
+        before.match.games.length
+    );
     assert.deepEqual(await recordMockGame(guildId, 'devMatch001', raw, actual), {
         order: 3,
         revision: 2,
@@ -143,6 +150,16 @@ test('업로드한 게임을 기록하고 같은 파일·종료된 경기는 거
     const detail = (await getMockMatch(guildId, 'devMatch001', null, resolvers))!;
     assert.equal(detail.match.status, 'completed');
     assert.equal(detail.game!.sides.find((side) => side.side === 'blue')!.slot, 'b');
+    assert.equal(detail.game!.order, preview.order);
+    assert.equal(detail.game!.sides.find((side) => side.win)?.side, preview.winner);
+    for (const side of detail.game!.sides) {
+        assert.deepEqual(
+            side.players.map((p) => [p.displayName, p.riotId, p.champion.id, p.kills, p.deaths, p.assists]),
+            preview.players
+                .filter((p) => p.side === side.side)
+                .map((p) => [p.displayName, p.riotId, p.champion, p.kills, p.deaths, p.assists])
+        );
+    }
     assert.equal(detail.operation.plannedBlueTeamSlot, null);
     assert.equal(detail.can.upload, false);
     // 이전 세트에 등장한 챔피언은 어느 팀이 다시 골라도 하드 피어리스에 해당한다.

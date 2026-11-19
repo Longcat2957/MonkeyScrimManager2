@@ -119,15 +119,7 @@ for (const width of [1440, 390])
                 const page = await context.newPage();
                 page.setDefaultTimeout(10_000);
                 const errors = appErrors(page);
-                assertAction(
-                    await f.action(
-                        f.path,
-                        'upload',
-                        { ...(await f.confirm()), file: f.file() },
-                        f.participant.cookie
-                    ),
-                    200
-                );
+                assertAction(await f.record(), 200);
                 assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 10);
 
                 await page.goto(f.url + '/me');
@@ -249,15 +241,7 @@ for (const width of [1440, 390])
                 await assertNoOverflow(page, 'saved-private-active');
 
                 // 공개를 꺼도 서버의 실제 출전자 연결로 같은 라인업의 다음 세트를 정상 처리한다.
-                assertAction(
-                    await f.action(
-                        f.path,
-                        'upload',
-                        { ...(await f.confirm(2)), file: f.file(1_900_000) },
-                        f.participant.cookie
-                    ),
-                    200
-                );
+                assertAction(await f.record(2, f.file(1_900_000)), 200);
                 assert.equal((await f.matchRow()).status, 'completed');
                 const before = await retained(f);
                 assert.equal((await f.db.select().from(schema.games)).length, 2);

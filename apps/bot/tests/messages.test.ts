@@ -28,6 +28,20 @@ function messageComponents(components: readonly MessageComponent[]): MessageComp
     return components.flatMap((component) => [component, ...messageComponents(component.components ?? [])]);
 }
 
+test('모집 공지는 저장된 한국 자정 이후의 시각을 표시하고 null만 일정 미정으로 표시한다', () => {
+    const job = publication();
+    const stamp = `<t:${Date.UTC(2026, 10, 19, 15, 15) / 1000}:F>`;
+    for (const scheduledAt of ['2026-11-19T15:15:00.000Z', null]) {
+        job.data.scheduledAt = scheduledAt;
+        const value = renderRecruitment(job, origin);
+        const text = messageComponents(value.components.map((component) => component.toJSON()))
+            .map((part) => part.content)
+            .join('\n');
+        assert.equal(text.includes(stamp), scheduledAt !== null);
+        assert.equal(text.includes('일정 미정'), scheduledAt === null);
+    }
+});
+
 test('선발 정원이 차도 신청할 수 있고 모집 마감 후에는 웹 링크만 활성화한다', () => {
     const job = publication();
     job.data.selected = 10;

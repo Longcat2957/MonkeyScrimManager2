@@ -1,3 +1,4 @@
+import type { RoflPreview } from '#lib/features/matches/rofl-preview.ts';
 import type {
     GameDetail,
     GamePlayer,
@@ -504,14 +505,12 @@ export function setMockMatchSide(guildId: string, matchId: string, input: SideIn
     return null;
 }
 
-/** 검증을 마친 ROFL 결과를 다음 게임으로 기록한다. 승부가 나면 경기를 종료한다. */
-export async function recordMockGame(
+function mockCandidate(
     guildId: string,
     matchId: string,
     raw: RawGame,
     input: SideInput & { blueTeamConfirmed: boolean }
-): Promise<MockFailure | { order: number; revision: number; completed: boolean }> {
-    await mockLatency.wait(200);
+): MockFailure | { match: StoredMatch; game: StoredGame } {
     const match = matches.find((item) => item.guildId === guildId && item.id === matchId);
     if (!match) return { status: 404, message: '경기를 찾을 수 없어요' };
     const failure = checkNextSet(match, input);
@@ -522,21 +521,65 @@ export async function recordMockGame(
     const duplicate = match.games.find((game) => game.signature === signature);
     if (duplicate) return { status: 409, message: `이미 ${duplicate.order}게임으로 기록된 파일이에요` };
     const order = match.games.length + 1;
-    match.games.push({
-        id: `${match.id}-g${order}`,
-        order,
-        playedAt: null,
-        blueSlot: input.blueTeamSlot,
-        raw,
-        signature
-    });
+    return {
+        match,
+        game: {
+            id: `${match.id}-g${order}`,
+            order,
+            playedAt: null,
+            blueSlot: input.blueTeamSlot,
+            raw,
+            signature
+        }
+    };
+}
+
+export function previewMockGame(
+    guildId: string,
+    matchId: string,
+    raw: RawGame,
+    input: SideInput & { blueTeamConfirmed: boolean }
+): MockFailure | Omit<RoflPreview, 'digest'> {
+    const candidate = mockCandidate(guildId, matchId, raw, input);
+    if ('status' in candidate) return candidate;
+    const { game } = candidate;
+    return {
+        order: game.order,
+        blueTeamSlot: game.blueSlot,
+        winner: winnerOf(game) === game.blueSlot ? 'blue' : 'red',
+        players: raw.participants.map(({ teamId, riotId, champion, stats }) => ({
+            side: teamId === 100 ? 'blue' : 'red',
+            displayName: riotId.gameName ?? '알 수 없음',
+            riotId: riotId.gameName && riotId.tagLine ? `${riotId.gameName}#${riotId.tagLine}` : '—',
+            position: null,
+            champion: champion ?? '—',
+            kills: stats.kills ?? null,
+            deaths: stats.deaths ?? null,
+            assists: stats.assists ?? null,
+            newConnection: false
+        }))
+    };
+}
+
+/** 검증을 마친 ROFL 결과를 다음 게임으로 기록한다. 승부가 나면 경기를 종료한다. */
+export async function recordMockGame(
+    guildId: string,
+    matchId: string,
+    raw: RawGame,
+    input: SideInput & { blueTeamConfirmed: boolean }
+): Promise<MockFailure | { order: number; revision: number; completed: boolean }> {
+    await mockLatency.wait(200);
+    const candidate = mockCandidate(guildId, matchId, raw, input);
+    if ('status' in candidate) return candidate;
+    const { match, game } = candidate;
+    match.games.push(game);
     const [a, b] = score(match);
     if (Math.max(a, b) > match.bestOf / 2) match.status = 'completed';
     match.plannedBlueTeamSlot = null;
     const revision = ++match.revision;
     const completed = match.status === 'completed';
     await syncMockBracketResult(guildId, match.scrimId, match.id, a, b, match.status);
-    return { order, revision, completed };
+    return { order: game.order, revision, completed };
 }
 
 /** 내전 중도 종료·되돌리기에 맞춰 경기 상태만 바꾼다. 기록된 게임은 그대로 둔다. */

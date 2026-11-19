@@ -44,13 +44,15 @@ test('운영자는 세트 진영을 정하고 출전자는 실제 진영을 확�
         mimeType: file.type,
         buffer: Buffer.from(await file.arrayBuffer())
     });
-    const submit = dialog.getByRole('button', { name: '업로드', exact: true });
-    assert.equal(await submit.isDisabled(), true);
+    const review = dialog.getByRole('button', { name: '미리보기', exact: true });
+    const submit = dialog.getByRole('button', { name: '이대로 등록', exact: true });
+    assert.equal(await review.isDisabled(), true);
     await dialog.getByRole('checkbox').check();
     await dialog.getByRole('radio', { name: '1팀' }).check();
     await dialog.getByRole('checkbox', { name: /블루 1팀 · 레드 2팀/, checked: false }).waitFor();
-    assert.equal(await submit.isDisabled(), true);
+    assert.equal(await review.isDisabled(), true);
     await dialog.getByRole('checkbox').check();
+    await review.click();
     await submit.click();
     await dialog.getByText('1세트로 기록했어요', { exact: false }).waitFor();
     const [game] = await fixture.db.select().from(schema.games);
@@ -74,7 +76,10 @@ test('운영자는 세트 진영을 정하고 출전자는 실제 진영을 확�
         mimeType: nextFile.type,
         buffer: Buffer.from(await nextFile.arrayBuffer())
     });
-    await dialog.getByRole('checkbox', { name: /블루 2팀 · 레드 1팀/ }).check();
+    await dialog.getByRole('radio', { name: '1팀', exact: true }).check();
+    await dialog.getByRole('checkbox', { name: /블루 1팀 · 레드 2팀/ }).check();
+    await review.click();
+    await dialog.getByRole('table', { name: '블루 1팀 승리' }).waitFor();
     await configure.click();
     await select.selectOption('a');
     await save.click();

@@ -300,15 +300,7 @@ for (const width of [1440, 390])
                 assert.equal(requests.length, 0);
 
                 // 활성 시즌이 이미 바뀌어도 기존 출전 라인업의 다음 실제 ROFL은 고정한 시즌에 반영한다.
-                assertAction(
-                    await f.action(
-                        f.path,
-                        'upload',
-                        { ...(await f.confirm(2)), file: f.file(1_900_000) },
-                        f.participant.cookie
-                    ),
-                    200
-                );
+                assertAction(await f.record(2, f.file(1_900_000)), 200);
                 assert.equal((await f.db.select().from(schema.games)).length, 2);
                 assert.equal((await f.db.select().from(schema.mmrLedgerEntries)).length, 20);
                 assert.ok(
@@ -319,11 +311,13 @@ for (const width of [1440, 390])
                 assert.equal(await games(page).innerText(), '1');
                 const refreshed = await responseAfter(() => page.clock.fastForward(30_100));
                 const realSnapshot = (await refreshed.json()) as StatsSnapshot;
-                assert.equal(realSnapshot.empty, false);
-                if (!realSnapshot.empty) {
-                    assert.equal(realSnapshot.showAchievements, false);
-                    assert.deepEqual(realSnapshot.achievements, []);
-                }
+                assert.ok(!realSnapshot.empty);
+                assert.equal(realSnapshot.showAchievements, false);
+                assert.deepEqual(realSnapshot.achievements, []);
+                const redTopId = f.identities[5]!.userId;
+                const redTop = realSnapshot.leaderboard.find((row) => row.userId === redTopId)!;
+                // 두 세트 모두 레드 탑은 5킬 7어시스트, 레드 팀은 합계 35킬이다.
+                assert.equal(redTop.killParticipation, 24 / 70);
                 await page.waitForFunction(() => {
                     const label = [...document.querySelectorAll('p')].find(
                         (node) => node.textContent?.trim() === '총 게임'
@@ -335,6 +329,11 @@ for (const width of [1440, 390])
                     );
                 });
                 assert.equal(await games(page).innerText(), '2');
+                await page
+                    .getByRole('row')
+                    .filter({ has: page.locator(`a[href*="/players/${redTopId}"]`) })
+                    .getByRole('cell', { name: '34%', exact: true })
+                    .waitFor();
                 await page.evaluate(() => {
                     location.hash = 'stats-same-view';
                 });

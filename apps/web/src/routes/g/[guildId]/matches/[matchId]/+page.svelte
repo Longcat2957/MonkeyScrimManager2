@@ -352,6 +352,7 @@
             expectedGameNumber: operation.nextGameNumber,
             lineupId: lineupOperation?.lineup?.id,
             plannedBlueTeamSlot: operation.plannedBlueTeamSlot,
+            scrimTitle: data.scrim.title,
             teamA: match.teamA,
             teamB: match.teamB
         }}

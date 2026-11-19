@@ -39,11 +39,7 @@ for (const width of [1440, 390])
                 const browser = await chromium.launch({ headless: true });
                 t.after(() => browser.close());
                 const f = await createHttpMatchResultFixture(t);
-                const slot = await f.confirm();
-                assertAction(
-                    await f.action(f.path, 'upload', { ...slot, file: f.file() }, f.manager.cookie),
-                    200
-                );
+                assertAction(await f.record(1, f.file(), f.manager.cookie), 200);
                 const before = await Promise.all([
                     f.db.select().from(schema.games),
                     f.db.select().from(schema.gameParticipants),

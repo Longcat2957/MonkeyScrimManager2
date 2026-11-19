@@ -35,6 +35,12 @@ export function isGuildOperator(
     );
 }
 
+export async function fetchGuildMembership(discord: DiscordClient, userId: string, guildId: string) {
+    const member = await discord.getMember(guildId, userId);
+    if (!member || member.isBot) return { member: null, guild: null };
+    return { member, guild: await discord.getGuild(guildId) };
+}
+
 /** 권한 검사 때마다 Discord를 확인한다. 저장된 isAdmin은 현재 접근을 허용하는 근거가 아니다. */
 export async function synchronizeGuildMembership(
     db: Database,
@@ -42,15 +48,14 @@ export async function synchronizeGuildMembership(
     userId: string,
     guildId: string
 ): Promise<GuildContext | null> {
-    const member = await discord.getMember(guildId, userId);
-    if (!member || member.isBot) {
+    const { member, guild } = await fetchGuildMembership(discord, userId, guildId);
+    if (!member) {
         // 현재 소속만 제거하고 사용자·참가자·경기 기록은 보존한다.
         await db
             .delete(guildMembers)
             .where(and(eq(guildMembers.guildId, guildId), eq(guildMembers.userId, userId)));
         return null;
     }
-    const guild = await discord.getGuild(guildId);
     if (!guild) {
         await db.update(guilds).set({ isActive: false, syncedAt: new Date() }).where(eq(guilds.id, guildId));
         return null;

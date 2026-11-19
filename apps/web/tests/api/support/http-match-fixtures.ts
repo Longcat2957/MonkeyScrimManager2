@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { parse } from 'devalue';
 import type { TestContext } from 'node:test';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../../src/lib/server/db/schema.ts';
@@ -190,6 +192,27 @@ export async function createHttpMatchResultFixture(
             'fixture.rofl',
             { type: 'application/octet-stream' }
         );
+    async function review(
+        slot: {
+            expectedRevision: string;
+            expectedGameNumber: string;
+            lineupId: string;
+            blueTeamSlot: string;
+            blueTeamConfirmed: string;
+        },
+        replay = file(),
+        cookie = participant.cookie
+    ) {
+        const fields = { ...slot, file: replay };
+        const { result } = await f.action(path, 'preview', fields, cookie);
+        assert.equal(result.type, 'success', JSON.stringify(result));
+        const { preview } = parse(result.data!);
+        assert.match(preview.digest, /^[a-f0-9]{64}$/);
+        return { ...fields, previewDigest: preview.digest as string };
+    }
+    async function record(order = 1, replay = file(), cookie = participant.cookie) {
+        return f.action(path, 'upload', await review(await confirm(order), replay, cookie), cookie);
+    }
     return {
         ...f,
         identities,
@@ -203,6 +226,8 @@ export async function createHttpMatchResultFixture(
         matchRow,
         lineupFields,
         confirm,
+        review,
+        record,
         file
     };
 }

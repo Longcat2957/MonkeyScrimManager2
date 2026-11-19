@@ -5,7 +5,7 @@ import type { Actor } from '../auth/types.ts';
 import type { Database, Transaction } from '../db/types.ts';
 import { guildDiscordSettings, guildMembers, guilds, users } from '../db/schema.ts';
 import { createDiscordClient, DiscordError, isDiscordId, type DiscordClient } from '../discord/client.ts';
-import { synchronizeGuildMembership } from '../discord/membership.ts';
+import { fetchGuildMembership, isGuildOperator, synchronizeGuildMembership } from '../discord/membership.ts';
 import { DomainError } from '../errors.ts';
 
 export type GuildAccessDependencies = { db: Database; discord: DiscordClient };
@@ -106,14 +106,43 @@ export async function getGuildAccessDependencies(
     return { db, discord };
 }
 
+function requireGuildUser(actor: Actor | null, guildId: string) {
+    const user = requireUser(actor);
+    if (!isDiscordId(guildId)) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+    if (!isDiscordId(user.userId)) throw new DomainError('UNAUTHENTICATED', '다시 로그인해 주세요');
+    return user;
+}
+
+/** 쓰기 없는 미리보기도 Discord에서 실시간 소속을 확인하고, 결과를 읽을 때 현재 운영자 설정을 적용한다. */
+export async function readLiveGuildMembership(
+    actor: Actor | null,
+    guildId: string,
+    dependencies: Partial<GuildAccessDependencies>
+) {
+    const user = requireGuildUser(actor, guildId);
+    const { discord } = await getGuildAccessDependencies(dependencies);
+    const { member, guild } = await fetchGuildMembership(discord, user.userId, guildId);
+    if (!member || !guild) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+    const syncedAt = Date.now();
+    return async (db: Database | Transaction): Promise<GuildContext> => {
+        const [row] = await db
+            .select({ operatorRoleId: guildDiscordSettings.operatorRoleId })
+            .from(users)
+            .leftJoin(guildDiscordSettings, eq(guildDiscordSettings.guildId, guildId))
+            .where(and(eq(users.id, user.userId), isNull(users.withdrawnAt)));
+        if (!row) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+        if (Date.now() - syncedAt > 60_000)
+            throw new DomainError('SERVICE_UNAVAILABLE', '서버 권한을 다시 확인해 주세요');
+        return { id: guildId, name: guild.name, isAdmin: isGuildOperator(guild, member, row.operatorRoleId) };
+    };
+}
+
 export async function requireGuildMember(
     actor: Actor | null,
     guildId: string,
     dependencies?: Partial<GuildAccessDependencies>
 ): Promise<GuildContext> {
-    const user = requireUser(actor);
-    if (!isDiscordId(guildId)) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
-    if (!isDiscordId(user.userId)) throw new DomainError('UNAUTHENTICATED', '다시 로그인해 주세요');
+    const user = requireGuildUser(actor, guildId);
     const { db, discord } = await getGuildAccessDependencies(dependencies);
     const guild = await synchronizeGuildMembership(db, discord, user.userId, guildId);
     // 다른 서버의 존재 여부를 구분해서 알려 주지 않는다.

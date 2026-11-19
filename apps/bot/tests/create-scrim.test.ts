@@ -71,6 +71,37 @@ function interaction(
     return { value: value as unknown as Interaction, replies, modals };
 }
 
+function scheduleField(modal: ModalBuilder): string {
+    const fields = modal.toJSON().components.filter((component) => component.type === ComponentType.Label);
+    const schedule = fields
+        .map((field) => field.component)
+        .find((field) => field.type === ComponentType.TextInput && field.custom_id === 'scheduledAt');
+    assert.ok(schedule?.type === ComponentType.TextInput);
+    return schedule.value ?? '';
+}
+
+test('한국 시각 23:45에 연 새 모집은 다음 날 00:15를 표시하고 같은 시각을 저장한다', async (t) => {
+    const now = Date.parse('2026-11-19T23:45:59+09:00');
+    t.mock.method(Date, 'now', () => now);
+    const calls: BotCreateScrimInput[] = [];
+    const handler = createInteractionHandler(
+        {
+            createScrim: async (_guild: string, input: BotCreateScrimInput) => {
+                calls.push(input);
+                return { scrimId: SCRIM };
+            }
+        } as BotApi,
+        origin
+    );
+    const command = interaction('command');
+    await handler(command.value);
+    const modal = command.modals[0]!;
+    const scheduledAt = scheduleField(modal);
+    assert.equal(scheduledAt, '2026-11-20 00:15');
+    await handler(interaction('modal', modal.data.custom_id!, { ...draft, scheduledAt }).value);
+    assert.equal(calls[0]?.scheduledAt, '2026-11-19T15:15:00.000Z');
+});
+
 test('내전모집은 즉시 네이티브 입력창을 열고 팀·대기·피어리스를 선택으로 제공한다', async () => {
     const request = interaction('command');
     await createInteractionHandler({} as BotApi, origin)(request.value);
@@ -165,12 +196,17 @@ test('입력 오류와 일시적 API 오류 뒤 초안을 수정해도 같은 �
     await handler(invalid.value);
     assert.equal(calls.length, 0);
     assert.match(JSON.stringify(invalid.replies), /실제 달력/);
-    const reopen = interaction('button', customId.replace('scrim-create:', 'scrim-create:edit:'));
+    const editId = customId.replace('scrim-create:', 'scrim-create:edit:');
+    const reopen = interaction('button', editId);
     await handler(reopen.value);
-    assert.ok(JSON.stringify(reopen.modals[0]!.toJSON()).includes('2026-02-29 20:00'));
+    assert.equal(scheduleField(reopen.modals[0]!), '2026-02-29 20:00');
     const failed = interaction('modal', customId);
     await handler(failed.value);
     assert.match(JSON.stringify(failed.replies), /입력 수정/);
+    const cleared = interaction('button', editId);
+    await handler(cleared.value);
+    assert.equal(scheduleField(cleared.modals[0]!), '');
+    assert.equal(calls[0]?.scheduledAt, null);
     await handler(interaction('modal', customId).value);
     assert.equal(calls.length, 2);
     assert.deepEqual(calls[0], calls[1]);
