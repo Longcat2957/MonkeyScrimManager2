@@ -1,3 +1,4 @@
+import { noteUpstreamRequest } from '../operations/context.ts';
 import { RiotError } from '../riot/errors.ts';
 
 export const DATA_DRAGON_ORIGIN = 'https://ddragon.leagueoflegends.com';
@@ -113,6 +114,8 @@ export function createDataDragonClient(
         const request = Promise.resolve().then(async () => {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), timeoutMs);
+            const upstreamStarted = performance.now();
+            let upstreamOk = false;
             try {
                 const response = await fetcher(`${DATA_DRAGON_ORIGIN}${path}`, {
                     method: 'GET',
@@ -146,6 +149,7 @@ export function createDataDragonClient(
                 // Finite FIFO cache: callers can request arbitrary valid versions/locales.
                 if (cache.size >= 64) cache.delete(cache.keys().next().value!);
                 cache.set(path, { data: value, expiresAt: now() + ttl * 1000 });
+                upstreamOk = true;
                 return value;
             } catch (error) {
                 if (error instanceof RiotError) throw error;
@@ -155,6 +159,7 @@ export function createDataDragonClient(
             } finally {
                 clearTimeout(timer);
                 pending.delete(path);
+                noteUpstreamRequest('ddragon', performance.now() - upstreamStarted, upstreamOk);
             }
         });
         pending.set(path, request);

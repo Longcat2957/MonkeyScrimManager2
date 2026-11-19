@@ -1,7 +1,12 @@
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { DatabaseLimits } from './config.ts';
-import { captureOperationIssue, type OperationCode } from '../operations/context.ts';
+import {
+    captureOperationIssue,
+    noteDatabaseQuery,
+    noteDatabaseWait,
+    type OperationCode
+} from '../operations/context.ts';
 import { OperationLimitError } from '../operations/errors.ts';
 
 /** statement는 서버에서 취소하고 연결 점유 상한은 실제 연결 종료로 해제한다. */
@@ -61,6 +66,41 @@ export function boundedDatabasePool(connectionString: string, limits: DatabaseLi
             if (lease) lease.note(lease.reason ?? 'DB_CONNECTION_LOST');
             clear(client);
         });
+        const query = client.query.bind(client);
+        client.query = ((...args: unknown[]) => {
+            const started = performance.now();
+            const first = args[0];
+            const text =
+                typeof first === 'string'
+                    ? first
+                    : first && typeof first === 'object' && 'text' in first && typeof first.text === 'string'
+                      ? first.text
+                      : undefined;
+            const finish = (ok: boolean) => noteDatabaseQuery(performance.now() - started, ok, text);
+            const last = args[args.length - 1];
+            // 콜백형은 pg가 Promise를 반환하지 않으므로 콜백 완료 시점에 기록한다.
+            if (typeof last === 'function') {
+                args[args.length - 1] = (...result: unknown[]) => {
+                    finish(!result[0]);
+                    (last as (...callbackArgs: unknown[]) => void)(...result);
+                };
+                return Reflect.apply(query, client, args);
+            }
+            const result: unknown = Reflect.apply(query, client, args);
+            if (result && typeof (result as PromiseLike<unknown>).then === 'function')
+                return Promise.resolve(result).then(
+                    (value) => {
+                        finish(true);
+                        return value;
+                    },
+                    (cause) => {
+                        finish(false);
+                        throw cause;
+                    }
+                );
+            finish(true);
+            return result;
+        }) as PoolClient['query'];
     });
     const startLease = (client: PoolClient, note: (code: OperationCode) => void) => {
         clear(client);
@@ -80,6 +120,7 @@ export function boundedDatabasePool(connectionString: string, limits: DatabaseLi
     // acquire는 이전 요청의 release 문맥일 수 있으므로 요청자가 connect할 때 recorder를 캡처한다.
     pool.connect = ((callback?: ConnectCallback) => {
         const note = captureOperationIssue();
+        const started = performance.now();
         const failure = (cause: Error) => {
             const timeout = [
                 'timeout exceeded when trying to connect',
@@ -96,16 +137,19 @@ export function boundedDatabasePool(connectionString: string, limits: DatabaseLi
         };
         if (callback)
             return connect((error, client, done) => {
+                noteDatabaseWait(performance.now() - started);
                 if (error && !client) return callback(failure(error), client, done);
                 if (client) startLease(client, note);
                 callback(error, client, done);
             });
         return connect().then(
             (client) => {
+                noteDatabaseWait(performance.now() - started);
                 startLease(client, note);
                 return client;
             },
             (cause: Error) => {
+                noteDatabaseWait(performance.now() - started);
                 throw failure(cause);
             }
         );

@@ -10,6 +10,7 @@ import type { Pool } from 'pg';
 import { databaseLimits } from './config.ts';
 import { boundedDatabasePool } from './pool.ts';
 import * as schema from './schema.ts';
+import { setDatabasePool } from './status.ts';
 
 const developmentState = globalThis as typeof globalThis & {
     __msm2PostgresPool?: Pool;
@@ -33,6 +34,7 @@ function createDatabase() {
         });
         if (dev) developmentState.__msm2PostgresPool = pool;
     }
+    setDatabasePool(pool);
 
     // 개발 중 HMR에서는 연결 풀을 재사용하고, Drizzle은 현재 스키마로 새로 구성한다.
     return drizzle({ client: pool, schema });

@@ -1,6 +1,6 @@
 # VPS 배포와 복구
 
-운영 환경은 Docker Compose로 Caddy, PostgreSQL, 웹(SvelteKit adapter-node), Discord 봇을 실행한다. 앱 배포 결과는 해당 main CD의 Actions 실행과 VPS 상태로 확인한다. 인증서 개인 키·운영 비밀은 저장소에 넣지 않는다. systemd·nginx 예제는 Compose와 별개인 단독 실행·격리 검사용이다.
+운영 환경은 Docker Compose로 Caddy, PostgreSQL, 웹(SvelteKit adapter-node), Discord 봇, Prometheus, Grafana를 실행한다. 앱 배포 결과는 해당 main CD의 Actions 실행과 VPS 상태로 확인한다. 인증서 개인 키·운영 비밀은 저장소에 넣지 않는다. systemd·nginx 예제는 Compose와 별개인 단독 실행·격리 검사용이다.
 
 ## Docker Compose 운영: 인프라 통합
 
@@ -9,9 +9,11 @@
 | 위치 | 역할 |
 | --- | --- |
 | [compose.yml](../deploy/compose.yml) | 기본 인프라: Caddy·PostgreSQL, 상태 확인, 로그 회전, 네트워크, 인증서 영속 볼륨과 기존 DB 외부 볼륨 |
-| [compose.app.yml](../deploy/compose.app.yml) | 같은 프로젝트에 웹·봇·일회성 migration을 합치는 앱 구성. 이미지 설정이 없으면 실패 |
+| [compose.app.yml](../deploy/compose.app.yml) | 같은 프로젝트에 웹·봇·일회성 migration·Prometheus·Grafana를 합치는 앱 구성. 이미지 설정이 없으면 실패 |
 | [Compose 환경 예제](../deploy/.env.example) | 경로·볼륨·포트와 후속 릴리스 이미지 설정. 서비스 비밀 값과 분리 |
-| [caddy/](../deploy/caddy/) | Caddy 자동 HTTPS와 내부 경로 차단·앱 프록시 설정 |
+| [caddy/](../deploy/caddy/) | Caddy 자동 HTTPS와 내부 경로 차단·앱·Grafana 프록시 설정 |
+| [prometheus/](../deploy/prometheus/) | 웹 `/metrics`를 15초마다 수집하고 Compose DNS로 replica를 자동 발견하는 설정 |
+| [grafana/](../deploy/grafana/) | Prometheus 데이터 소스와 API 성능 대시보드 프로비저닝 |
 | [provision.sql](../deploy/postgres/provision.sql) | MSM2 전용 DB·비특권 계정·미래 migration 객체의 런타임 권한 준비 |
 
 서버의 활성 배포 경로는 `/opt/monkeybot`이다. `deploy/`의 위 파일 구조를 그대로 배치하며 `/opt/monkeybot/.env`는 Compose 환경 예제를 기준으로 작성한다. 기본 `COMPOSE_FILE=compose.yml`은 인프라 두 서비스만 선택한다.
@@ -40,9 +42,33 @@ DB의 기존 loopback 포트 `127.0.0.1:10010`과 `deploy_data`·`monkeybot_tunn
 
 ### 앱 서비스 연결
 
-이미지와 `web.env`·`bot.env`·`migration.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 순서다. Caddy는 이때 `maintenance.caddy` 대신 `application.caddy`를 읽고 웹을 연결한다.
+이미지와 `web.env`·`bot.env`·`migration.env`·`grafana.env`가 준비된 릴리스에서는 `.env`의 `COMPOSE_FILE`을 `compose.yml:compose.app.yml`로 전환한다. 명령은 같은 `docker compose`를 사용한다. 앱 구성은 `postgres` 정상 → `migrate` 성공 → `web` 정상 → `bot` 정상 → Prometheus·Grafana 순서다. Caddy는 이때 `maintenance.caddy` 대신 `application.caddy`를 읽고 웹과 Grafana를 연결한다.
 
 Caddy의 HTTP `/healthz` 200은 프록시 생존 확인이다. 앱 구성의 웹 healthcheck는 실행 계정으로 업무 테이블 조회와 `/docs` 응답을 확인한다. 봇 상태 서버는 Compose에서 `BOT_STATUS_HOST=0.0.0.0`으로 바인딩하며 공개 포트 없이 웹이 내부 상태를 조회한다. 실제 봇은 CD가 기동하며 슬래시 명령 등록은 별도 운영 명령이다.
+
+Prometheus는 `web:3000/metrics`만 내부 네트워크에서 수집하며 공개 포트가 없다. Grafana는 `https://monkeybot.lol/grafana/`에서 로그인 후 대시보드를 보여 준다. Caddy는 `/metrics`와 `/internal`을 404로 막고 `/grafana`만 Grafana로 프록시한다. `grafana.env`의 관리자 비밀번호는 최초 기동 전에 32자 이상 난수로 채운다. 이 값은 최초 기동에만 적용된다.
+
+### API 성능 모니터링
+
+앱은 프로세스 누적 Prometheus 메트릭을 `/metrics`에 노출한다. Caddy와 nginx 예제는 이 경로를 공개하지 않으며 Prometheus만 Compose 내부 `web:3000`에 접속한다. Prometheus는 `web` 서비스의 DNS A 레코드로 replica 주소를 30초마다 갱신하므로 `web` scale-out 시 별도 target 등록 없이 각 인스턴스를 수집한다. 메트릭은 HTTP 요청·지연, DB 쿼리·풀 대기, Riot·Discord·Data Dragon·봇 호출, DB 풀 연결 수, 프로세스 메모리·가동 시간을 포함한다.
+
+| 메트릭 | 의미 |
+| --- | --- |
+| `msm2_http_requests_total` | route 템플릿·method·kind·status·code별 요청 수 |
+| `msm2_http_request_duration_seconds` | route 템플릿·method·kind별 요청 지연 histogram |
+| `msm2_db_queries_total` | DB 쿼리 성공·오류 수 |
+| `msm2_db_query_duration_seconds` | DB 쿼리 지연 histogram |
+| `msm2_db_pool_wait_seconds` | DB 풀 연결 대기 histogram |
+| `msm2_upstream_requests_total` | `riot`·`discord`·`ddragon`·`bot` 호출 성공·오류 수 |
+| `msm2_upstream_request_duration_seconds` | 외부 대상별 호출 지연 histogram |
+| `msm2_db_pool_connections` | 현재 DB 풀 total·idle·waiting |
+| `msm2_process_*` | RSS·heap·가동 시간 |
+
+메트릭은 앱 프로세스가 재시작하면 0부터 다시 시작하며 replica별로 별도 값이다. 장기 이력은 Prometheus가 보관한다. `monkeybot-prometheus-data` 볼륨은 30일 보존이며 삭제하지 않는다. Grafana 대시보드는 저장소의 프로비저닝 파일로 만들고 `monkeybot-grafana-data`에는 로그인·세션 상태만 둔다.
+
+Prometheus와 Grafana 이미지는 digest로 고정한다. `docker compose up`은 `grafana.env`가 없으면 실패하므로 서버에서 먼저 0600 파일을 준비한다. Grafana는 익명 접근과 가입을 끄고 HTTPS 쿠키를 사용한다. `/grafana/api/health` 200은 프록시 연결 확인이며 대시보드 접근에는 로그인이 필요하다. `GF_SECURITY_ADMIN_PASSWORD`는 최초 기동에만 적용된다. 이후 비밀번호 변경·분실은 Grafana UI 또는 `docker compose exec -T grafana grafana cli admin reset-admin-password '<새 비밀번호>'`를 사용한다.
+
+배포 스크립트는 `prometheus`·`grafana` 디렉터리를 서버로 복사하고 `promtool check config`와 Caddy 설정 검사를 먼저 실행한다. 배포 뒤 `/metrics`·`/internal` 공개 404와 Grafana 상태 200을 확인한다. Prometheus·Grafana 자체의 장기 백업·보존·알림 수신자는 운영 환경에서 정한다.
 
 ## 운영 환경과 이미지 분리
 
@@ -54,6 +80,7 @@ Caddy의 HTTP `/healthz` 200은 프록시 생존 확인이다. 앱 구성의 웹
 | `/etc/monkeybot/web.env` | 런타임 DB URL, Discord OAuth·봇 조회 토큰, Riot 키, 공유 내부 키 | [웹 환경](../deploy/env/web.env.example) |
 | `/etc/monkeybot/bot.env` | Discord 봇 토큰·앱 ID·선택 길드, 공유 내부 키 | [봇 환경](../deploy/env/bot.env.example) |
 | `/etc/monkeybot/migration.env` | migration 소유자의 DB URL만 | [migration 환경](../deploy/env/migration.env.example) |
+| `/etc/monkeybot/grafana.env` | Grafana 관리자 계정과 비밀번호. 32자 이상 난수를 사용 | [Grafana 환경](../deploy/env/grafana.env.example) |
 
 앱 구성의 `env_file`은 `format: raw`다. `KEY=value`의 값을 셸 식으로 확장하지 않으며 따옴표도 값의 일부로 전달하므로 감싸는 따옴표를 추가하지 않는다. Docker Compose 2.30 이상이 필요하며 VPS의 5.1.1에서 구성을 확인한다. 봇에는 DB URL·Riot 키·OAuth client secret을 전달하지 않는다. 컨테이너의 내부 주소·실행 옵션은 Compose의 `environment`가 제공한다. 봇 설정 검증은 내부 API의 `http://web:3000`을 허용하되 공개 `WEB_ORIGIN`의 HTTPS 조건은 유지한다. [Compose env_file 문서](https://docs.docker.com/reference/compose-file/services/#env_file)
 
@@ -152,7 +179,7 @@ unit은 실패 시 재시작하고 SIGTERM으로 종료한다. 봇의 `After=mon
 
 ## HTTPS 프록시
 
-운영 Compose는 [Caddyfile](../deploy/caddy/Caddyfile)과 [앱 프록시](../deploy/caddy/application.caddy)를 사용한다. 도메인을 지정하면 HTTP는 HTTPS로 308 이동하고 인증서는 자동으로 관리한다. `/internal`·`/internal/…`은 외부에서 404이며 봇은 Compose 내부의 웹 주소로 접근한다. 요청 본문은 70MiB로 제한하고 프록시가 본문을 파일에 버퍼링하지 않는다. 웹의 `BODY_SIZE_LIMIT=70M`과 파일 자체 64MiB 제한도 유지한다.
+운영 Compose는 [Caddyfile](../deploy/caddy/Caddyfile)과 [앱 프록시](../deploy/caddy/application.caddy)를 사용한다. 도메인을 지정하면 HTTP는 HTTPS로 308 이동하고 인증서는 자동으로 관리한다. `/internal`·`/internal/…`과 `/metrics`는 외부에서 404이며 봇은 Compose 내부의 웹 주소로 접근한다. 요청 본문은 70MiB로 제한하고 프록시가 본문을 파일에 버퍼링하지 않는다. 웹의 `BODY_SIZE_LIMIT=70M`과 파일 자체 64MiB 제한도 유지한다.
 
 Caddy는 외부에서 받은 전달 헤더를 그대로 신뢰하지 않고 실제 연결의 HTTPS 정보를 웹에 제공한다. 웹 포트는 공개하지 않으며 adapter-node의 `PROTOCOL_HEADER=x-forwarded-proto`를 유지한다. Caddy의 접근 로그는 켜지 않고 OAuth callback의 query가 오류 로그에 남지 않도록 처리한다. 인증서·ACME 자료가 있는 영속 볼륨을 백업·복구 대상에 포함하고 `docker compose down -v`로 지우지 않는다. [Caddy Docker 운영](https://caddyserver.com/docs/running#docker-compose), [Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
 
@@ -160,7 +187,7 @@ Caddy는 외부에서 받은 전달 헤더를 그대로 신뢰하지 않고 실�
 
 아래는 현재 Compose와 별개인 단독 실행·격리 검증 경로다.
 
-[사이트 예제](../deploy/nginx.conf.example)는 nginx `http` 문맥의 sites-enabled에 포함한다. 예제의 도메인과 인증서 두 경로를 바꾸고, [내부 차단·프록시 조각](../deploy/nginx-internal.conf.example)을 `/etc/nginx/snippets/monkeybot-internal.conf`에 설치한다. HTTP는 지정 도메인의 HTTPS로 이동하며 `/internal`과 `/internal/…`은 외부에서 404다.
+[사이트 예제](../deploy/nginx.conf.example)는 nginx `http` 문맥의 sites-enabled에 포함한다. 예제의 도메인과 인증서 두 경로를 바꾸고, [내부 차단·프록시 조각](../deploy/nginx-internal.conf.example)을 `/etc/nginx/snippets/monkeybot-internal.conf`에 설치한다. HTTP는 지정 도메인의 HTTPS로 이동하며 `/internal`·`/internal/…`과 `/metrics`는 외부에서 404다. 단독 nginx 실행에는 Prometheus·Grafana가 포함되지 않는다.
 
 nginx의 업로드 제한은 `70m`, 연결/송신/응답 대기는 각각 5/60/60초다. `proxy_request_buffering off`와 HTTP/1.1로 업로드 본문을 프록시 임시 파일에 쓰지 않고 앱으로 전달한다. 프록시 시간 제한과 별도로 아래 앱 제한이 실제 SQL·본문 읽기·파싱을 중단한다. 헤더는 nginx가 덮어쓰고 adapter-node에는 `PROTOCOL_HEADER`를 함께 설정한다.
 
@@ -189,9 +216,11 @@ ROFL은 큐·파일을 limiter에 저장하지 않고 입장 불가 시 바로 4
 
 원본 바이트의 복사본만 worker로 이전하고 기존 parser·identity·적재 모델을 그대로 실행한다. worker의 JS heap은 64MiB이며 파일 ArrayBuffer 등 외부 메모리는 그 heap 제한과 별도다. 파일 크기와 진행 요청 수가 함께 메모리 사용을 제한한다. 정상 파싱과 파싱 중 취소 모두 thread 종료를 기다린다. 기존 채택본 복구/중복 경로는 필요한 원본 확인 뒤 불필요한 재파싱 없이 기존 데이터·MMR 의미를 유지한다. 제한은 **프로세스별**이다. 여러 Node worker·replica에서는 합산 동시성과 사용자별 횟수가 늘어나므로 인스턴스 수·메모리·트래픽에 맞춰 각 한도를 정해야 한다. 이 구현에 분산 limiter나 새로운 서비스 의존성은 없다.
 
-요청마다 서버가 UUID를 만들고 `X-Request-ID`로 반환한다. JSON 로그에는 `event`, `requestId`, manifest의 `route` 템플릿, 허용된 `method`, `status`, 허용된 오류 `code`, `durationMs`만 기록한다. 요청 본문·쿠키·토큰·Riot ID·원본 파일·실행자 ID·실제 경로/URL query·원시 SQL/예외 객체는 기록하지 않는다. 부분 실패도 코드만 기록하고 SvelteKit의 기본 원시 오류 출력은 대체한다. 풀의 대기 요청은 connect 호출 당시 문맥에 연결해 다른 요청에 오류를 잘못 귀속하지 않는다.
+요청마다 서버가 UUID를 만들고 `X-Request-ID`로 반환한다. JSON 로그에는 `event`, `requestId`, manifest의 `route` 템플릿, `kind`, 허용된 `method`, `status`, 허용된 오류 `code`, 전체 `durationMs`, `phases.sessionMs`·`accessMs`, `db.count`·`totalMs`·`maxMs`·`waitMs`·`slow`, `upstream.<target>.count`·`totalMs`·`maxMs`만 기록한다. `kind`는 `page`, `data`, `action`, `api`, `internal`, `unmatched` 중 하나다. 요청 본문·쿠키·토큰·Riot ID·원본 파일·실행자 ID·실제 경로/URL query·원시 SQL/예외 객체는 기록하지 않는다. 부분 실패도 코드만 기록하고 SvelteKit의 기본 원시 오류 출력은 대체한다. 풀의 대기 요청은 connect 호출 당시 문맥에 연결해 다른 요청에 오류를 잘못 귀속하지 않는다.
 
-`durationMs`는 서버가 응답 객체를 만들 때까지의 시간이며 브라우저의 전체 전송 시간이나 CWV가 아니다. 실제 트래픽에서 DB 잠금·쿼리 시간, 업로드 동시성·메모리, Discord 재시도 대기를 점검해 한도를 조정한다. 운영 로그의 접근 권한·회전·보존과 알림은 배포 환경에서 확인한다. 격리 기능 검사는 서버 부하 검증을 대신하지 않는다.
+200ms 이상 SQL은 `event=db_slow`로 별도 기록하며 SQL 원문과 매개변수 대신 SHA-256 앞 12자리 `fingerprint`만 남긴다. 같은 fingerprint의 반복은 같은 쿼리 형태를 뜻한다. HTTP 요청과 위 시간 값은 같은 요청 문맥에서 계산해 Prometheus 메트릭으로도 누적한다.
+
+`durationMs`는 서버가 응답 객체를 만들 때까지의 시간이며 브라우저의 전체 전송 시간이나 CWV가 아니다. `phases`와 `db`·`upstream` 시간은 전체 안의 구성 요소이며 서로 합산해 전체와 정확히 일치한다고 가정하지 않는다. 실제 트래픽에서 DB 잠금·쿼리 시간, 업로드 동시성·메모리, Discord 재시도 대기를 점검해 한도를 조정한다. 운영 로그의 접근 권한·회전·보존과 알림은 배포 환경에서 확인한다. 격리 기능 검사는 서버 부하 검증을 대신하지 않는다.
 
 ## DB migration과 백업·복원
 
@@ -255,5 +284,6 @@ node scripts/verify_deployment.mjs --report /tmp/msm2-deployment-check.json
 - [GitHub PostgreSQL 서비스](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers), [setup-node](https://github.com/actions/setup-node), [pnpm setup](https://github.com/pnpm/action-setup)
 - [nginx proxy_request_buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_request_buffering)
 - [PostgreSQL 17 pg_dump](https://www.postgresql.org/docs/17/app-pgdump.html), [pg_restore](https://www.postgresql.org/docs/17/app-pgrestore.html), [statement·transaction timeout](https://www.postgresql.org/docs/17/runtime-config-client.html)
+- [Prometheus exposition formats](https://prometheus.io/docs/instrumenting/exposition_formats/), [Prometheus configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/), [Grafana provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/)
 - [pg Client 설정](https://node-postgres.com/apis/client), [Node 24 worker 종료](https://nodejs.org/docs/latest-v24.x/api/worker_threads.html#workerterminate), [SvelteKit hooks](https://svelte.dev/docs/kit/hooks)
 - 설치된 `@sveltejs/adapter-node/src/handler.js`, `src/index.js`, `index.js`와 기존 `apps/web/tests/api/support/http-child.mjs`의 실제 헤더·종료 계약

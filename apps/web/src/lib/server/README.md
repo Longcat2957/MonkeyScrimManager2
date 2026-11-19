@@ -17,6 +17,7 @@ ROFL 자동 등록은 경기 전체의 확정 라인업을 사용해 결과·실
 | [discord/](discord/README.md) | 봇 통신·동기화·게시 작업 |
 | `riot/`, `ddragon/`, `rofl/` | 기존 외부 API 클라이언트·카탈로그·ROFL 파서와 적재 모델 |
 | `db/`, `errors.ts`, `actions.ts`, `status.ts` | DB 연결·스키마·트랜잭션 타입, 공통 업무 오류·action 변환, 상태 조회 |
+| `operations/` | 요청 문맥·구간·DB·외부 호출 관측, Prometheus 메트릭 누적 |
 
 공통 스캐폴드는 다음 경계를 제공한다.
 

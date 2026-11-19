@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Worker } from 'node:worker_threads';
 import { databaseLimits } from '../../../src/lib/server/db/config.ts';
-import { observeRequest } from '../../../src/lib/server/operations/context.ts';
+import {
+    noteDatabaseQuery,
+    noteDatabaseWait,
+    notePhase,
+    noteUpstreamRequest,
+    observeRequest
+} from '../../../src/lib/server/operations/context.ts';
 import { noteRequestError, OperationLimitError } from '../../../src/lib/server/operations/errors.ts';
 import { observedSection } from '../../../src/lib/server/operations/section.ts';
 import { DomainError } from '../../../src/lib/server/errors.ts';
@@ -180,9 +186,23 @@ test('동시 요청·부분 실패의 관측은 route 템플릿·상태·코드�
     assert.equal(values.find((value) => value.requestId === 'second').code, 'CONFLICT');
     assert.deepEqual(
         Object.keys(values[0]).sort(),
-        ['event', 'requestId', 'route', 'method', 'status', 'code', 'durationMs'].sort()
+        [
+            'event',
+            'requestId',
+            'route',
+            'kind',
+            'method',
+            'status',
+            'code',
+            'durationMs',
+            'phases',
+            'db',
+            'upstream'
+        ].sort()
     );
     assert.ok(values.every((value) => Number.isFinite(value.durationMs)));
+    assert.equal(values.find((value) => value.requestId === 'first').kind, 'page');
+    assert.equal(values.find((value) => value.requestId === 'second').kind, 'action');
     await observeRequest(
         { requestId: 'logger-failure', routeId: null, method: 'GET' },
         async () => new Response(''),
@@ -190,4 +210,43 @@ test('동시 요청·부분 실패의 관측은 route 템플릿·상태·코드�
             throw new Error('로그 출력 실패');
         }
     );
+});
+
+test('요청 관측은 구간·DB·외부 호출 시간을 같은 요청에만 기록한다', async () => {
+    const lines: string[] = [];
+    await observeRequest(
+        { requestId: 'timed', routeId: '/api/fixture', method: 'GET' },
+        async () => {
+            notePhase('sessionMs', 3.25);
+            noteDatabaseWait(2.5);
+            noteDatabaseQuery(11, true, 'select 1');
+            noteUpstreamRequest('riot', 7, true);
+            return new Response('');
+        },
+        (line) => lines.push(line)
+    );
+    const [value] = lines.map((line) => JSON.parse(line));
+    assert.equal(value.kind, 'api');
+    assert.deepEqual(value.phases, { sessionMs: 3.25, accessMs: 0 });
+    assert.deepEqual(value.db, { count: 1, totalMs: 11, maxMs: 11, waitMs: 2.5, slow: 0 });
+    assert.deepEqual(value.upstream.riot, { count: 1, totalMs: 7, maxMs: 7 });
+});
+
+test('데이터 요청과 내부 경로는 각각 data·internal로 구분한다', async () => {
+    const lines: string[] = [];
+    await Promise.all([
+        observeRequest(
+            { requestId: 'data', routeId: '/g/[guildId]', method: 'GET', isDataRequest: true },
+            async () => new Response(''),
+            (line) => lines.push(line)
+        ),
+        observeRequest(
+            { requestId: 'internal', routeId: '/internal/bot/fixture', method: 'POST' },
+            async () => new Response(''),
+            (line) => lines.push(line)
+        )
+    ]);
+    const values = lines.map((line) => JSON.parse(line));
+    assert.equal(values.find((value) => value.requestId === 'data').kind, 'data');
+    assert.equal(values.find((value) => value.requestId === 'internal').kind, 'internal');
 });

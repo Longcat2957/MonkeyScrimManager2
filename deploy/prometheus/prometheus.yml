@@ -1,0 +1,14 @@
+global:
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    evaluation_interval: 15s
+
+scrape_configs:
+    # Compose의 web 서비스 DNS가 replica별 주소를 반환하므로 scale-out도 자동 수집한다.
+    - job_name: msm2-web
+      metrics_path: /metrics
+      dns_sd_configs:
+          - names: ['web']
+            type: A
+            port: 3000
+            refresh_interval: 30s

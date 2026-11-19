@@ -204,3 +204,27 @@ test('포화 풀의 연결 대기 만료는 Promise·callback 모두 안전한 5
         })
     );
 });
+
+test('요청 관측은 실제 SQL 시간을 db 집계에 남기고 SQL 원문을 로그에 넣지 않는다', async (t) => {
+    const fixture = await createTestDatabase(t);
+    const pool = boundedDatabasePool(
+        fixture.connectionString,
+        { lockMs: 50, statementMs: 500, leaseMs: 1000 },
+        1
+    );
+    t.after(() => pool.end());
+    const logs: string[] = [];
+    await observeRequest(
+        { requestId: 'db-timing', routeId: '/fixture', method: 'GET' },
+        async () => {
+            await pool.query('select pg_sleep(0.02)');
+            return new Response('');
+        },
+        (line) => logs.push(line)
+    );
+    const [value] = logs.map((line) => JSON.parse(line));
+    assert.equal(value.db.count, 1);
+    assert.ok(value.db.totalMs >= 1);
+    assert.ok(value.db.maxMs >= 1);
+    assert.ok(!logs.join('').includes('pg_sleep'));
+});

@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { DomainError } from '../errors.ts';
+import { noteUpstreamRequest } from '../operations/context.ts';
 
 export const OAUTH_LIFETIME_SECONDS = 10 * 60;
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
@@ -184,6 +185,8 @@ async function discordJson(
     init: RequestInit,
     request: typeof fetch
 ): Promise<Record<string, unknown>> {
+    const started = performance.now();
+    let ok = false;
     try {
         const response = await request(url, {
             ...init,
@@ -194,10 +197,13 @@ async function discordJson(
         if (!response.ok) throw unavailableDiscord();
         const data: unknown = await response.json();
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw unavailableDiscord();
+        ok = true;
         return data as Record<string, unknown>;
     } catch {
         // 외부 오류 본문이나 요청에 담긴 인증 정보를 오류·로그로 전달하지 않는다.
         throw unavailableDiscord();
+    } finally {
+        noteUpstreamRequest('discord', performance.now() - started, ok);
     }
 }
 

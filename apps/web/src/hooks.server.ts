@@ -9,7 +9,8 @@ import {
     observeRequest,
     noteResponseStatus,
     currentOperationCode,
-    noteOperationIssue
+    noteOperationIssue,
+    notePhase
 } from '#lib/server/operations/context.ts';
 import { noteRequestError, operationalFailure, OperationLimitError } from '#lib/server/operations/errors.ts';
 
@@ -17,30 +18,45 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.locals.requestId = randomUUID();
     event.setHeaders({ 'x-request-id': event.locals.requestId });
     return observeRequest(
-        { requestId: event.locals.requestId, routeId: event.route.id, method: event.request.method },
+        {
+            requestId: event.locals.requestId,
+            routeId: event.route.id,
+            method: event.request.method,
+            isDataRequest: event.isDataRequest
+        },
         async () => {
             try {
                 event.locals.actor = null;
                 event.locals.user = null;
                 event.locals.session = null;
-                const token = event.cookies.get(SESSION_COOKIE);
-                if (token) {
-                    const result = await validateSession(token);
-                    if (result) {
-                        event.locals.actor = result.actor;
-                        event.locals.user = result.user;
-                        event.locals.session = result.session;
-                    } else {
-                        event.cookies.delete(SESSION_COOKIE, authCookieOptions);
+                const sessionStarted = performance.now();
+                try {
+                    const token = event.cookies.get(SESSION_COOKIE);
+                    if (token) {
+                        const result = await validateSession(token);
+                        if (result) {
+                            event.locals.actor = result.actor;
+                            event.locals.user = result.user;
+                            event.locals.session = result.session;
+                        } else {
+                            event.cookies.delete(SESSION_COOKIE, authCookieOptions);
+                        }
                     }
+                } finally {
+                    notePhase('sessionMs', performance.now() - sessionStarted);
                 }
                 if (
                     event.request.method === 'GET' &&
                     event.route.id?.startsWith('/g/') &&
                     event.params.guildId
                 ) {
-                    // 내부 이동은 상위 layout을 재사용할 수 있으므로 모든 병렬 load보다 먼저 갱신한다.
-                    await refreshGuildViewAccess(event.locals.actor, event.params.guildId);
+                    const accessStarted = performance.now();
+                    try {
+                        // 내부 이동은 상위 layout을 재사용할 수 있으므로 모든 병렬 load보다 먼저 갱신한다.
+                        await refreshGuildViewAccess(event.locals.actor, event.params.guildId);
+                    } finally {
+                        notePhase('accessMs', performance.now() - accessStarted);
+                    }
                 }
                 return await resolve(event);
             } catch (cause) {

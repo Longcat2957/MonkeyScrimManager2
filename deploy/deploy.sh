@@ -40,7 +40,7 @@ if [[ ! "$revision" =~ ^[0-9a-f]{40}$ || "${image##*:}" != "$revision" ]]; then
 fi
 
 backup_dir=$(mktemp -d /var/backups/monkeybot/release-"$(date -u +%Y%m%dT%H%M%SZ)"-XXXXXX)
-for path in .env compose.yml compose.app.yml deploy.sh nginx caddy; do
+for path in .env compose.yml compose.app.yml deploy.sh nginx caddy prometheus grafana; do
     if [[ -e "$path" ]]; then cp -a "$path" "$backup_dir/"; fi
 done
 docker compose -f compose.yml exec -T postgres sh -c \
@@ -52,8 +52,10 @@ printf '배포 전 백업: %s\n' "$backup_dir"
 
 if [[ "$source_dir" != "$deploy_dir" ]]; then
     cp "$source_dir/compose.yml" "$source_dir/compose.app.yml" "$source_dir/deploy.sh" .
-    mkdir -p caddy
+    mkdir -p caddy prometheus grafana
     cp -a "$source_dir/caddy/." caddy/
+    cp -a "$source_dir/prometheus/." prometheus/
+    cp -a "$source_dir/grafana/." grafana/
 fi
 # 운영 비밀 파일을 읽거나 변경하지 않고 Compose의 실행 파일·이미지만 갱신한다.
 python3 - "$resolved_image" <<'PY'
@@ -68,10 +70,12 @@ temporary.chmod(0o600)
 os.replace(temporary, path)
 PY
 docker compose config --quiet
-docker compose pull caddy
+docker compose pull caddy prometheus
 docker compose run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose run --rm --no-deps --entrypoint promtool prometheus check config /etc/prometheus/prometheus.yml
 # 앱과 migration을 먼저 준비하여 최초 nginx→Caddy 전환의 포트 중단을 줄인다.
 docker compose up -d --wait --wait-timeout 180 web bot
+docker compose up -d --wait --wait-timeout 120 prometheus grafana
 mapfile -t legacy_proxies < <(docker ps -q \
     --filter label=com.docker.compose.project=monkeybot \
     --filter label=com.docker.compose.service=nginx)
@@ -94,7 +98,7 @@ if [[ "$http_status" != 200 ]]; then
     printf '공개 /docs 응답: HTTP %s (200 필요)\n' "$http_status" >&2
     exit 1
 fi
-for path in /internal /internal/; do
+for path in /internal /internal/ /metrics /metrics/; do
     http_status=$(curl --silent --show-error --connect-timeout 3 --max-time 10 \
         --resolve monkeybot.lol:443:127.0.0.1 --output /dev/null --write-out '%{http_code}' "https://monkeybot.lol$path")
     if [[ "$http_status" != 404 ]]; then
@@ -102,6 +106,13 @@ for path in /internal /internal/; do
         exit 1
     fi
 done
+http_status=$(curl --silent --show-error --retry 10 --retry-delay 3 --retry-max-time 60 --retry-all-errors \
+    --resolve monkeybot.lol:443:127.0.0.1 --output /dev/null --write-out '%{http_code}' \
+    https://monkeybot.lol/grafana/api/health)
+if [[ "$http_status" != 200 ]]; then
+    printf 'Grafana 상태 응답: HTTP %s (200 필요)\n' "$http_status" >&2
+    exit 1
+fi
 deployment_complete=true
 if [[ ${#legacy_proxies[@]} -gt 0 ]]; then docker rm "${legacy_proxies[@]}"; fi
 printf '배포 완료: %s (%s)\n' "$resolved_image" "$revision"

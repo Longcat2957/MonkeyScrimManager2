@@ -1,3 +1,4 @@
+import { noteUpstreamRequest } from '../operations/context.ts';
 import { RiotError } from './errors.ts';
 
 export const ACCOUNT_ROUTINGS = ['asia', 'americas', 'europe'] as const;
@@ -124,6 +125,8 @@ export function createRiotRequest(
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         inFlight += 1;
+        const upstreamStarted = performance.now();
+        let upstreamOk = false;
         try {
             const response = await fetcher(url, {
                 method: 'GET',
@@ -162,7 +165,9 @@ export function createRiotRequest(
             }
 
             try {
-                return (await response.json()) as T;
+                const value = (await response.json()) as T;
+                upstreamOk = true;
+                return value;
             } catch {
                 if (controller.signal.aborted) throw new RiotError('TIMEOUT', 'Riot API request timed out.');
                 throw new RiotError('INVALID_RESPONSE', 'Riot returned an invalid JSON response.');
@@ -174,6 +179,7 @@ export function createRiotRequest(
         } finally {
             clearTimeout(timer);
             inFlight -= 1;
+            noteUpstreamRequest('riot', performance.now() - upstreamStarted, upstreamOk);
         }
     };
 }

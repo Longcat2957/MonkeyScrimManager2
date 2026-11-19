@@ -2,6 +2,7 @@ import { BOT_STATUS_URL, DATABASE_URL } from '$app/env/private';
 import { sql } from 'drizzle-orm';
 import { botCheck, databaseCheck, type Probe, type ServiceStatus } from '#lib/features/backoffice/status.ts';
 import { getDb } from './db/index.ts';
+import { noteUpstreamRequest } from './operations/context.ts';
 
 const TIMEOUT_MS = 3000;
 
@@ -36,13 +37,21 @@ export async function checkServices(): Promise<ServiceStatus> {
             return null;
         }),
         probe(Boolean(BOT_STATUS_URL.trim()), async (signal) => {
-            const response = await fetch(BOT_STATUS_URL.trim(), {
-                signal,
-                redirect: 'error',
-                headers: { Accept: 'application/json' }
-            });
-            if (!response.ok) throw new Error(`봇 상태 응답 ${response.status}`);
-            return (await response.json()) as unknown;
+            const started = performance.now();
+            let ok = false;
+            try {
+                const response = await fetch(BOT_STATUS_URL.trim(), {
+                    signal,
+                    redirect: 'error',
+                    headers: { Accept: 'application/json' }
+                });
+                if (!response.ok) throw new Error(`봇 상태 응답 ${response.status}`);
+                const value = (await response.json()) as unknown;
+                ok = true;
+                return value;
+            } finally {
+                noteUpstreamRequest('bot', performance.now() - started, ok);
+            }
         })
     ]);
     return { checkedAt: new Date().toISOString(), services: [databaseCheck(database), botCheck(bot)] };

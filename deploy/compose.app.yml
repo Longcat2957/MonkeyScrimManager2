@@ -85,9 +85,83 @@ services:
         stop_grace_period: 45s
         logging: *logging
 
+    prometheus:
+        image: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
+        restart: unless-stopped
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--storage.tsdb.retention.time=30d'
+        volumes:
+            - type: bind
+              source: ./prometheus
+              target: /etc/prometheus
+              read_only: true
+              bind:
+                  create_host_path: false
+                  selinux: Z
+            - prometheus-data:/prometheus
+        depends_on:
+            web:
+                condition: service_healthy
+        networks:
+            - edge
+        stop_grace_period: 30s
+        logging: *logging
+
+    grafana:
+        image: grafana/grafana:13.3.1@sha256:0615ec4fbd4072004b7d86b46ded63013a74b7d6eb1119273dd89e8fa25c13cf
+        restart: unless-stopped
+        env_file:
+            - path: ${MSM2_ENV_DIR:-/etc/monkeybot}/grafana.env
+              format: raw
+        environment:
+            GF_SERVER_ROOT_URL: https://monkeybot.lol/grafana/
+            GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
+            GF_SECURITY_COOKIE_SECURE: 'true'
+            GF_USERS_ALLOW_SIGN_UP: 'false'
+            GF_USERS_ALLOW_ORG_CREATE: 'false'
+            GF_AUTH_ANONYMOUS_ENABLED: 'false'
+            GF_ANALYTICS_REPORTING_ENABLED: 'false'
+            GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+            GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+            GF_NEWS_NEWS_FEED_ENABLED: 'false'
+            GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/msm2.json
+        volumes:
+            - type: bind
+              source: ./grafana/provisioning
+              target: /etc/grafana/provisioning
+              read_only: true
+              bind:
+                  create_host_path: false
+                  selinux: Z
+            - type: bind
+              source: ./grafana/dashboards
+              target: /var/lib/grafana/dashboards
+              read_only: true
+              bind:
+                  create_host_path: false
+                  selinux: Z
+            - grafana-data:/var/lib/grafana
+        depends_on:
+            prometheus:
+                condition: service_started
+        networks:
+            - edge
+        stop_grace_period: 15s
+        logging: *logging
+
     caddy:
         environment:
             MSM2_CADDY_HANDLER: application.caddy
         depends_on:
             web:
                 condition: service_healthy
+            grafana:
+                condition: service_started
+
+volumes:
+    prometheus-data:
+        name: monkeybot-prometheus-data
+    grafana-data:
+        name: monkeybot-grafana-data

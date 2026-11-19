@@ -4,6 +4,7 @@
 
 ## 미배포
 
+- API 요청 로그에 세션·길드 접근·DB·Riot·Discord·Data Dragon·봇 호출 시간을 추가하고, `/metrics` Prometheus 메트릭과 Grafana API 성능 대시보드를 붙였다. 공개 `/metrics`는 404이며 Grafana는 `/grafana`에서 로그인 후 사용한다.
 - 출전 라인업에서 포지션 행 전체에 선수를 놓을 수 있게 했다. 드래그 중에는 같은 팀에서 배치하거나 교환할 수 있는 자리를 표시한다.
 
 ## 2026-11-19

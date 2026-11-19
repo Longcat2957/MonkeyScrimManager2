@@ -1,3 +1,5 @@
+import { noteUpstreamRequest } from '../operations/context.ts';
+
 const API_BASE = 'https://discord.com/api/v10';
 const MAX_GUILDS = 1_000;
 
@@ -199,13 +201,18 @@ export function createDiscordClient(options: { token: string; fetch?: typeof fet
     async function request(path: string, allowMissing = false): Promise<unknown> {
         if (!token || /\s/.test(token)) throw new DiscordError(503, 'Discord 연동을 사용할 수 없어요');
         const signal = AbortSignal.timeout(timeoutMs);
+        const upstreamStarted = performance.now();
+        let upstreamOk = false;
         try {
             const response = await fetcher(`${API_BASE}${path}`, {
                 headers: { Authorization: `Bot ${token}`, Accept: 'application/json' },
                 signal,
                 redirect: 'error'
             });
-            if (allowMissing && response.status === 404) return undefined;
+            if (allowMissing && response.status === 404) {
+                upstreamOk = true;
+                return undefined;
+            }
             if (response.status === 429) {
                 const retryAfter = Number(response.headers.get('Retry-After'));
                 throw new DiscordError(
@@ -221,7 +228,9 @@ export function createDiscordClient(options: { token: string; fetch?: typeof fet
             const body = await response.text();
             if (body.length > 2_000_000) invalidResponse();
             try {
-                return JSON.parse(body) as unknown;
+                const value = JSON.parse(body) as unknown;
+                upstreamOk = true;
+                return value;
             } catch {
                 invalidResponse();
             }
@@ -229,6 +238,8 @@ export function createDiscordClient(options: { token: string; fetch?: typeof fet
             if (error instanceof DiscordError) throw error;
             if (signal.aborted) throw new DiscordError(504, 'Discord 응답이 늦어지고 있어요');
             throw new DiscordError(502, 'Discord에 연결하지 못했어요');
+        } finally {
+            noteUpstreamRequest('discord', performance.now() - upstreamStarted, upstreamOk);
         }
     }
 
