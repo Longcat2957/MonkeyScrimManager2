@@ -17,6 +17,7 @@
     import { formationReturnAction } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { flashChange } from '#lib/ui/mark-change.svelte.ts';
     import BracketFormatControl from './BracketFormatControl.svelte';
     import FirstSetSideField from './FirstSetSideField.svelte';
     import BracketMatchBox from './BracketMatchBox.svelte';
@@ -29,6 +30,7 @@
         emptyMessage = '팀 편성이 끝나면 대진을 만들 수 있어요'
     }: { bracket: BracketView | null; auction: boolean; guildId: string; emptyMessage?: string } = $props();
 
+    let board = $state<HTMLElement>();
     let selectedId = $state<string | null>(null);
     let selectionHeight = $state(0);
     let busy = $state(false);
@@ -65,6 +67,8 @@
     const labelOf = (key: string) => bracket?.matches.find((match) => match.key === key)?.label ?? '';
     const seatLabel = (key: string) => seats.find((seat) => seat.key === key)?.label ?? '';
     const seatOf = (teamId: string) => seats.find((seat) => seat.teamId === teamId)?.key ?? null;
+    const teamButton = (id: string) =>
+        board?.querySelector<HTMLElement>(`[data-bracket-team="${CSS.escape(id)}"]`);
 
     function accepts(teamId: string, target: string) {
         if (editing) return target === 'pool' ? seatOf(teamId) !== null : seatLabel(target) !== '';
@@ -105,16 +109,21 @@
         if (busy || (teamId ? !accepts(teamId, seat) : !editing)) return;
         const trigger = document.activeElement;
         const keyboard = trigger instanceof HTMLElement && trigger.matches(':focus-visible');
-        const movedTeam = teamId ?? seats.find((item) => item.key === seat)?.teamId;
+        const previousTeam = seats.find((item) => item.key === seat)?.teamId ?? null;
+        const movedTeam = teamId ?? previousTeam;
         const saved = await run('place', { seat, teamId: teamId ?? '' });
         if (saved) selectedId = null;
         await tick();
+        if (saved && previousTeam !== teamId) {
+            // 확정된 배치에서 교체된 팀은 반대편 자리나 팀 풀로 돌아간다.
+            for (const id of [teamId, previousTeam]) {
+                const destination = id && teamButton(id);
+                if (destination) flashChange(destination);
+            }
+        }
         if (keyboard && (document.activeElement === document.body || document.activeElement === trigger)) {
             if (!saved && trigger.isConnected) trigger.focus();
-            else if (movedTeam)
-                document
-                    .querySelector<HTMLElement>(`[data-bracket-team="${CSS.escape(movedTeam)}"]`)
-                    ?.focus();
+            else if (movedTeam) teamButton(movedTeam)?.focus();
         }
     }
 
@@ -155,6 +164,7 @@
 {:else}
     <!-- 팀 선택과 라운드별 배치를 먼저 하고, 경기 방식과 시작 여부는 아래에서 결정한다. -->
     <section
+        bind:this={board}
         aria-labelledby="bracket-board"
         aria-busy={busy}
         class="bracket-board @container min-w-0"

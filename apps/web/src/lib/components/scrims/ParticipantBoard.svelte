@@ -14,6 +14,7 @@
     } from '#lib/features/scrims/types.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { markChange } from '#lib/ui/mark-change.svelte.ts';
     import { toast } from '#lib/ui/toast.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
     import ManualRegistrationDialog from './ManualRegistrationDialog.svelte';
@@ -233,7 +234,10 @@
                             <td>
                                 <PositionChips positions={participant.positions} />
                             </td>
-                            <td class="text-right whitespace-nowrap">
+                            <td
+                                class="text-right whitespace-nowrap"
+                                {@attach markChange(() => participant.status)}
+                            >
                                 {#if tag.state}
                                     <StatusTag text={tag.text} state={tag.state} />
                                 {:else}

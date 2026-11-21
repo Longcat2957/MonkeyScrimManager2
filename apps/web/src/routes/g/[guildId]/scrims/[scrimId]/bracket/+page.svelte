@@ -14,9 +14,11 @@
 
 <ScrimSummary scrim={data.scrim} />
 
-<BracketBoard
-    bracket={data.bracket}
-    auction={data.scrim.formationMethod === 'auction'}
-    guildId={page.params.guildId!}
-    emptyMessage={data.scrim.status === 'cancelled' ? '내전이 취소되어 표시할 대진이 없어요.' : undefined}
-/>
+<div data-scrim-board>
+    <BracketBoard
+        bracket={data.bracket}
+        auction={data.scrim.formationMethod === 'auction'}
+        guildId={page.params.guildId!}
+        emptyMessage={data.scrim.status === 'cancelled' ? '내전이 취소되어 표시할 대진이 없어요.' : undefined}
+    />
+</div>

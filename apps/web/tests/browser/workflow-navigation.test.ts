@@ -62,7 +62,8 @@ for (const width of [1440, 390])
             const manager = await f.session(HTTP_IDS.manager);
             const navigation = async (current: string) => {
                 const local = f.page.getByRole('navigation', { name: '내전 단계', exact: true });
-                await local.waitFor();
+                // URL은 작업판의 DOM보다 먼저 바뀔 수 있다.
+                await local.locator('[aria-current="page"]').getByText(current, { exact: true }).waitFor();
                 assert.deepEqual(await local.getByRole('strong').allTextContents(), [
                     '모집·참가자',
                     '팀 편성',
@@ -289,6 +290,7 @@ test(
         assert.equal(match!.teamBId, a.teams[0]!.id);
         assert.equal((await f.db.select().from(schema.matchSetSides))[0]?.blueTeamSlot, 'a');
         assert.equal((await f.db.select().from(schema.matchLineupPlayers)).length, 0);
+        await f.page.getByRole('region', { name: '출전 라인업', exact: true }).waitFor();
         assert.equal(await f.page.getByRole('button', { name: '라인업 확정', exact: true }).count(), 1);
         const board = f.page.getByRole('region', { name: '출전 라인업', exact: true });
         const sides = board.getByRole('region');

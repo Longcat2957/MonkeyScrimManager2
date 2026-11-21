@@ -80,6 +80,7 @@
 {/if}
 
 <div
+    data-scrim-board
     class={[
         'mt-3 grid min-w-0 items-start gap-x-4 gap-y-2.5',
         (choosingMethod || showRegistration) && 'xl:grid-cols-[minmax(0,1fr)_21rem] xl:grid-rows-[auto_1fr]'

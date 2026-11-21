@@ -200,6 +200,3 @@ export type TargetProfile = {
 export function winRate(games: number, wins: number) {
     return games ? `${Math.round((wins / games) * 100)}%` : '-';
 }
-
-/** 낙찰·수동 배치 직후 팀 패널에 보여 주는 축하 효과. key가 바뀔 때마다 효과를 다시 재생한다. */
-export type Celebration = { teamId: string; participantId: string; label: string; key: number };

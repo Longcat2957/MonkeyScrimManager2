@@ -8,6 +8,7 @@
     import type { BestOf } from '#lib/features/scrims/bracket.ts';
     import {
         moveAssignment,
+        occupantOf,
         type Assignments,
         type FormationPlayer,
         type FormationTeam,
@@ -16,6 +17,7 @@
     } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import { flashChange } from '#lib/ui/mark-change.svelte.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
     import ChangeMethodButton from './ChangeMethodButton.svelte';
     import { DragState } from './drag.svelte.ts';
@@ -35,6 +37,7 @@
 
     let { teams, players, assignments, confirmed, editable, pairs }: Props = $props();
 
+    let board: HTMLElement | undefined;
     let selectedId = $state<string | null>(null);
     // 서버 응답 전에 화면을 먼저 바꾸는 낙관적 배정이다. 응답이 모두 끝나면 서버 값으로 돌아간다.
     let optimistic = $state<Assignments | null>(null);
@@ -66,10 +69,25 @@
         selectedId = selectedId === participantId ? null : participantId;
     }
 
+    async function highlightMove(participantId: string, displacedId: string | null) {
+        await tick();
+        for (const id of [participantId, displacedId]) {
+            if (!id) continue;
+            const destination = board?.querySelector<HTMLElement>(
+                `[data-formation-player="${CSS.escape(id)}"]`
+            );
+            if (destination) flashChange(destination);
+        }
+    }
+
     async function move(participantId: string, slot: SlotKey | null) {
         if (!editable || busy) return;
         selectedId = null;
+        const previous = current[participantId] ?? null;
+        const displaced = slot && previous !== slot ? occupantOf(current, slot) : null;
         optimistic = moveAssignment(current, participantId, slot);
+        // 저장 여부가 아니라 낙관적으로 바뀐 도착 위치만 표시한다.
+        if (previous !== slot) void highlightMove(participantId, displaced);
         queue.push({ participantId, slot });
         pending++;
         if (processing) return;
@@ -138,6 +156,7 @@
 	참가자를 끌어 자리에 놓거나 누른 뒤 자리를 누르면 배치되고, 자리에 사람이 있으면 서로 바뀐다.
 -->
 <section
+    bind:this={board}
     aria-labelledby="manual-formation"
     aria-busy={pending > 0 || busy}
     class="panel manual-board w-full min-w-0 overflow-clip"

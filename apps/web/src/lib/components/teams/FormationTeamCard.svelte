@@ -75,6 +75,7 @@
             <li
                 role="group"
                 aria-label={`${team.name} ${laneText(lane)} 자리`}
+                data-formation-player={player?.participantId}
                 class={[
                     'grid min-h-0 items-stretch gap-1 rounded-form border p-1 transition-colors',
                     interactive && !targeting

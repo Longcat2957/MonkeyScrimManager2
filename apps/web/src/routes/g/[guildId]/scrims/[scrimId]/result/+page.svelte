@@ -37,7 +37,7 @@
 
 <ScrimSummary scrim={data.scrim} />
 
-<section aria-labelledby="result-title" class="@container min-w-0">
+<section data-scrim-board aria-labelledby="result-title" class="@container min-w-0">
     <header class="flex flex-wrap items-center justify-between gap-3 border-b border-line-strong pb-3">
         <h2 id="result-title" class="text-lg font-bold">{early ? '중도 종료 결과' : '대진 결과'}</h2>
         {#if matches.length}<span class="text-ui text-muted tabular-nums">{matches.length}경기</span>{/if}

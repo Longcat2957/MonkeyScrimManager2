@@ -1,15 +1,10 @@
 <script lang="ts">
+    import { onMount, untrack } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import TextField from '#lib/components/common/TextField.svelte';
     import { POSITIONS } from '#lib/features/labels.ts';
-    import {
-        bestMmr,
-        formatMmr,
-        TEAM_SIZE,
-        type AuctionTeamView,
-        type Celebration
-    } from '#lib/features/scrims/formation.ts';
+    import { bestMmr, formatMmr, TEAM_SIZE, type AuctionTeamView } from '#lib/features/scrims/formation.ts';
     import type { DragState } from './drag.svelte.ts';
 
     type Props = {
@@ -21,12 +16,10 @@
         drag: DragState;
         // 이 팀의 입찰가 입력값. 후보가 바뀌면 보드가 비운다.
         bid: string;
-        // 이 팀에 방금 낙찰·배치된 후보가 있으면 축하 효과를 띄운다.
-        celebration: Celebration | null;
         onaward: (price: number) => void;
     };
 
-    let { team, bidding, busy, drag, bid = $bindable(''), celebration, onaward }: Props = $props();
+    let { team, bidding, busy, drag, bid = $bindable(''), onaward }: Props = $props();
 
     // 같은 증감 조작을 터치와 키보드에서도 바로 사용할 수 있다.
     const STEPS = [-50, -10, 10, 50];
@@ -44,17 +37,10 @@
     const laneText = (key: string | undefined) =>
         POSITIONS.find((position) => position.key === key)?.text ?? '포지션 미정';
 
-    // 색종이 조각: 가운데에서 사방으로 흩어진다. 각도·거리·색을 고정해 매번 같은 모양으로 터진다.
-    const CONFETTI = Array.from({ length: 16 }, (_, index) => {
-        const angle = (index / 16) * Math.PI * 2 + (index % 2 ? 0.2 : -0.1);
-        const distance = 70 + (index % 4) * 22;
-        return {
-            dx: `${Math.round(Math.cos(angle) * distance)}px`,
-            dy: `${Math.round(Math.sin(angle) * distance * 0.7)}px`,
-            spin: `${(index % 2 ? 1 : -1) * (180 + index * 25)}deg`,
-            color: ['bg-warning', 'bg-success', 'bg-info', 'bg-error', 'bg-nexus'][index % 5],
-            shape: index % 3 === 0 ? 'size-2 rounded-full' : 'h-2.5 w-1.5 rounded-[1px]'
-        };
+    // 첫 명단은 그대로 두고, 이후 새로 낙찰·배치된 행만 한 번 강조한다.
+    let mounted = $state(false);
+    onMount(() => {
+        mounted = true;
     });
 
     function adjust(delta: number) {
@@ -67,8 +53,7 @@
 <section
     aria-labelledby={`auction-${team.id}`}
     class={[
-        'relative flex min-h-0 min-w-0 flex-col gap-2 p-3 transition-colors',
-        celebration && 'celebrate-flash',
+        'flex min-h-0 min-w-0 flex-col gap-2 p-3 transition-colors',
         drag.over === team.id ? 'bg-selected ring-2 ring-nexus ring-inset' : 'bg-surface'
     ]}
     ondragover={(event) => drag.enter(event, team.id)}
@@ -78,30 +63,6 @@
     }}
     ondrop={(event) => drag.drop(event, team.id)}
 >
-    {#if celebration}
-        {#key celebration.key}
-            <!-- 장식 효과라 보조기기에는 숨긴다. 결과는 팀원 목록에 그대로 반영된다. -->
-            <div
-                aria-hidden="true"
-                class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center overflow-hidden"
-            >
-                {#each CONFETTI as piece, index (index)}
-                    <span
-                        class={['confetti absolute', piece.shape, piece.color]}
-                        style:--dx={piece.dx}
-                        style:--dy={piece.dy}
-                        style:--spin={piece.spin}
-                    ></span>
-                {/each}
-                <span
-                    class="stamp border-2 border-warning bg-surface/90 px-4 py-1.5 text-2xl font-black text-warning shadow-lg"
-                >
-                    {celebration.label}
-                </span>
-            </div>
-        {/key}
-    {/if}
-
     <header class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <div class="flex min-w-0 flex-col gap-1">
             <h3 id={`auction-${team.id}`} class="flex min-w-0 items-center gap-1.5">
@@ -198,13 +159,9 @@
         ]}
         aria-label={`${team.name} 팀원`}
     >
-        {#each team.members as member (member.player.participantId)}
-            <li
-                class={[
-                    'flex items-center gap-2.5 px-1 py-1.5',
-                    celebration?.participantId === member.player.participantId && 'member-pop'
-                ]}
-            >
+        {#each team.members as member (`${member.player.participantId}:${member.via}:${member.price}`)}
+            {@const placed = untrack(() => mounted && member.via !== 'captain')}
+            <li class="flex items-center gap-2.5 px-1 py-1.5" class:workflow-change={placed}>
                 <PlayerFace name={member.player.displayName} imageUrl={member.player.iconUrl} size="sm" />
                 <span class="flex min-w-0 flex-1 flex-col">
                     <span class="truncate text-sm font-semibold">{member.player.displayName}</span>
@@ -234,98 +191,3 @@
         {/each}
     </ul>
 </section>
-
-<style>
-    /* 낙찰·배치 축하 효과. 동작 줄이기 설정에서는 도장만 잠깐 보이고 움직이지 않는다. */
-    .stamp {
-        animation: stamp 1.8s cubic-bezier(0.2, 1.4, 0.4, 1) both;
-    }
-    .confetti {
-        animation: confetti 1.1s cubic-bezier(0.15, 0.7, 0.3, 1) both;
-    }
-    .member-pop {
-        animation: member-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both;
-    }
-    .celebrate-flash {
-        animation: flash 0.9s ease-out;
-    }
-
-    @keyframes stamp {
-        0% {
-            opacity: 0;
-            transform: scale(2.2) rotate(-14deg);
-        }
-        18% {
-            opacity: 1;
-            transform: scale(0.92) rotate(-8deg);
-        }
-        28% {
-            transform: scale(1.06) rotate(-8deg);
-        }
-        38%,
-        80% {
-            opacity: 1;
-            transform: scale(1) rotate(-8deg);
-        }
-        100% {
-            opacity: 0;
-            transform: scale(0.9) rotate(-8deg) translateY(-12px);
-        }
-    }
-    @keyframes confetti {
-        0% {
-            opacity: 1;
-            transform: translate(0, 0) scale(0.4) rotate(0);
-        }
-        70% {
-            opacity: 1;
-        }
-        100% {
-            opacity: 0;
-            transform: translate(var(--dx), calc(var(--dy) + 40px)) scale(1) rotate(var(--spin));
-        }
-    }
-    @keyframes member-pop {
-        0% {
-            opacity: 0;
-            transform: scale(0.6) translateY(8px);
-        }
-        100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-    }
-    @keyframes flash {
-        0% {
-            box-shadow: inset 0 0 0 3px var(--color-warning);
-        }
-        100% {
-            box-shadow: inset 0 0 0 3px transparent;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .confetti,
-        .member-pop,
-        .celebrate-flash {
-            animation: none;
-        }
-        .confetti {
-            display: none;
-        }
-        .stamp {
-            animation: stamp-still 1.8s linear both;
-        }
-        @keyframes stamp-still {
-            0%,
-            85% {
-                opacity: 1;
-                transform: rotate(-8deg);
-            }
-            100% {
-                opacity: 0;
-                transform: rotate(-8deg);
-            }
-        }
-    }
-</style>

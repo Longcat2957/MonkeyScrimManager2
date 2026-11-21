@@ -37,6 +37,18 @@
         if (!item.disabled) return '';
         return item.label === '팀 편성' ? '편성 방식 미정' : '종료 후';
     }
+
+    function reflectEdge(event: PointerEvent & { currentTarget: HTMLAnchorElement }) {
+        if (event.pointerType !== 'mouse') return;
+        const link = event.currentTarget;
+        const { left, top, width, height } = link.getBoundingClientRect();
+        let x = event.clientX - left;
+        let y = event.clientY - top;
+        const side = Math.min(x, width - x) < Math.min(y, height - y);
+        if (side) x = x < width / 2 ? 0 : width;
+        else y = y < height / 2 ? 0 : height;
+        link.style.setProperty('--reflection', `${side ? '3px 28px' : '54px 3px'} at ${x}px ${y}px`);
+    }
 </script>
 
 {#snippet stepLabel(item: NavItem, number: number, hint: string)}
@@ -54,11 +66,16 @@
     </span>
 {/snippet}
 
-<header class={['flex min-w-0 flex-col', action ? 'gap-3' : 'mb-4 gap-2']}>
+<header
+    data-scrim={scrim.id}
+    data-scrim-stage={items.findIndex((item) => item.current)}
+    class={['flex min-w-0 flex-col gap-3', !action && 'mb-4']}
+>
     <div class="flex min-h-9 flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <svelte:element
             this={`h${headingLevel}`}
-            class="min-w-0 text-title font-bold tracking-[-0.02em] text-balance">{scrim.title}</svelte:element
+            class="min-w-0 self-start text-title font-bold tracking-[-0.02em] text-balance"
+            >{scrim.title}</svelte:element
         >
         <StatusTag text={status.text} state={status.state} />
         <p class="flex flex-wrap items-center gap-x-2 text-ui text-muted">
@@ -82,13 +99,11 @@
         <!-- 네 단계는 한 상자의 칸으로 이어지고, 현재 칸만 시안 밑줄로 점등된다. -->
         <nav
             aria-label="내전 단계"
-            class={[
-                'grid grid-cols-2 gap-px overflow-hidden rounded-box border border-line bg-line',
-                action ? 'md:grid-cols-[1.45fr_1fr_0.9fr_0.85fr]' : 'md:grid-cols-4'
-            ]}
+            class="grid grid-cols-2 gap-px overflow-hidden rounded-box border border-line bg-line md:grid-cols-[1.45fr_1fr_0.9fr_0.85fr]"
         >
             {#each items as item, index (item.label)}
-                {@const base = `flex min-w-0 flex-wrap items-center justify-between gap-2.5 px-3 sm:px-3.5 ${action ? 'min-h-[54px] py-2.5' : 'min-h-11 py-1.5'}`}
+                {@const base =
+                    'relative flex min-h-[54px] min-w-0 flex-wrap items-center justify-between gap-2.5 px-3 py-2.5 sm:px-3.5'}
                 {#if item.static || item.disabled}
                     <span
                         class={[base, 'bg-surface text-muted']}
@@ -98,19 +113,20 @@
                         {@render stepLabel(item, index + 1, reason(item))}
                     </span>
                 {:else if item.current}
-                    <div
-                        class={[base, 'bg-selected text-ink shadow-[inset_0_-2px_0_var(--color-nexus)]']}
-                        aria-current="page"
-                    >
+                    <div class={[base, 'bg-selected text-ink']} aria-current="page">
+                        <span aria-hidden="true" class="phase-line absolute inset-x-0 bottom-0 h-0.5 bg-nexus"
+                        ></span>
                         {@render stepLabel(item, index + 1, activeReason)}
                         {#if action}{@render action()}{/if}
                     </div>
                 {:else}
                     <a
                         href={item.href}
+                        onpointermove={reflectEdge}
+                        onpointerleave={(event) => event.currentTarget.style.removeProperty('--reflection')}
                         class={[
                             base,
-                            'bg-surface text-ink-2 no-underline hover:bg-surface-hover focus-visible:-outline-offset-2'
+                            'phase-link bg-surface text-ink-2 no-underline focus-visible:-outline-offset-2'
                         ]}
                     >
                         {@render stepLabel(item, index + 1, '')}
@@ -120,3 +136,19 @@
         </nav>
     {/if}
 </header>
+
+<style>
+    @media (prefers-reduced-motion: no-preference) {
+        .phase-link::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(
+                ellipse var(--reflection, 0px 0px at 0 0),
+                var(--color-nexus),
+                transparent
+            );
+        }
+    }
+</style>

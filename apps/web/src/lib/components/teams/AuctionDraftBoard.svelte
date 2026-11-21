@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, untrack, type Snippet } from 'svelte';
+    import { onMount, type Snippet } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
@@ -7,13 +7,7 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { toast } from '#lib/ui/toast.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
-    import {
-        formatMmr,
-        TEAM_SIZE,
-        winRate,
-        type AuctionView,
-        type Celebration
-    } from '#lib/features/scrims/formation.ts';
+    import { formatMmr, TEAM_SIZE, winRate, type AuctionView } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
@@ -42,9 +36,6 @@
     let details = $state(false);
     let listOpen = $state(false);
     let candidateHeight = $state(0);
-    // 낙찰·수동 배치가 끝난 팀 패널에 잠깐 보여 줄 축하 효과다.
-    let celebration = $state<Celebration | null>(null);
-    let celebrationTimer: ReturnType<typeof setTimeout> | undefined;
 
     const live = $derived(auction.status === 'in_progress');
     const controls = $derived(manager && live);
@@ -92,19 +83,12 @@
     // 새 후보에게 이전 후보의 입찰가를 적용하지 않는다. 같은 후보의 재조회에는 입력을 유지한다.
     $effect(() => {
         void lotKey;
-        untrack(() => {
-            bids = {};
-            clearTimeout(celebrationTimer);
-            celebration = null;
-        });
+        bids = {};
     });
 
     onMount(() => {
         const interval = setInterval(() => (now = Date.now()), 200);
-        return () => {
-            clearInterval(interval);
-            clearTimeout(celebrationTimer);
-        };
+        return () => clearInterval(interval);
     });
 
     async function run(name: string, fields: Record<string, string> = {}) {
@@ -126,31 +110,16 @@
         }
     }
 
-    function celebrate(teamId: string, participantId: string, label: string) {
-        if (auction.status === 'completed') return;
-        clearTimeout(celebrationTimer);
-        celebration = { teamId, participantId, label, key: Date.now() };
-        celebrationTimer = setTimeout(() => (celebration = null), 1800);
-    }
-
     async function award(teamId: string, price: number) {
-        const target = open?.participantId;
-        if (await run('award', { teamId, price: String(price) })) {
-            bids = {};
-            if (target) celebrate(teamId, target, `낙찰! ${price}P`);
-        }
+        if (await run('award', { teamId, price: String(price) })) bids = {};
     }
 
     async function assignCurrent(teamId: string) {
-        const target = open?.participantId;
-        if ((await run('assignCurrent', { teamId })) && target) celebrate(teamId, target, '수동 배치');
+        await run('assignCurrent', { teamId });
     }
 
     async function assign(participantId: string, teamId: string) {
-        if (await run('assign', { participantId, teamId })) {
-            listOpen = false;
-            celebrate(teamId, participantId, '수동 배치');
-        }
+        if (await run('assign', { participantId, teamId })) listOpen = false;
     }
 
     async function draw() {
@@ -452,7 +421,6 @@
                     {busy}
                     {drag}
                     bind:bid={() => bids[team.id] ?? '', (value) => (bids[team.id] = value)}
-                    celebration={celebration?.teamId === team.id ? celebration : null}
                     onaward={(price) => award(team.id, price)}
                 />
             {/each}
@@ -580,14 +548,6 @@
         .clock-fill.running {
             animation: drain-clock var(--duration) linear forwards;
         }
-
-        .clock-fill.running::after {
-            content: '';
-            display: block;
-            height: 100%;
-            background: linear-gradient(100deg, transparent 75%, var(--color-ink) 100%);
-            animation: clock-current 1.6s ease-in-out infinite alternate;
-        }
     }
 
     @keyframes drain-clock {
@@ -596,15 +556,6 @@
         }
         to {
             transform: scaleX(0);
-        }
-    }
-
-    @keyframes clock-current {
-        from {
-            opacity: 0.12;
-        }
-        to {
-            opacity: 0.6;
         }
     }
 

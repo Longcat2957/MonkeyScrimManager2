@@ -7,12 +7,25 @@
     import ConfirmDialog from '#lib/components/common/ConfirmDialog.svelte';
     import ToastHost from '#lib/components/common/ToastHost.svelte';
     import { markHydrated } from '#lib/ui/viewport.svelte.ts';
+    import { initRouteMotion } from '#lib/ui/route-motion.ts';
     import type { LayoutProps } from './$types';
 
     let { children }: LayoutProps = $props();
     let accountHeight = $state(0);
+    let glow: HTMLDivElement;
+
+    function moveGlow(event: PointerEvent & { currentTarget: HTMLElement }) {
+        if (event.pointerType !== 'mouse') return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const left = 1 - (event.clientX - bounds.left) / bounds.width;
+        const down = event.clientY / innerHeight;
+        const sweep = `translate(${-42 * left}cqw, ${18 * down}svh)`;
+        const beam = `rotate(${8 - down * 54}deg) scale(${1 + left * 0.7}, ${1 - left * 0.25})`;
+        glow.style.setProperty('--glow-shape', `${sweep} ${beam}`);
+    }
 
     onMount(markHydrated);
+    initRouteMotion();
 </script>
 
 <svelte:head>
@@ -33,8 +46,13 @@
             id="main-content"
             tabindex="-1"
             class="app-main min-w-0 flex-1 px-4 py-6 md:px-6 md:py-8 lg:pl-6"
+            onpointermove={moveGlow}
+            onpointerleave={() => glow.style.removeProperty('--glow-shape')}
         >
-            {@render children()}
+            <div aria-hidden="true" class="ambient-clip">
+                <div bind:this={glow} class="ambient-glow"></div>
+            </div>
+            <div class="route-content">{@render children()}</div>
         </main>
         <AppFooter />
     </div>

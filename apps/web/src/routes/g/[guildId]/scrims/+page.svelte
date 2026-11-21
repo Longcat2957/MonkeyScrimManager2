@@ -131,7 +131,7 @@
                         >
                             <h3
                                 class={[
-                                    'sticky top-(--app-header-height) z-10 bg-ground py-2 text-base font-semibold lg:top-0 @min-[46rem]:border-t @min-[46rem]:border-line @min-[46rem]:pt-4',
+                                    'py-2 text-base font-semibold @min-[46rem]:sticky @min-[46rem]:top-(--app-header-height) @min-[46rem]:pt-4 lg:top-0',
                                     group.monthGrouped ? 'text-ink-2' : 'text-nexus'
                                 ]}
                             >

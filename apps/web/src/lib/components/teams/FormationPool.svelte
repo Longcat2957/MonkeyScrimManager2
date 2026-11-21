@@ -63,6 +63,7 @@
                             type="button"
                             draggable="true"
                             aria-pressed={selectedId === player.participantId}
+                            data-formation-player={player.participantId}
                             class={[
                                 'flex min-h-12 w-full cursor-grab items-center gap-2 rounded-form border px-2 py-1.5 transition-colors active:cursor-grabbing',
                                 drag.id === player.participantId && 'opacity-50',

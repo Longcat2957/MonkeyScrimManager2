@@ -132,21 +132,23 @@
     {/if}
 {/snippet}
 
-{#if refreshError}<p role="status" class="mb-3 text-sm text-muted">{refreshError}</p>{/if}
+<div data-scrim-board>
+    {#if refreshError}<p role="status" class="mb-3 text-sm text-muted">{refreshError}</p>{/if}
 
-{#if !auction}
-    <section aria-labelledby="auction-board" class="flex flex-col gap-2">
-        <h2 id="auction-board" class="page-head border-b border-line pb-2 text-base font-bold">경매</h2>
-        <SectionState state="empty" message="모집이 마감되면 선발된 참가자로 경매를 준비할 수 있어요" />
-    </section>
-{:else if auction.status === 'setup'}
-    <AuctionSetupBoard
-        contextKey={data.scrim.id}
-        teams={auction.teams}
-        players={auction.players}
-        editable={data.can.manage}
-        {refreshAction}
-    />
-{:else}
-    <AuctionDraftBoard {auction} manager={data.can.manage} {refreshAction} {refreshing} />
-{/if}
+    {#if !auction}
+        <section aria-labelledby="auction-board" class="flex flex-col gap-2">
+            <h2 id="auction-board" class="page-head border-b border-line pb-2 text-base font-bold">경매</h2>
+            <SectionState state="empty" message="모집이 마감되면 선발된 참가자로 경매를 준비할 수 있어요" />
+        </section>
+    {:else if auction.status === 'setup'}
+        <AuctionSetupBoard
+            contextKey={data.scrim.id}
+            teams={auction.teams}
+            players={auction.players}
+            editable={data.can.manage}
+            {refreshAction}
+        />
+    {:else}
+        <AuctionDraftBoard {auction} manager={data.can.manage} {refreshAction} {refreshing} />
+    {/if}
+</div>

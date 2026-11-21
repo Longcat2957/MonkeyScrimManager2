@@ -163,7 +163,7 @@
 
 <ScrimSummary scrim={data.scrim} {navigation} />
 
-<div class="@container/record grid min-w-0 gap-3 sm:gap-4">
+<div data-scrim-board class="@container/record grid min-w-0 gap-3 sm:gap-4">
     <div
         class={[
             'grid min-w-0 items-start gap-2',

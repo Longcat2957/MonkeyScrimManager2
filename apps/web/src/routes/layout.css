@@ -139,22 +139,46 @@
 
     /* 목업의 작업 영역처럼 우상단에서 옅게 번지는 넥서스 시안. */
     .app-main {
-        background:
-            radial-gradient(
-                circle at 82% 8%,
-                color-mix(in oklab, var(--color-nexus) 16%, transparent),
-                transparent 36%
-            ),
-            var(--color-ground);
+        position: relative;
+        isolation: isolate;
+        background: var(--color-ground);
     }
-    html[data-mode='dark'] .app-main {
-        background:
-            radial-gradient(
-                circle at 82% 8%,
-                color-mix(in oklab, var(--color-nexus) 22%, transparent),
-                transparent 36%
-            ),
-            var(--color-ground);
+
+    .ambient-clip {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        overflow: clip;
+        container-type: inline-size;
+        pointer-events: none;
+    }
+
+    .ambient-glow {
+        --glow-strength: 26%;
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: min(96cqw, 72rem);
+        height: min(64svh, 34rem);
+        transform: translate(-50%, -50%);
+        translate: 82cqw 8svh;
+        transform-origin: center;
+        background: radial-gradient(
+            ellipse closest-side,
+            color-mix(in oklab, var(--color-nexus) var(--glow-strength), transparent),
+            color-mix(in oklab, var(--color-nexus) calc(var(--glow-strength) * 0.52), transparent) 45%,
+            transparent
+        );
+    }
+
+    html[data-mode='dark'] .ambient-glow {
+        --glow-strength: 38%;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .ambient-glow {
+            transform: translate(-50%, -50%) var(--glow-shape, translate(0, 0) rotate(0deg) scale(1));
+            transition: transform 300ms cubic-bezier(0.2, 0.7, 0.25, 1);
+        }
     }
 
     .doc {
@@ -203,5 +227,56 @@
     textarea::placeholder {
         color: var(--color-muted);
         opacity: 1;
+    }
+}
+
+/* 셸은 촬영하지 않는다. 지난 작업판의 잔상만 새 작업판 위에서 짧게 걷힌다. */
+:root {
+    view-transition-name: none;
+}
+
+.phase-line {
+    view-transition-name: phase-line;
+}
+
+::view-transition {
+    pointer-events: none;
+}
+
+::view-transition-old(departing-board) {
+    animation: board-exit 130ms ease-out both;
+}
+
+::view-transition-old(departing-menu-page) {
+    animation: board-exit 180ms ease-in-out both;
+}
+
+::view-transition-group(phase-line) {
+    animation-duration: 200ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes board-exit {
+    to {
+        opacity: 0;
+    }
+}
+
+/* 두 줄 단계 바에서는 밑줄이 다른 칸을 가로지르지 않는다. */
+@media (width < 48rem) {
+    ::view-transition-group(phase-line) {
+        animation-duration: 0s;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .workflow-change {
+        animation: workflow-change 300ms ease-out;
+    }
+
+    @keyframes workflow-change {
+        from {
+            background-color: color-mix(in srgb, var(--color-nexus) 26%, var(--color-surface));
+        }
     }
 }

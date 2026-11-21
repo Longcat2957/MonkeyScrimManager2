@@ -50,6 +50,7 @@
     let firstSide = $state<SideChoice>({ slot: '', confirmed: false });
     let completed = $state(false);
     let lastOrder = $state<number | null>(null);
+    let confirmedFileId = $state<number | null>(null);
     const pending = $derived(files.find((item) => item.status !== 'success'));
     const max = $derived(uploadContext?.max ?? 0);
     const options = $derived([
@@ -129,6 +130,8 @@
                 refreshRequired = result.status === 409;
                 if (refreshRequired) preview = null;
             } else if (result.type === 'success' && action === 'preview' && result.data?.preview) {
+                // 미리보기에서 목록으로 돌아와도 앞서 기록한 파일을 다시 강조하지 않는다.
+                confirmedFileId = null;
                 preview = result.data.preview;
             } else if (
                 result.type === 'success' &&
@@ -137,6 +140,7 @@
             ) {
                 lastOrder = result.data.order;
                 item.status = 'success';
+                confirmedFileId = item.id;
                 item.message = `${lastOrder}세트로 기록했어요`;
                 if (typeof result.data.revision === 'number')
                     uploadContext.expectedRevision = result.data.revision;
@@ -196,6 +200,7 @@
         if (lastOrder !== null || refreshRequired) onrecorded(lastOrder);
         files = [];
         lastOrder = null;
+        confirmedFileId = null;
         preview = null;
         refreshRequired = false;
         selectionError = '';
@@ -392,9 +397,11 @@
                                     ]}
                                 >
                                     {Math.ceil(item.file.size / 1024)}KB ·
-                                    {busy && item === pending
-                                        ? '미리보기 불러오는 중'
-                                        : item.message || '등록 대기'}
+                                    <span class:workflow-change={confirmedFileId === item.id}>
+                                        {busy && item === pending
+                                            ? '미리보기 불러오는 중'
+                                            : item.message || '등록 대기'}
+                                    </span>
                                 </span>
                             </span>
                             {#if item.status !== 'success'}
