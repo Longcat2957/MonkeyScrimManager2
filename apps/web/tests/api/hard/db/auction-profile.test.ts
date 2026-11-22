@@ -4,6 +4,9 @@ import { and, eq } from 'drizzle-orm';
 import { LANES } from '../../../../src/lib/features/scrims/formation.ts';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { replaceMyChampionPreferences } from '../../../../src/lib/server/accounts/champions.ts';
+import { linkRiotAccount } from '../../../../src/lib/server/accounts/service.ts';
+import { auctionRankSeason } from '../../../../src/lib/server/riot/auction-season.ts';
+import { enqueueAuctionJobs } from '../../../../src/lib/server/riot/auction-cache.ts';
 import {
     parseChampionPreferenceCatalog,
     preferredChampionResolver
@@ -131,6 +134,7 @@ test('경매 참고 전적은 희망 위치와 별개인 실출전·진영 승�
     const profile = (await f.view()).openProfile!;
     assert.deepEqual(profile.summary, { games: 2, wins: 1, losses: 1 });
     assert.equal(profile.mainLane, LANES[target.index % 5]);
+    assert.ok(profile.laneGames);
     assert.equal(profile.laneGames[LANES[target.index % 5]!], 1);
     assert.equal(
         Object.values(profile.laneGames).reduce((sum, games) => sum + games, 0),
@@ -221,6 +225,7 @@ test('출전 수가 같은 주력 위치는 기존 개인 전적처럼 최근 �
             )
         );
     const profile = (await f.view()).openProfile!;
+    assert.ok(profile.laneGames);
     assert.equal(profile.laneGames[LANES[target.index % 5]!], 1);
     assert.equal(profile.laneGames[recentLane], 1);
     assert.equal(profile.mainLane, recentLane);
@@ -238,9 +243,9 @@ test('활성 시즌이 바뀌어도 경매에 고정한 시즌의 참고 전적�
         .insert(schema.mmrSeasons)
         .values({ guildId: f.guildId, name: '다음 시즌' })
         .returning();
-    assert.equal((await f.view()).openProfile!.summary.games, 1);
+    assert.equal((await f.view()).openProfile!.summary?.games, 1);
     await f.db.update(schema.scrims).set({ mmrSeasonId: next!.id }).where(eq(schema.scrims.id, f.scrimId));
-    assert.equal((await f.view()).openProfile!.summary.games, 0);
+    assert.equal((await f.view()).openProfile!.summary?.games, 0);
     const [other] = await f.db
         .insert(schema.mmrSeasons)
         .values({ guildId: f.otherGuildId, name: '다른 서버 시즌' })
@@ -249,7 +254,7 @@ test('활성 시즌이 바뀌어도 경매에 고정한 시즌의 참고 전적�
         .update(schema.scrims)
         .set({ guildId: f.otherGuildId, mmrSeasonId: other!.id })
         .where(eq(schema.scrims.id, f.scrimId));
-    assert.equal((await f.view()).openProfile!.summary.games, 0);
+    assert.equal((await f.view()).openProfile!.summary?.games, 0);
 });
 
 test('미완료·취소 세트와 취소 부모는 제외하며 중도 종료의 유효 결과는 유지한다', async (t) => {
@@ -266,15 +271,15 @@ test('미완료·취소 세트와 취소 부모는 제외하며 중도 종료의
         .set({ status: 'cancelled', winnerSide: null })
         .where(eq(schema.games.id, cancelled.id));
     await f.draw();
-    assert.equal((await f.view()).openProfile!.summary.games, 1);
+    assert.equal((await f.view()).openProfile!.summary?.games, 1);
     await f.db.update(schema.matches).set({ status: 'cancelled' }).where(eq(schema.matches.id, f.match.id));
-    assert.equal((await f.view()).openProfile!.summary.games, 0);
+    assert.equal((await f.view()).openProfile!.summary?.games, 0);
     await f.db.update(schema.matches).set({ status: 'ended_early' }).where(eq(schema.matches.id, f.match.id));
-    assert.equal((await f.view()).openProfile!.summary.games, 1);
+    assert.equal((await f.view()).openProfile!.summary?.games, 1);
     await f.db.update(schema.scrims).set({ status: 'cancelled' }).where(eq(schema.scrims.id, f.scrimId));
-    assert.equal((await f.view()).openProfile!.summary.games, 0);
+    assert.equal((await f.view()).openProfile!.summary?.games, 0);
     await f.db.update(schema.scrims).set({ status: 'ended_early' }).where(eq(schema.scrims.id, f.scrimId));
-    assert.equal((await f.view()).openProfile!.summary.games, 1);
+    assert.equal((await f.view()).openProfile!.summary?.games, 1);
 });
 
 test('계정 소유자 변경은 당시 사용자의 경매 참고 기록을 바꾸지 않는다', async (t) => {
@@ -417,4 +422,184 @@ test('희망 위치가 없으면 실제 주력 포지션의 선호를 읽고 비
         },
         before
     );
+});
+
+test('Riot 전적은 내전 시즌 없이도 부분 성공·마지막 성공 시각·이번 시즌 관측 최고를 구분한다', async (t) => {
+    const f = await fixture(t);
+    const target = await f.draw();
+    const accountId = f.accounts[target.index]!.id;
+    const now = new Date('2026-10-15T12:00:00.000Z');
+    const old = new Date(now.getTime() - 40 * 60_000);
+    t.mock.timers.enable({ apis: ['Date'], now });
+    await f.db
+        .update(schema.riotAccounts)
+        .set({ platform: 'kr' })
+        .where(eq(schema.riotAccounts.id, accountId));
+    await f.db.update(schema.scrims).set({ mmrSeasonId: null }).where(eq(schema.scrims.id, f.currentScrimId));
+    await f.db.insert(schema.riotAuctionJobs).values({ accountId });
+    assert.equal((await f.view()).openProfile, null);
+    await f.db
+        .insert(schema.riotAuctionJobParticipants)
+        .values({ accountId, participantId: target.participantId });
+    const read = async () =>
+        (await getAuction(f.db, null, f.guildId, f.currentScrimId, undefined, champion, preferenceResolver))!
+            .openProfile!;
+    assert.deepEqual((await read()).riot, { rank: null, recent: null, pending: true });
+    const current = { tier: 'EMERALD', rank: 'I', leaguePoints: 70 };
+    const peak = { tier: 'DIAMOND', rank: 'IV', leaguePoints: 20 };
+    const raw = { ...current, puuid: f.accounts[target.index]!.puuid };
+    await f.db.insert(schema.riotAuctionCache).values({
+        accountId,
+        rankSeason: '2026-S3',
+        currentRank: raw,
+        rankFetchedAt: now
+    });
+    await f.db.insert(schema.riotAuctionPeaks).values({ accountId, season: '2026-S3', peak });
+    const partial = await read();
+    assert.equal(partial.summary, null);
+    assert.equal(partial.laneGames, null);
+    assert.deepEqual(partial.riot, {
+        rank: { current, peak, fetchedAt: now.toISOString(), stale: false },
+        recent: null,
+        pending: true
+    });
+    await f.db
+        .update(schema.riotAuctionCache)
+        .set({
+            currentRank: null,
+            matchCount: 8,
+            champions: [
+                { championId: 103, count: 4 },
+                { championId: 99, count: 4 }
+            ],
+            matchesFetchedAt: old
+        })
+        .where(eq(schema.riotAuctionCache.accountId, accountId));
+    await f.db.delete(schema.riotAuctionJobs).where(eq(schema.riotAuctionJobs.accountId, accountId));
+    const complete = (await read()).riot!;
+    assert.deepEqual(complete.rank, { current: null, peak, fetchedAt: now.toISOString(), stale: false });
+    assert.deepEqual(complete.recent, {
+        games: 8,
+        champions: [
+            { champion: preferenceResolver(103), count: 4 },
+            { champion: preferenceResolver(99), count: 4 }
+        ],
+        fetchedAt: old.toISOString(),
+        stale: true
+    });
+    assert.equal(complete.pending, false);
+    await f.db
+        .update(schema.riotAuctionCache)
+        .set({
+            rankSeason: '2026-S2',
+            matchCount: 0,
+            champions: [],
+            matchesFetchedAt: now
+        })
+        .where(eq(schema.riotAuctionCache.accountId, accountId));
+    const empty = (await read()).riot!;
+    assert.equal(empty.rank, null);
+    assert.deepEqual(empty.recent, { games: 0, champions: [], fetchedAt: now.toISOString(), stale: false });
+});
+
+test('현재 길드 소유권과 공개 설정을 잃으면 Riot 성공값과 대기 상태를 모두 숨긴다', async (t) => {
+    const f = await fixture(t);
+    const { participantId, userId, index } = await f.draw();
+    const account = f.accounts[index]!;
+    const link = and(
+        eq(schema.guildRiotAccounts.guildId, f.guildId),
+        eq(schema.guildRiotAccounts.riotAccountId, account.id)
+    );
+    await f.db
+        .update(schema.riotAccounts)
+        .set({ platform: 'kr' })
+        .where(eq(schema.riotAccounts.id, account.id));
+    await f.db.insert(schema.riotAuctionJobs).values({ accountId: account.id });
+    await f.db.insert(schema.riotAuctionJobParticipants).values({ accountId: account.id, participantId });
+    await f.db.insert(schema.riotAuctionCache).values({
+        accountId: account.id,
+        rankSeason: auctionRankSeason('kr'),
+        rankFetchedAt: new Date()
+    });
+    const read = async () => (await f.view()).openProfile!.riot;
+    const original = await read();
+    assert.ok(original?.pending && original.rank);
+    const serialized = JSON.stringify(original);
+    for (const secret of [userId, account.id, account.puuid, account.gameName!, account.tagLine!]) {
+        assert.ok(!serialized.includes(secret));
+    }
+    const user = eq(schema.users.id, userId);
+    for (const flags of [
+        { publicProfile: false, publicRiotIds: true },
+        { publicProfile: true, publicRiotIds: false },
+        { publicProfile: false, publicRiotIds: false, withdrawnAt: new Date(), isServiceAdmin: false }
+    ]) {
+        await f.db.update(schema.users).set(flags).where(user);
+        assert.equal(await read(), null);
+    }
+    await f.db
+        .update(schema.users)
+        .set({ publicProfile: true, publicRiotIds: true, withdrawnAt: null })
+        .where(user);
+    // 미지정 참가자는 그 길드의 현재 대표 계정만 사용한다.
+    const participant = eq(schema.scrimParticipants.id, participantId);
+    await f.db.update(schema.scrimParticipants).set({ riotAccountId: null }).where(participant);
+    assert.deepEqual(await read(), original);
+    await f.db.update(schema.guildRiotAccounts).set({ isPrimary: false }).where(link);
+    assert.equal(await read(), null);
+    await f.db.update(schema.scrimParticipants).set({ riotAccountId: account.id }).where(participant);
+    assert.deepEqual(await read(), original);
+    // 지정 계정이 이 길드에서 재연결되면 다른 길드의 기존 소유 연결을 참조하지 않는다.
+    await f.db.insert(schema.guildRiotAccounts).values({
+        guildId: f.otherGuildId,
+        userId,
+        riotAccountId: account.id,
+        isPrimary: true
+    });
+    await f.db.update(schema.guildRiotAccounts).set({ userId: f.users[15]!.id }).where(link);
+    const replacement = f.accounts[15]!.id;
+    await f.db
+        .update(schema.guildRiotAccounts)
+        .set({ userId })
+        .where(
+            and(
+                eq(schema.guildRiotAccounts.guildId, f.guildId),
+                eq(schema.guildRiotAccounts.riotAccountId, replacement)
+            )
+        );
+    await f.db.insert(schema.riotAuctionCache).values({ accountId: replacement, rankFetchedAt: new Date() });
+    assert.equal(await read(), null);
+});
+
+test('다른 길드의 재연결로 지역이 바뀌면 공개 경매는 다음 수집 전에도 옛 서버 자료를 숨긴다', async (t) => {
+    const f = await fixture(t);
+    const target = await f.draw(),
+        account = f.accounts[target.index]!;
+    await f.db
+        .update(schema.riotAccounts)
+        .set({ platform: 'kr' })
+        .where(eq(schema.riotAccounts.id, account.id));
+    const now = new Date();
+    await f.db.insert(schema.riotAuctionCache).values({
+        accountId: account.id,
+        currentRank: { tier: 'GOLD', rank: 'I', leaguePoints: 1 },
+        rankSeason: auctionRankSeason('kr'),
+        rankFetchedAt: now,
+        matchCount: 0,
+        champions: [],
+        matchesFetchedAt: now
+    });
+    const read = async () => (await f.view()).openProfile!.riot;
+    const original = await read();
+    assert.ok(original?.rank && original.recent && !original.pending);
+    await linkRiotAccount(f.db, f.manager, f.otherGuildId, f.manager.userId, 'Transfer#NA1', {
+        discord: { ...f.access.discord, getMember: (_, id) => f.access.discord.getMember(f.guildId, id) },
+        riot: {
+            getAccountByRiotId: async () => ({ puuid: account.puuid, gameName: 'Transfer', tagLine: 'NA1' }),
+            getActiveRegion: async (puuid) => ({ puuid, game: 'lol', region: 'na1' })
+        }
+    });
+    assert.equal(await read(), null);
+    await f.db.transaction((tx) => enqueueAuctionJobs(tx, f.currentScrimId));
+    assert.deepEqual(await read(), { rank: null, recent: null, pending: true });
 });

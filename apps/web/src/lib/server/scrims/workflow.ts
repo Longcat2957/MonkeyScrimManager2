@@ -16,6 +16,7 @@ import {
     scrims
 } from '../db/schema.ts';
 import { DomainError } from '../errors.ts';
+import { enqueueAuctionJobs } from '../riot/auction-cache.ts';
 import { invalidateAuctionActions } from './auction-actions.ts';
 import { activeScrimCancellation } from './cancellation.ts';
 import {
@@ -259,6 +260,8 @@ export async function revertScrim(
                 default:
                     throw new DomainError('CONFLICT', '되돌릴 단계가 없어요');
             }
+            if (row.status === 'ended_early' || row.status === 'completed')
+                await enqueueAuctionJobs(tx, row.id);
         },
         access,
         { userLifecycle: true }

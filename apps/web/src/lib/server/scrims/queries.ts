@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import type { GuildContext, NextScrim } from '../../features/guild/types.ts';
 import { playCapacity } from '../../features/scrims/settings.ts';
 import type {
@@ -146,7 +146,7 @@ export async function listScrims(
     db: Database,
     actor: Actor | null,
     guildId: string,
-    options: { status: ScrimStatusFilter; page: number; pageSize: number },
+    options: { status: ScrimStatusFilter; includeCancelled?: boolean; page: number; pageSize: number },
     access?: ScrimAccessDependencies
 ) {
     if (
@@ -171,6 +171,7 @@ export async function listScrims(
                 .groupBy(scrims.status);
             const counts: Record<ScrimStatusFilter, number> = { all: 0, recruit: 0, active: 0, done: 0 };
             for (const total of totals) {
+                if (!options.includeCancelled && total.status === 'cancelled') continue;
                 counts.all += total.value;
                 if (total.status === 'recruit') counts.recruit += total.value;
                 else if (FILTERS.active.includes(total.status)) counts.active += total.value;
@@ -183,6 +184,7 @@ export async function listScrims(
                 .where(
                     and(
                         eq(scrims.guildId, guildId),
+                        options.includeCancelled ? undefined : ne(scrims.status, 'cancelled'),
                         options.status === 'all' ? undefined : inArray(scrims.status, FILTERS[options.status])
                     )
                 )
@@ -195,7 +197,12 @@ export async function listScrims(
                 )
                 .limit(options.pageSize)
                 .offset((options.page - 1) * options.pageSize);
-            return { scrims: await listItems(tx, rows, user), total: counts[options.status], counts };
+            return {
+                scrims: await listItems(tx, rows, user),
+                total: counts[options.status],
+                counts,
+                hasScrims: totals.length > 0
+            };
         },
         access
     );

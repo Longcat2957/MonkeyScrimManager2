@@ -48,7 +48,7 @@
     ];
 
     const PAGE_SIZE = 20;
-    const PODIUM = ['bg-medal-gold/10', 'bg-medal-silver/10', 'bg-medal-bronze/10'];
+    const PODIUM = ['var(--color-medal-gold)', 'var(--color-medal-silver)', 'var(--color-medal-bronze)'];
     let current = $state(1);
     let sortMessage = $state('');
     let previousContext = '';
@@ -101,9 +101,9 @@
     aria-labelledby={id}
     aria-describedby={`${id}-hint`}
     tabindex="0"
-    class="relative overflow-x-auto scroll-ps-[9.5rem] scroll-pe-2"
+    class="relative overflow-x-auto [--name-width:9rem] scroll-ps-[calc(var(--name-width)+0.5rem)] scroll-pe-2 @min-[50rem]/board:[--name-width:13rem]"
 >
-    <table class="data-table min-w-[44rem] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+    <table class="data-table min-w-[44rem] [&_td]:whitespace-nowrap [&_thead_th]:whitespace-nowrap">
         <caption {id} class="sr-only">사용자별 지표</caption>
         <thead class="text-xs" onfocusin={revealColumn}>
             <tr class="border-b border-line">
@@ -112,7 +112,7 @@
                 >
                 <th
                     scope="col"
-                    class="sticky left-0 z-20 w-36 min-w-36 max-w-36 bg-surface-2 px-3 py-2 text-left font-medium text-muted"
+                    class="sticky left-0 z-20 w-(--name-width) min-w-(--name-width) max-w-(--name-width) bg-surface-2 px-3 py-2 text-left font-medium text-muted"
                     >사용자</th
                 >
                 {#each COLUMNS as column (column.key)}
@@ -156,41 +156,44 @@
                 {@const index = (current - 1) * PAGE_SIZE + offset}
                 <!-- 1~3위는 행 바탕으로 구분하고, 순위 숫자로도 같은 정보를 준다. -->
                 <tr
-                    class={[
-                        'border-b border-line last:border-b-0',
-                        value(row, sortKey) !== null && PODIUM[index]
-                    ]}
+                    class="leaderboard-row border-b border-line last:border-b-0"
+                    style:--medal={value(row, sortKey) !== null ? PODIUM[index] : undefined}
                 >
                     <td class="px-2 py-2.5 text-right font-brand text-base font-semibold tabular-nums"
                         >{value(row, sortKey) === null ? '—' : index + 1}</td
                     >
                     <th
                         scope="row"
-                        class="sticky left-0 z-10 w-36 min-w-36 max-w-36 bg-surface px-2 py-1 text-left font-normal"
+                        class="sticky left-0 z-10 w-(--name-width) min-w-(--name-width) max-w-(--name-width) bg-inherit px-2 py-1 text-left font-normal"
                     >
-                        <div class="flex min-w-0 flex-col">
-                            <a
-                                href={`${resolve('/g/[guildId]/players/[userId]', {
-                                    guildId,
-                                    userId: row.userId
-                                })}${seasonId ? `?season=${seasonId}` : ''}`}
-                                class="flex min-h-9 min-w-0 flex-1 items-center gap-2 hover:text-nexus hover:underline pointer-coarse:min-h-11"
-                            >
-                                <PlayerFace name={row.displayName} imageUrl={row.iconUrl} size="sm" />
-                                <span class="min-w-0 font-semibold leading-5 whitespace-normal wrap-anywhere"
-                                    >{row.displayName}</span
+                        <a
+                            href={`${resolve('/g/[guildId]/players/[userId]', {
+                                guildId,
+                                userId: row.userId
+                            })}${seasonId ? `?season=${seasonId}` : ''}`}
+                            aria-label={row.displayName}
+                            class="group grid min-h-9 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 pointer-coarse:min-h-11"
+                        >
+                            <PlayerFace name={row.displayName} imageUrl={row.iconUrl} size="sm" />
+                            <div class="grid min-w-0 gap-0.5">
+                                <span
+                                    class="font-semibold leading-5 wrap-anywhere group-hover:text-nexus group-hover:underline"
                                 >
-                            </a>
-                            {#if row.badges.length}
-                                <ul aria-label="1위 업적" class="flex flex-wrap gap-x-2 pl-8">
-                                    {#each row.badges as badge (badge.id)}
-                                        <li class="text-micro font-medium whitespace-normal text-role-gold">
-                                            {badge.title}
-                                        </li>
-                                    {/each}
-                                </ul>
-                            {/if}
-                        </div>
+                                    {row.displayName}
+                                </span>
+                                {#if row.badges.length}
+                                    <ul aria-label="1위 업적" class="flex flex-wrap gap-x-2 gap-y-0.5">
+                                        {#each row.badges as badge (badge.id)}
+                                            <li
+                                                class="max-w-full text-micro font-medium break-keep whitespace-normal text-role-gold"
+                                            >
+                                                {badge.title}
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                {/if}
+                            </div>
+                        </a>
                     </th>
                     <td class="px-3 py-2.5 text-right tabular-nums">
                         <span class="block font-semibold">{integer(row.kda)}</span>
@@ -225,3 +228,21 @@
     onchange={(next) => (current = next)}
     label="리더보드 쪽 이동"
 />
+
+<style>
+    .data-table tbody .leaderboard-row {
+        background-color: color-mix(
+            in srgb,
+            var(--medal, var(--row-base, var(--color-surface))) 10%,
+            var(--row-base, var(--color-surface))
+        );
+    }
+    .leaderboard-row:focus-within {
+        --row-base: var(--color-surface-hover);
+    }
+    @media (hover: hover) {
+        .data-table tbody .leaderboard-row:hover {
+            --row-base: var(--color-surface-hover);
+        }
+    }
+</style>

@@ -27,11 +27,13 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
     // 알 수 없는 쿼리 값은 기본값으로 읽는다.
     const status = url.searchParams.get('status') as ScrimStatusFilter;
     const statusFilter = FILTERS.includes(status) ? status : 'all';
+    const includeCancelled = url.searchParams.get('includeCancelled') === '1';
     const page = Math.max(1, Math.floor(Number(url.searchParams.get('page'))) || 1);
     if (!(dev && findMockGuild(params.guildId))) {
         try {
             const result = await listScrims(getDb(), locals.actor, params.guildId, {
                 status: statusFilter,
+                includeCancelled,
                 page,
                 pageSize: PAGE_SIZE
             });
@@ -40,6 +42,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
                 page,
                 pageSize: PAGE_SIZE,
                 statusFilter,
+                includeCancelled,
                 can: { createScrim: guild.isAdmin }
             };
         } catch (cause) {
@@ -47,12 +50,18 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
         }
     }
 
-    const result = await listMockScrims(params.guildId, { status: statusFilter, page, pageSize: PAGE_SIZE });
+    const result = await listMockScrims(params.guildId, {
+        status: statusFilter,
+        includeCancelled,
+        page,
+        pageSize: PAGE_SIZE
+    });
     return {
         ...result,
         page,
         pageSize: PAGE_SIZE,
         statusFilter,
+        includeCancelled,
         can: { createScrim: guild.isAdmin }
     };
 };

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { scrims } from '../../src/lib/server/db/schema.ts';
 import { HTTP_IDS } from '../api/support/http.ts';
 import { prepareHttpAuctionFixture } from '../api/support/http-auction-fixtures.ts';
 import { assertNoOverflow, createBrowserFixture } from './support/browser.ts';
@@ -78,3 +79,46 @@ for (const width of [1440, 390]) {
         }
     );
 }
+
+test('취소 포함을 조회 중에 해제하면 마지막 선택으로 첫 페이지를 연다', { timeout: 30_000 }, async (t) => {
+    const { page, context, db, url, errors } = await createBrowserFixture(t, { width: 1440 });
+    const list = `${url}/g/${HTTP_IDS.guild}/scrims`;
+    await db.insert(scrims).values([
+        { guildId: HTTP_IDS.guild, title: '모집 중인 내전', status: 'recruit' },
+        { guildId: HTTP_IDS.guild, title: '취소한 내전', status: 'cancelled', cancelledFromStatus: 'recruit' }
+    ]);
+    await page.goto(`${list}?page=2`, { waitUntil: 'networkidle' });
+    const checkbox = page.getByRole('checkbox', { name: '취소된 내전 포함', exact: true });
+    const cancelled = page.getByRole('link', { name: /취소한 내전/ });
+    const release = Promise.withResolvers<void>();
+    const includesCancelled = (url: URL) =>
+        url.pathname.endsWith('/scrims/__data.json') && url.searchParams.get('includeCancelled') === '1';
+    await context.route(
+        includesCancelled,
+        async (route) => {
+            await release.promise;
+            await route.fallback();
+        },
+        { times: 1 }
+    );
+    const loading = page.waitForRequest((request) => includesCancelled(new URL(request.url())));
+    await checkbox.press('Space');
+    const stale = await loading;
+    try {
+        await checkbox.press('Space');
+        await page.waitForURL(list);
+    } finally {
+        release.resolve();
+    }
+    await (await stale.response())?.finished();
+    await page.getByRole('link', { name: /모집 중인 내전/ }).waitFor();
+    assert.equal(page.url(), list);
+    assert.equal(await checkbox.isChecked(), false);
+    assert.equal(await cancelled.count(), 0);
+
+    await checkbox.press('Space');
+    await cancelled.waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('includeCancelled'), '1');
+    assert.equal(await checkbox.isChecked(), true);
+    assert.deepEqual(errors, []);
+});

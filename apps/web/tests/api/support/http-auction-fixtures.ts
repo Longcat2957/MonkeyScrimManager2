@@ -1,9 +1,13 @@
 import { eq } from 'drizzle-orm';
+import { TEAM_SIZE } from '../../../src/lib/features/scrims/formation.ts';
 import * as schema from '../../../src/lib/server/db/schema.ts';
 import { createHttpFixture, HTTP_IDS } from './http.ts';
 
 /** 기존 격리 앱에 경매만 준비한다. 진행은 실제 운영 action으로 실행한다. */
-export async function prepareHttpAuctionFixture(f: Awaited<ReturnType<typeof createHttpFixture>>) {
+export async function prepareHttpAuctionFixture(
+    f: Awaited<ReturnType<typeof createHttpFixture>>,
+    teamCount: 2 | 4 = 2
+) {
     const [scrim] = await f.db
         .insert(schema.scrims)
         .values({
@@ -11,17 +15,24 @@ export async function prepareHttpAuctionFixture(f: Awaited<ReturnType<typeof cre
             title: 'HTTP 경매 취소',
             status: 'preparing',
             formationMethod: 'auction',
+            teamCount,
             mmrSeasonId: f.season.id
         })
         .returning();
     const teams = await f.db
         .insert(schema.scrimTeams)
-        .values([1, 2].map((ordinal) => ({ scrimId: scrim!.id, ordinal, name: ordinal + '팀' })))
+        .values(
+            Array.from({ length: teamCount }, (_, index) => ({
+                scrimId: scrim!.id,
+                ordinal: index + 1,
+                name: `${index + 1}팀`
+            }))
+        )
         .returning();
     const people = await f.db
         .insert(schema.scrimParticipants)
         .values(
-            Array.from({ length: 10 }, (_, index) => ({
+            Array.from({ length: teamCount * TEAM_SIZE }, (_, index) => ({
                 scrimId: scrim!.id,
                 displayName: 'HTTP 후보 ' + index
             }))
@@ -40,7 +51,7 @@ export async function prepareHttpAuctionFixture(f: Awaited<ReturnType<typeof cre
     const setup = () =>
         action('setup', {
             teams: JSON.stringify(
-                people.slice(0, 2).map((person) => ({ captainId: person.id, startPoints: 100 }))
+                people.slice(0, teamCount).map((person) => ({ captainId: person.id, startPoints: 100 }))
             )
         });
     return { scrim: scrim!, people, teams, path, manager, member, revision, action, setup };

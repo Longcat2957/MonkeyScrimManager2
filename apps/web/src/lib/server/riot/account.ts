@@ -59,16 +59,20 @@ export async function getAccountByPuuid(puuid: string, region?: AccountRouting):
 }
 
 /** The returned active region is separate from the Account API routing cluster. */
-export async function getActiveRegion(puuid: string, region?: AccountRouting): Promise<AccountRegionDto> {
+export async function getActiveRegion(
+    puuid: string,
+    region?: AccountRouting,
+    background = false
+): Promise<AccountRegionDto> {
     const id = encodeParameter(puuid, 'puuid');
     const response = await requestRiot<unknown>(`/riot/account/v1/region/by-game/lol/by-puuid/${id}`, {
-        region
+        region,
+        background
     });
 
     if (
         !isRecord(response) ||
-        typeof response.puuid !== 'string' ||
-        !response.puuid ||
+        response.puuid !== puuid.trim() ||
         response.game !== 'lol' ||
         typeof response.region !== 'string' ||
         !response.region

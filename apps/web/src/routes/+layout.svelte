@@ -59,3 +59,16 @@
 </div>
 <ConfirmDialog />
 <ToastHost />
+
+<style>
+    /* 경매판의 열 배치를 바꾸지 않고 긴 본문만 스크롤해 푸터를 계정 바와 맞춘다. */
+    @media (width >= 64rem) {
+        div:has(> main :global([data-auction-board])) {
+            height: 100dvh;
+        }
+        main:has(:global([data-auction-board])) {
+            min-height: 0;
+            overflow-y: auto;
+        }
+    }
+</style>

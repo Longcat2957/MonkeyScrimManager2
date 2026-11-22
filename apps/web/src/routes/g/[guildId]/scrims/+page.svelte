@@ -4,6 +4,7 @@
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import Button from '#lib/components/common/Button.svelte';
+    import CheckboxField from '#lib/components/common/CheckboxField.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
@@ -68,12 +69,17 @@
         creating = true;
     }
 
-    function navigate(params: { status?: ScrimStatusFilter; page?: number }) {
+    function navigate(params: { status?: ScrimStatusFilter; includeCancelled?: boolean; page?: number }) {
         const url = new URL(page.url.href);
         if (params.status !== undefined) {
             url.searchParams.delete('page');
             if (params.status === 'all') url.searchParams.delete('status');
             else url.searchParams.set('status', params.status);
+        }
+        if (params.includeCancelled !== undefined) {
+            url.searchParams.delete('page');
+            if (params.includeCancelled) url.searchParams.set('includeCancelled', '1');
+            else url.searchParams.delete('includeCancelled');
         }
         if (params.page !== undefined) {
             if (params.page === 1) url.searchParams.delete('page');
@@ -102,7 +108,7 @@
         {/if}
     </header>
 
-    {#if data.counts.all === 0}
+    {#if !data.hasScrims}
         <SectionState state="empty" message="아직 내전이 없어요" />
     {:else}
         <section aria-labelledby="scrim-list" aria-busy={changing} class="grid min-w-0 gap-5">
@@ -118,6 +124,11 @@
                         <Spinner label="내전 목록을 불러오는 중" />
                     {/if}
                 </div>
+                <CheckboxField
+                    label="취소된 내전 포함"
+                    checked={data.includeCancelled}
+                    onchange={(includeCancelled) => navigate({ includeCancelled })}
+                />
             </div>
 
             {#if data.scrims.length === 0}

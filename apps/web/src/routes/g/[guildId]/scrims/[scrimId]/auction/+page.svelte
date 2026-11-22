@@ -28,7 +28,7 @@
         refreshError = '';
         refreshing = false;
         if (
-            initial.can.manage ||
+            (initial.can.manage && !initial.auction?.openProfile?.riot?.pending) ||
             initial.scrim.status !== 'preparing' ||
             !initial.auction ||
             !['setup', 'in_progress'].includes(initial.auction.status)
@@ -63,6 +63,26 @@
                 if (stopped || controller.signal.aborted || page.url.pathname !== url) return;
                 if (!next.scrim || next.scrim.id !== initial.scrim.id || !('auction' in next))
                     throw new Error('경매 응답 불일치');
+                if (initial.can.manage) {
+                    const current = initial.auction;
+                    const lot = next.auction;
+                    if (!lot || lot.openLotId !== current?.openLotId || !current?.openProfile) {
+                        stopped = true;
+                        return;
+                    }
+                    // 운영자의 입찰·팀 상태는 건드리지 않고 같은 후보의 외부 전적만 교체한다.
+                    const riot = lot.openProfile?.riot ?? null;
+                    snapshot = {
+                        scrim: initial.scrim,
+                        auction: {
+                            ...current,
+                            openProfile: lot.openProfile ? { ...current.openProfile, riot } : null
+                        }
+                    };
+                    failures = 0;
+                    if (!riot?.pending) stopped = true;
+                    return;
+                }
                 // 단계·설정·권한이 달라지면 기존 상위 load도 다시 읽는다. 경매 진행만 바뀌면 열린 상세와 초점을 보존한다.
                 if (auctionContextKey(next.scrim) !== auctionContextKey(initial.scrim)) {
                     stopped = true;
@@ -76,7 +96,9 @@
             } catch {
                 if (!stopped && (!controller.signal.aborted || timedOut)) {
                     failures = Math.min(3, failures + 1);
-                    refreshError = '진행 상황을 갱신하지 못했어요. 마지막으로 확인한 내용을 표시하고 있어요.';
+                    if (!initial.can.manage)
+                        refreshError =
+                            '진행 상황을 갱신하지 못했어요. 마지막으로 확인한 내용을 표시하고 있어요.';
                 }
             } finally {
                 clearTimeout(timeout);
@@ -96,6 +118,7 @@
         };
         function resume() {
             clearTimeout(timer);
+            if (stopped) return;
             if (!visible()) request?.abort();
             else void update();
         }
@@ -132,7 +155,7 @@
     {/if}
 {/snippet}
 
-<div data-scrim-board>
+<div data-scrim-board data-auction-board>
     {#if refreshError}<p role="status" class="mb-3 text-sm text-muted">{refreshError}</p>{/if}
 
     {#if !auction}

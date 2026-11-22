@@ -180,6 +180,7 @@ export const riotAccounts = pgTable('riot_accounts', {
     tagLine: text('tag_line'),
     // LoL 활성 플랫폼이며 ACCOUNT-V1 지역 클러스터와는 구분한다. 미확인 상태는 null이다.
     platform: text('platform'),
+    platformCheckedAt: timestamp('platform_checked_at', { withTimezone: true, precision: 3 }),
     createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
     // 직접 SQL이나 외래키의 SET NULL 동작에는 Drizzle의 자동 갱신이 적용되지 않는다.
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 })
@@ -187,6 +188,69 @@ export const riotAccounts = pgTable('riot_accounts', {
         .notNull()
         .$onUpdate(() => new Date())
 });
+
+export type AuctionRank = { tier: string; rank: string; leaguePoints: number };
+export type AuctionChampionCount = { championId: number; count: number };
+
+// 솔로랭크의 두 자료는 독립적으로 성공한다. null 시각은 성공한 빈 결과와 구분한다.
+export const riotAuctionCache = pgTable('riot_auction_cache', {
+    accountId: uuid('account_id')
+        .primaryKey()
+        .references(() => riotAccounts.id, { onDelete: 'cascade' }),
+    rankSeason: text('rank_season'),
+    currentRank: jsonb('current_rank').$type<AuctionRank>(),
+    rankFetchedAt: timestamp('rank_fetched_at', { withTimezone: true, precision: 3 }),
+    matchCount: integer('match_count'),
+    champions: jsonb('champions').$type<AuctionChampionCount[]>(),
+    matchesFetchedAt: timestamp('matches_fetched_at', { withTimezone: true, precision: 3 })
+});
+
+// 길드 내전 시즌이 아닌 Riot 랭크 시즌별 관측 최고 기록을 보존한다.
+export const riotAuctionPeaks = pgTable(
+    'riot_auction_peaks',
+    {
+        accountId: uuid('account_id')
+            .notNull()
+            .references(() => riotAccounts.id, { onDelete: 'cascade' }),
+        season: text('season').notNull(),
+        peak: jsonb('peak').$type<AuctionRank>().notNull()
+    },
+    (table) => [primaryKey({ columns: [table.accountId, table.season] })]
+);
+
+// 작업 선점 만료·재시도 시각은 자료의 마지막 성공 시각을 갱신하지 않는다.
+export const riotAuctionJobs = pgTable(
+    'riot_auction_jobs',
+    {
+        accountId: uuid('account_id')
+            .primaryKey()
+            .references(() => riotAccounts.id, { onDelete: 'cascade' }),
+        availableAt: timestamp('available_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        token: uuid('token'),
+        // 플랫폼 확인은 두 자료의 공통 선행 조건이다. League·Match는 서로의 예산을 소비하지 않는다.
+        platformAttempts: integer('attempts').default(0).notNull(),
+        rankDueAt: timestamp('rank_due_at', { withTimezone: true, precision: 3 }).defaultNow(),
+        matchDueAt: timestamp('match_due_at', { withTimezone: true, precision: 3 }).defaultNow(),
+        rankAttempts: integer('rank_attempts').default(0).notNull(),
+        matchAttempts: integer('match_attempts').default(0).notNull(),
+        // null은 목록 미조회이며 빈 배열은 조회에 성공한 0경기다.
+        matchIds: text('match_ids').array()
+    },
+    (table) => [index('riot_auction_jobs_available_idx').on(table.availableAt)]
+);
+
+// Riot 경기 원문이나 상대 선수 정보 없이, 대상 계정이 플레이한 챔피언만 재사용한다.
+export const riotAuctionMatches = pgTable(
+    'riot_auction_matches',
+    {
+        accountId: uuid('account_id')
+            .notNull()
+            .references(() => riotAccounts.id, { onDelete: 'cascade' }),
+        matchId: text('match_id').notNull(),
+        championId: integer('champion_id').notNull()
+    },
+    (table) => [primaryKey({ columns: [table.accountId, table.matchId] })]
+);
 
 // 같은 계정도 서버마다 서로 다른 연결을 가질 수 있다. 해제는 이 연결만 지우고 계정·출전 기록은 남긴다.
 export const guildRiotAccounts = pgTable(
@@ -555,6 +619,20 @@ export const scrimParticipants = pgTable(
             sql`${table.position} is null or ${table.teamId} is not null`
         )
     ]
+);
+
+// 같은 계정의 작업은 하나만 수행하되, 어느 길드의 어떤 선발자가 요청했는지 다시 검증한다.
+export const riotAuctionJobParticipants = pgTable(
+    'riot_auction_job_participants',
+    {
+        accountId: uuid('account_id')
+            .notNull()
+            .references(() => riotAuctionJobs.accountId, { onDelete: 'cascade' }),
+        participantId: uuid('participant_id')
+            .notNull()
+            .references(() => scrimParticipants.id, { onDelete: 'cascade' })
+    },
+    (table) => [primaryKey({ columns: [table.accountId, table.participantId] })]
 );
 
 // 경매에 참여하는 팀의 팀장과 시작 예산을 보관한다.

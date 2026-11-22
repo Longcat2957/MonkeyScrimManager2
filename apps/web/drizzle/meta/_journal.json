@@ -148,6 +148,20 @@
       "when": 1795015103108,
       "tag": "0020_auction_queue_assignment",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795338640386,
+      "tag": "0021_riot_auction_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1795340094090,
+      "tag": "0022_auction_source_retries",
+      "breakpoints": true
     }
   ]
 }

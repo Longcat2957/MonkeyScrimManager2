@@ -3,8 +3,10 @@ import test from 'node:test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-import type { Page } from 'playwright';
+import type { Locator, Page } from 'playwright';
 import { eq } from 'drizzle-orm';
+import { createCaptainRace, FINISH_Y } from '../../src/lib/features/scrims/captain-pinball.ts';
+import type { Database } from '../../src/lib/server/db/types.ts';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { createBracketDraft } from '../../src/lib/server/scrims/bracket.ts';
 import { HTTP_IDS, assertAction } from '../api/support/http.ts';
@@ -32,6 +34,379 @@ async function capture(page: Page, name: string) {
     await writeFile(resolve(directory, 'auction-images.json'), JSON.stringify(captures, null, 4) + '\n');
 }
 
+// 공개 이름을 검증하는 후보는 같은 서버의 활성 사용자와 연결한다. 사용자 없는 과거 이름은 공개하지 않는다.
+async function linkAuctionNames(db: Database, people: { id: string; displayName: string }[]) {
+    const users = people.map((person, index) => ({
+        id: String(970000000000002100n + BigInt(index)),
+        username: person.displayName
+    }));
+    await db.insert(schema.users).values(users);
+    await db
+        .insert(schema.guildMembers)
+        .values(users.map((user) => ({ guildId: HTTP_IDS.guild, userId: user.id, syncedAt: new Date() })));
+    for (const [index, person] of people.entries())
+        await db
+            .update(schema.scrimParticipants)
+            .set({ userId: users[index]!.id })
+            .where(eq(schema.scrimParticipants.id, person.id));
+}
+
+// 같은 난수열로 별도 경기를 완주해 결과 UI와 무관한 실제 도착 순서를 얻는다.
+async function drawPinball(button: Locator, count: number, seed: number) {
+    const rolls: number[] = [];
+    const race = createCaptainRace(count, () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        const roll = seed / 2 ** 32;
+        rolls.push(roll);
+        return roll;
+    });
+    for (let step = 0; step < 66 * 60 && race.finishOrder.length < count; step++) race.step();
+    assert.equal(race.finishOrder.length, count);
+    const consumed = await button.evaluate((node, rolls) => {
+        const original = Math.random;
+        let index = 0;
+        try {
+            Math.random = () => rolls[index++]!;
+            (node as HTMLButtonElement).click();
+        } finally {
+            Math.random = original;
+        }
+        return index;
+    }, rolls);
+    assert.equal(consumed, rolls.length);
+    return race.finishOrder;
+}
+
+async function assertPinballTail(dialog: Locator, order: number[], teams: string[]) {
+    const names = await dialog.locator('[data-marble-label] [data-display-name]').allTextContents();
+    assert.equal(names.length, order.length);
+    const crossed = await dialog
+        .locator('[data-marble]')
+        .evaluateAll(
+            (nodes, finish) =>
+                nodes.filter((node) => (node as SVGGElement).transform.baseVal.getItem(0).matrix.f >= finish)
+                    .length,
+            FINISH_Y
+        );
+    assert.equal(crossed, order.length);
+    const expected = order.slice(-teams.length).map((index) => names[index]!);
+    const rows = dialog.getByRole('list', { name: '도착 순서' }).getByRole('listitem');
+    assert.equal(await rows.count(), teams.length);
+    assert.deepEqual(await rows.locator('strong').allTextContents(), expected);
+    for (const [i, team] of teams.entries()) {
+        const rank = String(order.length - teams.length + i + 1).padStart(2, '0');
+        await rows.nth(i).getByText(rank, { exact: true }).waitFor();
+        await rows.nth(i).getByText(team, { exact: true }).waitFor();
+    }
+    return expected;
+}
+
+test(
+    '팀장 핀볼은 제외한 참가자 없이 경기를 진행하고 재추첨해도 수동 팀장과 저장 전 초안을 보존한다',
+    { timeout: 90_000 },
+    async (t) => {
+        const f = await createBrowserFixture(t, { width: 1440, userId: HTTP_IDS.manager });
+        const a = await prepareHttpAuctionFixture(f, 4);
+        const [standby] = await f.db
+            .insert(schema.scrimParticipants)
+            .values({ scrimId: a.scrim.id, displayName: '대기 참가자' })
+            .returning();
+        await f.db
+            .insert(schema.scrimParticipantRegistrations)
+            .values({ scrimParticipantId: standby!.id, status: 'standby' });
+        await linkAuctionNames(f.db, [...a.people, standby!]);
+        const { page } = f;
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await page.goto(f.url + a.path, { waitUntil: 'networkidle' });
+        const posts: string[] = [];
+        page.on('request', (request) => {
+            if (request.method() === 'POST') posts.push(new URL(request.url()).search);
+        });
+        const revision = await a.revision();
+        const team = (name: string) => page.getByRole('region', { name, exact: true });
+        const candidate = (name: string) =>
+            page.getByRole('button').filter({ has: page.getByText(name, { exact: true }) });
+        const first = a.people[0]!.displayName;
+        const fixed = a.people[1]!.displayName;
+        // 중간 팀에만 수동 팀장을 남겨 첫 빈칸부터 순서대로 채우는지 확인한다.
+        await candidate(first).click();
+        await candidate(fixed).click();
+        await candidate(first).click();
+        const points = ['125', '246', '357', '468'];
+        for (const [i, entry] of a.teams.entries()) {
+            await team(entry.name).getByRole('textbox', { name: '시작 포인트' }).fill(points[i]!);
+        }
+        const draft = async (captains: string[]) => {
+            for (const [i, entry] of a.teams.entries()) {
+                await team(entry.name).getByText(captains[i]!, { exact: true }).waitFor();
+                assert.equal(
+                    await team(entry.name).getByRole('textbox', { name: '시작 포인트' }).inputValue(),
+                    points[i]
+                );
+            }
+        };
+        const before = ['팀장 미지정', fixed, '팀장 미지정', '팀장 미지정'];
+        const trigger = page.getByRole('button', { name: '핀볼 추첨', exact: true });
+        const dialog = page.getByRole('dialog', { name: '팀장 핀볼 추첨', exact: true });
+        const start = dialog.getByRole('button', { name: '추첨 시작', exact: true });
+        const excluded = dialog.getByRole('checkbox', { name: first, exact: true });
+        const camera = dialog.getByRole('combobox', { name: '중계 카메라' });
+        const apply = dialog.getByRole('button', { name: '팀장 배정', exact: true });
+        await trigger.press('Enter');
+        await start.waitFor();
+        assert.equal(await camera.count(), 0);
+        assert.equal(await dialog.getByRole('checkbox').count(), 19);
+        await dialog.getByText('추첨에서 제외할 참가자', { exact: true }).waitFor();
+        await capture(page, 'captain-pinball-exclusions-desktop');
+        const normalOrder = await drawPinball(start, 19, 29);
+        await camera.waitFor();
+        await dialog.getByText('마지막 3명 선발', { exact: true }).waitFor();
+        await capture(page, 'captain-pinball-ready-desktop');
+        const entrants = await camera.getByRole('option').allTextContents();
+        assert.equal(await camera.locator('option:checked').textContent(), '자동 중계');
+        assert.deepEqual(
+            entrants
+                .slice(1)
+                .map((text) => text.replace(/^\d+ · /, ''))
+                .sort(),
+            a.people
+                .map((person) => person.displayName)
+                .filter((name) => name !== fixed)
+                .sort()
+        );
+        await page.waitForFunction(
+            () => {
+                const viewport = document.querySelector<SVGRectElement>('dialog[open] [data-map-viewport]');
+                return viewport && viewport.y.baseVal.value > viewport.height.baseVal.value;
+            },
+            undefined,
+            { timeout: 66_000 }
+        );
+        const bib = normalOrder.at(-1)! + 1;
+        await camera.selectOption({ label: entrants[bib]! });
+        await dialog.getByRole('button', { name: '결과 바로 보기' }).waitFor();
+        await page.waitForFunction(
+            (bib) => {
+                const board = document
+                    .querySelector<HTMLDialogElement>('dialog[open]')
+                    ?.querySelector<SVGSVGElement>('svg.board');
+                const viewport = document.querySelector<SVGRectElement>('dialog[open] [data-map-viewport]');
+                if (!board || !viewport) return false;
+                const followed = board.querySelector<SVGGElement>(`[data-marble="${bib}"]`);
+                if (!followed) return false;
+                const y = followed.transform.baseVal.getItem(0).matrix.f;
+                const top = viewport.y.baseVal.value;
+                return (
+                    y > board.viewBox.baseVal.height * 2 &&
+                    top > 0 &&
+                    y >= top &&
+                    y <= top + viewport.height.baseVal.value
+                );
+            },
+            bib,
+            { timeout: 66_000 }
+        );
+        const runners = dialog.getByRole('list', { name: '현재 선발권 순위' }).locator('strong');
+        const liveNames = await runners.allTextContents();
+        assert.equal(new Set(liveNames).size, 3);
+        assert.ok(liveNames.every((name) => a.people.some((person) => person.displayName === name)));
+        await capture(page, 'captain-pinball-running-desktop');
+        await apply.waitFor({ timeout: 66_000 });
+        const openTeams = [0, 2, 3];
+        const teamNames = openTeams.map((i) => a.teams[i]!.name);
+        await assertPinballTail(dialog, normalOrder, teamNames);
+        await apply.press('Escape');
+        await dialog.waitFor({ state: 'hidden' });
+        await draft(before);
+        assert.deepEqual(posts, []);
+        assert.equal(await a.revision(), revision);
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await trigger.click();
+        await excluded.check();
+        await dialog.getByText('18명 출전 · 마지막 3명 선발', { exact: true }).waitFor();
+        await start.press('Enter');
+        await camera.waitFor();
+        assert.equal(await camera.getByRole('option').count(), 19);
+        assert.equal(await camera.getByRole('option', { name: new RegExp(`${first}$`) }).count(), 0);
+        const racingNames = await dialog.locator('[data-marble-label] [data-display-name]').allTextContents();
+        assert.deepEqual(
+            racingNames.sort(),
+            a.people
+                .map((person) => person.displayName)
+                .filter((name) => name !== first && name !== fixed)
+                .sort()
+        );
+        await dialog.getByText('레이스 중', { exact: true }).waitFor();
+        await dialog.getByRole('img', { name: '코스 미니맵' }).waitFor();
+        await capture(page, 'captain-pinball-running-mobile');
+        await dialog.getByRole('button', { name: '결과 바로 보기' }).click();
+        await apply.waitFor();
+        await dialog.getByRole('button', { name: '다시 추첨', exact: true }).click();
+        await start.waitFor();
+        assert.equal(await camera.count(), 0);
+        assert.equal(await excluded.isChecked(), true);
+        await start.press('Enter');
+        await camera.waitFor();
+        assert.equal(await camera.getByRole('option', { name: new RegExp(`${first}$`) }).count(), 0);
+        assert.equal(await camera.locator('option:checked').textContent(), '자동 중계');
+        await dialog.getByRole('button', { name: '닫기' }).click();
+        await draft(before);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await trigger.press('Enter');
+        const order = await drawPinball(start, 19, 31);
+        await apply.waitFor();
+        assert.equal(await camera.isVisible(), false);
+        const selected = await assertPinballTail(dialog, order, teamNames);
+        const after = [...before];
+        for (const [i, team] of openTeams.entries()) after[team] = selected[i]!;
+        assert.equal(new Set(after).size, a.teams.length);
+        assert.ok(after.every((name) => a.people.some((person) => person.displayName === name)));
+        assert.equal(await dialog.evaluate((node) => node.scrollWidth > node.clientWidth), false);
+        await capture(page, 'captain-pinball-result-mobile');
+        await apply.press('Enter');
+        await dialog.waitFor({ state: 'hidden' });
+        await draft(after);
+        const redraw = page
+            .getByRole('region', { name: '팀장 후보' })
+            .getByRole('button', { name: '다시 추첨', exact: true });
+        await redraw.click();
+        await start.press('Enter');
+        await apply.waitFor();
+        await dialog.getByRole('button', { name: '닫기' }).click();
+        await draft(after);
+
+        // 추첨된 팀장을 해제하고 직접 다시 지정하면 다음 추첨에서 보호한다.
+        await candidate(after[0]!).click();
+        await candidate(after[0]!).click();
+        await redraw.click();
+        const redrawnOrder = await drawPinball(start, 18, 32);
+        await apply.waitFor();
+        const redrawn = await assertPinballTail(dialog, redrawnOrder, teamNames.slice(1));
+        after[2] = redrawn[0]!;
+        after[3] = redrawn[1]!;
+        assert.equal(new Set(after).size, 4);
+        await apply.click();
+        await draft(after);
+        assert.deepEqual(posts, []);
+        assert.equal(await a.revision(), revision);
+
+        const saved = page.waitForResponse((reply) => reply.url().endsWith('?/setup'));
+        await page.getByRole('button', { name: '설정 저장', exact: true }).click();
+        assert.equal((await saved).status(), 200);
+        await page.getByRole('button', { name: '저장됨', exact: true }).waitFor();
+        assert.equal(await trigger.isDisabled(), true);
+        assert.deepEqual(posts, ['?/setup']);
+        await page.reload({ waitUntil: 'networkidle' });
+        await draft(after);
+        assert.equal(await page.getByRole('button', { name: '경매 시작', exact: true }).isEnabled(), true);
+        await candidate(after[3]!).click();
+        await trigger.click();
+        const lastOrder = await drawPinball(start, 17, 33);
+        await apply.waitFor();
+        const [last] = await assertPinballTail(dialog, lastOrder, [a.teams[3]!.name]);
+        await apply.press('Enter');
+        after[3] = last!;
+        await draft(after);
+        assert.deepEqual(posts, ['?/setup']);
+        assert.deepEqual(f.errors, []);
+    }
+);
+
+test(
+    '10인 팀장 핀볼은 열 명의 말풍선을 구분하고 마지막 두 도착자를 배정한다',
+    { timeout: 45_000 },
+    async (t) => {
+        const f = await createBrowserFixture(t, { width: 390, userId: HTTP_IDS.manager });
+        const a = await prepareHttpAuctionFixture(f);
+        await linkAuctionNames(f.db, a.people);
+        const { page } = f;
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await page.goto(f.url + a.path, { waitUntil: 'networkidle' });
+        await page.clock.install({ time: new Date('2030-01-02T12:00:00Z') });
+        await page.clock.pauseAt(new Date('2030-01-02T12:00:01Z'));
+        await page.getByRole('button', { name: '핀볼 추첨', exact: true }).press('Enter');
+        const dialog = page.getByRole('dialog', { name: '팀장 핀볼 추첨' });
+        const start = dialog.getByRole('button', { name: '추첨 시작', exact: true });
+        const exclude = dialog.getByRole('checkbox');
+        await start.waitFor();
+        assert.equal(await exclude.count(), 10);
+        for (let i = 0; i < 8; i++) await exclude.nth(i).press('Space');
+        assert.equal(await start.isEnabled(), true);
+        await exclude.nth(8).press('Space');
+        assert.equal(await start.isDisabled(), true);
+        await dialog.getByText('팀장 2명을 뽑으려면 1명이 더 필요해요.', { exact: true }).waitFor();
+        for (let i = 0; i < 9; i++) await exclude.nth(i).press('Space');
+        const order = await drawPinball(start, 10, 17);
+        await dialog.getByText('마지막 2명 선발', { exact: true }).waitFor();
+        await page.clock.runFor(1200);
+        const labels = dialog.locator('[data-marble-label]:visible');
+        const boxes = await labels.evaluateAll((nodes) =>
+            nodes.map((node) => {
+                const { left, right, top, bottom } = node.getBoundingClientRect();
+                const name = node.querySelector('[data-display-name]')?.textContent;
+                return { left, right, top, bottom, name };
+            })
+        );
+        assert.deepEqual(
+            boxes.map((box) => box.name?.trim()).sort(),
+            a.people.map((person) => person.displayName).sort()
+        );
+        const rear = await dialog.locator('[data-marble]').evaluateAll((nodes) =>
+            nodes
+                .map((node, i) => ({ i, y: (node as SVGGElement).transform.baseVal.getItem(0).matrix.f }))
+                .sort((a, b) => b.y - a.y)
+                .slice(-2)
+                .map(({ i }) => i)
+        );
+        const standings = dialog.getByRole('list', { name: '현재 선발권 순위' });
+        assert.deepEqual(
+            await standings.locator('strong').allTextContents(),
+            rear.map((i) => boxes[i]!.name)
+        );
+        const board = await dialog.locator('svg.board').boundingBox();
+        assert.ok(board);
+        for (const [i, box] of boxes.entries()) {
+            assert.ok(box.right > box.left && box.bottom > box.top);
+            assert.ok(
+                box.left >= board.x - 1 && box.right <= board.x + board.width + 1,
+                `가로 범위: ${box.name}`
+            );
+            assert.ok(
+                box.top >= board.y - 1 && box.bottom <= board.y + board.height + 1,
+                `세로 범위: ${box.name}`
+            );
+            for (const other of boxes.slice(i + 1)) {
+                assert.ok(
+                    box.right <= other.left + 0.5 ||
+                        other.right <= box.left + 0.5 ||
+                        box.bottom <= other.top + 0.5 ||
+                        other.bottom <= box.top + 0.5,
+                    `${box.name} / ${other.name}`
+                );
+            }
+        }
+        await capture(page, 'captain-pinball-ten-names-mobile');
+        await dialog.getByRole('button', { name: '결과 바로 보기' }).press('Enter');
+        await page.clock.runFor(1000);
+        await dialog.getByRole('heading', { name: '팀장 2명 선발' }).waitFor();
+        const winners = await assertPinballTail(
+            dialog,
+            order,
+            a.teams.map((team) => team.name)
+        );
+        await dialog.getByRole('button', { name: '팀장 배정' }).press('Enter');
+        for (const [i, team] of a.teams.entries()) {
+            await page
+                .getByRole('region', { name: team.name, exact: true })
+                .getByText(winners[i]!, { exact: true })
+                .waitFor();
+        }
+        assert.deepEqual(f.errors, []);
+    }
+);
+
 test(
     '390px 경매는 마지막 팀 입찰 중에도 현재 후보를 유지하고 조정 종료를 구분한다',
     { timeout: 60_000 },
@@ -41,12 +416,16 @@ test(
         const a = await prepareHttpAuctionFixture(f);
         assertAction(await a.setup(), 200);
         assertAction(await a.action('start'), 200);
-        assertAction(await a.action('draw'), 200);
         await f.page.clock.install();
         await f.page.goto(f.url + a.path);
+        await f.page.getByText('후보 대기', { exact: true }).waitFor();
+        const footer = f.page.locator('footer').last();
+        const beforeDraw = await footer.evaluate((node) => node.getBoundingClientRect().top + scrollY);
+        await f.page.getByRole('button', { name: '다음 후보' }).click();
         const candidate = f.page.getByRole('group', { name: /^현재 매물 / });
         const bid = f.page.getByRole('textbox', { name: '2팀 입찰가', exact: true });
         await candidate.waitFor();
+        assert.equal(await footer.evaluate((node) => node.getBoundingClientRect().top + scrollY), beforeDraw);
         await bid.evaluate((node) => node.scrollIntoView({ block: 'start', behavior: 'instant' }));
         await bid.focus();
         const candidateBox = await candidate.boundingBox();
@@ -63,7 +442,6 @@ test(
         assert.ok((await candidates.boundingBox())!.y > bidBox.y);
         const bar = candidate.getByRole('progressbar', { name: '남은 입찰 조정 시간' });
         const barBox = await bar.boundingBox();
-        assert.ok(barBox && Math.abs(barBox.y - candidateBox.y) <= 2);
         const surface = () => candidate.evaluate((node) => getComputedStyle(node).backgroundColor);
         const initialColor = await surface();
         await f.page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -81,14 +459,15 @@ test(
         const reducedWidth = (await fill.boundingBox())!.width;
         assert.ok(reducedWidth > 0 && reducedWidth < widthBefore);
         await f.page.clock.fastForward(10_200);
-        const timer = candidate.getByText('조정 시간 종료', { exact: true });
+        const timer = candidate.getByText('0초', { exact: true });
         await timer.waitFor();
         assert.equal(await bar.getAttribute('aria-valuenow'), '0');
         assert.equal(await surface(), initialColor);
         const timerBox = await timer.boundingBox();
         assert.ok(timerBox && timerBox.y >= candidateBox.y);
+        assert.ok(barBox && barBox.x + barBox.width <= timerBox.x);
+        assert.ok(barBox.y >= timerBox.y && barBox.y + barBox.height <= timerBox.y + timerBox.height);
         assert.ok(timerBox.y + timerBox.height <= candidateBox.y + candidateBox.height);
-        assert.equal(await f.page.getByText('조정 시간 종료', { exact: true }).count(), 1);
         assert.equal(await candidate.count(), 1);
         await bid.fill('15');
         await f.page
@@ -106,6 +485,8 @@ test(
         const desktopBid = await bid.boundingBox();
         assert.ok(desktopCandidate && desktopBid);
         assert.ok(desktopCandidate.x + desktopCandidate.width < desktopBid.x);
+        const pass = await f.page.getByRole('button', { name: '유찰', exact: true }).boundingBox();
+        assert.ok(pass && Math.abs(pass.y - desktopCandidate.y - desktopCandidate.height) <= 12);
         assert.equal(await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         const point = (box: NonNullable<typeof desktopBid>) =>
             [box.x + box.width / 2, box.y + box.height / 2] as const;
@@ -268,6 +649,76 @@ test('관리자는 첫 후보 추첨과 직전 작업 취소를 키보드로 실
     assert.deepEqual(f.errors, []);
 });
 
+test('공개 후보 상세는 프로필이 사라져도 낙찰가와 빈 이력을 표시한다', { timeout: 60_000 }, async (t) => {
+    const f = await createBrowserFixture(t, { width: 390 });
+    const draw = async () => {
+        const auction = await prepareHttpAuctionFixture(f);
+        assertAction(await auction.setup(), 200);
+        assertAction(await auction.action('start'), 200);
+        assertAction(await auction.action('draw'), 200);
+        const [lot] = await f.db
+            .select()
+            .from(schema.auctionLots)
+            .where(eq(schema.auctionLots.status, 'open'));
+        assert.ok(lot);
+        await f.db
+            .update(schema.scrimParticipants)
+            .set({ userId: HTTP_IDS.member })
+            .where(eq(schema.scrimParticipants.id, lot.scrimParticipantId));
+        return { auction, lot };
+    };
+    const past = await draw();
+    const { teams, people, action } = past.auction;
+    assertAction(await action('award', { lotId: past.lot.id, teamId: teams[0]!.id, price: '35' }), 200);
+    const remaining = people.slice(2).filter((person) => person.id !== past.lot.scrimParticipantId);
+    for (const [index, person] of remaining.entries()) {
+        const team = teams[index < 3 ? 0 : 1]!;
+        assertAction(await action('assign', { participantId: person.id, teamId: team.id }), 200);
+    }
+
+    const { auction, lot } = await draw();
+    const { page } = f;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(f.url + auction.path, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: '자동 갱신 끄기', exact: true }).click();
+    const refresh = page.getByRole('button', { name: '새로고침', exact: true });
+    const show = page.getByRole('button', { name: '상세 보기', exact: true });
+    const hide = page.getByRole('button', { name: '상세 접기', exact: true });
+    const detail = page.getByRole('region', { name: '후보 전적 상세', exact: true });
+    const mmr = detail.getByRole('heading', { name: '포지션별 MMR', exact: true });
+    const card = page.getByRole('group', { name: /^현재 매물 / });
+    const frontHeight = await card.evaluate((node) => node.clientHeight);
+    await show.press('Enter');
+    await mmr.waitFor();
+    await f.db.update(schema.scrims).set({ mmrSeasonId: null }).where(eq(schema.scrims.id, auction.scrim.id));
+    await refresh.click();
+    await mmr.waitFor({ state: 'hidden' });
+    await detail.getByText('35P', { exact: true }).waitFor();
+    await detail.getByText('(1회)', { exact: true }).waitFor();
+    assert.equal(await hide.getAttribute('aria-expanded'), 'true');
+    assert.equal(await card.evaluate((node) => node.clientHeight), frontHeight);
+    await capture(page, 'guest-price-without-profile-mobile');
+
+    await hide.press('Enter');
+    await show.waitFor();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await f.db
+        .update(schema.scrimParticipants)
+        .set({ userId: null })
+        .where(eq(schema.scrimParticipants.id, lot.scrimParticipantId));
+    const refreshed = page.waitForResponse((response) => response.url().endsWith('/auction/live'));
+    await refresh.click();
+    assert.equal((await refreshed).status(), 200);
+    await show.press('Enter');
+    await detail.getByText('유상 낙찰 기록 없음', { exact: true }).waitFor();
+    assert.equal(await detail.getByRole('heading').count(), 0);
+    await capture(page, 'guest-no-price-without-profile-desktop');
+    await hide.press('Enter');
+    await show.waitFor();
+    assert.deepEqual(f.errors, []);
+});
+
 test(
     '390px 공개 경매는 자동 갱신·실패 복구·일시 중지와 페이지 이탈을 읽기 전용으로 처리한다',
     { timeout: 90_000 },
@@ -275,23 +726,7 @@ test(
         const f = await createBrowserFixture(t, { width: 390 });
         await f.page.setViewportSize({ width: 390, height: 844 });
         const a = await prepareHttpAuctionFixture(f);
-        // 공개 이름을 검증하는 후보는 같은 서버의 활성 사용자와 연결한다. 사용자 없는 과거 이름은 공개하지 않는다.
-        const users = a.people.map((person, index) => ({
-            id: String(970000000000002100n + BigInt(index)),
-            username: person.displayName
-        }));
-        await f.db.insert(schema.users).values(users);
-        await f.db
-            .insert(schema.guildMembers)
-            .values(
-                users.map((user) => ({ guildId: HTTP_IDS.guild, userId: user.id, syncedAt: new Date() }))
-            );
-        for (const [index, person] of a.people.entries())
-            await f.db
-                .update(schema.scrimParticipants)
-                .set({ userId: users[index]!.id })
-                .where(eq(schema.scrimParticipants.id, person.id));
-        assertAction(await a.setup(), 200);
+        await linkAuctionNames(f.db, a.people);
         await f.page.clock.install();
         let requests = 0;
         let posts = 0;
@@ -324,6 +759,8 @@ test(
         await f.page.goto(f.url + a.path);
         await f.page.getByRole('button', { name: '새로고침', exact: true }).waitFor();
         assert.equal(await f.page.getByRole('button', { name: '경매 시작', exact: true }).count(), 0);
+        assert.equal(await f.page.getByRole('button', { name: '핀볼 추첨', exact: true }).count(), 0);
+        assertAction(await a.setup(), 200);
         assertAction(await a.action('start'), 200);
         assertAction(await a.action('draw'), 200);
         const [lot] = await f.db

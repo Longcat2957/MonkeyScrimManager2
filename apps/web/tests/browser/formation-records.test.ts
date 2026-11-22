@@ -14,7 +14,47 @@ test(
         const browser = await chromium.launch({ headless: true });
         // 브라우저를 앱·DB보다 먼저 닫아 정리 중의 남은 요청을 방지한다.
         t.after(() => browser.close());
-        const fixture = await createHttpMatchResultFixture(t);
+        const puuids = Array.from({ length: 10 }, (_, i) => `fixture-http-replay-${i}`);
+        const fixture = await createHttpMatchResultFixture(t, [
+            ...puuids.flatMap((puuid) => [
+                {
+                    method: 'GET',
+                    url: `https://asia.api.riotgames.com/riot/account/v1/region/by-game/lol/by-puuid/${puuid}`,
+                    body: { puuid, game: 'lol', region: 'kr' }
+                },
+                {
+                    method: 'GET',
+                    url: `https://kr.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`,
+                    body: [
+                        {
+                            puuid,
+                            queueType: 'RANKED_SOLO_5x5',
+                            tier: 'DIAMOND',
+                            rank: 'II',
+                            leaguePoints: 43,
+                            wins: 10,
+                            losses: 9
+                        }
+                    ]
+                },
+                {
+                    method: 'GET',
+                    url: `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&count=20`,
+                    body: ['KR_12345']
+                }
+            ]),
+            {
+                method: 'GET',
+                url: 'https://asia.api.riotgames.com/lol/match/v5/matches/KR_12345',
+                body: {
+                    metadata: { matchId: 'KR_12345', participants: puuids },
+                    info: {
+                        queueId: 420,
+                        participants: puuids.map((puuid, i) => ({ puuid, championId: 103 + i }))
+                    }
+                }
+            }
+        ]);
         assertAction(await fixture.record(), 200);
         const [game] = await fixture.db.select().from(schema.games);
         assert.equal(game!.status, 'completed');
@@ -131,16 +171,42 @@ test(
                 )
             );
         assert.ok(record?.championId);
+        const accountId = fixture.accounts[index]!.id;
+        await fixture.db.insert(schema.riotAuctionJobs).values({
+            accountId,
+            availableAt: new Date(Date.now() + 60_000)
+        });
+        await fixture.db.insert(schema.riotAuctionJobParticipants).values({
+            accountId,
+            participantId: lot!.scrimParticipantId
+        });
 
         await page.goto(fixture.url + auctionPath);
-        await page
-            .getByRole('group', { name: '현재 매물 ' + fixture.identities[index]!.gameName, exact: true })
-            .waitFor();
-        await page.getByRole('button', { name: '상세보기', exact: true }).click();
+        const candidate = page.getByRole('group', {
+            name: '현재 매물 ' + fixture.identities[index]!.gameName,
+            exact: true
+        });
+        assert.equal(await candidate.getByText('유상 낙찰 기록 없음').count(), 0);
+        await candidate.getByText(index < 5 ? '1승 0패' : '0승 1패', { exact: true }).waitFor();
+        const bid = page.getByRole('textbox', { name: '2팀 입찰가', exact: true });
+        await bid.fill('27');
+        const footerTop = () =>
+            page
+                .locator('footer')
+                .last()
+                .evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
+        const beforeFlip = await footerTop();
+        const footer = await page.locator('footer').last().boundingBox();
+        assert.ok(footer && footer.y >= 0 && footer.y + footer.height <= page.viewportSize()!.height + 1);
+        await page.getByRole('button', { name: '상세 보기' }).press('Enter');
         const profile = page.getByRole('region', { name: '후보 전적 상세', exact: true });
-        await profile.getByRole('heading', { name: '내전 전적', exact: true }).waitFor();
-        assert.equal(await profile.getByText('1게임', { exact: true }).count(), 2);
-        assert.equal(await profile.getByText(index < 5 ? '1승 0패' : '0승 1패', { exact: true }).count(), 1);
+        await profile.waitFor();
+        await profile.getByText('유상 낙찰 기록 없음').waitFor();
+        assert.equal(await footerTop(), beforeFlip);
+        const playedLane = profile
+            .getByRole('row')
+            .filter({ has: page.getByRole('cell', { name: '1게임', exact: true }) });
+        assert.equal(await playedLane.count(), 1);
         const champions = profile
             .locator('section')
             .filter({ has: page.getByRole('heading', { name: '내전 주력 챔피언', exact: true }) });
@@ -155,7 +221,22 @@ test(
         assert.equal(await profile.getByText(/시각 미확인/).count(), 1);
         assert.equal(await profile.getByRole('heading', { name: '최근 게임', exact: true }).count(), 0);
         assert.equal(await profile.getByRole('heading', { name: '선호 챔피언', exact: true }).count(), 0);
-        assert.equal(await profile.getByRole('heading', { name: 'Riot 전적', exact: true }).count(), 0);
+        // 운영자의 상세와 입찰을 유지한 채 같은 후보의 작업 완료 결과만 받아야 한다.
+        await fixture.db
+            .update(schema.riotAuctionJobs)
+            .set({ availableAt: new Date() })
+            .where(eq(schema.riotAuctionJobs.accountId, accountId));
+        await profile
+            .getByRole('heading', { name: '최근 솔로랭크 1경기', exact: true })
+            .waitFor({ timeout: 30_000 });
+        assert.equal(await bid.inputValue(), '27');
+        await page.getByRole('button', { name: '상세 접기' }).press('Enter');
+        await profile.waitFor({ state: 'hidden' });
+        await candidate
+            .getByText(/43\s*LP/)
+            .first()
+            .waitFor();
+        assert.equal(await bid.inputValue(), '27');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         assert.deepEqual(errors, []);
     }

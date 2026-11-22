@@ -1,5 +1,6 @@
 import { noteUpstreamRequest } from '../operations/context.ts';
 import { RiotError } from './errors.ts';
+import { createRiotBudgets } from './rate-budget.ts';
 
 export const ACCOUNT_ROUTINGS = ['asia', 'americas', 'europe'] as const;
 export type AccountRouting = (typeof ACCOUNT_ROUTINGS)[number];
@@ -21,6 +22,24 @@ export const PLATFORM_ROUTINGS = [
     'vn2'
 ] as const;
 export type PlatformRouting = (typeof PLATFORM_ROUTINGS)[number];
+
+const matchRegions = {
+    br1: 'americas',
+    eun1: 'europe',
+    euw1: 'europe',
+    jp1: 'asia',
+    kr: 'asia',
+    la1: 'americas',
+    la2: 'americas',
+    me1: 'europe',
+    na1: 'americas',
+    oc1: 'sea',
+    ru: 'europe',
+    sg2: 'sea',
+    tr1: 'europe',
+    tw2: 'sea',
+    vn2: 'sea'
+} satisfies Record<PlatformRouting, AccountRouting | 'sea'>;
 
 export function parsePlatformRouting(value: string): PlatformRouting {
     if (!PLATFORM_ROUTINGS.includes(value as PlatformRouting)) {
@@ -46,31 +65,43 @@ interface RiotConfig {
 export interface RiotRequestOptions {
     region?: AccountRouting;
     platform?: PlatformRouting;
+    background?: boolean;
+    query?: { queue: 420; count: 20 };
 }
 
-const families = [
-    ['/riot/account/v1/', 'account'],
-    ['/lol/summoner/v4/', 'platform'],
-    ['/lol/league/v4/', 'platform']
+// 식별자가 아닌 실제 메서드 단위로 예산을 공유한다.
+const methods = [
+    ['account', 'account', /^\/riot\/account\/v1\/accounts\/by-riot-id\/[^/?#]+\/[^/?#]+$/],
+    ['account', 'account', /^\/riot\/account\/v1\/accounts\/by-puuid\/[^/?#]+$/],
+    ['account', 'account', /^\/riot\/account\/v1\/region\/by-game\/lol\/by-puuid\/[^/?#]+$/],
+    ['platform', 'summoner', /^\/lol\/summoner\/v4\/summoners\/by-puuid\/[^/?#]+$/],
+    ['platform', 'league', /^\/lol\/league\/v4\/entries\/by-puuid\/[^/?#]+$/],
+    ['matchIds', 'match', /^\/lol\/match\/v5\/matches\/by-puuid\/[^/?#]+\/ids$/],
+    ['matchDetail', 'match', /^\/lol\/match\/v5\/matches\/[A-Z0-9]{2,4}_\d{1,20}$/]
 ] as const;
 
-/** One instance per server process, shared by all authenticated Riot API callers. */
+/** 단일 웹 프로세스의 사용자 요청과 수집 작업이 같은 인스턴스를 사용한다. */
 export function createRiotRequest(
     getConfig: () => RiotConfig,
     fetcher: typeof fetch = globalThis.fetch,
     now: () => number = Date.now
 ) {
-    const blockedUntil = new Map<string, number>();
+    const budgets = createRiotBudgets(now);
     let inFlight = 0;
 
     return async function requestRiot<T>(path: string, options: RiotRequestOptions = {}): Promise<T> {
         const config = getConfig();
-        const family = families.find(([prefix]) => path.startsWith(prefix));
-        if (!family) throw new RiotError('INVALID_ARGUMENT', 'Unsupported Riot API path.');
-        const [prefix, kind] = family;
+        const method = methods.findIndex(([, , pattern]) => pattern.test(path));
+        if (method < 0) throw new RiotError('INVALID_ARGUMENT', 'Unsupported Riot API path.');
+        const [kind, service] = methods[method]!;
+        const match = service === 'match';
         if (
             (kind === 'account' && options.platform !== undefined) ||
-            (kind === 'platform' && options.region !== undefined)
+            (kind !== 'account' && options.region !== undefined) ||
+            (match && options.platform === undefined) ||
+            (kind === 'matchIds'
+                ? options.query?.queue !== 420 || options.query.count !== 20
+                : options.query !== undefined)
         ) {
             throw new RiotError('INVALID_ARGUMENT', 'Routing does not match this Riot API.');
         }
@@ -86,7 +117,8 @@ export function createRiotRequest(
             if (!PLATFORM_ROUTINGS.includes(defaultPlatform as PlatformRouting)) {
                 throw new RiotError('INVALID_CONFIGURATION', 'RIOT_PLATFORM is invalid.');
             }
-            region = parsePlatformRouting(options.platform ?? defaultPlatform);
+            const platform = parsePlatformRouting(options.platform ?? defaultPlatform);
+            region = match ? matchRegions[platform] : platform;
         }
         const timeoutMs = Number(config.timeoutMs?.trim() || '10000');
         if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60000) {
@@ -107,14 +139,12 @@ export function createRiotRequest(
         } catch {
             throw new RiotError('INVALID_ARGUMENT', 'Invalid Riot API path.');
         }
-        if (!url.pathname.startsWith(prefix) || url.origin !== origin || url.hash || url.search) {
+        if (url.pathname !== path || url.origin !== origin || url.hash || url.search) {
             throw new RiotError('INVALID_ARGUMENT', 'Invalid Riot API path.');
         }
-        const remaining = (blockedUntil.get(region) ?? 0) - now();
-        if (remaining > 0) {
-            throw new RiotError('RATE_LIMITED', 'Riot API requests are temporarily paused.', {
-                retryAfterSeconds: Math.ceil(remaining / 1000)
-            });
+        if (options.query) {
+            url.searchParams.set('queue', String(options.query.queue));
+            url.searchParams.set('count', String(options.query.count));
         }
         if (inFlight >= 8) {
             throw new RiotError('BUSY', 'Too many Riot API requests are in progress.', {
@@ -122,6 +152,7 @@ export function createRiotRequest(
             });
         }
 
+        const reservation = budgets.reserve(region, service, method, options.background === true);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         inFlight += 1;
@@ -134,19 +165,11 @@ export function createRiotRequest(
                 redirect: 'error',
                 signal: controller.signal
             });
+            const retryAfterSeconds = reservation.observe(response);
             if (response.status !== 200) {
                 await response.body?.cancel().catch(() => {});
                 const details = { upstreamStatus: response.status };
                 if (response.status === 429) {
-                    const header = response.headers.get('retry-after');
-                    const seconds = header?.trim() ? Number(header) : NaN;
-                    const retryAfterSeconds =
-                        Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds) : 60;
-                    // Conservatively pause the whole host, including method/service limits.
-                    blockedUntil.set(
-                        region,
-                        Math.max(blockedUntil.get(region) ?? 0, now() + retryAfterSeconds * 1000)
-                    );
                     throw new RiotError('RATE_LIMITED', 'Riot API rate limit exceeded.', {
                         ...details,
                         retryAfterSeconds
@@ -178,6 +201,7 @@ export function createRiotRequest(
             throw new RiotError('NETWORK_ERROR', 'Could not reach Riot API.');
         } finally {
             clearTimeout(timer);
+            reservation.finish();
             inFlight -= 1;
             noteUpstreamRequest('riot', performance.now() - upstreamStarted, upstreamOk);
         }

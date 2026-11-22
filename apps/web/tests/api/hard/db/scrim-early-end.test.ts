@@ -65,6 +65,13 @@ for (const stage of ['unselected', 'manual', 'auction', 'ready'] as const)
         assert.deepEqual(await f.db.select().from(schema.mmrLedgerEntries), []);
         await revertScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
         assert.equal((await f.row()).status, before.status);
+        if (stage === 'auction') {
+            const requested = await f.db.select().from(schema.riotAuctionJobParticipants);
+            assert.deepEqual(
+                new Set(requested.map((row) => row.participantId)),
+                new Set(participants.map((player) => player.id))
+            );
+        }
         assert.equal((await f.row()).endedEarlyFromStatus, null);
         assert.deepEqual(await f.db.select().from(schema.scrimParticipants), participants);
         assert.deepEqual(await f.db.select().from(schema.scrimBracketNodes), nodes);

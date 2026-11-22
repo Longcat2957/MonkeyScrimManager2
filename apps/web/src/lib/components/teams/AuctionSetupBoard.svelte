@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { untrack, type Snippet } from 'svelte';
+    import { tick, untrack, type Snippet } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import PositionIcon from '#lib/components/common/PositionIcon.svelte';
@@ -14,6 +14,7 @@
     } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
+    import CaptainPinball from './CaptainPinball.svelte';
     import ChangeMethodButton from './ChangeMethodButton.svelte';
 
     type Props = {
@@ -33,29 +34,38 @@
     });
     let captains = $state<(string | null)[]>(untrack(() => fromTeams().captains));
     let points = $state<string[]>(untrack(() => fromTeams().points));
+    // 추첨으로 배정했지만 아직 저장하지 않은 팀장만 다음 추첨에 다시 참가한다.
+    let drawn = $state.raw<string[]>([]);
     let query = $state('');
+    let setupControls = $state<HTMLDivElement>();
     let pendingAction = $state<'save' | 'start' | null>(null);
     const busy = $derived(pendingAction !== null);
-    let syncedContext = untrack(() => contextKey);
-    let syncedTeams = untrack(() => teams.map((team) => team.id).join(','));
-    let baseline = untrack(() => JSON.stringify(fromTeams()));
+    const teamContext = $derived(JSON.stringify([contextKey, teams.map((team) => team.id)]));
+    let syncedContext = untrack(() => teamContext);
+    let baseline = untrack(fromTeams);
 
     $effect(() => {
         const next = fromTeams();
-        const key = contextKey;
-        const teamIds = teams.map((team) => team.id).join(',');
+        const key = teamContext;
+        const roster = new Set(players.map((player) => player.participantId));
         untrack(() => {
-            if (
-                key !== syncedContext ||
-                teamIds !== syncedTeams ||
-                JSON.stringify({ captains, points }) === baseline
-            ) {
+            if (key !== syncedContext) {
                 captains = next.captains;
                 points = next.points;
+                drawn = [];
+            } else {
+                // 다른 운영자가 저장한 팀장은 우선하고, 명단에서 빠진 후보의 초안만 해제한다.
+                const confirmed = new Set(next.captains.filter((id, i) => id !== baseline.captains[i]));
+                captains = captains.map((id, i) => {
+                    const saved = next.captains[i] ?? null;
+                    if (saved !== baseline.captains[i] || saved === id) return saved;
+                    return id && roster.has(id) && !confirmed.has(id) ? id : null;
+                });
+                drawn = drawn.filter((id) => captains.includes(id) && !confirmed.has(id));
+                points = points.map((value, i) => (value === baseline.points[i] ? next.points[i]! : value));
             }
             syncedContext = key;
-            syncedTeams = teamIds;
-            baseline = JSON.stringify(next);
+            baseline = next;
         });
     });
 
@@ -70,6 +80,9 @@
         teams.some((team, index) => team.captainId !== captains[index] || team.startPoints !== parsed[index])
     );
     const missingCaptain = $derived(captains.some((id) => !id));
+    const pinned = $derived(captains.map((id) => (id && drawn.includes(id) ? null : id)));
+    const drawTeams = $derived(teams.filter((_, index) => !pinned[index]));
+    const drawPlayers = $derived(players.filter((player) => !pinned.includes(player.participantId)));
     const invalidPoints = $derived(parsed.some((value) => value === null));
     const startBlocked = $derived(
         missingCaptain
@@ -93,11 +106,22 @@
     function toggleCaptain(id: string) {
         if (!editable || busy) return;
         const index = captains.indexOf(id);
-        if (index >= 0) captains[index] = null;
-        else {
+        if (index >= 0) {
+            captains[index] = null;
+            drawn = drawn.filter((captain) => captain !== id);
+        } else {
             const empty = captains.indexOf(null);
             if (empty >= 0) captains[empty] = id;
         }
+    }
+
+    async function assignDraw(ids: string[]) {
+        if (!editable || busy || ids.length !== drawTeams.length) return;
+        let index = 0;
+        captains = pinned.map((captain) => captain ?? ids[index++]!);
+        drawn = ids;
+        await tick();
+        (setupControls?.querySelector<HTMLButtonElement>('button:enabled') ?? setupControls)?.focus();
     }
 
     async function save() {
@@ -114,6 +138,7 @@
                 const next = fromTeams();
                 captains = next.captains;
                 points = next.points;
+                drawn = [];
             }
         } finally {
             pendingAction = null;
@@ -144,7 +169,11 @@
         </div>
     </header>
     {#if editable}
-        <div class="flex flex-wrap items-center justify-between gap-2 bg-surface-2 px-4 py-2.5">
+        <div
+            bind:this={setupControls}
+            tabindex="-1"
+            class="flex flex-wrap items-center justify-between gap-2 bg-surface-2 px-4 py-2.5"
+        >
             <p
                 class={[
                     'min-w-0 flex-[1_1_18rem] text-ui leading-relaxed',
@@ -185,7 +214,18 @@
                 class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-surface"
             >
                 <div class="border-b border-line bg-surface px-3 py-3">
-                    <h3 id="captain-candidates" class="text-base font-bold tracking-tight">팀장 후보</h3>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 id="captain-candidates" class="text-base font-bold tracking-tight">팀장 후보</h3>
+                        {#key teamContext}
+                            <CaptainPinball
+                                players={drawPlayers}
+                                slots={drawTeams}
+                                redraw={drawn.length > 0}
+                                disabled={busy}
+                                onassign={assignDraw}
+                            />
+                        {/key}
+                    </div>
                     <p class="mt-1 text-ui leading-relaxed text-muted">
                         누르는 순서대로 비어 있는 팀에 배정돼요. 다시 누르면 해제돼요.
                     </p>

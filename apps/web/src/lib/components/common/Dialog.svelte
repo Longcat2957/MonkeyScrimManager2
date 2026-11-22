@@ -4,6 +4,7 @@
     type Props = {
         open?: boolean;
         title: string;
+        wide?: boolean;
         // 바깥 클릭·Escape로 닫히지 않게 해야 하는 확인 창은 false로 둔다.
         dismissible?: boolean;
         onclose?: () => void;
@@ -15,6 +16,7 @@
     let {
         open = $bindable(false),
         title,
+        wide = false,
         dismissible = true,
         onclose,
         oncancel,
@@ -56,7 +58,10 @@
     oncancel={cancel}
     onclose={closed}
     onclick={backdrop}
-    class="m-auto max-h-[85dvh] w-[min(36rem,calc(100%-2rem))] overflow-hidden rounded-box border border-line-strong bg-surface p-0 text-ink backdrop:bg-black/60"
+    class={[
+        'm-auto max-h-[85dvh] overflow-hidden rounded-box border border-line-strong bg-surface p-0 text-ink backdrop:bg-black/60',
+        wide ? 'w-[min(62rem,calc(100%-1rem))]' : 'w-[min(36rem,calc(100%-2rem))]'
+    ]}
     aria-labelledby={`${id}-title`}
 >
     <div class="flex max-h-[85dvh] flex-col">

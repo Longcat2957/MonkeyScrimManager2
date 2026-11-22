@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
+import { claimAuctionJob, enqueueAuctionJobs } from '../../../../src/lib/server/riot/auction-cache.ts';
 import {
     cancelScrim,
     createRegistration,
@@ -71,6 +72,7 @@ test('모집 취소 복구는 신청·희망 포지션과 고정 시즌을 보�
     await restoreCancelledScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     const after = await f.row();
     assert.equal(after.status, 'recruit');
+    assert.deepEqual(await f.db.select().from(schema.riotAuctionJobs), []);
     assert.equal(after.mmrSeasonId, before.mmrSeasonId);
     assert.equal(after.cancelledFromStatus, null);
     assert.equal(after.cancelledAuctionStatus, null);
@@ -115,6 +117,7 @@ for (const status of ['preparing', 'ready'] as const)
 
 test('진행 경매 취소 복구는 낙찰 포인트·유찰·현재 후보·대기열과 행위 이력을 보존한다', async (t) => {
     const f = await auctionFixture(t);
+    await f.db.transaction((tx) => enqueueAuctionJobs(tx, f.scrimId));
     const soldLotId = await f.draw();
     await awardAuctionLot(
         f.db,
@@ -144,9 +147,12 @@ test('진행 경매 취소 복구는 낙찰 포인트·유찰·현재 후보·�
     ];
     const snapshots = await snapshotTables(f.db, tables);
     await cancel(f);
+    assert.equal(await claimAuctionJob(f.db), null);
+    assert.deepEqual(await f.db.select().from(schema.riotAuctionJobs), []);
     assert.equal((await f.view()).status, 'cancelled');
     assert.equal((await f.row()).cancelledAuctionStatus, 'in_progress');
     await restore(f);
+    assert.equal((await f.view()).openProfile?.riot?.pending, true);
     assert.deepEqual(await f.view(), before);
     assert.deepEqual(await snapshotTables(f.db, tables), snapshots);
 });

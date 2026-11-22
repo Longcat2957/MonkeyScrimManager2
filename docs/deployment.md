@@ -185,6 +185,16 @@ OAuth callback의 code/state가 접근 로그에 남지 않게 이 사이트의 
 
 인증서 발급·갱신과 실제 서버의 TLS·방화벽·도메인 점검은 운영 환경에서 수행한다. 검증 도구의 하루짜리 자체 서명 인증서를 운영 인증서로 사용하지 않는다.
 
+## 경매 Riot 조회
+
+`0021_riot_auction_cache` 다음에 `0022_auction_source_retries`를 적용한다. 기존 작업의 선점·대기 시각과 전적은 보존한다. 플랫폼이 실제로 바뀌면 같은 트랜잭션에서 이전 지역의 랭크·시즌 최고·경기 자료를 폐기한다.
+
+앱 배포 전에 DB 마이그레이션을 적용한다. 운영 웹 프로세스가 기존 `RIOT_API_KEY`로 작업을 처리하며, 봇·브라우저에 키를 전달하지 않는다. 이전 내전 전체를 일괄 조회하지 않는다. 배포 후 새 모집을 마감해 경매를 시작할 수 있는지 먼저 확인하고, 현재 랭크와 최근 경기 집계가 비동기로 표시되는지 확인한다. Riot의 429는 모집 장애가 아니며 `Retry-After` 동안 기다린다. 한 키를 여러 웹 프로세스에서 쓰면 프로세스별 호출 예산은 공유되지 않는다. 운영은 현재의 단일 웹 프로세스를 기준으로 한다.
+
+워커는 `riot_auction_job` 뒤에 결과(`deferred`·`retry`·`stopped`), 자료(`platform`·`rank`·`match`), 오류 코드를 기록한다. `deferred`는 호출 예산이나 동시 요청 제한 대기이며 실패 횟수를 늘리지 않는다. `stopped rank`와 `stopped match`는 해당 자료만 중단하지만 플랫폼 확인이 중단되면 두 자료를 조회할 수 없다. 계정 식별자 없이 예약 상태를 확인하려면 `SELECT rank_due_at, match_due_at, available_at FROM riot_auction_jobs ORDER BY available_at;`를 사용한다.
+
+관측 최고값은 [지역별 Riot 시즌 일정](../apps/web/src/lib/server/riot/auction-season.ts)에만 귀속한다. 새 시즌의 시작·종료가 발표되면 해당 일정과 경계 테스트를 함께 갱신한다. 확인하지 못한 기간에는 현재 등급만 갱신하고 최고값을 다른 시즌에서 가져오지 않는다.
+
 ## DB·ROFL 운영 제한과 요청 관측
 
 [환경 예제](../apps/web/.env.example)의 제한은 운영 환경 파일에 설정하고 웹을 재시작한다. 잘못된 값·0·순서 역전은 무제한으로 대체하지 않고 거절한다. 실제 구현은 [DB 풀](../apps/web/src/lib/server/db/pool.ts), [ROFL 입장/본문](../apps/web/src/lib/server/rofl/processing.ts), [파싱 worker](../apps/web/src/lib/server/rofl/processing-worker.ts), [요청 관측](../apps/web/src/lib/server/operations/context.ts)을 따른다.

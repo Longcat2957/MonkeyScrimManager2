@@ -269,19 +269,36 @@ test('후보 순서는 서버의 실제 유상 낙찰 평균을 따르고 공개
     ];
     const managerView = await getAuction(f.db, f.manager, f.guildId, f.scrimId, f.access);
     for (const view of [await f.view(), managerView!]) {
+        assert.equal(view.openPriceHistory, null);
         assert.deepEqual(
             view.queue.map((p) => p.participantId),
             expected
         );
     }
     assert.deepEqual(await stored(), order);
-    await f.draw();
-    const view = await f.view();
-    assert.equal(view.openLot?.participantId, order[0]);
-    assert.deepEqual(
-        view.queue.map((p) => p.participantId),
-        expected.filter((id) => id !== order[0])
-    );
+    const waiting = new Set(expected);
+    for (const id of order) {
+        await drawAuctionLot(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+        const view = await f.view();
+        assert.equal(view.openLot?.participantId, id);
+        waiting.delete(id);
+        assert.deepEqual(
+            view.queue.map((p) => p.participantId),
+            [...waiting]
+        );
+        const index = f.participants.findIndex((p) => p.id === id);
+        const { average, count } = await memberPrices(index);
+        assert.deepEqual(view.openPriceHistory, count ? { average, count } : null);
+        if (privatePlayers.includes(index)) assert.ok(!JSON.stringify(view).includes(f.users[index]!.id));
+        await passAuctionLot(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { ...(await f.revision()), lotId: view.openLotId! },
+            f.access
+        );
+    }
     await resetAuction(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     assert.deepEqual((await stored()).sort(), candidateIds);
 });

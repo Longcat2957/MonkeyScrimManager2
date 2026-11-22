@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { building } from '$app/env';
+import { DATABASE_URL } from '$app/env/private';
 import { error, isHttpError, isRedirect } from '@sveltejs/kit';
-import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
+import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
 import { SESSION_COOKIE, authCookieOptions } from '#lib/server/auth/cookies.ts';
 import { validateSession } from '#lib/server/auth/session.ts';
 import { DomainError } from '#lib/server/errors.ts';
@@ -13,6 +15,26 @@ import {
     notePhase
 } from '#lib/server/operations/context.ts';
 import { noteRequestError, operationalFailure, OperationLimitError } from '#lib/server/operations/errors.ts';
+import { getDb } from '#lib/server/db/index.ts';
+import { getActiveRegion } from '#lib/server/riot/account.ts';
+import { startAuctionWorker } from '#lib/server/riot/auction-worker.ts';
+import { getLeagueEntriesByPuuid } from '#lib/server/riot/lol/league.ts';
+import { getSoloMatchIds, getSoloMatchParticipants } from '#lib/server/riot/lol/match.ts';
+
+export const init: ServerInit = () => {
+    if (building || !DATABASE_URL?.trim()) return;
+    const stop = startAuctionWorker(getDb, {
+        getActiveRegion,
+        getLeagueEntriesByPuuid,
+        getSoloMatchIds,
+        getSoloMatchParticipants
+    });
+    process.once('sveltekit:shutdown', stop);
+    import.meta.hot?.dispose(() => {
+        process.off('sveltekit:shutdown', stop);
+        stop();
+    });
+};
 
 export const handle: Handle = async ({ event, resolve }) => {
     event.locals.requestId = randomUUID();

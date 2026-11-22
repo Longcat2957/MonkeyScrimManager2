@@ -300,7 +300,7 @@ test('비공개 경매 후보도 내부 사용자로 과거 전적을 읽고 낙
     assert.equal(after.openLot!.displayName, '비공개 사용자');
     assert.equal(after.openLot!.iconUrl, null);
     assert.deepEqual(after.openProfile, before.openProfile);
-    assert.equal(after.openProfile!.summary.games, 1);
+    assert.equal(after.openProfile!.summary?.games, 1);
     await awardAuctionLot(
         f.db,
         f.manager,

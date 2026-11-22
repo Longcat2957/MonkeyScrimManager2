@@ -95,7 +95,7 @@ const PROFILE_CHAMPIONS = [
     'Sett',
     'Nami'
 ];
-const TIERS = ['DIAMOND II', 'EMERALD I', 'PLATINUM III', 'GOLD II', null];
+const TIERS = ['DIAMOND', 'EMERALD', 'PLATINUM', 'GOLD'];
 
 // 현재 후보의 상세 보기용 전적을 만든다. 실제로는 Game·Riot 캐시에서 조회한다.
 function mockProfile(player: FormationPlayer, champion: (id: string) => ChampionRef): TargetProfile {
@@ -105,6 +105,8 @@ function mockProfile(player: FormationPlayer, champion: (id: string) => Champion
     const games = 8 + (h % 30);
     const wins = Math.round(games * (0.35 + ((h >>> 5) % 30) / 100));
     const mainLane = player.positions[0] ?? LANES[h % LANES.length]!;
+    const tier = TIERS[h % TIERS.length]!;
+    const fetchedAt = '2026-10-28T12:00:00.000Z';
     return {
         summary: { games, wins, losses: games - wins },
         mainLane,
@@ -135,10 +137,19 @@ function mockProfile(player: FormationPlayer, champion: (id: string) => Champion
             h % 7 === 0
                 ? null
                 : {
-                      tier: TIERS[h % TIERS.length] ?? null,
-                      games: 20,
-                      wins: 9 + (h % 6),
-                      champions: [6, 7].map(pick)
+                      pending: false,
+                      rank: {
+                          current: h % 5 ? { tier, rank: 'II', leaguePoints: h % 100 } : null,
+                          peak: { tier, rank: 'I', leaguePoints: h % 50 },
+                          fetchedAt,
+                          stale: true
+                      },
+                      recent: {
+                          games: 20,
+                          champions: [7, 4, 3].map((count, index) => ({ champion: pick(6 + index), count })),
+                          fetchedAt,
+                          stale: true
+                      }
                   }
     };
 }
@@ -417,6 +428,8 @@ export async function getMockAuction(
     const byId = new Map(players.map((player) => [player.participantId, player]));
     const pick = (id: string) => byId.get(id)!;
     const teamName = (id: string | null) => state.teams.find((team) => team.id === id)?.name ?? null;
+    const openLot = state.open ? pick(state.open) : null;
+    const total = openLot?.userId ? mockAuctionPurchaseTotals(guildId).get(openLot.userId) : null;
 
     return {
         status: state.status,
@@ -441,8 +454,9 @@ export async function getMockAuction(
                     }))
             ]
         })),
-        openLot: state.open ? pick(state.open) : null,
-        openProfile: state.open ? mockProfile(pick(state.open), champion) : null,
+        openLot,
+        openPriceHistory: total ? { average: total.sum / total.count, count: total.count } : null,
+        openProfile: openLot ? mockProfile(openLot, champion) : null,
         queue: state.queue.map(pick).sort(byCandidateName),
         unsold: state.unsold.map(pick),
         history: state.lots.map((lot, index): AuctionHistoryEntry => ({

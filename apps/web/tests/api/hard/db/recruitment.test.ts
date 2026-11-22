@@ -530,6 +530,18 @@ test('마감·재개·취소는 실제 단계와 신청 이력을 보존한다',
     await cancelScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     assert.equal((await f.row()).status, 'cancelled');
     assert.equal((await registrations(f)).length, 10);
+    for (const status of ['all', 'done'] as const) {
+        const options = { status, page: 1, pageSize: 1 };
+        const hidden = await listScrims(f.db, null, f.guildId, options);
+        assert.equal(hidden.hasScrims, true);
+        assert.equal(hidden.total, 0);
+        assert.equal(hidden.counts[status], 0);
+        assert.deepEqual(hidden.scrims, []);
+        const shown = await listScrims(f.db, null, f.guildId, { ...options, includeCancelled: true });
+        assert.equal(shown.total, 1);
+        assert.equal(shown.counts[status], 1);
+        assert.equal(shown.scrims[0]?.id, f.scrimId);
+    }
 });
 
 test('수동 대기 전환은 유지하고 운영자 제외로 빈 자리만 자동 승급한다', async (t) => {

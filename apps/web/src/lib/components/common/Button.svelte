@@ -13,6 +13,7 @@
         class?: string;
         ariaLabel?: string;
         'aria-expanded'?: boolean;
+        'aria-controls'?: string;
         'aria-haspopup'?: 'menu';
         onclick?: (event: MouseEvent) => void;
         children: Snippet;
@@ -28,6 +29,7 @@
         class: className = '',
         ariaLabel,
         'aria-expanded': expanded,
+        'aria-controls': controls,
         'aria-haspopup': haspopup,
         onclick,
         children
@@ -65,6 +67,7 @@
         disabled={disabled || loading}
         aria-label={ariaLabel}
         aria-expanded={expanded}
+        aria-controls={controls}
         aria-haspopup={haspopup}
         aria-busy={loading}
         {onclick}

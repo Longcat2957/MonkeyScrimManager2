@@ -237,6 +237,11 @@ test('진행 중 경매 내전의 취소 복구는 팀장·시작 포인트만 �
     await restore(f);
     const view = (await getAuction(f.db, f.manager, f.guildId, f.scrimId, f.access))!;
     assert.equal(view.status, 'setup');
+    const requests = await f.db.select().from(schema.riotAuctionJobParticipants);
+    assert.deepEqual(
+        new Set(requests.map((row) => row.participantId)),
+        new Set(view.players.map((player) => player.participantId))
+    );
     assert.deepEqual(
         view.teams.map((team) => [team.captainId, team.startPoints]),
         teams.map((team) => [team.captainParticipantId, team.initialPoints])

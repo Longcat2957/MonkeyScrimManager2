@@ -133,16 +133,16 @@ export async function linkRiotAccount(
             .for('update');
         if (existing && existing.userId !== userId)
             throw new DomainError('CONFLICT', '이 서버에서 이미 다른 사용자에게 연결된 계정이에요');
-        if (existing) return;
-        await requireNoActiveUse(tx, guildId, target.id);
+        if (!existing) await requireNoActiveUse(tx, guildId, target.id);
         await tx
             .update(riotAccounts)
             .set({
-                gameName: lookup.gameName,
-                tagLine: lookup.tagLine,
-                platform: lookup.region.toLowerCase()
+                ...(existing ? {} : { gameName: lookup.gameName, tagLine: lookup.tagLine }),
+                platform: lookup.region.toLowerCase(),
+                platformCheckedAt: new Date()
             })
             .where(eq(riotAccounts.id, target.id));
+        if (existing) return;
         await tx.insert(guildRiotAccounts).values({
             guildId,
             riotAccountId: target.id,

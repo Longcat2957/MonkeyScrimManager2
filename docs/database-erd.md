@@ -1,6 +1,6 @@
 # MSM2 데이터베이스 ERD
 
-기준은 [Drizzle 스키마](../apps/web/src/lib/server/db/schema.ts)의 45개 업무 테이블과 105개 외래키다. 조회용 `relations`와 격리 복원 검사 전용 `msm2_deploy_probe`는 집계하지 않는다.
+기준은 [Drizzle 스키마](../apps/web/src/lib/server/db/schema.ts)의 50개 업무 테이블과 111개 외래키다. 조회용 `relations`와 격리 복원 검사 전용 `msm2_deploy_probe`는 집계하지 않는다.
 변경 이력과 적용 순서는 [migration 디렉터리](../apps/web/drizzle/)의 SQL과 journal을 따른다. 적용한 SQL은 수정하지 않으며, 운영 자료가 있는 DB의 변경은 [백업·복원 절차](deployment.md#db-migration과-백업복원)를 따른다.
 
 서비스는 모집·팀 편성·경매·대진을 관리하고, 경기 최종 결과는 ROFL에서 받아 기록한다.
@@ -19,6 +19,12 @@ erDiagram
     users ||..o{ guild_riot_accounts : 서버별_계정_연결
     guilds ||--o{ guild_riot_accounts : 계정_연결_범위
     riot_accounts ||--o{ guild_riot_accounts : Riot_식별자
+    riot_accounts ||--o| riot_auction_jobs : 갱신_예약
+    riot_auction_jobs ||--o{ riot_auction_job_participants : 갱신_요청
+    scrim_participants ||--o{ riot_auction_job_participants : 대상자
+    riot_accounts ||--o| riot_auction_cache : 외부_전적_요약
+    riot_accounts ||--o{ riot_auction_peaks : 시즌별_관측_최고
+    riot_accounts ||--o{ riot_auction_matches : 경기별_사용_챔피언
     users ||--o{ user_champion_preferences : 포지션별_선호
     guilds ||--o| guild_discord_settings : 게시_설정
     guilds ||--o{ guild_discord_roles : 역할_선택지
@@ -125,6 +131,7 @@ erDiagram
         text game_name "NULL 허용"
         text tag_line "NULL 허용"
         text platform "NULL 허용"
+        timestamptz platform_checked_at "활성 플랫폼 조회 성공 시각, NULL 허용"
     }
     guild_riot_accounts {
         text guild_id PK, FK

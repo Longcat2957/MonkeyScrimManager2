@@ -9,7 +9,7 @@
 
     type Props = {
         team: AuctionTeamView;
-        // 입찰 입력을 보여 줄지(운영자 + 진행 중인 후보가 있을 때)다.
+        // 운영자가 진행 중인 경매에서는 입찰 줄을 유지하고 후보 대기 중에는 비활성화한다.
         bidding: boolean;
         busy: boolean;
         // 현재 후보·유찰 후보를 이 패널로 끌어 놓으면 가격 없이 배치한다.

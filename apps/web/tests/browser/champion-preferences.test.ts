@@ -132,7 +132,7 @@ async function auctionProjection(
     await page.goto(f.url + auction.path);
     const current = page.getByRole('group', { name: `현재 매물 ${ownerName}`, exact: true });
     await current.waitFor();
-    await page.getByRole('button', { name: '상세보기', exact: true }).press('Enter');
+    await page.getByRole('button', { name: '상세 보기', exact: true }).press('Enter');
     const detail = page.getByRole('region', { name: '후보 전적 상세', exact: true });
     await detail.getByRole('heading', { name: '선호 챔피언', exact: true }).waitFor();
     const preferences = detail
@@ -144,9 +144,6 @@ async function auctionProjection(
         ids.map((id) => f.catalog.find((entry) => entry.championId === id)!.name)
     );
     await detail.getByText('2게임', { exact: true }).first().waitFor();
-    await detail.focus();
-    await detail.press('End');
-    await detail.press('Home');
     await assertNoOverflow(page, 'auction-preferences');
     assert.deepEqual(errors, []);
     assertAction(
@@ -160,8 +157,8 @@ async function auctionProjection(
     );
     await page.reload();
     await page.getByRole('group', { name: '현재 매물 비공개 사용자', exact: true }).waitFor();
-    await page.getByRole('button', { name: '상세보기', exact: true }).press('Enter');
-    await detail.getByRole('heading', { name: '내전 전적', exact: true }).waitFor();
+    await page.getByRole('button', { name: '상세 보기', exact: true }).press('Enter');
+    await detail.waitFor();
     assert.equal(await detail.getByRole('heading', { name: '선호 챔피언', exact: true }).count(), 0);
     assert.equal(await page.getByText(ownerName, { exact: true }).count(), 0);
     assert.deepEqual(await stored(f), ids);

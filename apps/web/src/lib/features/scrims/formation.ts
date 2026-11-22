@@ -1,4 +1,4 @@
-import type { auctionStatus } from '#lib/server/db/schema.ts';
+import type { AuctionRank, auctionStatus } from '#lib/server/db/schema.ts';
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import { POSITIONS } from '#lib/features/labels.ts';
 import type { FormationMethod, ScrimRevertAction } from './types.ts';
@@ -135,6 +135,7 @@ export type AuctionView = {
     players: FormationPlayer[];
     openLot: FormationPlayer | null;
     openLotId?: string | null;
+    openPriceHistory: { average: number; count: number } | null;
     // 열람용 이름순 명단이다. 실제 호명 순서는 서버에만 보관한다.
     queue: FormationPlayer[];
     unsold: FormationPlayer[];
@@ -177,12 +178,41 @@ export function headToHead(pairs: Record<string, PairRecord>, a: string, b: stri
 
 export type ChampionRef = { id: string; name: string; iconUrl: string | null };
 
+export type AuctionRiotProfile = {
+    pending: boolean;
+    rank: { current: AuctionRank | null; peak: AuctionRank | null; fetchedAt: string; stale: boolean } | null;
+    recent: {
+        games: number;
+        champions: { champion: ChampionRef; count: number }[];
+        fetchedAt: string;
+        stale: boolean;
+    } | null;
+};
+
+const RANK_TIERS: Record<string, string> = {
+    IRON: '아이언',
+    BRONZE: '브론즈',
+    SILVER: '실버',
+    GOLD: '골드',
+    PLATINUM: '플래티넘',
+    EMERALD: '에메랄드',
+    DIAMOND: '다이아몬드',
+    MASTER: '마스터',
+    GRANDMASTER: '그랜드마스터',
+    CHALLENGER: '챌린저'
+};
+
+export function formatSoloRank({ tier, rank, leaguePoints }: AuctionRank) {
+    const division = ['MASTER', 'GRANDMASTER', 'CHALLENGER'].includes(tier) ? '' : ` ${rank}`;
+    return `${RANK_TIERS[tier] ?? tier}${division} · ${leaguePoints} LP`;
+}
+
 // 경매 현재 후보의 상세 보기다.
 export type TargetProfile = {
-    summary: { games: number; wins: number; losses: number };
+    summary: { games: number; wins: number; losses: number } | null;
     mainLane: LolPosition | null;
     championRecords: { champion: ChampionRef; games: number; wins: number }[];
-    laneGames: Record<LolPosition, number>;
+    laneGames: Record<LolPosition, number> | null;
     preferredChampions: ChampionRef[];
     preferredChampionPosition?: LolPosition | null;
     recentGames: {
@@ -194,7 +224,7 @@ export type TargetProfile = {
     }[];
     // 실제 시각이 없는 결과가 섞이면 최근 순서를 추정하지 않는다. 기존 목 자료는 생략할 수 있다.
     recentChronologyKnown?: boolean;
-    riot: { tier: string | null; games: number; wins: number; champions: ChampionRef[] } | null;
+    riot: AuctionRiotProfile | null;
 };
 
 export function winRate(games: number, wins: number) {

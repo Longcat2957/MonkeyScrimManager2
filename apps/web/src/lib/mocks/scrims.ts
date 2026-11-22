@@ -409,21 +409,25 @@ function byListOrder(now: number) {
 
 export async function listMockScrims(
     guildId: string,
-    options: { status: ScrimStatusFilter; page: number; pageSize: number }
+    options: { status: ScrimStatusFilter; includeCancelled?: boolean; page: number; pageSize: number }
 ) {
     const inGuild = scrims.filter((scrim) => scrim.guildId === guildId);
+    const visible = options.includeCancelled
+        ? inGuild
+        : inGuild.filter((scrim) => scrim.status !== 'cancelled');
     const matches = (filter: ScrimStatusFilter) => (scrim: MockScrim) =>
         filter === 'all' || FILTER[filter].includes(scrim.status);
-    const filtered = inGuild.filter(matches(options.status)).sort(byListOrder(Date.now()));
+    const filtered = visible.filter(matches(options.status)).sort(byListOrder(Date.now()));
     const start = (options.page - 1) * options.pageSize;
     return {
         scrims: filtered.slice(start, start + options.pageSize).map(toListItem),
         total: filtered.length,
+        hasScrims: inGuild.length > 0,
         counts: {
-            all: inGuild.length,
-            recruit: inGuild.filter(matches('recruit')).length,
-            active: inGuild.filter(matches('active')).length,
-            done: inGuild.filter(matches('done')).length
+            all: visible.length,
+            recruit: visible.filter(matches('recruit')).length,
+            active: visible.filter(matches('active')).length,
+            done: visible.filter(matches('done')).length
         } satisfies Record<ScrimStatusFilter, number>
     };
 }

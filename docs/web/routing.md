@@ -27,7 +27,7 @@
 | 화면 | 쿼리 | 기본값과 적용 범위 |
 | --- | --- | --- |
 | 서버 홈 순위 | `season` | 활성 시즌. 다음 내전·최근 경기는 바뀌지 않음 |
-| 내전 목록 | `status=all\|recruit\|active\|done`, `page` | 전체, 1쪽. 20개씩 |
+| 내전 목록 | `status=all\|recruit\|active\|done`, `includeCancelled=1`, `page` | 전체, 취소 제외, 1쪽. 20개씩 |
 | 경기 기록 | `player`, `champion`, `q`, `bo`, `from`, `to`, `season`, `page` | 정상 종료한 시리즈만 표시. 출전 선수·챔피언 픽과 내전명(`q`)·형식·시즌·기간을 함께 검색 |
 | 경기 상세 | `game` | 유효한 ID가 없으면 기록된 마지막 세트 |
 | 사용자 전적 | `season`, `position`, `page` | 활성 시즌, 전체 포지션, 1쪽 |

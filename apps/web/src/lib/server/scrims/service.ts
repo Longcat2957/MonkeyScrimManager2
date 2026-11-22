@@ -31,6 +31,7 @@ import {
     restoreFullCancellationInTransaction
 } from './cancellation.ts';
 import { enqueueScrimPublications } from '../discord/publications.ts';
+import { enqueueAuctionJobs } from '../riot/auction-cache.ts';
 import {
     assertGuildAccess,
     requireGuildAdmin,
@@ -682,6 +683,7 @@ export async function closeRecruitment(
             .update(scrims)
             .set({ status: 'preparing', revision: row.revision + 1 })
             .where(eq(scrims.id, row.id));
+        await enqueueAuctionJobs(tx, row.id);
         await enqueueScrimPublications(tx, row.id);
     });
 }
@@ -835,6 +837,7 @@ export async function restoreCancelledScrim(
         const full = await activeScrimCancellation(tx, row.id);
         if (full) {
             await restoreFullCancellationInTransaction(tx, row, full);
+            await enqueueAuctionJobs(tx, row.id);
             return;
         }
         if (row.cancelledAuctionStatus !== null)
@@ -851,6 +854,7 @@ export async function restoreCancelledScrim(
                 revision: row.revision + 1
             })
             .where(eq(scrims.id, row.id));
+        if (row.cancelledFromStatus !== 'recruit') await enqueueAuctionJobs(tx, row.id);
         await enqueueScrimPublications(tx, row.id);
     });
 }

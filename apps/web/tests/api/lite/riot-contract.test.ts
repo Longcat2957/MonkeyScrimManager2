@@ -76,7 +76,16 @@ const paths: [string, string, RiotRequestOptions][] = [
     ['LoL의 region', profile, { region: 'asia' }],
     ['미지원 플랫폼', profile, { platform: 'pbe1' as 'kr' }],
     ['미지원 지역', account, { region: 'sea' as 'asia' }],
-    ['Match API', '/lol/match/v5/matches/KR_1', {}],
+    ['Match 플랫폼 누락', '/lol/match/v5/matches/KR_1', {}],
+    ['Match 타임라인', '/lol/match/v5/matches/KR_1/timeline', { platform: 'kr' }],
+    ['Match 자유 쿼리', '/lol/match/v5/matches/by-puuid/id/ids?count=100', { platform: 'kr' }],
+    ['Match 목록 조건 누락', '/lol/match/v5/matches/by-puuid/id/ids', { platform: 'kr' }],
+    [
+        'Match 잘못된 큐',
+        '/lol/match/v5/matches/by-puuid/id/ids',
+        { platform: 'kr', query: { queue: 440 as 420, count: 20 } }
+    ],
+    ['랭크 쿼리', rank, { query: { queue: 420, count: 20 } }],
     ['Clash API', '/lol/clash/v1/tournaments', {}],
     ['Challenges API', '/lol/challenges/v1/challenges/config', {}],
     ['League-exp API', '/lol/league-exp/v4/entries/RANKED_SOLO_5x5/GOLD/I', {}]
@@ -176,6 +185,7 @@ for (const [name, header, seconds] of [
     ['없음', undefined, 60],
     ['잘못된 값', 'later', 60],
     ['음수', '-1', 60],
+    ['HTTP 날짜', 'Thu, 01 Jan 1970 00:00:09 GMT', 8],
     ['소수', '1.5', 2],
     ['0', '0', 0]
 ] as const) {
@@ -276,4 +286,119 @@ test('Riot 응답 어댑터는 no-store와 오류 상태·재시도 시간을 �
         }),
         (error: unknown) => error === cause
     );
+});
+
+function paused(seconds: number) {
+    return (error: unknown) => {
+        assert.ok(error instanceof RiotError);
+        assert.equal(error.code, 'RATE_LIMITED');
+        assert.equal(error.retryAfterSeconds, seconds);
+        return true;
+    };
+}
+
+test('앱의 모든 시간창을 지역별로 공유하고 백그라운드는 사용자 몫을 남긴다', async () => {
+    let time = 1000;
+    let calls = 0;
+    const request = createRiotRequest(
+        () => ({ apiKey: 'test-key' }),
+        async () => {
+            const headers: HeadersInit =
+                ++calls === 1
+                    ? { 'X-App-Rate-Limit': '2:1,10:120', 'X-App-Rate-Limit-Count': '8:120,1:1' }
+                    : {};
+            return Response.json({}, { headers });
+        },
+        () => time
+    );
+    await request(rank, { background: true });
+    await assert.rejects(request(profile, { background: true }), paused(1));
+    await request(profile);
+    await assert.rejects(request(rank), paused(1));
+    time += 1000;
+    await assert.rejects(request(rank, { background: true }), paused(119));
+    await request(profile);
+    await assert.rejects(request(rank), paused(119));
+    await request(profile, { platform: 'jp1' });
+    time += 119000;
+    await request(rank, { background: true });
+    assert.equal(calls, 5);
+});
+
+test('메서드 예산은 PUUID가 달라도 공유하고 전송 전에 마지막 슬롯을 예약한다', async () => {
+    const gate = Promise.withResolvers<void>();
+    let calls = 0;
+    const request = createRiotRequest(
+        () => ({ apiKey: 'test-key' }),
+        async () => {
+            calls++;
+            if (calls === 2) await gate.promise;
+            return Response.json(
+                {},
+                {
+                    headers: { 'X-Method-Rate-Limit': '2:60', 'X-Method-Rate-Limit-Count': '1:60' }
+                }
+            );
+        },
+        () => 1000
+    );
+    await request(rank);
+    const pending = request(rank.replace('example-puuid', 'other'));
+    try {
+        await assert.rejects(request(rank), paused(60));
+        await request(profile);
+        assert.equal(calls, 3);
+    } finally {
+        gate.resolve();
+    }
+    await pending;
+    await assert.rejects(request(rank), paused(60));
+});
+
+test('응답 순서가 뒤집혀도 서버 카운트에 포함된 예약을 중복 차감하지 않는다', async () => {
+    const first = Promise.withResolvers<void>();
+    let calls = 0;
+    const request = createRiotRequest(
+        () => ({ apiKey: 'test-key' }),
+        async () => {
+            const call = ++calls;
+            if (call === 1) await first.promise;
+            return Response.json(
+                {},
+                { headers: { 'X-App-Rate-Limit': '100:60', 'X-App-Rate-Limit-Count': `${97 + call}:60` } }
+            );
+        },
+        () => 1000
+    );
+    const earlier = request(rank);
+    await request(profile);
+    first.resolve();
+    await earlier;
+    await request(rank);
+    await assert.rejects(request(rank), paused(60));
+    assert.equal(calls, 3);
+});
+
+test('429는 메서드·서비스 범위를 구분하고 유형 누락은 호스트 전체를 보호한다', async () => {
+    for (const type of ['method', 'service', 'application', '']) {
+        let calls = 0;
+        const request = createRiotRequest(
+            () => ({ apiKey: 'test-key' }),
+            async () =>
+                ++calls === 1
+                    ? new Response(null, {
+                          status: 429,
+                          headers: { 'X-Rate-Limit-Type': type, 'Retry-After': '9' }
+                      })
+                    : Response.json({}),
+            () => 1000
+        );
+        await assert.rejects(request(account), paused(9));
+        await assert.rejects(request(account.replace('example-puuid', 'other')), paused(9));
+        if (type === 'method') await request(region);
+        else await assert.rejects(request(region), paused(9));
+        const detail = request('/lol/match/v5/matches/KR_1', { platform: 'kr' });
+        if (type === 'method' || type === 'service') await detail;
+        else await assert.rejects(detail, paused(9));
+    }
 });

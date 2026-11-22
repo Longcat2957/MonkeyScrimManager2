@@ -50,7 +50,7 @@ function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
         games: 10,
         wins: 5,
         kda: 3 + index / 10,
-        badges: []
+        badges: index === 15 ? [{ id: 'cs', emoji: '🌾', title: 'CS 왕' }] : []
     });
     const entries = [
         {
@@ -141,6 +141,28 @@ async function injectedState(
         await page.waitForURL((url) => !url.searchParams.has('position'));
         const leaderboard = page.getByRole('region', { name: '사용자별 지표', exact: true });
         await leaderboard.locator('tbody tr').nth(19).waitFor();
+        const badge = leaderboard.getByText('CS 왕', { exact: true });
+        const nameBox = await leaderboard.getByText('UI 주입 사용자 16', { exact: true }).boundingBox();
+        const badgeBox = await badge.boundingBox();
+        assert.ok(nameBox && badgeBox && Math.abs(nameBox.x - badgeBox.x) < 1);
+        assert.ok(badgeBox.y >= nameBox.y + nameBox.height);
+        const firstRow = leaderboard.locator('tbody tr').first();
+        const rowColors = () =>
+            firstRow.evaluate((row) => [
+                getComputedStyle(row).backgroundColor,
+                getComputedStyle(row.querySelector('th')!).backgroundColor
+            ]);
+        const [base, nameBase] = await rowColors();
+        assert.equal(nameBase, base);
+        await firstRow.getByRole('link').focus();
+        const [focused, nameFocused] = await rowColors();
+        assert.notEqual(focused, base);
+        assert.equal(nameFocused, focused);
+        await firstRow.getByRole('link').blur();
+        if (await page.evaluate(() => matchMedia('(hover: hover)').matches)) {
+            await firstRow.getByRole('rowheader').hover();
+            assert.deepEqual(await rowColors(), [focused, focused]);
+        }
         const sort = leaderboard.getByRole('button', { name: '승률', exact: true });
         await sort.press('Enter');
         await sort.press('Enter');

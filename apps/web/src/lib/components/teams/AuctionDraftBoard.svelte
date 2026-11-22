@@ -2,18 +2,16 @@
     import { onMount, type Snippet } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
-    import PositionIcon from '#lib/components/common/PositionIcon.svelte';
     import Spinner from '#lib/components/common/Spinner.svelte';
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { toast } from '#lib/ui/toast.ts';
-    import { POSITIONS } from '#lib/features/labels.ts';
-    import { formatMmr, TEAM_SIZE, winRate, type AuctionView } from '#lib/features/scrims/formation.ts';
+    import { TEAM_SIZE, type AuctionView } from '#lib/features/scrims/formation.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import { bracketPath } from '#lib/features/scrims/paths.ts';
     import { confirm } from '#lib/ui/confirm.ts';
-    import AuctionTargetProfile from './AuctionTargetProfile.svelte';
+    import AuctionCandidateCard from './AuctionCandidateCard.svelte';
     import AuctionTeamCard from './AuctionTeamCard.svelte';
     import CandidateListDialog from './CandidateListDialog.svelte';
     import ChangeMethodButton from './ChangeMethodButton.svelte';
@@ -33,7 +31,6 @@
     let busy = $state(false);
     let timerStart = $state(Date.now());
     let now = $state(Date.now());
-    let details = $state(false);
     let listOpen = $state(false);
     let candidateHeight = $state(0);
 
@@ -41,7 +38,6 @@
     const controls = $derived(manager && live);
     const open = $derived(auction.openLot);
     const lotKey = $derived(auction.openLotId ?? open?.participantId ?? null);
-    const profile = $derived(auction.openProfile);
     const canRevert = $derived(auction.canRevert ?? auction.history.some((entry) => !entry.voided));
     const canReset = $derived(auction.history.some((entry) => !entry.voided));
     const fullyAssigned = $derived(
@@ -49,9 +45,6 @@
     );
     const remainingMs = $derived(Math.min(TIMER_MS, Math.max(0, TIMER_MS - (now - timerStart))));
     const seconds = $derived(Math.ceil(remainingMs / 1000));
-    const mainLane = $derived(open?.positions[0] ?? profile?.mainLane ?? null);
-    const recentWins = $derived(profile?.recentGames.filter((game) => game.win).length ?? 0);
-    const laneText = (key: string) => POSITIONS.find((position) => position.key === key)?.text ?? key;
     const STATUS = {
         setup: { text: '준비', state: 'theme' },
         in_progress: { text: '진행 중', state: 'warning' },
@@ -75,7 +68,6 @@
 
     // 후보가 바뀌거나 입찰가가 바뀌면 타이머를 다시 채운다.
     $effect(() => {
-        if (!lotKey) details = false;
         void JSON.stringify(bids);
         timerStart = Date.now();
     });
@@ -186,7 +178,7 @@
         </div>
     </header>
 
-    {#if controls && open}
+    {#if controls}
         <p class="text-ui leading-relaxed text-ink-2">
             입찰가를 바꾸면 10초를 다시 세며, 낙찰·유찰은 직접 결정해요.
         </p>
@@ -197,17 +189,13 @@
         class={[
             'panel overflow-clip xl:bg-line',
             live &&
-                'grid gap-px xl:grid-cols-[minmax(19rem,23rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto]',
-            live && (auction.teams.length > 2 ? 'xl:h-[52rem]' : 'xl:h-[clamp(32rem,70svh,40rem)]')
+                'auction-live-grid grid gap-px xl:grid-cols-[minmax(19rem,23rem)_minmax(0,1fr)] xl:grid-rows-[max-content_1fr]'
         ]}
     >
         {#if live}
-            <div class="contents xl:col-start-1 xl:row-start-1 xl:block xl:min-h-0">
+            <div class="contents xl:col-start-1 xl:row-start-1 xl:block">
                 <!-- 현재 매물 -->
-                <section
-                    aria-labelledby="open-lot"
-                    class="contents xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:bg-surface"
-                >
+                <section aria-labelledby="open-lot" class="contents xl:flex xl:flex-col xl:bg-surface">
                     <div
                         class="flex flex-wrap items-center justify-between gap-1 border-b border-line bg-surface-2 px-3 py-2"
                     >
@@ -225,14 +213,6 @@
                                     onclick={revert}>되돌리기</Button
                                 >
                             {/if}
-                            {#if open && profile}
-                                <Button
-                                    variant={details ? 'secondary' : 'quiet'}
-                                    aria-expanded={details}
-                                    class="px-2 text-ui"
-                                    onclick={() => (details = !details)}>상세보기</Button
-                                >
-                            {/if}
                             {#if controls && !fullyAssigned}
                                 <Button
                                     variant={!open && auction.queue.length > 0 ? 'primary' : 'quiet'}
@@ -244,130 +224,57 @@
                         </div>
                     </div>
 
-                    <div
-                        class="contents xl:flex xl:min-h-0 xl:flex-1 xl:flex-col xl:gap-2 xl:overflow-y-auto xl:p-2"
-                    >
+                    <div class="contents xl:flex xl:flex-col xl:overflow-clip xl:p-2">
                         {#if open}
-                            <!-- 운영자는 이 카드를 팀 패널로 끌어 가격 없이 배치할 수 있다. -->
-                            <div
-                                bind:clientHeight={candidateHeight}
-                                role="group"
-                                aria-label={`현재 매물 ${open.displayName}`}
-                                draggable={controls}
-                                class={[
-                                    'panel sticky top-(--app-header-height) z-20 isolate mx-2 flex shrink-0 flex-col overflow-hidden px-3 py-2 xl:relative xl:top-auto xl:z-auto xl:mx-0 xl:p-3',
-                                    details ? 'gap-2' : 'justify-between gap-2 xl:min-h-[15rem] xl:gap-3',
-                                    controls && 'cursor-grab active:cursor-grabbing',
-                                    'bg-selected',
-                                    drag.id === open.participantId
-                                        ? 'border-nexus opacity-70'
-                                        : 'border-nexus/40'
-                                ]}
-                                ondragstart={(event) => drag.start(event, open.participantId)}
-                                ondragend={() => drag.end()}
-                            >
-                                {#if controls}
-                                    <div class="-mx-3 -mt-2 xl:-mt-3">
-                                        <div
-                                            role="progressbar"
-                                            aria-label="남은 입찰 조정 시간"
-                                            aria-valuemin={0}
-                                            aria-valuemax={TIMER_MS / 1000}
-                                            aria-valuenow={seconds}
-                                            aria-valuetext={seconds ? `${seconds}초` : '조정 시간 종료'}
-                                            class="h-1.5 overflow-hidden bg-line"
-                                        >
-                                            {#key timerStart}
-                                                <div
-                                                    class="clock-fill h-full origin-left"
-                                                    style:--duration={`${TIMER_MS}ms`}
-                                                    style:transform={`scaleX(${seconds / (TIMER_MS / 1000)})`}
-                                                    class:running={seconds > 0}
-                                                ></div>
-                                            {/key}
-                                        </div>
-                                        <p
-                                            aria-hidden="true"
-                                            class="flex items-baseline justify-between px-3 pt-1.5 text-xs font-semibold text-ink-2"
-                                        >
-                                            <span>{seconds ? '조정 시간' : '조정 시간 종료'}</span>
-                                            <strong class="text-base text-ink tabular-nums"
+                            {#key lotKey}
+                                <AuctionCandidateCard
+                                    player={open}
+                                    profile={auction.openProfile}
+                                    price={auction.openPriceHistory}
+                                    {controls}
+                                    {drag}
+                                    bind:height={candidateHeight}
+                                >
+                                    {#snippet timer()}
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                role="progressbar"
+                                                aria-label="남은 입찰 조정 시간"
+                                                aria-valuemin={0}
+                                                aria-valuemax={TIMER_MS / 1000}
+                                                aria-valuenow={seconds}
+                                                aria-valuetext={`${seconds}초`}
+                                                class="h-1.5 flex-1 overflow-hidden rounded-full bg-line"
+                                            >
+                                                {#key timerStart}
+                                                    <div
+                                                        class="clock-fill h-full origin-left"
+                                                        style:--duration={`${TIMER_MS}ms`}
+                                                        style:transform={`scaleX(${seconds / (TIMER_MS / 1000)})`}
+                                                        class:running={seconds > 0}
+                                                    ></div>
+                                                {/key}
+                                            </div>
+                                            <strong
+                                                aria-hidden="true"
+                                                class="shrink-0 text-xs text-ink tabular-nums"
                                                 >{seconds}초</strong
                                             >
-                                        </p>
-                                    </div>
-                                {/if}
-                                {#if !details && mainLane}
-                                    <span
-                                        class="pointer-events-none absolute top-1/2 right-4 -z-10 -translate-y-1/2 opacity-15 xl:scale-150"
-                                        aria-hidden="true"
-                                        ><PositionIcon position={mainLane} size="md" /></span
-                                    >
-                                {/if}
-                                <div class="flex items-start justify-between gap-3">
-                                    <span
-                                        class="inline-flex items-center gap-1 rounded-small border border-role-dim bg-surface px-1.5 py-0.5 text-xs font-semibold text-role-gold"
-                                    >
-                                        {#if mainLane}
-                                            <PositionIcon position={mainLane} size="sm" />{open.positions
-                                                .length
-                                                ? '희망'
-                                                : '주력'}
-                                            {laneText(mainLane)}
-                                        {:else}
-                                            포지션 미확인
-                                        {/if}
-                                    </span>
-                                    {#if profile?.riot?.tier}
-                                        <span
-                                            class="rounded-small border border-line bg-surface px-1.5 py-0.5 text-xs font-semibold text-ink-2"
-                                            >{profile.riot.tier}</span
+                                        </div>
+                                    {/snippet}
+                                    {#snippet passAction()}
+                                        <Button
+                                            variant="quiet"
+                                            class="ml-auto px-2 text-ui text-warning"
+                                            disabled={busy}
+                                            onclick={() => run('pass')}>유찰</Button
                                         >
-                                    {/if}
-                                </div>
-                                <div
-                                    class={[
-                                        'flex items-center gap-3',
-                                        details
-                                            ? 'flex-row'
-                                            : 'xl:flex-col xl:text-center xl:[&>:first-child]:size-12 xl:[&>:first-child]:text-lg'
-                                    ]}
-                                >
-                                    <PlayerFace name={open.displayName} imageUrl={open.iconUrl} size="md" />
-                                    <div class="min-w-0">
-                                        <p
-                                            class="text-xl leading-tight font-bold tracking-tight wrap-anywhere xl:text-2xl"
-                                        >
-                                            {open.displayName}
-                                        </p>
-                                        <p class="mt-0.5 text-xs font-medium text-muted tabular-nums">
-                                            MMR <strong class="font-brand text-sm text-ink-2">
-                                                {formatMmr(mainLane ? open.mmr[mainLane] : null)}
-                                            </strong>
-                                        </p>
-                                    </div>
-                                </div>
-                                {#if profile && !details && profile.summary.games}
-                                    <div
-                                        class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line"
-                                    >
-                                        {#each [['승률', winRate(profile.summary.games, profile.summary.wins)], ['승패', `${profile.summary.wins}-${profile.summary.losses}`], [profile.recentChronologyKnown === false ? '표시 기록' : '최근', `${recentWins}승 ${profile.recentGames.length - recentWins}패`]] as [label, value] (label)}
-                                            <div class="bg-surface px-2 py-1.5 text-center">
-                                                <p class="text-xs text-muted">{label}</p>
-                                                <p class="text-sm font-bold tabular-nums">{value}</p>
-                                            </div>
-                                        {/each}
-                                    </div>
-                                {/if}
-                            </div>
-                            {#if details && profile}
-                                <div class="bg-surface p-3 xl:contents">
-                                    <AuctionTargetProfile player={open} {profile} />
-                                </div>
-                            {/if}
+                                    {/snippet}
+                                </AuctionCandidateCard>
+                            {/key}
                         {:else}
                             <div
-                                class="flex min-h-36 flex-1 flex-col items-center justify-center gap-1 rounded-form border border-dashed border-line-strong/60 bg-surface-2 px-4 py-4 text-center"
+                                class="row-span-2 flex min-h-36 flex-1 flex-col items-center justify-center gap-1 rounded-form border border-dashed border-line-strong/60 bg-surface-2 px-4 py-4 text-center xl:min-h-80"
                             >
                                 {#if fullyAssigned}
                                     <p class="font-semibold text-ink-2">모든 팀에 5명씩 배치됐어요</p>
@@ -391,17 +298,6 @@
                             </div>
                         {/if}
                     </div>
-                    {#if controls && open}
-                        <!-- 유찰은 현재 매물 칸 하단에 고정해 카드 길이와 상관없이 같은 자리에 둔다. -->
-                        <div class="flex justify-end bg-surface px-3 pb-3">
-                            <Button
-                                variant="quiet"
-                                class="px-2 text-ui text-warning"
-                                disabled={busy}
-                                onclick={() => run('pass')}>유찰</Button
-                            >
-                        </div>
-                    {/if}
                 </section>
             </div>
         {/if}
@@ -411,14 +307,14 @@
             class={[
                 'grid min-h-0 gap-px md:grid-cols-2',
                 auction.teams.length > 2 && 'md:grid-rows-2',
-                live && 'xl:col-start-2 xl:row-span-2 xl:row-start-1'
+                live && 'row-start-4 xl:col-start-2 xl:row-span-2 xl:row-start-1'
             ]}
         >
             {#each auction.teams as team (team.id)}
                 <AuctionTeamCard
                     {team}
-                    bidding={controls && Boolean(open)}
-                    {busy}
+                    bidding={controls}
+                    busy={busy || !open}
                     {drag}
                     bind:bid={() => bids[team.id] ?? '', (value) => (bids[team.id] = value)}
                     onaward={(price) => award(team.id, price)}
@@ -560,6 +456,10 @@
     }
 
     @media (width < 80rem) {
+        .auction-live-grid {
+            grid-template-rows: auto minmax(13rem, auto) minmax(3.5rem, auto) auto auto;
+        }
+
         .auction-board :global(button) {
             scroll-margin-block-start: var(--candidate-height);
         }

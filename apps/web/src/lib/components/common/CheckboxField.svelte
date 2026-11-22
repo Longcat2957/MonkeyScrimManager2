@@ -19,7 +19,7 @@
         {disabled}
         aria-describedby={hint ? `${id}-hint` : undefined}
         class="size-4 shrink-0 accent-nexus disabled:opacity-45"
-        onchange={() => onchange?.(checked)}
+        onchange={(event) => onchange?.(event.currentTarget.checked)}
     />
     <span class="flex flex-col gap-0.5">
         <span class="font-medium">{label}</span>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import { formatShortDate, POSITIONS } from '#lib/features/labels.ts';
     import {
         formatMmr,
@@ -9,13 +10,15 @@
         type TargetProfile
     } from '#lib/features/scrims/formation.ts';
 
-    // 현재 후보의 상세 보기: 내전 전적, 주력 챔피언, 라인별 MMR, 선호 챔피언, 최근 게임, Riot 전적.
-    let { player, profile }: { player: FormationPlayer; profile: TargetProfile } = $props();
+    // 실제 출전 기록과 본인이 등록한 선호 챔피언을 구분한다.
+    let {
+        player,
+        profile,
+        priceSummary
+    }: { player: FormationPlayer; profile: TargetProfile | null; priceSummary: Snippet } = $props();
 
     const laneText = (key: string | null) =>
         key ? (POSITIONS.find((position) => position.key === key)?.text ?? key) : '미확인';
-    const recentWins = $derived(profile.recentGames.filter((game) => game.win).length);
-    const chronologyKnown = $derived(profile.recentChronologyKnown !== false);
 </script>
 
 {#snippet champ(champion: ChampionRef)}
@@ -37,39 +40,77 @@
 {/snippet}
 
 {#snippet heading(title: string, aside?: string)}
-    <div class="flex items-baseline justify-between gap-3">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h4 class="text-sm font-bold tracking-tight text-ink">{title}</h4>
         {#if aside}<span class="text-xs font-medium text-muted">{aside}</span>{/if}
     </div>
 {/snippet}
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex (후보 전적의 스크롤 영역에 키보드 진입점을 제공한다.) -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex (스크롤바 없이도 키보드로 전적을 끝까지 읽을 수 있다.) -->
 <div
+    id="auction-target-profile"
     role="region"
     aria-label="후보 전적 상세"
     tabindex="0"
-    class="panel relative flex max-h-[28rem] flex-col gap-4 overflow-y-auto bg-surface p-3 tabular-nums focus-visible:-outline-offset-2"
+    class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto bg-surface p-2 tabular-nums [scrollbar-width:none] focus-visible:-outline-offset-2"
 >
-    <section class="flex flex-col gap-2">
-        {@render heading(
-            '내전 전적',
-            profile.summary.games ? `${profile.summary.wins}승 ${profile.summary.losses}패` : undefined
-        )}
-        {#if profile.summary.games}
-            <div class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line">
-                {#each [['내전', `${profile.summary.games}게임`], ['승률', winRate(profile.summary.games, profile.summary.wins)], ['주력 포지션', laneText(profile.mainLane)]] as [label, value] (label)}
-                    <div class="bg-surface-2 p-2">
-                        <p class="text-xs text-muted">{label}</p>
-                        <p class="mt-0.5 text-sm font-bold">{value}</p>
-                    </div>
-                {/each}
-            </div>
-        {:else}
-            <p class="text-sm text-muted">이 내전과 같은 시즌의 기록이 없어요.</p>
-        {/if}
-    </section>
+    <p class="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-ui">{@render priceSummary()}</p>
+    {#if profile?.riot?.recent}
+        {@const recent = profile.riot.recent}
+        <section class="flex flex-col gap-2">
+            {@render heading(`최근 솔로랭크 ${recent.games}경기`, recent.games ? '사용 횟수순' : undefined)}
+            {#if recent.games}
+                <ol class="divide-y divide-line border-y border-line">
+                    {#each recent.champions as { champion, count } (champion.id)}
+                        <li class="flex min-w-0 items-center gap-2 py-1.5 text-sm">
+                            {@render champ(champion)}
+                            <span class="min-w-0 flex-1 font-semibold wrap-anywhere">{champion.name}</span>
+                            <span class="shrink-0">{count}회</span>
+                        </li>
+                    {/each}
+                </ol>
+            {:else}
+                <p class="text-sm text-muted">최근 솔로랭크 기록이 없어요.</p>
+            {/if}
+        </section>
+    {/if}
+    {#if profile?.riot?.pending}
+        <p class="text-sm text-muted">Riot 전적 갱신 중</p>
+    {/if}
+    {#if profile?.summary && profile.laneGames}
+        {@const laneGames = profile.laneGames}
+        <section class="flex flex-col gap-2">
+            {@render heading(
+                '포지션별 MMR',
+                profile.summary.games ? `주력 포지션 ${laneText(profile.mainLane)}` : undefined
+            )}
+            <table class="w-full text-right text-sm">
+                <thead class="border-b border-line bg-surface-2 text-xs text-muted">
+                    <tr>
+                        <th scope="col" class="px-2 py-1 text-left font-medium">포지션</th>
+                        <th scope="col" class="px-2 py-1 font-medium">MMR</th>
+                        <th scope="col" class="px-2 py-1 font-medium">시즌 출전</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {#each LANES as lane (lane)}
+                        <tr>
+                            <th scope="row" class="px-2 py-1 text-left font-medium text-role-gold">
+                                {laneText(lane)}
+                            </th>
+                            <td class="px-2 py-1 font-brand font-bold">{formatMmr(player.mmr[lane])}</td>
+                            <td class="px-2 py-1 text-ink-2">{laneGames[lane]}게임</td>
+                        </tr>
+                    {/each}
+                </tbody>
+            </table>
+            {#if !profile.summary.games}
+                <p class="text-sm text-muted">이 내전과 같은 시즌의 기록이 없어요.</p>
+            {/if}
+        </section>
+    {/if}
 
-    {#if profile.summary.games}
+    {#if profile?.summary?.games}
         <section class="flex flex-col gap-2">
             {@render heading('내전 주력 챔피언')}
             <ul class="divide-y divide-line border-y border-line">
@@ -77,7 +118,7 @@
                     <li class="flex items-center gap-2 py-2">
                         {@render champ(record.champion)}
                         <span class="flex min-w-0 flex-1 flex-col">
-                            <span class="truncate text-sm font-semibold">{record.champion.name}</span>
+                            <span class="text-sm font-semibold wrap-anywhere">{record.champion.name}</span>
                             <span class="text-xs text-muted"
                                 >{record.games}게임 · {record.wins}승 {record.games - record.wins}패</span
                             >
@@ -93,24 +134,13 @@
         </section>
     {/if}
 
-    <section class="flex flex-col gap-2">
-        {@render heading('라인별 MMR')}
-        <ul class="grid grid-cols-[repeat(auto-fit,minmax(4.25rem,1fr))] gap-1 text-center">
-            {#each LANES as lane (lane)}
-                <li class="rounded-small bg-surface-2 p-1.5">
-                    <p class="text-xs font-medium text-role-gold">{laneText(lane)}</p>
-                    <p class="font-brand text-base font-bold tabular-nums">{formatMmr(player.mmr[lane])}</p>
-                    <p class="text-xs text-muted tabular-nums">{profile.laneGames[lane]}게임</p>
-                </li>
-            {/each}
-        </ul>
-    </section>
-
-    {#if profile.preferredChampions.length}
+    {#if profile?.preferredChampions.length}
         <section class="flex flex-col gap-2">
             {@render heading(
                 '선호 챔피언',
-                profile.preferredChampionPosition ? laneText(profile.preferredChampionPosition) : undefined
+                profile.preferredChampionPosition
+                    ? `직접 등록 · ${laneText(profile.preferredChampionPosition)}`
+                    : '직접 등록'
             )}
             <ul class="grid grid-cols-2 gap-1 sm:grid-cols-3">
                 {#each profile.preferredChampions as champion (champion.id)}
@@ -123,7 +153,9 @@
         </section>
     {/if}
 
-    {#if profile.recentGames.length}
+    {#if profile?.recentGames.length}
+        {@const recentWins = profile.recentGames.filter((game) => game.win).length}
+        {@const chronologyKnown = profile.recentChronologyKnown !== false}
         <section class="flex flex-col gap-2">
             {@render heading(
                 chronologyKnown ? '최근 게임' : '게임 기록',
@@ -143,7 +175,7 @@
                     <li class="flex items-center gap-2 py-2">
                         {@render champ(game.champion)}
                         <span class="flex min-w-0 flex-1 flex-col">
-                            <span class="truncate text-sm font-semibold">{game.champion.name}</span>
+                            <span class="text-sm font-semibold wrap-anywhere">{game.champion.name}</span>
                             <span class="text-xs text-muted"
                                 >{laneText(game.lane)} · {game.playedAt
                                     ? formatShortDate(game.playedAt)
@@ -156,27 +188,6 @@
                                 game.win ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
                             ]}>{game.win ? '승' : '패'}</span
                         >
-                    </li>
-                {/each}
-            </ul>
-        </section>
-    {/if}
-
-    {#if profile.riot}
-        <section class="flex flex-col gap-2">
-            {@render heading('Riot 전적')}
-            <div class="grid grid-cols-3 gap-px overflow-hidden rounded-form border border-line bg-line">
-                {#each [['솔로 랭크', profile.riot.tier ?? '-'], ['최근', `${profile.riot.games}게임`], ['승률', winRate(profile.riot.games, profile.riot.wins)]] as [label, value] (label)}
-                    <div class="bg-surface-2 p-2">
-                        <p class="text-xs text-muted">{label}</p>
-                        <p class="mt-0.5 text-sm font-bold">{value}</p>
-                    </div>
-                {/each}
-            </div>
-            <ul class="flex flex-wrap gap-1">
-                {#each profile.riot.champions as champion (champion.id)}
-                    <li class="flex items-center gap-1.5 rounded-small bg-surface-2 py-1 pr-2 pl-1 text-xs">
-                        {@render champ(champion)}{champion.name}
                     </li>
                 {/each}
             </ul>

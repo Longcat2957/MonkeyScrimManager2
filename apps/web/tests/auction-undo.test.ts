@@ -110,6 +110,9 @@ for (const kind of [
 test('개발 경매는 남은 후보를 이름·참가 ID 순으로 공개하고 각 후보를 한 번만 호명한다', async () => {
     const scrim = await auctionScrim();
     const players = scrim.participants;
+    const past = await auctionScrim();
+    past.status = 'ready';
+    past.participants[2]!.userId = players[2]!.userId;
     for (const [index, player] of players.entries()) player.displayName = index === 9 ? '가' : '나';
     const captains = players.slice(0, 2).map((p) => ({ captainId: p.registrationId, startPoints: 100 }));
     assert.equal(await saveMockAuctionSetup(guildId, scrim.id, captains), null);
@@ -124,10 +127,15 @@ test('개발 경매는 남은 후보를 이름·참가 ID 순으로 공개하고
         );
         assert.equal(before.openLot, null);
         assert.equal(before.openProfile, null);
+        assert.equal(before.openPriceHistory, null);
         assert.equal(await drawMockLot(guildId, scrim.id), null);
         const view = (await getMockAuction(guildId, scrim.id))!;
         assert.doesNotMatch(JSON.stringify(view), /"auctionAveragePrice"|"auctionPurchaseCount"/);
         const id = view.openLot!.participantId;
+        assert.deepEqual(
+            view.openPriceHistory,
+            id === players[2]!.registrationId ? { average: 40, count: 1 } : null
+        );
         assert.ok(remaining.includes(id));
         remaining.splice(remaining.indexOf(id), 1);
         assert.equal(await passMockLot(guildId, scrim.id), null);

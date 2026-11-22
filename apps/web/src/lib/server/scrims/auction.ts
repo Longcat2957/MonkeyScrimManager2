@@ -185,6 +185,13 @@ export async function getAuction(
             const players = publicFormationPlayers(rawPlayers, identities);
             const pick = (id: string) => players.find((player) => player.participantId === id);
             const openLot = state.open ? (pick(state.open.scrimParticipantId) ?? null) : null;
+            const openParticipant = openLot
+                ? state.selected.find(({ participant }) => participant.id === openLot.participantId)
+                      ?.participant
+                : null;
+            const [price] = openParticipant?.userId
+                ? await readAuctionPriceHistory(tx, guildId, [openParticipant.userId], row.id)
+                : [];
             return {
                 status: state.auction?.status ?? 'setup',
                 canRevert:
@@ -213,16 +220,17 @@ export async function getAuction(
                 })),
                 openLot,
                 openLotId: state.open?.id ?? null,
-                openProfile: openLot
+                openPriceHistory: price
+                    ? { average: price.auctionAveragePrice, count: price.auctionPurchaseCount }
+                    : null,
+                openProfile: openParticipant
                     ? await auctionTargetProfile(
                           tx,
                           guildId,
                           row.mmrSeasonId,
-                          rawPlayers.find((player) => player.participantId === openLot.participantId)
-                              ?.userId ?? null,
+                          openParticipant,
                           champion,
-                          rawPlayers.find((player) => player.participantId === openLot.participantId)
-                              ?.positions[0] ?? null,
+                          openLot?.positions[0] ?? null,
                           preferredChampion
                       )
                     : null,
