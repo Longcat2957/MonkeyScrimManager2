@@ -76,6 +76,8 @@
                     class="slide"
                     data-art={art}
                     data-active={offset === 0}
+                    data-prev={entry.id === items[(current - 1 + items.length) % items.length]?.id}
+                    data-next={entry.id === items[(current + 1) % items.length]?.id}
                     inert={offset !== 0}
                     aria-hidden={offset !== 0}
                     style:--offset={offset}
@@ -119,7 +121,7 @@
             {/each}
             {#if items.length > 1}
                 {#each [-1, 1] as direction (direction)}
-                    <div class={['arrow', direction < 0 ? 'left-1' : 'right-1']}>
+                    <div class={['arrow', direction < 0 ? 'prev left-1' : 'next right-1']}>
                         <Button
                             variant="quiet"
                             ariaLabel={direction < 0 ? '이전 칭호' : '다음 칭호'}
@@ -288,6 +290,32 @@
     .dot[aria-current='true']::after {
         width: 1.15rem;
         background: var(--color-nexus);
+    }
+    .stage:has(.prev :global(button:focus-visible)) .slide[data-prev='true'],
+    .stage:has(.next :global(button:focus-visible)) .slide[data-next='true'] {
+        opacity: 0.85;
+        filter: none;
+    }
+    .dot:not([aria-current]):focus-visible::after {
+        background: var(--color-ink);
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .stage:has(.prev:hover) .slide[data-prev='true'],
+        .stage:has(.next:hover) .slide[data-next='true'] {
+            opacity: 0.85;
+            filter: none;
+        }
+        .slide[data-active='true']:hover::after {
+            opacity: 0.85;
+        }
+        .dot:not([aria-current]):hover::after {
+            background: var(--color-ink);
+        }
+    }
+    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+        .slide::after {
+            transition: opacity 140ms ease-out;
+        }
     }
     @container (max-width: 35rem) {
         .slide {
