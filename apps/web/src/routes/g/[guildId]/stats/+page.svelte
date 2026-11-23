@@ -307,6 +307,28 @@
     {/if}
 
     {#if !data.empty}
+        <section aria-labelledby="achievements" class="flex min-w-0 flex-col gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="achievements" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
+                    시즌 칭호
+                </h2>
+                {#if data.achievements.length}
+                    <Button
+                        variant="secondary"
+                        class="min-h-11 px-3 text-ui"
+                        onclick={() => (rankingOpen = true)}>칭호별 순위</Button
+                    >
+                {/if}
+            </div>
+            {#if data.achievements.length}
+                <AchievementCarousel
+                    items={data.achievements}
+                    bind:current={() => achievementIndex, selectAchievement}
+                />
+            {:else}
+                <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
+            {/if}
+        </section>
         <!-- 포지션 필터는 리더보드와 챔피언에만 적용한다. -->
         <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <div role="group" aria-label="포지션 필터" class="min-w-0 max-w-full">
@@ -320,9 +342,6 @@
                 aria-label="통계"
                 class="flex flex-wrap items-center gap-4 text-ui font-semibold text-ink-2 @min-[64rem]:hidden"
             >
-                <a class="inline-flex min-h-11 items-center hover:text-nexus" href="#achievements"
-                    >시즌 칭호</a
-                >
                 <a class="inline-flex min-h-11 items-center hover:text-nexus" href="#champion-stats">챔피언</a
                 >
             </nav>
@@ -382,99 +401,71 @@
                 {/if}
             </section>
 
-            <div
-                class="grid min-w-0 grid-cols-1 items-start gap-5 @min-[42rem]:grid-cols-2 @min-[64rem]:grid-cols-1"
-            >
-                <section aria-labelledby="achievements" class="flex min-w-0 flex-col gap-3">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 id="achievements" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
-                            시즌 칭호
-                        </h2>
-                        {#if data.achievements.length}
-                            <Button
-                                variant="secondary"
-                                class="min-h-11 px-3 text-ui"
-                                onclick={() => (rankingOpen = true)}>칭호별 순위</Button
+            <section aria-labelledby="champion-stats" class="panel min-w-0 overflow-hidden">
+                <div class="panel-bar">
+                    <h2 id="champion-stats" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
+                        챔피언
+                    </h2>
+                </div>
+                {#if data.champions.length}
+                    <!-- svelte-ignore a11y_no_noninteractive_tabindex (좁은 표의 가로 스크롤에 키보드 진입점을 제공한다.) -->
+                    <div
+                        role="region"
+                        aria-labelledby="champion-stats-caption"
+                        tabindex="0"
+                        class="relative overflow-x-auto"
+                    >
+                        <table class="data-table min-w-80 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+                            <caption id="champion-stats-caption" class="sr-only"
+                                >챔피언별 픽·승률, 픽 많은 순</caption
                             >
-                        {/if}
-                    </div>
-                    {#if data.achievements.length}
-                        <AchievementCarousel
-                            items={data.achievements}
-                            bind:current={() => achievementIndex, selectAchievement}
-                        />
-                    {:else}
-                        <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
-                    {/if}
-                </section>
-                <section aria-labelledby="champion-stats" class="panel min-w-0 overflow-hidden">
-                    <div class="panel-bar">
-                        <h2 id="champion-stats" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
-                            챔피언
-                        </h2>
-                    </div>
-                    {#if data.champions.length}
-                        <!-- svelte-ignore a11y_no_noninteractive_tabindex (좁은 표의 가로 스크롤에 키보드 진입점을 제공한다.) -->
-                        <div
-                            role="region"
-                            aria-labelledby="champion-stats-caption"
-                            tabindex="0"
-                            class="relative overflow-x-auto"
-                        >
-                            <table
-                                class="data-table min-w-80 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
-                            >
-                                <caption id="champion-stats-caption" class="sr-only"
-                                    >챔피언별 픽·승률, 픽 많은 순</caption
-                                >
-                                <thead class="text-xs text-muted">
-                                    <tr class="border-b border-line">
-                                        <th scope="col" class="px-4 py-2 text-left font-medium">챔피언</th>
-                                        <th scope="col" class="px-4 py-2 text-right font-medium">픽</th>
-                                        <th scope="col" class="px-4 py-2 text-right font-medium">승률</th>
-                                        <th scope="col" class="px-4 py-2 text-right font-medium">KDA</th>
+                            <thead class="text-xs text-muted">
+                                <tr class="border-b border-line">
+                                    <th scope="col" class="px-4 py-2 text-left font-medium">챔피언</th>
+                                    <th scope="col" class="px-4 py-2 text-right font-medium">픽</th>
+                                    <th scope="col" class="px-4 py-2 text-right font-medium">승률</th>
+                                    <th scope="col" class="px-4 py-2 text-right font-medium">KDA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {#each data.champions.slice((championPage - 1) * CHAMPION_PAGE, championPage * CHAMPION_PAGE) as record (record.champion.id)}
+                                    <tr class="border-b border-line last:border-b-0">
+                                        <th scope="row" class="px-4 py-2 text-left font-medium">
+                                            <span class="flex items-center gap-3">
+                                                {#if record.champion.iconUrl}<img
+                                                        src={record.champion.iconUrl}
+                                                        alt=""
+                                                        class="size-8 rounded-(--radius-small)"
+                                                    />{/if}
+                                                {record.champion.name}
+                                            </span>
+                                        </th>
+                                        <td class="px-4 py-2 text-right tabular-nums">{record.games}</td>
+                                        <!-- 표본이 작으면 승률이 우연에 크게 흔들리므로 표시하지 않는다. -->
+                                        <td class="px-4 py-2 text-right tabular-nums"
+                                            >{record.games >= 5
+                                                ? `${Math.round((record.wins / record.games) * 100)}%`
+                                                : '-'}</td
+                                        >
+                                        <td class="px-4 py-2 text-right tabular-nums"
+                                            >{integer(record.kda)}</td
+                                        >
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {#each data.champions.slice((championPage - 1) * CHAMPION_PAGE, championPage * CHAMPION_PAGE) as record (record.champion.id)}
-                                        <tr class="border-b border-line last:border-b-0">
-                                            <th scope="row" class="px-4 py-2 text-left font-medium">
-                                                <span class="flex items-center gap-3">
-                                                    {#if record.champion.iconUrl}<img
-                                                            src={record.champion.iconUrl}
-                                                            alt=""
-                                                            class="size-8 rounded-(--radius-small)"
-                                                        />{/if}
-                                                    {record.champion.name}
-                                                </span>
-                                            </th>
-                                            <td class="px-4 py-2 text-right tabular-nums">{record.games}</td>
-                                            <!-- 표본이 작으면 승률이 우연에 크게 흔들리므로 표시하지 않는다. -->
-                                            <td class="px-4 py-2 text-right tabular-nums"
-                                                >{record.games >= 5
-                                                    ? `${Math.round((record.wins / record.games) * 100)}%`
-                                                    : '-'}</td
-                                            >
-                                            <td class="px-4 py-2 text-right tabular-nums"
-                                                >{integer(record.kda)}</td
-                                            >
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                        <PageNav
-                            total={data.champions.length}
-                            pageSize={CHAMPION_PAGE}
-                            current={championPage}
-                            onchange={(current) => (championPage = current)}
-                            label="챔피언 쪽 이동"
-                        />
-                    {:else}
-                        <SectionState state="empty" message="이 조건에는 챔피언 기록이 없어요" />
-                    {/if}
-                </section>
-            </div>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
+                    <PageNav
+                        total={data.champions.length}
+                        pageSize={CHAMPION_PAGE}
+                        current={championPage}
+                        onchange={(current) => (championPage = current)}
+                        label="챔피언 쪽 이동"
+                    />
+                {:else}
+                    <SectionState state="empty" message="이 조건에는 챔피언 기록이 없어요" />
+                {/if}
+            </section>
         </div>
     {/if}
 </div>

@@ -105,40 +105,34 @@ export function listMockPlayerGames(player: MockPlayer, champion: (id: string) =
 /** 점수 공식을 모방하지 않는 개발 화면용 시즌 결과 표본. */
 export function mockSeasonTitles(guildId: string): SeasonTitleHolder[] {
     if (guildId !== 'devGuild001') return [];
-    return (
-        [
-            {
-                titleId: 'season-kills',
-                position: null,
-                score: 8,
-                sample: 12,
-                rank: 1,
-                tied: true,
-                userId: 'devUser001'
-            },
-            {
-                titleId: 'season-kills',
-                position: null,
-                score: 8,
-                sample: 15,
-                rank: 1,
-                tied: true,
-                userId: 'u02'
-            },
-            {
-                titleId: 'season-efficiency',
-                position: 'jungle',
-                score: 10,
-                sample: 10,
-                rank: 1,
-                tied: false,
-                userId: 'u03'
-            }
-        ] satisfies Omit<SeasonTitleHolder, 'displayName' | 'iconUrl'>[]
-    ).map((entry) => ({
-        ...entry,
-        displayName: mockPlayers.find((player) => player.userId === entry.userId)!.displayName,
-        iconUrl: mockAvatarUrl(entry.userId)
+    const samples: [SeasonTitleHolder['titleId'], string, number, number][] = [
+        ['season-kills', 'devUser001', 8, 12],
+        ['season-kills', 'u02', 8, 15],
+        ['season-assists', 'u05', 12.4, 15],
+        ['season-damage', 'u04', 908, 14],
+        ['season-participation', 'u03', 74.2, 17],
+        ['season-wards', 'u06', 0.48, 18],
+        ['season-efficiency', 'u03', 10, 10],
+        ['season-cs', 'u08', 8.6, 21],
+        ['season-tanking', 'u07', 1250, 12],
+        ['season-protection', 'u09', 312, 16],
+        ['season-clean-sheet', 'u10', 3, 11],
+        ['season-champion-pool', 'u11', 9, 14],
+        ['season-one-trick', 'u12', 8, 12],
+        ['season-positions', 'u02', 4, 10],
+        ['season-decider', 'u04', 3, 4],
+        ['season-series-rate', 'u06', 80, 10]
+    ];
+    return samples.map(([titleId, userId, score, sample]) => ({
+        titleId,
+        userId,
+        score,
+        sample,
+        rank: 1,
+        position: titleId === 'season-efficiency' ? 'jungle' : null,
+        tied: titleId === 'season-kills',
+        displayName: mockPlayers.find((player) => player.userId === userId)!.displayName,
+        iconUrl: mockAvatarUrl(userId)
     }));
 }
 

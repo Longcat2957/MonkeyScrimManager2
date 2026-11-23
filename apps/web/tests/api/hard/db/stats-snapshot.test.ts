@@ -201,7 +201,7 @@ test('개발 미리보기는 같은 시즌 칭호 계약을 사용하고 없는 
         champion
     });
     assert.ok(!demo.empty);
-    assert.ok(demo.achievements.length > 0);
+    assert.equal(new Set(demo.achievements.map((group) => group.titleId)).size, 15);
     assert.ok(demo.leaderboard.every((row) => row.iconUrl?.startsWith('https://cdn.discordapp.com/')));
     assert.equal(isStatsSnapshot(demo), true);
     assert.deepEqual(demo.seasons, []);

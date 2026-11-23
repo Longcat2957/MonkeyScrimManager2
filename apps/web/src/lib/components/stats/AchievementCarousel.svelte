@@ -1,17 +1,40 @@
 <script lang="ts">
     import Button from '#lib/components/common/Button.svelte';
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
-    import PopoverMenu from '#lib/components/common/PopoverMenu.svelte';
-    import type { AchievementRanking } from '#lib/features/players/achievements.ts';
+    import type { AchievementRanking, SeasonTitleId } from '#lib/features/players/achievements.ts';
 
     let { items, current = $bindable(0) }: { items: AchievementRanking[]; current?: number } = $props();
 
     const item = $derived(items[current] ?? items[0]);
-    const winners = $derived(item?.entries.filter((entry) => entry.rank === 1) ?? []);
-    let menuOpen = $state(false);
-    const choices = $derived(
-        items.map(({ title }, index) => ({ content: title, current: index === current }))
-    );
+    const artwork = {
+        'season-kills': 'Zed',
+        'season-assists': 'Yuumi',
+        'season-damage': 'Azir',
+        'season-participation': 'Thresh',
+        'season-wards': 'Thresh',
+        'season-efficiency': 'Ornn',
+        'season-cs': 'Azir',
+        'season-tanking': 'Ornn',
+        'season-protection': 'Yuumi',
+        'season-clean-sheet': 'Zed',
+        'season-champion-pool': 'Azir',
+        'season-one-trick': 'Zed',
+        'season-positions': 'Thresh',
+        'season-decider': 'Ornn',
+        'season-series-rate': 'Yuumi'
+    } as const satisfies Record<SeasonTitleId, string>;
+
+    // 양끝을 이어 붙이되 칭호가 적은 시즌에는 같은 카드를 복제하지 않는다.
+    const slides = $derived.by(() => {
+        const result = [];
+        const left = Math.min(2, Math.floor((items.length - 1) / 2));
+        const right = Math.min(2, items.length - 1 - left);
+        for (let offset = -left; offset <= right && items.length; offset++) {
+            const entry = items[(current + offset + items.length) % items.length]!;
+            result.push({ entry, offset, winners: entry.entries.filter((player) => player.rank === 1) });
+        }
+        return result;
+    });
 
     function move(offset: number) {
         if (items.length > 1) current = (current + offset + items.length) % items.length;
@@ -38,144 +61,258 @@
 </script>
 
 <!-- 업적 탐색은 사용자 데이터·키보드 제어가 필요해 서비스에서 직접 구성한다. -->
-{#if item && winners[0]}
-    <div
-        role="group"
-        aria-roledescription="캐러셀"
-        aria-label="시즌 칭호"
-        class="@container/title min-w-0 border-y border-line-strong text-ink"
-    >
+{#if item}
+    <div role="group" aria-roledescription="캐러셀" aria-label="시즌 칭호" class="deck min-w-0">
         <div
             role="presentation"
-            class="touch-pan-y"
+            class="stage relative isolate grid touch-pan-y place-items-center overflow-clip"
             ontouchstart={swipeStart}
             ontouchend={swipeEnd}
             ontouchcancel={() => (touch = null)}
         >
-            <div
-                class="flex items-center gap-4 bg-surface-2 px-4 py-6 @min-[30rem]/title:gap-6 @min-[30rem]/title:px-6"
-            >
-                <svg
-                    aria-hidden="true"
-                    viewBox="0 0 80 90"
-                    fill="none"
-                    class="w-14 shrink-0 text-role-gold @min-[30rem]/title:w-20"
+            {#each slides as { entry, offset, winners } (entry.id)}
+                {@const art = artwork[entry.titleId]}
+                <article
+                    class="slide"
+                    data-art={art}
+                    data-active={offset === 0}
+                    inert={offset !== 0}
+                    aria-hidden={offset !== 0}
+                    style:--offset={offset}
+                    style:--depth={Math.abs(offset)}
                 >
-                    <path
-                        d="m5 30 26 10 9 39-22-21zM75 30 49 40l-9 39 22-21z"
-                        fill="currentColor"
-                        opacity=".18"
-                    />
-                    <path
-                        d="m5 30 17 19 9 3M75 30 58 49l-9 3M15 52l12 13 13 8 13-8 12-13"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    />
-                    <path d="M40 5 60 30 40 61 20 30Z" stroke="currentColor" stroke-width="2" />
-                    <path d="m40 13 13 18-13 21-13-21z" fill="currentColor" />
-                    <path d="m40 13 13 18-13 21 4-21z" fill="var(--color-surface-2)" opacity=".55" />
-                </svg>
-                <div class="min-w-0">
-                    <h3
-                        class="text-[clamp(1.5rem,5.8cqi,2.5rem)] leading-tight font-bold tracking-tight text-balance break-keep wrap-anywhere"
-                    >
-                        {item.title}
-                    </h3>
-                    <p class="mt-2 text-ui break-keep text-ink-2">{item.description}</p>
-                </div>
-            </div>
-            <div class="px-4 pt-4 pb-3 @min-[30rem]/title:px-6">
-                <div class="flex flex-wrap items-baseline gap-x-2.5">
-                    <strong class="text-xl font-bold text-role-gold tabular-nums">{winners[0].value}</strong>
-                    <span class="text-xs font-semibold text-ink-2">
-                        {winners[0].tied ? `공동 1위 · ${winners.length}명` : '1위'}
-                    </span>
-                </div>
-                <ul
-                    aria-label="시즌 칭호 보유자"
-                    class="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-x-4 gap-y-2.5"
-                >
-                    {#each winners as winner (winner.userId)}
-                        <li class="flex min-w-0 items-center gap-2">
-                            <PlayerFace name={winner.displayName} imageUrl={winner.iconUrl} />
-                            <div class="min-w-0">
-                                <p class="text-ui font-semibold wrap-anywhere">{winner.displayName}</p>
-                                <p class="text-xs text-muted tabular-nums">
-                                    {winner.sample}{item.sampleUnit}
+                    <img class="splash" src={`/riot/title-art/${art}.webp`} alt="" />
+                    <div class="content">
+                        <div class="portraits" aria-hidden="true">
+                            {#each winners.slice(0, 2) as winner (winner.userId)}
+                                <div class="portrait">
+                                    <PlayerFace
+                                        size="lg"
+                                        name={winner.displayName}
+                                        imageUrl={winner.iconUrl}
+                                    />
+                                </div>
+                            {/each}
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="title">{entry.title}</h3>
+                            <p class="mt-1 text-xs leading-relaxed text-white/80">{entry.description}</p>
+                            <ul aria-label="시즌 칭호 보유자" class="holders">
+                                {#each winners as winner (winner.userId)}
+                                    <li>
+                                        <b>{winner.displayName}</b>
+                                        <span>{winner.sample}{entry.sampleUnit}</span>
+                                    </li>
+                                {/each}
+                            </ul>
+                            {#if winners[0]}
+                                <p class="mt-2 flex flex-wrap items-baseline gap-x-2 text-sm">
+                                    <strong>{winners[0].value}</strong>
+                                    <span class="text-xs text-white/75"
+                                        >{winners[0].tied ? `공동 1위 · ${winners.length}명` : '1위'}</span
+                                    >
                                 </p>
-                            </div>
-                        </li>
-                    {/each}
-                </ul>
-            </div>
+                            {/if}
+                        </div>
+                    </div>
+                </article>
+            {/each}
+            {#if items.length > 1}
+                {#each [-1, 1] as direction (direction)}
+                    <div class={['arrow', direction < 0 ? 'left-1' : 'right-1']}>
+                        <Button
+                            variant="quiet"
+                            ariaLabel={direction < 0 ? '이전 칭호' : '다음 칭호'}
+                            class="size-11! rounded-full! border border-line-strong bg-ground/90 p-0!"
+                            onclick={() => move(direction)}
+                        >
+                            <svg
+                                class:rotate-180={direction < 0}
+                                aria-hidden="true"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"><path d="m9 18 6-6-6-6" /></svg
+                            >
+                        </Button>
+                    </div>
+                {/each}
+            {/if}
         </div>
         <p class="sr-only" aria-live="polite" aria-atomic="true">
             {items.length}개 중 {current + 1}번째 칭호: {item.title}
         </p>
         {#if items.length > 1}
-            <div class="flex items-center gap-1 border-t border-line px-2 @min-[30rem]/title:px-4">
-                <div class="relative me-auto">
-                    <Button
-                        variant="quiet"
-                        aria-haspopup="menu"
-                        aria-expanded={menuOpen}
-                        onclick={() => (menuOpen = !menuOpen)}
-                    >
-                        <svg
-                            aria-hidden="true"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h8" /></svg
-                        >
-                        칭호 목록
-                    </Button>
-                    <PopoverMenu
-                        bind:open={menuOpen}
-                        label="칭호 바로 선택"
-                        actions={choices}
-                        side="up"
-                        onselect={(index) => (current = index)}
-                    />
-                </div>
-                <Button
-                    variant="quiet"
-                    ariaLabel="이전 칭호"
-                    class="size-11! shrink-0 justify-center p-0!"
-                    onclick={() => move(-1)}
-                >
-                    <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg
-                    >
-                </Button>
-                <span aria-hidden="true" class="text-xs text-muted tabular-nums"
-                    >{current + 1} / {items.length}</span
-                >
-                <Button
-                    variant="quiet"
-                    ariaLabel="다음 칭호"
-                    class="size-11! shrink-0 justify-center p-0!"
-                    onclick={() => move(1)}
-                >
-                    <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
-                    >
-                </Button>
+            <div role="group" aria-label="칭호 바로 선택" class="flex flex-wrap justify-center">
+                {#each items as achievement, index (achievement.id)}
+                    <button
+                        type="button"
+                        class="dot"
+                        aria-label={achievement.title}
+                        aria-current={index === current ? 'true' : undefined}
+                        onclick={() => (current = index)}
+                    ></button>
+                {/each}
             </div>
         {/if}
     </div>
 {/if}
+
+<style>
+    .deck {
+        container-type: inline-size;
+    }
+    .stage {
+        padding-block: 0.75rem 0.5rem;
+    }
+    .slide {
+        --accent: #eda6d1;
+        --spread: min(21cqi, 18rem);
+        grid-area: 1 / 1;
+        position: relative;
+        isolation: isolate;
+        display: grid;
+        align-content: center;
+        width: min(36rem, calc(100% - 6rem));
+        min-height: clamp(14rem, 21cqi, 17rem);
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
+        border-radius: 1.4rem;
+        background: #090c15;
+        color: white;
+        transform: translateX(calc(var(--offset) * var(--spread))) scale(calc(1 - var(--depth) * 0.075));
+        z-index: calc(3 - var(--depth));
+        transition:
+            transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 240ms,
+            filter 240ms;
+    }
+    .slide[data-art='Zed'] {
+        --accent: #ff99ab;
+    }
+    .slide[data-art='Azir'] {
+        --accent: #f4cb78;
+    }
+    .slide[data-art='Thresh'] {
+        --accent: #78e5d3;
+    }
+    .slide[data-art='Ornn'] {
+        --accent: #abc3ff;
+    }
+    .slide[data-active='false'] {
+        opacity: 0.45;
+        filter: blur(1.3px);
+        pointer-events: none;
+    }
+    .splash,
+    .slide::after {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+    .splash {
+        object-fit: cover;
+        object-position: 64% 32%;
+    }
+    .slide::after {
+        content: '';
+        background:
+            linear-gradient(110deg, color-mix(in srgb, var(--accent) 20%, #080a13) 0%, transparent 57%),
+            linear-gradient(90deg, rgb(5 7 13 / 0.63), rgb(5 7 13 / 0.84) 60%),
+            linear-gradient(0deg, #080a13, transparent);
+    }
+    .content {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 2rem clamp(1rem, 3cqi, 3rem);
+    }
+    .portraits {
+        display: grid;
+        flex: none;
+        gap: 0.25rem;
+    }
+    .portrait {
+        padding: 2px;
+        border: 1px solid var(--accent);
+        border-radius: 0.8rem;
+        background: #0a0c15;
+    }
+    .portrait :global(img),
+    .portrait :global(span) {
+        border-radius: 0.6rem;
+    }
+    .title {
+        color: var(--accent);
+        font-size: clamp(1.375rem, 2.75cqi, 2.125rem);
+        font-weight: 700;
+        line-height: 1.18;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+    }
+    .holders {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.2rem 0.7rem;
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+        overflow-wrap: anywhere;
+    }
+    .holders span {
+        font-size: 0.75rem;
+        color: rgb(255 255 255 / 0.75);
+    }
+    .arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 4;
+    }
+    .dot {
+        display: grid;
+        width: 1.5rem;
+        height: 2rem;
+        place-items: center;
+    }
+    .dot::after {
+        content: '';
+        height: 0.375rem;
+        width: 0.375rem;
+        border-radius: 1rem;
+        background: var(--color-muted);
+    }
+    .dot[aria-current='true']::after {
+        width: 1.15rem;
+        background: var(--color-nexus);
+    }
+    @container (max-width: 35rem) {
+        .slide {
+            width: calc(100% - 3rem);
+            --spread: 48cqi;
+            border-radius: 1rem;
+        }
+        .content {
+            gap: 0.75rem;
+            padding: 1.5rem;
+        }
+        .portrait :global(img),
+        .portrait :global(span) {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+        .arrow {
+            top: auto;
+            bottom: 0;
+            transform: none;
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .slide {
+            transition: none;
+        }
+    }
+</style>
