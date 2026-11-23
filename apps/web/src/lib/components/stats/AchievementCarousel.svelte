@@ -85,6 +85,12 @@
                 >
                     <img class="splash" src={`/riot/title-art/${art}.webp`} alt="" />
                     <div class="content">
+                        <header class="caption">
+                            <h3 class="title text-title font-bold @min-[35rem]:text-3xl">{entry.title}</h3>
+                            <p class="mt-1 text-sm leading-relaxed text-pretty break-keep text-white/80">
+                                {entry.description}
+                            </p>
+                        </header>
                         <div class="portraits" aria-hidden="true">
                             {#each winners.slice(0, 2) as winner (winner.userId)}
                                 <div class="portrait">
@@ -96,25 +102,29 @@
                                 </div>
                             {/each}
                         </div>
-                        <div class="min-w-0">
-                            <h3 class="title">{entry.title}</h3>
-                            <p class="mt-1 text-xs leading-relaxed text-white/80">{entry.description}</p>
-                            <ul aria-label="시즌 칭호 보유자" class="holders">
+                        <div class="result min-w-0">
+                            {#if winners[0]}
+                                <p class="flex flex-wrap items-baseline gap-x-2">
+                                    <strong class="text-base tabular-nums">{winners[0].value}</strong>
+                                    <span class="text-xs text-white/80">
+                                        {winners[0].tied ? `공동 1위 · ${winners.length}명` : '1위'}
+                                    </span>
+                                </p>
+                            {/if}
+                            <ul
+                                aria-label="시즌 칭호 보유자"
+                                class="mt-2 grid gap-x-4 gap-y-1 @min-[35rem]:grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))]"
+                            >
                                 {#each winners as winner (winner.userId)}
-                                    <li>
-                                        <b>{winner.displayName}</b>
-                                        <span>{winner.sample}{entry.sampleUnit}</span>
+                                    <li class="flex flex-wrap items-baseline gap-x-2">
+                                        <b class="text-sm font-semibold wrap-anywhere">{winner.displayName}</b
+                                        >
+                                        <span class="text-xs whitespace-nowrap text-white/75 tabular-nums"
+                                            >{winner.sample}{entry.sampleUnit}</span
+                                        >
                                     </li>
                                 {/each}
                             </ul>
-                            {#if winners[0]}
-                                <p class="mt-2 flex flex-wrap items-baseline gap-x-2 text-sm">
-                                    <strong>{winners[0].value}</strong>
-                                    <span class="text-xs text-white/75"
-                                        >{winners[0].tied ? `공동 1위 · ${winners.length}명` : '1위'}</span
-                                    >
-                                </p>
-                            {/if}
                         </div>
                     </div>
                 </article>
@@ -228,14 +238,22 @@
             linear-gradient(0deg, #080a13, transparent);
     }
     .content {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
+        display: grid;
+        grid-template: 'portraits caption' auto 'portraits result' auto / auto minmax(0, 1fr);
+        gap: 1rem 1.25rem;
         padding: 2rem clamp(1rem, 3cqi, 3rem);
+    }
+    .caption {
+        grid-area: caption;
+        min-width: 0;
+    }
+    .result {
+        grid-area: result;
     }
     .portraits {
         display: grid;
-        flex: none;
+        grid-area: portraits;
+        align-self: center;
         gap: 0.25rem;
     }
     .portrait {
@@ -250,23 +268,10 @@
     }
     .title {
         color: var(--accent);
-        font-size: clamp(1.375rem, 2.75cqi, 2.125rem);
-        font-weight: 700;
         line-height: 1.18;
+        text-wrap: balance;
         word-break: keep-all;
         overflow-wrap: anywhere;
-    }
-    .holders {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.2rem 0.7rem;
-        margin-top: 0.75rem;
-        font-size: 0.875rem;
-        overflow-wrap: anywhere;
-    }
-    .holders span {
-        font-size: 0.75rem;
-        color: rgb(255 255 255 / 0.75);
     }
     .arrow {
         position: absolute;
@@ -324,7 +329,8 @@
             border-radius: 1rem;
         }
         .content {
-            gap: 0.75rem;
+            grid-template-areas: 'caption caption' 'portraits result';
+            gap: 1rem 0.75rem;
             padding: 1.5rem;
         }
         .portrait :global(img),
