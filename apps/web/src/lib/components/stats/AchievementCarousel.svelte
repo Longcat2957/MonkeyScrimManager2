@@ -46,7 +46,7 @@
         role="group"
         aria-roledescription="캐러셀"
         aria-label="시즌 칭호"
-        class="flex w-full min-w-0 flex-col gap-2"
+        class="@container/title flex w-full min-w-0 flex-col overflow-hidden rounded-box border border-line bg-surface text-ink"
     >
         <div
             role="presentation"
@@ -55,25 +55,31 @@
             ontouchend={swipeEnd}
             ontouchcancel={() => (touch = null)}
         >
-            <div class="flex min-w-0 flex-col gap-4 rounded-box border border-line bg-surface p-4 text-ink">
-                <div class="min-w-0">
-                    <h3 class="text-lg font-bold wrap-anywhere">{item.title}</h3>
-                    <p class="mt-1 text-ui text-ink/85">{item.description}</p>
+            <div class="grid min-w-0 @min-[36rem]/title:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <div class="border-s-4 border-role-gold px-4 py-5 @min-[36rem]/title:p-6">
+                    <h3 class="text-2xl leading-tight font-bold tracking-tight break-keep wrap-anywhere">
+                        {item.title}
+                    </h3>
+                    <p class="mt-2 text-ui text-ink-2">{item.description}</p>
                 </div>
-                <ul aria-label="시즌 칭호 보유자" class="grid gap-2 border-t border-line pt-3">
+                <ul
+                    aria-label="시즌 칭호 보유자"
+                    class="grid content-center divide-y divide-line bg-surface-2 px-4"
+                >
                     {#each item.entries.filter((entry) => entry.rank === 1) as winner (winner.userId)}
-                        <li class="flex min-w-0 items-center gap-3">
-                            <PlayerFace name={winner.displayName} imageUrl={winner.iconUrl} />
-                            <div class="min-w-0 flex-1">
-                                <p class="font-bold wrap-anywhere">
-                                    <span class="text-xs text-role-gold"
-                                        >{winner.tied ? '공동 1위' : '1위'}</span
-                                    >
-                                    {winner.displayName}
-                                </p>
-                                <p class="text-ui tabular-nums">
-                                    {winner.value} · {winner.sample}{item.sampleUnit}
-                                </p>
+                        <li class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
+                            <div class="flex min-w-0 flex-1 items-center gap-2">
+                                <PlayerFace name={winner.displayName} imageUrl={winner.iconUrl} />
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-role-gold">
+                                        {winner.tied ? '공동 1위' : '1위'}
+                                    </p>
+                                    <p class="font-bold wrap-anywhere">{winner.displayName}</p>
+                                </div>
+                            </div>
+                            <div class="text-end tabular-nums">
+                                <p class="text-lg font-bold">{winner.value}</p>
+                                <p class="text-xs text-ink-2">{winner.sample}{item.sampleUnit}</p>
                             </div>
                         </li>
                     {/each}
@@ -84,9 +90,9 @@
             {items.length}개 중 {current + 1}번째 칭호: {item.title}
         </p>
         {#if items.length > 1}
-            <div class="flex min-w-0 items-center gap-2">
+            <div class="flex min-w-0 items-center gap-1 border-t border-line px-1">
                 <Button
-                    variant="secondary"
+                    variant="quiet"
                     ariaLabel="이전 칭호"
                     class="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(-1)}
@@ -109,30 +115,29 @@
                     tabindex="0"
                     class="relative min-w-0 flex-1 overflow-x-auto overscroll-x-contain rounded-(--radius-small)"
                 >
-                    <ol class="flex w-max min-w-full justify-center">
+                    <ol class="flex w-max min-w-full gap-1">
                         {#each items as achievement, index (achievement.id)}
                             <li>
                                 <button
                                     type="button"
-                                    class="flex size-11 items-center justify-center"
+                                    class={[
+                                        'min-h-11 border-b-2 px-3 text-ui whitespace-nowrap',
+                                        index === current
+                                            ? 'border-nexus font-semibold text-ink'
+                                            : 'border-transparent text-ink-2 hover:bg-surface-hover'
+                                    ]}
                                     aria-label={`${index + 1}. ${achievement.title}`}
                                     aria-current={index === current ? 'true' : undefined}
                                     onclick={() => (current = index)}
                                 >
-                                    <span
-                                        aria-hidden="true"
-                                        class={[
-                                            'block h-1.5 rounded-full',
-                                            index === current ? 'w-6 bg-nexus' : 'w-1.5 bg-line'
-                                        ]}
-                                    ></span>
+                                    {achievement.title}
                                 </button>
                             </li>
                         {/each}
                     </ol>
                 </div>
                 <Button
-                    variant="secondary"
+                    variant="quiet"
                     ariaLabel="다음 칭호"
                     class="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(1)}
