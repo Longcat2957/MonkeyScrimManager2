@@ -117,7 +117,7 @@
     <svg
         aria-hidden="true"
         viewBox="0 0 24 24"
-        class="size-5"
+        class="size-5 shrink-0"
         fill="none"
         stroke="currentColor"
         stroke-width="1.6"
@@ -139,8 +139,8 @@
             height="34"
             class="size-8.5 rounded-full border border-nexus"
         />
-        {#if rail && !railCollapsed}
-            <span class="font-brand text-[1.3125rem] leading-none font-bold tracking-[-0.02em]"
+        {#if rail}
+            <span class="rail-label font-brand text-[1.3125rem] leading-none font-bold tracking-[-0.02em]"
                 >{SERVICE_NAME}</span
             >
         {/if}
@@ -158,11 +158,10 @@
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
             title={desktop.current && railCollapsed ? '로그인' : undefined}
-            class="inline-flex min-h-9 items-center justify-center rounded-form bg-nexus px-3 text-ui font-semibold text-nexus-ink hover:bg-nexus-hover pointer-coarse:min-h-11"
+            class="inline-flex min-h-9 items-center justify-center gap-2 overflow-hidden rounded-form bg-nexus px-3 text-ui font-semibold text-nexus-ink hover:bg-nexus-hover lg:justify-start pointer-coarse:min-h-11"
         >
-            {#if desktop.current && railCollapsed}
-                {@render sessionIcon()}<span class="sr-only">로그인</span>
-            {:else}로그인{/if}
+            {#if desktop.current}{@render sessionIcon()}{/if}
+            <span class="rail-label">로그인</span>
         </a>
     {/if}
 {/snippet}
@@ -176,10 +175,10 @@
             align={wide ? 'left' : 'right'}
             triggerVariant="secondary"
             triggerClass={wide
-                ? 'min-h-9.5 w-full not-hover:bg-surface'
+                ? 'min-h-9.5 w-full justify-start overflow-hidden not-hover:bg-surface'
                 : 'max-w-[55vw] not-hover:bg-surface'}
         >
-            {#if wide && railCollapsed}
+            {#if wide}
                 <svg
                     aria-hidden="true"
                     viewBox="0 0 24 24"
@@ -191,17 +190,16 @@
                     <title>서버 선택</title>
                     <path stroke-linejoin="round" d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5" />
                 </svg>
-            {:else}
-                <span class="min-w-0 flex-1 truncate text-left">{guild?.name ?? '서버 선택'}</span>
-                <svg
-                    aria-hidden="true"
-                    viewBox="0 0 16 16"
-                    class="size-4 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"><path d="m4 6 4 4 4-4" /></svg
-                >
             {/if}
+            <span class="rail-label min-w-0 flex-1 truncate text-left">{guild?.name ?? '서버 선택'}</span>
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                class="rail-label size-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"><path d="m4 6 4 4 4-4" /></svg
+            >
         </MenuButton>
     {/if}
 {/snippet}
@@ -212,11 +210,11 @@
         role="switch"
         aria-checked={mode === 'primary'}
         aria-label="라이트 모드"
-        class="inline-flex min-h-9 w-full items-center justify-between gap-2 rounded-form px-2.5 text-ui text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
+        class="inline-flex min-h-9 w-full items-center justify-between gap-2 overflow-hidden rounded-form px-2.5 text-ui text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
         onclick={toggleMode}
     >
         <span
-            class="relative flex h-4 w-7 items-center rounded-full border border-line-strong bg-surface"
+            class="relative flex h-4 w-7 shrink-0 items-center rounded-full border border-line-strong bg-surface"
             aria-hidden="true"
         >
             <span
@@ -226,20 +224,16 @@
                 ]}
             ></span>
         </span>
-        <span aria-hidden="true" class:hidden={desktop.current && railCollapsed && !user}>라이트 모드</span>
+        <span aria-hidden="true" class:rail-label={!user}>라이트 모드</span>
     </button>
 {/snippet}
 
 {#snippet gameTool()}
-    <Button
-        variant="quiet"
-        class={desktop.current && railCollapsed ? 'w-full' : 'w-full justify-start'}
-        onclick={openGames}
-    >
+    <Button variant="quiet" class="w-full justify-start overflow-hidden" onclick={openGames}>
         <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
-            class="size-4"
+            class="size-4 shrink-0"
             fill="none"
             stroke="currentColor"
             stroke-width="1.6"
@@ -248,7 +242,7 @@
             <rect x="3" y="3" width="18" height="18" rx="4" />
             <path stroke-linecap="round" stroke-width="3" d="M8 8h.01M12 12h.01M16 16h.01" />
         </svg>
-        <span class:sr-only={desktop.current && railCollapsed}>미니게임</span>
+        <span class="rail-label">미니게임</span>
     </Button>
 {/snippet}
 
@@ -264,21 +258,19 @@
             side={desktop.current ? 'up' : 'down'}
             onselect={selectAccount}
             triggerVariant="secondary"
-            triggerClass="w-full gap-2.5 p-2 not-hover:bg-surface"
+            triggerClass="w-full justify-start gap-2.5 overflow-hidden p-2 not-hover:bg-surface"
             footer={themeToggle}
         >
             <PlayerFace name={user.displayName} imageUrl={user.avatarUrl} size="sm" />
-            {#if !desktop.current || !railCollapsed}
-                <span class="min-w-0 flex-1 truncate text-left text-ui">{user.displayName}</span>
-                <svg
-                    aria-hidden="true"
-                    viewBox="0 0 16 16"
-                    class={['size-4 shrink-0 text-muted', !desktop.current && 'rotate-180']}
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"><path d="m4 10 4-4 4 4" /></svg
-                >
-            {/if}
+            <span class="rail-label min-w-0 flex-1 truncate text-left text-ui">{user.displayName}</span>
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                class={['rail-label size-4 shrink-0 text-muted', !desktop.current && 'rotate-180']}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"><path d="m4 10 4-4 4 4" /></svg
+            >
         </MenuButton>
     {/if}
 {/snippet}
@@ -286,8 +278,9 @@
 {#if desktop.current}
     <!-- 좌측 서버 레일: 목업의 사이드 내비게이션. 현재 서버·메뉴·계정을 한 곳에 둔다. -->
     <aside
+        data-rail-collapsed={railCollapsed}
         class={[
-            'sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-4.5 border-r border-line bg-rail pt-4.5 text-ink motion-safe:transition-[width,padding-inline] motion-safe:duration-250 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-4.5 border-r border-line bg-rail pt-4.5 text-ink motion-safe:transition-[width,padding-inline] motion-safe:duration-250 motion-safe:ease-in-out',
             railCollapsed ? 'w-16 px-2' : 'w-56 px-3.5'
         ]}
     >
@@ -306,10 +299,7 @@
                 title={railLabel}
                 aria-expanded={!railCollapsed}
                 aria-controls="desktop-rail-content"
-                class={[
-                    'mt-auto flex min-h-11 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-form px-3 text-ui font-medium text-muted hover:bg-surface-hover hover:text-ink',
-                    railCollapsed && 'justify-center'
-                ]}
+                class="mt-auto flex min-h-11 shrink-0 items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-form px-3 text-ui font-medium text-muted hover:bg-surface-hover hover:text-ink"
                 onclick={toggleRail}
             >
                 <svg
@@ -327,7 +317,7 @@
                 >
                     <path d="m12 6-6 6 6 6m6-12-6 6 6 6" />
                 </svg>
-                {#if !railCollapsed}<span>사이드바 접기</span>{/if}
+                <span class="rail-label">사이드바 접기</span>
             </button>
             <div
                 bind:offsetHeight={accountHeight}
@@ -346,11 +336,10 @@
                     <button
                         type="button"
                         title={railCollapsed ? '로그아웃' : undefined}
-                        class="min-h-9 w-full rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
+                        class="flex min-h-9 w-full items-center gap-2 overflow-hidden rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
                         onclick={logout}
                     >
-                        {#if railCollapsed}{@render sessionIcon()}<span class="sr-only">로그아웃</span
-                            >{:else}로그아웃{/if}
+                        {@render sessionIcon()}<span class="rail-label">로그아웃</span>
                     </button>
                 {/if}
             </div>

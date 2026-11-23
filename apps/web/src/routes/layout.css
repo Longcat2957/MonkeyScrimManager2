@@ -230,6 +230,24 @@
     }
 }
 
+[data-rail-collapsed] .rail-label {
+    white-space: nowrap;
+}
+
+[data-rail-collapsed='true'] .rail-label {
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    [data-rail-collapsed] .rail-label {
+        transition: opacity 150ms ease-out 80ms;
+    }
+
+    [data-rail-collapsed='true'] .rail-label {
+        transition: opacity 90ms ease-out;
+    }
+}
+
 /* 셸은 촬영하지 않는다. 지난 작업판의 잔상만 새 작업판 위에서 짧게 걷힌다. */
 :root {
     view-transition-name: none;

@@ -43,9 +43,8 @@
     <ul class="flex flex-col gap-1">
         {#each items as item (item.label)}
             {@const itemClass = [
-                'flex min-h-9.5 w-full items-center gap-2.5 rounded-form border px-2.5 text-sm no-underline focus-visible:-outline-offset-2 pointer-coarse:min-h-11',
+                'flex min-h-9.5 w-full items-center gap-2.5 overflow-hidden rounded-form border px-2.5 text-sm no-underline focus-visible:-outline-offset-2 lg:min-h-11 pointer-coarse:min-h-11',
                 'motion-safe:transition-colors motion-safe:duration-200',
-                compact && 'min-h-11 justify-center',
                 item.current
                     ? 'border-nexus bg-selected font-bold text-ink'
                     : 'border-transparent font-medium text-muted hover:bg-surface-hover hover:text-ink',
@@ -60,7 +59,7 @@
                         aria-disabled={item.disabled || undefined}
                     >
                         {@render navIcon(item.label)}
-                        <span class:sr-only={compact}>{item.label}</span>
+                        <span class="rail-label">{item.label}</span>
                     </span>
                 {:else}
                     <a
@@ -71,7 +70,7 @@
                         class={itemClass}
                     >
                         {@render navIcon(item.label)}
-                        <span class:sr-only={compact}>{item.label}</span>
+                        <span class="rail-label">{item.label}</span>
                     </a>
                 {/if}
             </li>
