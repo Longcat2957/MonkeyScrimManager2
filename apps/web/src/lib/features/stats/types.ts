@@ -1,5 +1,5 @@
 import type { LolPosition } from '../guild/types.ts';
-import type { AchievementBadge, AchievementRanking } from '../players/achievements.ts';
+import { SEASON_TITLES, type AchievementBadge, type AchievementRanking } from '../players/achievements.ts';
 import type { ChampionRecord, PlayerSummary } from '../players/types.ts';
 import type { RecordSeasonSelection } from '../seasons.ts';
 
@@ -8,7 +8,6 @@ const POSITIONS = ['top', 'jungle', 'mid', 'bot', 'support'] as const;
 export type StatsFilters = {
     seasonId: string | null;
     position: LolPosition | 'all';
-    recent: boolean;
     minGames: number;
 };
 
@@ -33,7 +32,6 @@ type StatsContext = RecordSeasonSelection & {
     guildId: string;
     requestKey: string;
     position: StatsFilters['position'];
-    recent: boolean;
     minGames: number;
 };
 
@@ -42,10 +40,8 @@ export type StatsSnapshot = StatsContext &
         | { empty: true }
         | {
               empty: false;
-              showAchievements: boolean;
               kpis: StatsKpis;
-              achievements: (AchievementRanking & { splashUrl: string | null })[];
-              achievementMinGames: number;
+              achievements: AchievementRanking[];
               leaderboard: StatsLeaderboardRow[];
               playerCount: number;
               champions: ChampionRecord[];
@@ -58,25 +54,23 @@ export function normalizeStatsFilters(search: URLSearchParams): StatsFilters {
     return {
         seasonId: search.get('season'),
         position: POSITIONS.includes(requested) ? requested : 'all',
-        recent: search.get('recent') === '1',
         minGames: Math.min(50, Math.max(1, Math.floor(Number(search.get('min'))) || 5))
     };
 }
 
 /** 실제 요청 조건을 비교하며 무관한 URL 값이나 쿼리 순서로 응답 문맥을 바꾸지 않는다. */
 export function statsRequestKey(guildId: string, filters: StatsFilters): string {
-    return JSON.stringify([guildId, filters.seasonId, filters.position, filters.recent, filters.minGames]);
+    return JSON.stringify([guildId, filters.seasonId, filters.position, filters.minGames]);
 }
 
 /** 같은 조건의 최신 수치만 바뀌면 열린 화면과 로컬 쪽·정렬을 보존한다. */
 export function statsViewKey(
-    snapshot: Pick<StatsSnapshot, 'guildId' | 'selectedSeasonId' | 'position' | 'recent' | 'minGames'>
+    snapshot: Pick<StatsSnapshot, 'guildId' | 'selectedSeasonId' | 'position' | 'minGames'>
 ): string {
     return JSON.stringify([
         snapshot.guildId,
         snapshot.selectedSeasonId,
         snapshot.position,
-        snapshot.recent,
         snapshot.minGames
     ]);
 }
@@ -96,7 +90,10 @@ const champion = (value: unknown) =>
     typeof value.name === 'string' &&
     nullableString(value.iconUrl);
 const badge = (value: unknown) =>
-    object(value) && ['id', 'emoji', 'title'].every((key) => typeof value[key] === 'string');
+    object(value) &&
+    typeof value.id === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.tied === 'boolean';
 const SUMMARY_NUMBERS = [
     'kills',
     'deaths',
@@ -122,7 +119,6 @@ export function isStatsSnapshot(value: unknown): value is StatsSnapshot {
         typeof value.requestKey !== 'string' ||
         !nullableString(value.selectedSeasonId) ||
         !(value.position === 'all' || position(value.position)) ||
-        typeof value.recent !== 'boolean' ||
         !count(value.minGames) ||
         Number(value.minGames) < 1 ||
         Number(value.minGames) > 50 ||
@@ -140,12 +136,11 @@ export function isStatsSnapshot(value: unknown): value is StatsSnapshot {
         const request: unknown = JSON.parse(value.requestKey);
         if (
             !Array.isArray(request) ||
-            request.length !== 5 ||
+            request.length !== 4 ||
             request[0] !== value.guildId ||
             !nullableString(request[1]) ||
             request[2] !== value.position ||
-            request[3] !== value.recent ||
-            request[4] !== value.minGames ||
+            request[3] !== value.minGames ||
             (request[1] !== null && request[1].toLowerCase() !== value.selectedSeasonId)
         )
             return false;
@@ -155,30 +150,40 @@ export function isStatsSnapshot(value: unknown): value is StatsSnapshot {
     if (value.empty === true) return true;
     if (
         value.empty !== false ||
-        typeof value.showAchievements !== 'boolean' ||
         !object(value.kpis) ||
         !count(value.kpis.games) ||
         !count(value.kpis.players) ||
         !['averageDurationSec', 'killsPerMinute', 'kda', 'champions'].every((key) =>
             nullableNumber((value.kpis as Record<string, unknown>)[key])
         ) ||
-        !count(value.achievementMinGames) ||
         !count(value.playerCount) ||
         !Array.isArray(value.achievements) ||
         !value.achievements.every(
             (item) =>
-                badge(item) &&
                 object(item) &&
+                typeof item.titleId === 'string' &&
+                Object.hasOwn(SEASON_TITLES, item.titleId) &&
+                (item.titleId === 'season-efficiency' ? position(item.position) : item.position === null) &&
+                item.id === (item.position ? `${item.titleId}:${item.position}` : item.titleId) &&
+                typeof item.title === 'string' &&
                 typeof item.description === 'string' &&
-                nullableString(item.splashUrl) &&
+                (item.sampleUnit === '세트' || item.sampleUnit === '시리즈') &&
                 Array.isArray(item.entries) &&
+                item.entries.length > 0 &&
                 item.entries.every(
                     (entry) =>
                         object(entry) &&
                         ['userId', 'displayName', 'value'].every((key) => typeof entry[key] === 'string') &&
                         nullableString(entry.iconUrl) &&
-                        count(entry.games)
+                        count(entry.rank) &&
+                        Number(entry.rank) >= 1 &&
+                        Number(entry.rank) <= 10 &&
+                        typeof entry.tied === 'boolean' &&
+                        (!entry.tied || entry.rank === 1) &&
+                        count(entry.sample) &&
+                        Number(entry.sample) > 0
                 ) &&
+                item.entries.some((entry) => entry.rank === 1) &&
                 unique(item.entries.map((entry) => entry.userId))
         ) ||
         !Array.isArray(value.leaderboard) ||

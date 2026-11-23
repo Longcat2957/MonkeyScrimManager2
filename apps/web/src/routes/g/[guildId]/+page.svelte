@@ -2,6 +2,7 @@
     import { invalidate } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import SectionState from '#lib/components/common/SectionState.svelte';
     import ActivityBoard from '#lib/components/guild/ActivityBoard.svelte';
     import NextScrimBrief from '#lib/components/guild/NextScrimBrief.svelte';
     import RankingBoard from '#lib/components/guild/RankingBoard.svelte';
@@ -27,12 +28,18 @@
             resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: data.nextScrim.scrim.id })}
     />
 
-    {#if data.achievements.length}
-        <section aria-labelledby="achievements" class="min-w-0 border-t border-line">
-            <h2 id="achievements" class="py-3 text-base font-semibold">업적</h2>
-            <AchievementCarousel items={data.achievements} />
-        </section>
-    {/if}
+    <section aria-labelledby="achievements" class="min-w-0 border-t border-line">
+        <h2 id="achievements" class="py-3 text-base font-semibold">시즌 칭호</h2>
+        {#if !data.achievements.ok}
+            <SectionState state="error" message="시즌 칭호를 불러오지 못했어요" onretry={retry} />
+        {:else if data.achievements.value.length}
+            {#key data.selectedSeasonId}
+                <AchievementCarousel items={data.achievements.value} />
+            {/key}
+        {:else}
+            <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
+        {/if}
+    </section>
     <div class="grid min-w-0 items-start gap-6 @min-[50rem]:grid-cols-[minmax(0,1.65fr)_minmax(17rem,1fr)]">
         <RankingBoard
             {guildId}

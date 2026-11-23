@@ -4,6 +4,10 @@ import test from 'node:test';
 import { unflatten } from 'devalue';
 import { eq, sql } from 'drizzle-orm';
 import type { RecordSeasonSelection } from '../../../../src/lib/features/seasons.ts';
+import type {
+    AchievementBadge,
+    AchievementRanking
+} from '../../../../src/lib/features/players/achievements.ts';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { createHttpRecordSeasonsFixture } from '../../support/http-record-seasons-fixtures.ts';
 import { createHttpFixture, HTTP_IDS } from '../../support/http.ts';
@@ -29,18 +33,20 @@ test('공개 페이지와 추가 순위는 명시한 과거 시즌만 읽고 홈
         history: unknown[];
         position: string;
         mmr: { position: string; rating: number; games: number }[];
+        badges: AchievementBadge[];
     };
     type Stats = RecordSeasonSelection & {
         empty: boolean;
         position?: string;
         minGames?: number;
-        recent?: boolean;
+        achievements: AchievementRanking[];
         kpis?: { games: number };
     };
     type Home = RecordSeasonSelection & {
         nextScrim: { scrim: { id: string } } | null;
         activeScrims: unknown;
         recentMatches: unknown;
+        achievements: { ok: true; value: AchievementRanking[] };
         ranking: {
             ok: boolean;
             value: { seasonName: string; positions: Record<string, { entries: unknown[] }> };
@@ -74,13 +80,25 @@ test('공개 페이지와 추가 순위는 명시한 과거 시즌만 읽고 홈
     assert.equal(stats.kpis!.games, 1);
     assert.equal(stats.position, 'top');
     assert.equal(stats.minGames, 1);
-    assert.equal(stats.recent, true);
+    assert.ok(stats.achievements.some(({ id }) => id === 'season-champion-pool'));
     const homeCurrent = await data<Home>(f, f.paths.home);
     const homePast = await data<Home>(f, f.paths.home, 'season=' + f.previousSeason.id);
     assert.equal(homeCurrent.nextScrim!.scrim.id, f.currentRecruit.id);
     assert.deepEqual(homePast.nextScrim, homeCurrent.nextScrim);
     assert.deepEqual(homePast.activeScrims, homeCurrent.activeScrims);
     assert.deepEqual(homePast.recentMatches, homeCurrent.recentMatches);
+    assert.deepEqual(homeCurrent.achievements, { ok: true, value: [] });
+    assert.deepEqual(current.badges, []);
+    const winners = stats.achievements.map((group) => ({
+        ...group,
+        entries: group.entries.filter(({ rank }) => rank === 1)
+    }));
+    assert.deepEqual(homePast.achievements, { ok: true, value: winners });
+    const mine = winners.flatMap(({ entries, id, title }) =>
+        entries.filter(({ userId }) => userId === HTTP_IDS.member).map(({ tied }) => ({ id, title, tied }))
+    );
+    assert.ok(mine.length > 0);
+    assert.deepEqual(past.badges, mine);
     assert.equal(homePast.ranking.value.seasonName, f.previousSeason.name);
     assert.equal(homePast.ranking.value.positions.top!.entries.length, 2);
     assert.equal(homeCurrent.ranking.value.positions.top!.entries.length, 0);

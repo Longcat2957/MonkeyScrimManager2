@@ -63,10 +63,11 @@ test('통계 JSON은 로그인 없이 SSR과 같은 시즌·필터·문맥·검�
             assert.equal(value.kpis.players, 10);
             assert.equal(value.leaderboard.length, 2);
             assert.equal(value.position, 'top');
-            assert.equal(value.recent, true);
             assert.equal(value.minGames, 1);
-            assert.equal(value.showAchievements, false);
-            assert.deepEqual(value.achievements, []);
+            const all = await live(f, 'season=' + f.previousSeason.id + '&min=50');
+            assert.ok(!all.empty);
+            assert.ok(value.achievements.some((group) => group.id === 'season-decider'));
+            assert.deepEqual(value.achievements, all.achievements);
         }
     }
     const query = 'season=' + f.previousSeason.id + '&min=1';
@@ -158,7 +159,6 @@ test('빈 시즌·정규화·시즌/서버 오류에도 공개 읽기와 no-stor
     const empty = await live(f, 'position=invalid&recent=2&min=1000');
     assert.equal(empty.empty, true);
     assert.equal(empty.position, 'all');
-    assert.equal(empty.recent, false);
     assert.equal(empty.minGames, 50);
     assert.equal(
         f.upstreamCalls.some((url) => url.startsWith('https://discord.com/')),

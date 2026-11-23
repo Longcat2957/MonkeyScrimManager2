@@ -391,6 +391,10 @@ function toGame(
                 secondaryStyle: resolvers.rune(raw.loadout.secondaryRuneStyleId),
                 score: Math.round(score * 100) / 100,
                 badge: score === best ? (winnerSlot === slot ? 'mvp' : 'ace') : null,
+                titles:
+                    game.signature.startsWith('sample:') && teamId === 100 && index === 2
+                        ? [{ id: 'set-losing-damage', value: '40461' }]
+                        : [],
                 fearlessViolation: match.hardFearless && earlier.has(championId)
             };
         });
@@ -448,6 +452,17 @@ export async function getMockMatch(
         bestOf: match.bestOf,
         status: match.status,
         hardFearless: match.hardFearless,
+        seriesTitle:
+            match.id === 'devMatch002' && !match.cancelledByScrim
+                ? {
+                      id: 'bo3-bot-duo',
+                      recipients: [8, 9].map((index) => ({
+                          key: `sample-duo-${index}`,
+                          userId: null,
+                          displayName: sample.participants[index]!.riotId.gameName!
+                      }))
+                  }
+                : null,
         games: currentGames.map((game) => ({ id: game.id, order: game.order, winner: winnerOf(game) }))
     };
     const game = selected

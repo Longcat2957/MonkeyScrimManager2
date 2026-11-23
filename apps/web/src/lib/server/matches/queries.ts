@@ -27,6 +27,7 @@ import type {
     MatchDetail,
     MatchListItem
 } from '../../features/matches/types.ts';
+import type { SeriesTitleId, SetTitle } from '../../features/matches/titles.ts';
 import type { Actor } from '../auth/types.ts';
 import { publicDisplayName, readPublicIdentities } from '../accounts/public-identity.ts';
 import type { Database, Transaction } from '../db/types.ts';
@@ -47,6 +48,7 @@ import { DomainError } from '../errors.ts';
 import { selectRecordSeason } from '../records/seasons.ts';
 import { readGuild } from '../scrims/queries.ts';
 import { requireUuid } from '../scrims/validation.ts';
+import { seriesTitleQuery, setTitleQuery } from './titles.ts';
 
 const teamA = alias(scrimTeams, 'match_team_a');
 const teamB = alias(scrimTeams, 'match_team_b');
@@ -275,6 +277,13 @@ export async function getMatch(
                   })
                   .from(gameParticipants)
                   .innerJoin(scrimParticipants, eq(scrimParticipants.id, gameParticipants.scrimParticipantId))
+                  .innerJoin(
+                      games,
+                      and(
+                          eq(games.id, gameParticipants.gameId),
+                          eq(games.roflMetadataId, gameParticipants.roflMetadataId)
+                      )
+                  )
                   .leftJoin(
                       roflParticipantDataV1,
                       and(
@@ -295,6 +304,32 @@ export async function getMatch(
             players.map((entry) => entry.userId)
         );
         const selected = recorded.find((item) => item.game.id === gameId) ?? recorded.at(-1);
+        let seriesTitle: MatchDetail['seriesTitle'] = null;
+        if (recorded.length && row.match.bestOf === 3 && row.match.status === 'completed') {
+            const { rows } = await tx.execute<{ id: SeriesTitleId; scrim_participant_id: string }>(
+                seriesTitleQuery(guildId, matchId)
+            );
+            if (rows.length) {
+                const recipients = new Set(rows.map((award) => award.scrim_participant_id));
+                const finalGameId = recorded.at(-1)!.game.id;
+                seriesTitle = {
+                    id: rows[0]!.id,
+                    recipients: players
+                        .filter(
+                            ({ player }) =>
+                                player.gameId === finalGameId && recipients.has(player.scrimParticipantId)
+                        )
+                        .map(({ player, userId }) => {
+                            const identity = userId ? identities.get(userId) : undefined;
+                            return {
+                                key: player.scrimParticipantId,
+                                userId: identity?.userId ?? null,
+                                displayName: publicDisplayName(identity, player.displayName)
+                            };
+                        })
+                };
+            }
+        }
         const match: MatchDetail = {
             id: row.match.id,
             scrim: { id: row.match.scrimId, title: row.scrimTitle },
@@ -303,6 +338,7 @@ export async function getMatch(
             bestOf: row.match.bestOf,
             status: row.match.status,
             hardFearless: row.match.isHardFearless,
+            seriesTitle,
             scoreA: recorded.filter((item) => winnerSlot(item.game) === 'a').length,
             scoreB: recorded.filter((item) => winnerSlot(item.game) === 'b').length,
             games: recorded.map(({ game }) => ({
@@ -323,6 +359,9 @@ export async function getMatch(
         let game: GameDetail | null = null;
         if (selected) {
             const previous = usedBefore(selected.game.gameNumber);
+            const { rows: setTitles } = await tx.execute<SetTitle & { scrim_participant_id: string }>(
+                setTitleQuery(guildId, matchId, selected.game.id)
+            );
             const applications = await tx
                 .select({ id: gameMmrApplications.id })
                 .from(gameMmrApplications)
@@ -409,6 +448,12 @@ export async function getMatch(
                                     ),
                                     score: null,
                                     badge: null,
+                                    titles: setTitles
+                                        .filter(
+                                            (award) =>
+                                                award.scrim_participant_id === player.scrimParticipantId
+                                        )
+                                        .map(({ id, value }) => ({ id, value })),
                                     fearlessViolation:
                                         row.match.isHardFearless &&
                                         Boolean(data?.champion && previous.has(data.champion))

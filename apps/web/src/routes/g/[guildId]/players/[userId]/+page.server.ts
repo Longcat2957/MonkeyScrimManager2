@@ -1,11 +1,15 @@
 import { dev } from '$app/env';
 import { error } from '@sveltejs/kit';
 import type { LolPosition } from '#lib/features/guild/types.ts';
-import { achievementBadges, rankAchievements } from '#lib/features/players/achievements.ts';
+import {
+    achievementBadges,
+    groupSeasonTitles,
+    type SeasonTitleHolder
+} from '#lib/features/players/achievements.ts';
 import { championRecords, duoRecords, summarize, topPercents } from '#lib/features/players/stats.ts';
 import type { DuoRecord, PlayerGame, PlayerSummary } from '#lib/features/players/types.ts';
 import { mockAvatarUrl } from '#lib/mocks/avatar.ts';
-import { findMockPlayer, listMockGuildPlayers } from '#lib/mocks/players.ts';
+import { findMockPlayer, listMockGuildPlayers, mockSeasonTitles } from '#lib/mocks/players.ts';
 import { championResolver } from '#lib/server/ddragon/champions.ts';
 import { latestDataDragonVersion } from '#lib/server/guild/ranking.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
@@ -18,7 +22,7 @@ import type { PageServerLoad } from './$types';
 
 const PAGE_SIZE = 10;
 const POSITIONS: LolPosition[] = ['top', 'jungle', 'mid', 'bot', 'support'];
-// 업적과 상위 %는 표본이 너무 작은 사람을 빼고 비교한다. 통계 화면과 같은 기준이다.
+// 상위 %는 같은 포지션 범위에서 네 게임 이상 뛴 사람끼리 비교한다.
 const COMPARE_MIN_GAMES = 4;
 
 export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
@@ -31,6 +35,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
     let guildPlayers: GuildPlayerRecords[];
     let mmr: { position: LolPosition; rating: number; games: number }[];
     let seasonSelection: RecordSeasonSelection;
+    let titles: SeasonTitleHolder[];
     if (demo) {
         try {
             seasonSelection = mockRecordSeasons(url.searchParams.get('season'));
@@ -39,6 +44,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
         }
         const mock = findMockPlayer(params.guildId, params.userId);
         if (!mock) error(404, '사용자를 찾을 수 없습니다.');
+        titles = mockSeasonTitles(params.guildId).filter((row) => row.userId === mock.userId);
         guildPlayers = listMockGuildPlayers(champion);
         games = guildPlayers.find((item) => item.userId === mock.userId)?.games ?? [];
         player = {
@@ -61,7 +67,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
                 champion,
                 url.searchParams.get('season')
             );
-            ({ player, games, mmr } = result);
+            ({ player, games, mmr, titles } = result);
             guildPlayers = result.players;
             seasonSelection = { seasons: result.seasons, selectedSeasonId: result.selectedSeasonId };
         } catch (cause) {
@@ -84,15 +90,7 @@ export const load: PageServerLoad = async ({ parent, params, url, locals }) => {
             )
         )
         .filter((item): item is PlayerSummary => (item?.games ?? 0) >= COMPARE_MIN_GAMES);
-    const badges = achievementBadges(
-        demo
-            ? rankAchievements(
-                  guildPlayers.map(({ games: list, ...item }) => ({ ...item, summary: summarize(list) })),
-                  COMPARE_MIN_GAMES,
-                  1
-              )
-            : []
-    );
+    const badges = achievementBadges(groupSeasonTitles(titles));
 
     const duos = duoRecords(games);
     const withAvatar = (duo: DuoRecord) => ({

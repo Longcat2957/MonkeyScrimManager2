@@ -16,14 +16,14 @@ const filters = (query = '') => normalizeStatsFilters(new URLSearchParams(query)
 
 test('통계 요청 문맥은 기존 기본값을 보정하고 무관한 쿼리·순서와 실제 선택 시즌을 구분한다', () => {
     const defaults = filters();
-    assert.deepEqual(defaults, { seasonId: null, position: 'all', recent: false, minGames: 5 });
+    assert.deepEqual(defaults, { seasonId: null, position: 'all', minGames: 5 });
     assert.deepEqual(filters('position=unknown&recent=true&min=0'), defaults);
     assert.equal(filters('min=-10').minGames, 1);
     assert.equal(filters('min=100').minGames, 50);
     assert.equal(filters('min=2.9').minGames, 2);
     assert.equal(filters('min=NaN').minGames, 5);
     const request = filters('season=chosen&position=top&recent=1&min=1');
-    const reordered = filters('keep=ignored&min=1&recent=1&position=top&season=chosen');
+    const reordered = filters('keep=ignored&min=1&position=top&season=chosen');
     assert.equal(statsRequestKey('guild', request), statsRequestKey('guild', reordered));
     assert.notEqual(statsRequestKey('guild', request), statsRequestKey('other', request));
     assert.notEqual(statsRequestKey('guild', request), statsRequestKey('guild', defaults));
@@ -31,7 +31,6 @@ test('통계 요청 문맥은 기존 기본값을 보정하고 무관한 쿼리�
         guildId: 'guild',
         selectedSeasonId: 'actual',
         position: 'top' as const,
-        recent: true,
         minGames: 1
     };
     assert.equal(statsViewKey(view), statsViewKey({ ...view }));
@@ -60,10 +59,16 @@ test('공통 통계는 실제 Game 표본과 포지션 지표를 구분하고 �
     assert.equal(publicStats.kpis.averageDurationSec, 1500);
     assert.equal(publicStats.kpis.killsPerMinute, 0.9);
     assert.equal(publicStats.position, 'top');
-    assert.equal(publicStats.recent, true);
     assert.equal(publicStats.leaderboard.length, 2);
-    assert.equal(publicStats.showAchievements, false);
-    assert.deepEqual(publicStats.achievements, []);
+    const titles = publicStats.achievements.find((group) => group.id === 'season-champion-pool')!;
+    assert.equal(titles.entries.filter((entry) => entry.rank === 1).length, 5);
+    assert.ok(titles.entries.every((entry) => entry.tied));
+    const filtered = await getGuildStatsSnapshot(f.db, null, f.guildId, filters('position=mid&min=50'), {
+        champion
+    });
+    assert.ok(!filtered.empty);
+    assert.deepEqual(filtered.leaderboard, []);
+    assert.deepEqual(filtered.achievements, publicStats.achievements);
     assert.equal(publicStats.requestKey, statsRequestKey(f.guildId, selected));
     const publicPlayer = publicStats.leaderboard.find((row) => row.userId === f.manager.userId)!;
     assert.ok(publicPlayer.identityKey);
@@ -80,6 +85,12 @@ test('공통 통계는 실제 Game 표본과 포지션 지표를 구분하고 �
     assert.equal(hidden.displayName, '비공개 사용자');
     assert.equal(hidden.iconUrl, null);
     assert.deepEqual(privateStats.kpis, publicStats.kpis);
+    const privateEntry = privateStats.achievements
+        .flatMap((group) => group.entries)
+        .find((entry) => entry.userId === hidden.userId);
+    assert.equal(privateEntry?.displayName, hidden.displayName);
+    assert.equal(privateEntry?.iconUrl, null);
+    assert.ok(!JSON.stringify(privateStats.achievements).includes(f.manager.userId));
     assert.equal(statsViewKey(privateStats), statsViewKey(publicStats));
     assert.deepEqual(await f.ratings(), beforeScores);
     assert.equal(isStatsSnapshot({ ...privateStats, leaderboard: [{}] }), false);
@@ -87,7 +98,13 @@ test('공통 통계는 실제 Game 표본과 포지션 지표를 구분하고 �
     assert.equal(isStatsSnapshot({ ...privateStats, kpis: { ...privateStats.kpis, games: NaN } }), false);
     assert.equal(isStatsSnapshot({ ...privateStats, position: 'mid' }), false);
     assert.equal(isStatsSnapshot({ ...privateStats, minGames: 2 }), false);
-    assert.equal(isStatsSnapshot({ ...privateStats, recent: false }), false);
+    assert.equal(
+        isStatsSnapshot({
+            ...privateStats,
+            achievements: [{ ...titles, entries: [{ ...titles.entries[0], rank: 0 }] }]
+        }),
+        false
+    );
 });
 
 test('빈 통계도 정규화된 조건을 유지하고 현재·과거·없는 시즌과 공개 서버 경계를 보존한다', async (t) => {
@@ -106,7 +123,6 @@ test('빈 통계도 정규화된 조건을 유지하고 현재·과거·없는 �
     assert.equal(empty.empty, true);
     assert.equal(empty.selectedSeasonId, current!.id);
     assert.equal(empty.position, 'mid');
-    assert.equal(empty.recent, true);
     assert.equal(empty.minGames, 50);
     assert.equal(empty.requestKey, statsRequestKey(f.guildId, selected));
     assert.equal(isStatsSnapshot(empty), true);
@@ -178,14 +194,13 @@ test('선별 세부 자료 없는 실제 완료 Game은 통계 수치와 출전�
     assert.deepEqual(result.achievements, []);
 });
 
-test('개발 샘플만 기존 업적을 유지하며 빈 샘플과 명시 시즌을 임의로 만들지 않는다', async () => {
+test('개발 미리보기는 같은 시즌 칭호 계약을 사용하고 없는 시즌을 만들지 않는다', async () => {
     const selected = filters('position=top&min=1');
     const demo = await getGuildStatsSnapshot(null, null, 'devGuild001', selected, {
         preview: true,
         champion
     });
     assert.ok(!demo.empty);
-    assert.equal(demo.showAchievements, true);
     assert.ok(demo.achievements.length > 0);
     assert.ok(demo.leaderboard.every((row) => row.iconUrl?.startsWith('https://cdn.discordapp.com/')));
     assert.equal(isStatsSnapshot(demo), true);

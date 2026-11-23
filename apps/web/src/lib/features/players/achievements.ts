@@ -1,217 +1,91 @@
-import type { PlayerSummary } from './types.ts';
-import { integer } from './format.ts';
+import type { LolPosition } from '../guild/types.ts';
+import { positionsLabel } from '../labels.ts';
 
-// 업적은 서버 사람들의 요약 지표를 한 기준으로 줄 세워 1위에게 준다.
-// 기준과 이름은 임시이며 업적 정책이 정해지면 바꾼다.
+// PostgreSQL이 순위와 표본을 결정한다. 여기서는 표시 이름과 단위만 붙인다.
+export const SEASON_TITLES = {
+    'season-kills': ['킬딸 왕', '세트당 평균 킬 · 10세트 이상', '킬/세트'],
+    'season-assists': ['유미 체질', '세트당 평균 어시스트 · 10세트 이상', '어시스트/세트'],
+    'season-damage': ['실력그래프 1등', '분당 챔피언 피해량 · 10세트 이상', '피해/분'],
+    'season-participation': ['싸움이야 나도 끼어야지', '팀 킬이 있는 세트의 킬 관여율 · 10세트 이상', '%'],
+    'season-wards': ['불 좀 꺼줄래?', '분당 제거한 적 와드 · 10세트 이상', '개/분'],
+    'season-efficiency': [
+        '가성비 킹',
+        '팀 내 피해 지분과 골드 지분의 평균 차이 · 같은 포지션 10세트 이상',
+        '%p'
+    ],
+    'season-cs': ['20대 사망원인 1위 한라인만 더', '정글 외 포지션의 분당 CS · 10세트 이상', 'CS/분'],
+    'season-tanking': ['에이스 견제', '승리한 세트에서 분당 받은 피해량 · 10승 이상', '피해/분'],
+    'season-protection': ['소라카 체질', '분당 아군 회복량과 보호막량의 합 · 10세트 이상', '/분'],
+    'season-clean-sheet': ['클린 시트', '0데스로 이긴 세트 수', '승'],
+    'season-champion-pool': ['unlucky faker', '승리한 챔피언 종류 수', '종'],
+    'season-one-trick': ['원챔', '한 챔피언으로 거둔 최다 승수', '승'],
+    'season-positions': ['연체동물 체질', '승리한 출전 포지션 수', '포지션'],
+    'season-decider': ['위기에 강함', '정상 종료한 Bo3에서 1:1 뒤 결정 세트 승수', '승'],
+    'season-series-rate': ['승리 체질', '정상 종료한 Bo3 시리즈 승률 · 5시리즈 이상', '%']
+} as const;
 
-// 업적은 표본이 너무 작은 사람을 빼고 고른다. 서버 홈과 서버 통계가 같은 기준을 쓴다.
-export const ACHIEVEMENT_MIN_GAMES = 4;
-
-type Definition = {
-    id: string;
-    emoji: string;
-    title: string;
-    description: string;
-    /** 줄 세울 값. ascending이면 낮을수록 앞선다. */
-    value: (summary: PlayerSummary) => number | null;
-    format: (summary: PlayerSummary) => string;
-    ascending?: boolean;
-};
-
-const efficiency = (s: PlayerSummary) =>
-    s.damagePerMin !== null && s.goldPerMin !== null && s.goldPerMin > 0
-        ? s.damagePerMin / s.goldPerMin
-        : null;
-
-export const ACHIEVEMENTS: Definition[] = [
-    {
-        id: 'dps',
-        emoji: '💥',
-        title: '딜량 왕',
-        description: '분당 챔피언 피해량이 가장 많은 사람',
-        value: (s) => s.damagePerMin,
-        format: (s) => `${integer(s.damagePerMin)} /분`
-    },
-    {
-        id: 'gold',
-        emoji: '💰',
-        title: '골드 왕',
-        description: '분당 골드 획득이 가장 많은 사람',
-        value: (s) => s.goldPerMin,
-        format: (s) => `${integer(s.goldPerMin)} G/분`
-    },
-    {
-        id: 'cs',
-        emoji: '🌾',
-        title: 'CS 왕',
-        description: '분당 CS가 가장 많은 사람',
-        value: (s) => s.csPerMin,
-        format: (s) => `${integer(s.csPerMin)} CS/분`
-    },
-    {
-        id: 'vision',
-        emoji: '👁️',
-        title: '천리안',
-        description: '게임당 시야 점수가 가장 높은 사람',
-        value: (s) => s.visionPerGame,
-        format: (s) => `시야 ${integer(s.visionPerGame)}`
-    },
-    {
-        id: 'tank',
-        emoji: '🛡️',
-        title: '샌드백',
-        description: '분당 받은 피해량이 가장 많은 사람',
-        value: (s) => s.damageTakenPerMin,
-        format: (s) => `${integer(s.damageTakenPerMin)} /분`
-    },
-    {
-        id: 'efficiency',
-        emoji: '🪙',
-        title: '가성비 왕',
-        description: '골드 대비 피해량이 가장 높은 사람',
-        value: (s) => efficiency(s),
-        format: (s) => `골드당 피해 ${integer(efficiency(s))}`
-    },
-    {
-        id: 'slayer',
-        emoji: '⚔️',
-        title: '학살자',
-        description: '게임당 킬이 가장 많은 사람',
-        value: (s) => s.kills,
-        format: (s) => `게임당 ${integer(s.kills)}킬`
-    },
-    {
-        id: 'helper',
-        emoji: '🤝',
-        title: '도우미',
-        description: '게임당 어시스트가 가장 많은 사람',
-        value: (s) => s.assists,
-        format: (s) => `게임당 ${integer(s.assists)}어시`
-    },
-    {
-        id: 'survivor',
-        emoji: '🧘',
-        title: '불사신',
-        description: '게임당 데스가 가장 적은 사람',
-        value: (s) => s.deaths,
-        format: (s) => `게임당 ${integer(s.deaths)}데스`,
-        ascending: true
-    },
-    {
-        id: 'feeder',
-        emoji: '🪦',
-        title: '우물 밖은 위험해',
-        description: '게임당 데스가 가장 많은 사람',
-        value: (s) => s.deaths,
-        format: (s) => `게임당 ${integer(s.deaths)}데스`
-    },
-    {
-        id: 'teamfight',
-        emoji: '🔥',
-        title: '한타 중독',
-        description: '킬 관여율이 가장 높은 사람',
-        value: (s) => s.killParticipation,
-        format: (s) => `킬 관여 ${Math.round((s.killParticipation ?? 0) * 100)}%`
-    },
-    {
-        id: 'kda',
-        emoji: '🎯',
-        title: 'KDA 장인',
-        description: 'KDA가 가장 높은 사람',
-        value: (s) => s.kda,
-        format: (s) => `KDA ${integer(s.kda)}`
-    },
-    {
-        id: 'pool',
-        emoji: '🎭',
-        title: '만물박사',
-        description: '가장 많은 챔피언을 플레이한 사람',
-        value: (s) => s.champions,
-        format: (s) => `챔피언 ${s.champions}개`
-    },
-    {
-        id: 'winner',
-        emoji: '🍀',
-        title: '승리 요정',
-        description: '승률이 가장 높은 사람',
-        value: (s) => s.wins / s.games,
-        format: (s) => `승률 ${Math.round((s.wins / s.games) * 100)}%`
-    },
-    {
-        id: 'streak',
-        emoji: '📈',
-        title: '폼 미쳤다',
-        description: '가장 길게 연승한 사람',
-        value: (s) => s.winStreak,
-        format: (s) => `${s.winStreak}연승`
-    },
-    {
-        id: 'multikill',
-        emoji: '🌋',
-        title: '아직 한 발 남았다',
-        description: '한 게임 최다 킬 기록을 가진 사람',
-        value: (s) => s.maxKills,
-        format: (s) => `최다 ${s.maxKills}킬`
-    }
-];
-
-export type AchievementEntry = {
+export type SeasonTitleId = keyof typeof SEASON_TITLES;
+export type SeasonTitleHolder = {
+    titleId: SeasonTitleId;
+    position: LolPosition | null;
+    score: number;
+    sample: number;
+    rank: number;
+    tied: boolean;
     userId: string;
     displayName: string;
     iconUrl: string | null;
-    value: string;
-    games: number;
 };
+
 export type AchievementRanking = {
     id: string;
-    emoji: string;
+    titleId: SeasonTitleId;
+    position: LolPosition | null;
     title: string;
     description: string;
-    entries: AchievementEntry[];
+    sampleUnit: '세트' | '시리즈';
+    entries: (Pick<SeasonTitleHolder, 'userId' | 'displayName' | 'iconUrl' | 'rank' | 'sample' | 'tied'> & {
+        value: string;
+    })[];
 };
-export type AchievementBadge = { id: string; emoji: string; title: string };
+export type AchievementBadge = Pick<AchievementRanking, 'id' | 'title'> & { tied: boolean };
 
-type Candidate = {
-    userId: string;
-    displayName: string;
-    iconUrl: string | null;
-    summary: PlayerSummary | null;
-};
+const number = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 });
 
-/** 업적마다 minGames 이상 뛴 사람을 줄 세워 앞에서 limit명을 고른다. 대상이 없는 업적은 뺀다. */
-export function rankAchievements(
-    candidates: Candidate[],
-    minGames: number,
-    limit = 10
-): AchievementRanking[] {
-    const eligible = candidates.filter(
-        (item): item is Candidate & { summary: PlayerSummary } => (item.summary?.games ?? 0) >= minGames
-    );
-    return ACHIEVEMENTS.flatMap(({ value, format, ascending, ...achievement }) => {
-        const sorted = eligible
-            .filter((item) => value(item.summary) !== null && Number.isFinite(value(item.summary)))
-            .sort(
-                (a, b) =>
-                    (value(b.summary)! - value(a.summary)!) * (ascending ? -1 : 1) ||
-                    b.summary.games - a.summary.games
-            );
-        const entries = sorted.slice(0, limit).map(({ userId, displayName, iconUrl, summary }) => ({
-            userId,
-            displayName,
-            iconUrl,
-            value: format(summary),
-            games: summary.games
-        }));
-        return entries.length ? [{ ...achievement, entries }] : [];
-    });
+export function groupSeasonTitles(rows: SeasonTitleHolder[]): AchievementRanking[] {
+    const groups = new Map<string, AchievementRanking>();
+    for (const { titleId, position, score, ...entry } of rows) {
+        const id = position ? `${titleId}:${position}` : titleId;
+        const [name, description, unit] = SEASON_TITLES[titleId];
+        let group = groups.get(id);
+        if (!group) {
+            group = {
+                id,
+                titleId,
+                position,
+                title: position ? `${name} · ${positionsLabel([position])}` : name,
+                description,
+                sampleUnit: titleId === 'season-series-rate' ? '시리즈' : '세트',
+                entries: []
+            };
+            groups.set(id, group);
+        }
+        const sign = unit === '%p' && score > 0 ? '+' : '';
+        group.entries.push({ ...entry, value: `${sign}${number.format(score)}${unit}` });
+    }
+    return [...groups.values()];
 }
 
-/** 사용자별로 1위를 차지한 업적 배지. */
 export function achievementBadges(rankings: AchievementRanking[]): Map<string, AchievementBadge[]> {
     const badges = new Map<string, AchievementBadge[]>();
-    for (const { id, emoji, title, entries } of rankings) {
-        const winner = entries[0];
-        if (winner) badges.set(winner.userId, [...(badges.get(winner.userId) ?? []), { id, emoji, title }]);
+    for (const { id, title, entries } of rankings) {
+        for (const { userId, rank, tied } of entries) {
+            if (rank !== 1) continue;
+            const list = badges.get(userId);
+            const badge = { id, title, tied };
+            if (list) list.push(badge);
+            else badges.set(userId, [badge]);
+        }
     }
     return badges;
 }

@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { achievementBadges, rankAchievements } from '../src/lib/features/players/achievements.ts';
+import {
+    achievementBadges,
+    groupSeasonTitles,
+    type SeasonTitleHolder
+} from '../src/lib/features/players/achievements.ts';
 import { percent } from '../src/lib/features/players/format.ts';
 import { championRecords, duoRecords, summarize, topPercents } from '../src/lib/features/players/stats.ts';
 import type { PlayerGame } from '../src/lib/features/players/types.ts';
@@ -127,28 +131,38 @@ test('같게 표시되는 승률도 원비율로 순위를 정하고 공동 순�
     assert.equal(topPercents(mine, peers(25, 7)).winRate, 28);
 });
 
-test('업적은 최소 게임 수를 넘긴 사람만 줄 세우고 1위에게 배지를 준다', () => {
-    const many = Array.from({ length: 4 }, () => game({ kills: 2, deaths: 1 }));
-    const candidates = [
-        { userId: 'a', displayName: 'a', iconUrl: null, summary: summarize(many) },
-        {
-            userId: 'b',
-            displayName: 'b',
-            iconUrl: null,
-            summary: summarize(many.map((item) => ({ ...item, kills: 8, deaths: 6 })))
-        },
-        { userId: 'c', displayName: 'c', iconUrl: null, summary: summarize([game({ kills: 30 })]) }
-    ];
-    const rankings = rankAchievements(candidates, 4);
-    const of = (id: string) => rankings.find((item) => item.id === id)!.entries.map((entry) => entry.userId);
-    assert.deepEqual(of('slayer'), ['b', 'a']);
-    assert.deepEqual(of('survivor'), ['a', 'b']);
-    assert.ok(
-        achievementBadges(rankings)
-            .get('b')!
-            .some((badge) => badge.id === 'slayer')
+test('같은 포지션의 공동 1위는 모두 배지를 받고, 다른 포지션과 실제 SQL 순위는 구분한다', () => {
+    const first: SeasonTitleHolder = {
+        userId: 'a',
+        displayName: 'a',
+        iconUrl: null,
+        titleId: 'season-efficiency',
+        position: 'top',
+        score: 9.9999,
+        sample: 10,
+        rank: 1,
+        tied: true
+    };
+    const rankings = groupSeasonTitles([
+        first,
+        { ...first, userId: 'b', sample: 11 },
+        { ...first, userId: 'c', rank: 3, score: 9.9998, tied: false },
+        { ...first, position: 'mid', tied: false },
+        { ...first, titleId: 'season-series-rate', position: null, score: 100, sample: 5, tied: false }
+    ]);
+    assert.deepEqual(
+        rankings.map(({ title, sampleUnit }) => [title, sampleUnit]),
+        [
+            ['가성비 킹 · 탑', '세트'],
+            ['가성비 킹 · 미드', '세트'],
+            ['승리 체질', '시리즈']
+        ]
     );
-    assert.equal(achievementBadges(rankings).has('c'), false);
+    assert.equal(rankings[0]!.entries[2]!.value, rankings[0]!.entries[0]!.value);
+    const badges = achievementBadges(rankings);
+    assert.equal(badges.get('a')!.length, 3);
+    assert.deepEqual(badges.get('b'), [{ id: 'season-efficiency:top', title: '가성비 킹 · 탑', tied: true }]);
+    assert.equal(badges.has('c'), false);
 });
 
 test('누락 통계는 0으로 만들지 않고 지표별로 같은 유효 게임을 분모에 쓴다', () => {
@@ -187,9 +201,4 @@ test('누락 통계는 0으로 만들지 않고 지표별로 같은 유효 게�
     const missing = { ...summary, kda: null };
     assert.equal(topPercents(missing, [missing, summary]).kda, null);
     assert.equal(topPercents(summary, [missing, summary]).kda, 100);
-    const ranks = rankAchievements(
-        [{ userId: 'x', displayName: 'x', iconUrl: null, summary: { ...onlyMissing, games: 4 } }],
-        4
-    );
-    assert.ok(ranks.every((ranking) => !['kda', 'slayer', 'pool', 'multikill'].includes(ranking.id)));
 });

@@ -3,9 +3,7 @@
     import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import type { AchievementRanking } from '#lib/features/players/achievements.ts';
 
-    type Item = AchievementRanking & { splashUrl: string | null };
-
-    let { items, current = $bindable(0) }: { items: Item[]; current?: number } = $props();
+    let { items, current = $bindable(0) }: { items: AchievementRanking[]; current?: number } = $props();
 
     const item = $derived(items[current] ?? items[0]);
     let selector: HTMLDivElement | null = $state(null);
@@ -44,11 +42,10 @@
 
 <!-- 업적 탐색은 사용자 데이터·키보드 제어가 필요해 서비스에서 직접 구성한다. -->
 {#if item}
-    {@const winner = item.entries[0]!}
     <div
         role="group"
         aria-roledescription="캐러셀"
-        aria-label="업적"
+        aria-label="시즌 칭호"
         class="flex w-full min-w-0 flex-col gap-2"
     >
         <div
@@ -58,46 +55,39 @@
             ontouchend={swipeEnd}
             ontouchcancel={() => (touch = null)}
         >
-            <div
-                class="inverse-surface relative isolate flex flex-col gap-4 overflow-hidden rounded-box border border-line bg-ground p-4 text-ink"
-            >
-                {#if item.splashUrl}
-                    <img
-                        src={item.splashUrl}
-                        alt=""
-                        loading="lazy"
-                        class="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] opacity-60"
-                    />
-                    <span class="absolute inset-0 -z-10 bg-linear-to-t from-ground via-ground/80 to-ground/50"
-                    ></span>
-                {/if}
+            <div class="flex min-w-0 flex-col gap-4 rounded-box border border-line bg-surface p-4 text-ink">
                 <div class="min-w-0">
-                    <h3 class="text-lg font-bold text-balance">{item.title}</h3>
+                    <h3 class="text-lg font-bold wrap-anywhere">{item.title}</h3>
                     <p class="mt-1 text-ui text-ink/85">{item.description}</p>
                 </div>
-                <div class="flex min-w-0 items-center gap-3 border-t border-white/20 pt-3">
-                    <PlayerFace name={winner.displayName} imageUrl={winner.iconUrl} size="lg" />
-                    <div class="min-w-0 flex-1">
-                        <p class="text-base font-bold wrap-anywhere">
-                            <span class="text-xs text-role-gold">1위</span>
-                            {winner.displayName}
-                        </p>
-                        <p class="text-ui tabular-nums">
-                            <span class="font-bold">{winner.value}</span>
-                            <span class="text-ink/80">· {winner.games}게임</span>
-                        </p>
-                    </div>
-                </div>
+                <ul aria-label="시즌 칭호 보유자" class="grid gap-2 border-t border-line pt-3">
+                    {#each item.entries.filter((entry) => entry.rank === 1) as winner (winner.userId)}
+                        <li class="flex min-w-0 items-center gap-3">
+                            <PlayerFace name={winner.displayName} imageUrl={winner.iconUrl} />
+                            <div class="min-w-0 flex-1">
+                                <p class="font-bold wrap-anywhere">
+                                    <span class="text-xs text-role-gold"
+                                        >{winner.tied ? '공동 1위' : '1위'}</span
+                                    >
+                                    {winner.displayName}
+                                </p>
+                                <p class="text-ui tabular-nums">
+                                    {winner.value} · {winner.sample}{item.sampleUnit}
+                                </p>
+                            </div>
+                        </li>
+                    {/each}
+                </ul>
             </div>
         </div>
         <p class="sr-only" aria-live="polite" aria-atomic="true">
-            {items.length}개 중 {current + 1}번째 업적: {item.title}
+            {items.length}개 중 {current + 1}번째 칭호: {item.title}
         </p>
         {#if items.length > 1}
             <div class="flex min-w-0 items-center gap-2">
                 <Button
                     variant="secondary"
-                    ariaLabel="이전 업적"
+                    ariaLabel="이전 칭호"
                     class="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(-1)}
                 >
@@ -115,7 +105,7 @@
                 <div
                     bind:this={selector}
                     role="region"
-                    aria-label="업적 바로 선택"
+                    aria-label="칭호 바로 선택"
                     tabindex="0"
                     class="relative min-w-0 flex-1 overflow-x-auto overscroll-x-contain rounded-(--radius-small)"
                 >
@@ -143,7 +133,7 @@
                 </div>
                 <Button
                     variant="secondary"
-                    ariaLabel="다음 업적"
+                    ariaLabel="다음 칭호"
                     class="size-11! shrink-0 justify-center p-0!"
                     onclick={() => move(1)}
                 >

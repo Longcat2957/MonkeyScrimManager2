@@ -6,6 +6,7 @@
     import { POSITIONS } from '#lib/features/labels.ts';
     import { formatNumber, formatThousands, kdaRatio, perMinute } from '#lib/features/matches/format.ts';
     import type { GamePlayer, GameSide, MatchOperationContext } from '#lib/features/matches/types.ts';
+    import { SET_TITLES } from '#lib/features/matches/titles.ts';
     import LoadoutIcon from './LoadoutIcon.svelte';
 
     let {
@@ -161,6 +162,23 @@
                                             >{/if}
                                     </div>
                                 </div>
+                                {#if player.titles.length}
+                                    <ul aria-label="세트 칭호" class="mt-2 space-y-1 text-xs">
+                                        {#each player.titles as title (title.id)}
+                                            <li class="flex flex-wrap items-baseline gap-x-2">
+                                                <strong class="break-words"
+                                                    >{SET_TITLES[title.id].name}</strong
+                                                >
+                                                <span class="text-muted tabular-nums">
+                                                    {SET_TITLES[title.id].metric}
+                                                    {Number(title.value).toLocaleString('ko-KR', {
+                                                        maximumFractionDigits: 2
+                                                    })}
+                                                </span>
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                {/if}
                                 <div
                                     class="mt-2 hidden flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-2 tabular-nums @min-[20rem]/side:flex"
                                 >

@@ -9,7 +9,6 @@
     import SectionState from '#lib/components/common/SectionState.svelte';
     import SelectionTabs from '#lib/components/common/SelectionTabs.svelte';
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
-    import SwitchCell from '#lib/components/common/SwitchCell.svelte';
     import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
     import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
     import LeaderboardTable, { type LeaderboardSortKey } from '#lib/components/stats/LeaderboardTable.svelte';
@@ -69,7 +68,6 @@
         const filters = normalizeStatsFilters(url.searchParams);
         if (filters.seasonId !== null) target.searchParams.set('season', filters.seasonId);
         if (filters.position !== 'all') target.searchParams.set('position', filters.position);
-        if (filters.recent) target.searchParams.set('recent', '1');
         target.searchParams.set('min', String(filters.minGames));
         return {
             url: target.href,
@@ -221,12 +219,8 @@
             selectedAchievement = data.achievements[index]?.id ?? data.achievements[0]?.id ?? null;
     }
 
-    function navigate(params: { position?: LolPosition | 'all'; min?: number; recent?: boolean }) {
+    function navigate(params: { position?: LolPosition | 'all'; min?: number }) {
         const url = new URL(page.url.href);
-        if (params.recent !== undefined) {
-            if (params.recent) url.searchParams.set('recent', '1');
-            else url.searchParams.delete('recent');
-        }
         if (params.position !== undefined) {
             if (params.position === 'all') url.searchParams.delete('position');
             else url.searchParams.set('position', params.position);
@@ -313,7 +307,7 @@
     {/if}
 
     {#if !data.empty}
-        <!-- 포지션 필터는 업적·리더보드·챔피언에 함께 적용한다. -->
+        <!-- 포지션 필터는 리더보드와 챔피언에만 적용한다. -->
         <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <div role="group" aria-label="포지션 필터" class="min-w-0 max-w-full">
                 <SelectionTabs
@@ -326,10 +320,9 @@
                 aria-label="통계"
                 class="flex flex-wrap items-center gap-4 text-ui font-semibold text-ink-2 @min-[64rem]:hidden"
             >
-                {#if data.showAchievements}
-                    <a class="inline-flex min-h-11 items-center hover:text-nexus" href="#achievements">업적</a
-                    >
-                {/if}
+                <a class="inline-flex min-h-11 items-center hover:text-nexus" href="#achievements"
+                    >시즌 칭호</a
+                >
                 <a class="inline-flex min-h-11 items-center hover:text-nexus" href="#champion-stats">챔피언</a
                 >
             </nav>
@@ -390,50 +383,30 @@
             </section>
 
             <div
-                class={[
-                    'grid min-w-0 grid-cols-1 items-start gap-5',
-                    data.showAchievements && '@min-[42rem]:grid-cols-2 @min-[64rem]:grid-cols-1'
-                ]}
+                class="grid min-w-0 grid-cols-1 items-start gap-5 @min-[42rem]:grid-cols-2 @min-[64rem]:grid-cols-1"
             >
-                {#if data.showAchievements}
-                    <section aria-labelledby="achievements" class="flex flex-col gap-3">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <h2 id="achievements" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
-                                업적
-                            </h2>
-                            <div class="w-40 max-w-full">
-                                <SwitchCell
-                                    title="최근 10게임만"
-                                    active={data.recent}
-                                    onchange={(active) => navigate({ recent: active })}
-                                />
-                            </div>
-                        </div>
+                <section aria-labelledby="achievements" class="flex min-w-0 flex-col gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h2 id="achievements" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
+                            시즌 칭호
+                        </h2>
                         {#if data.achievements.length}
-                            <AchievementCarousel
-                                items={data.achievements}
-                                bind:current={() => achievementIndex, selectAchievement}
-                            />
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <p class="text-xs text-muted">
-                                    {data.achievementMinGames}게임 이상 뛴 사람부터 집계해요
-                                </p>
-                                <Button
-                                    variant="secondary"
-                                    class="min-h-11 px-3 text-ui"
-                                    onclick={() => (rankingOpen = true)}
-                                >
-                                    업적별 순위
-                                </Button>
-                            </div>
-                        {:else}
-                            <SectionState
-                                state="empty"
-                                message={`${data.achievementMinGames}게임 이상 뛴 사람이 없어요`}
-                            />
+                            <Button
+                                variant="secondary"
+                                class="min-h-11 px-3 text-ui"
+                                onclick={() => (rankingOpen = true)}>칭호별 순위</Button
+                            >
                         {/if}
-                    </section>
-                {/if}
+                    </div>
+                    {#if data.achievements.length}
+                        <AchievementCarousel
+                            items={data.achievements}
+                            bind:current={() => achievementIndex, selectAchievement}
+                        />
+                    {:else}
+                        <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
+                    {/if}
+                </section>
                 <section aria-labelledby="champion-stats" class="panel min-w-0 overflow-hidden">
                     <div class="panel-bar">
                         <h2 id="champion-stats" tabindex="-1" class="scroll-mt-20 text-base font-semibold">

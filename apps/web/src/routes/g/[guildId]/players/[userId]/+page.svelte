@@ -141,12 +141,12 @@
                                 {data.player.displayName}
                             </h1>
                             {#if data.badges.length}
-                                <ul aria-label="1위 업적" class="flex flex-wrap gap-1">
+                                <ul aria-label="시즌 칭호" class="flex flex-wrap gap-1">
                                     {#each data.badges as badge (badge.id)}
                                         <li
                                             class="rounded-(--radius-small) bg-surface-2 px-2 py-0.5 text-xs font-semibold text-role-gold"
                                         >
-                                            {badge.title}
+                                            {badge.title}{badge.tied ? ' (공동 1위)' : ''}
                                         </li>
                                     {/each}
                                 </ul>

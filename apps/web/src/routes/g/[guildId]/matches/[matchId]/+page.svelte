@@ -2,6 +2,7 @@
     import { tick } from 'svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { navigating, page } from '$app/state';
+    import { resolve } from '$app/paths';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import Button from '#lib/components/common/Button.svelte';
     import SectionState from '#lib/components/common/SectionState.svelte';
@@ -16,6 +17,7 @@
     import ScrimSummary from '#lib/components/scrims/ScrimSummary.svelte';
     import { scrimNavItems } from '#lib/components/layout/navigation.ts';
     import { MATCH_STATUS } from '#lib/features/labels.ts';
+    import { SERIES_TITLES } from '#lib/features/matches/titles.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { postAction } from '#lib/ui/actions.ts';
     import type { PageProps } from './$types';
@@ -206,6 +208,33 @@
                             onclick={() => (uploadOpen = true)}>ROFL 업로드</Button
                         >
                     {/if}
+                </div>
+            {/if}
+            {#if match.seriesTitle}
+                <div
+                    class="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-line pt-2 text-sm"
+                >
+                    <h3 class="font-semibold">
+                        <span class="mr-1 text-xs font-normal text-muted">시리즈 칭호</span>
+                        {SERIES_TITLES[match.seriesTitle.id]}
+                    </h3>
+                    <ul aria-label="시리즈 칭호 수상자" class="flex flex-wrap gap-x-3 gap-y-1 text-ink-2">
+                        {#each match.seriesTitle.recipients as player (player.key)}
+                            <li class="min-w-0 break-words">
+                                {#if player.userId}
+                                    <a
+                                        href={resolve('/g/[guildId]/players/[userId]', {
+                                            guildId,
+                                            userId: player.userId
+                                        })}
+                                        class="underline underline-offset-2">{player.displayName}</a
+                                    >
+                                {:else}
+                                    {player.displayName}
+                                {/if}
+                            </li>
+                        {/each}
+                    </ul>
                 </div>
             {/if}
         </header>

@@ -3,6 +3,7 @@ import test from 'node:test';
 import { stringify, unflatten } from 'devalue';
 import { chromium, type Page } from 'playwright';
 import type { StatsSnapshot } from '../../src/lib/features/stats/types.ts';
+import { groupSeasonTitles } from '../../src/lib/features/players/achievements.ts';
 import * as schema from '../../src/lib/server/db/schema.ts';
 import { assertAction } from '../api/support/http.ts';
 import { createHttpRecordSeasonsFixture } from '../api/support/http-record-seasons-fixtures.ts';
@@ -28,14 +29,13 @@ function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
     assert.equal(snapshot.empty, false);
     if (snapshot.empty) throw new Error('UI 보존 표본은 실제 기록이 있는 응답을 사용한다.');
     if (version === 4) {
-        const { guildId, requestKey, seasons, selectedSeasonId, position, recent, minGames } = snapshot;
+        const { guildId, requestKey, seasons, selectedSeasonId, position, minGames } = snapshot;
         return {
             guildId,
             requestKey,
             seasons,
             selectedSeasonId,
             position,
-            recent,
             minGames,
             empty: true
         };
@@ -50,28 +50,24 @@ function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
         games: 10,
         wins: 5,
         kda: 3 + index / 10,
-        badges: index === 15 ? [{ id: 'cs', emoji: '🌾', title: 'CS 왕' }] : []
+        badges: index === 15 ? [{ id: 'season-cs', title: '20대 사망원인 1위 한라인만 더', tied: false }] : []
     });
-    const entries = [
-        {
-            userId: row(0).userId,
-            displayName: row(0).displayName,
-            iconUrl: null,
-            value: '주입 갱신 ' + version,
-            games: 10
-        }
-    ];
+    const entries = Array.from({ length: 11 }, (_, index) => ({
+        userId: row(index).userId,
+        displayName: row(index).displayName,
+        iconUrl: null,
+        position: null,
+        score: version,
+        sample: 10 + index,
+        rank: 1,
+        tied: true
+    }));
     return {
         ...snapshot,
-        showAchievements: true,
-        achievements: ['A', 'B'].map((key) => ({
-            id: 'ui-fixture-' + key,
-            emoji: '🧪',
-            title: 'UI 주입 업적 ' + key,
-            description: '테스트에서 명시 주입한 업적 ' + key,
-            splashUrl: null,
-            entries
-        })),
+        achievements: groupSeasonTitles([
+            { ...entries[0]!, titleId: 'season-kills', tied: false },
+            ...entries.map((entry) => ({ ...entry, titleId: 'season-cs' as const }))
+        ]),
         leaderboard: version === 3 ? [] : Array.from({ length: 30 }, (_, index) => row(index)),
         playerCount: 30,
         champions: Array.from({ length: version === 3 ? 0 : 20 }, (_, index) => ({
@@ -141,7 +137,7 @@ async function injectedState(
         await page.waitForURL((url) => !url.searchParams.has('position'));
         const leaderboard = page.getByRole('region', { name: '사용자별 지표', exact: true });
         await leaderboard.locator('tbody tr').nth(19).waitFor();
-        const badge = leaderboard.getByText('CS 왕', { exact: true });
+        const badge = leaderboard.getByText('20대 사망원인 1위 한라인만 더', { exact: true });
         const nameBox = await leaderboard.getByText('UI 주입 사용자 16', { exact: true }).boundingBox();
         const badgeBox = await badge.boundingBox();
         assert.ok(nameBox && badgeBox && Math.abs(nameBox.x - badgeBox.x) < 1);
@@ -175,18 +171,26 @@ async function injectedState(
             .getByRole('navigation', { name: '챔피언 쪽 이동', exact: true })
             .getByRole('button', { name: '2', exact: true })
             .press('Enter');
-        await page.getByRole('button', { name: '업적별 순위', exact: true }).press('Enter');
-        const dialog = page.getByRole('dialog', { name: '업적별 순위', exact: true });
-        const selected = dialog.getByRole('button', { name: 'UI 주입 업적 B', exact: true });
+        await page.getByRole('button', { name: '칭호별 순위', exact: true }).press('Enter');
+        const dialog = page.getByRole('dialog', { name: '칭호별 순위', exact: true });
+        const selected = dialog.getByRole('button', { name: '20대 사망원인 1위 한라인만 더', exact: true });
         await selected.press('Enter');
-        await dialog.getByText('테스트에서 명시 주입한 업적 B', { exact: true }).waitFor();
+        await dialog.getByText('정글 외 포지션의 분당 CS · 10세트 이상', { exact: true }).waitFor();
+        assert.equal(await dialog.getByText('공동 1위', { exact: true }).count(), 11);
         await assertNoOverflow(page, 'injected-open-achievement');
+        await page.keyboard.press('Escape');
+        const holders = page.getByRole('list', { name: '시즌 칭호 보유자', exact: true });
+        assert.equal(await holders.getByRole('listitem').count(), 11);
+        await page.getByRole('button', { name: '이전 칭호', exact: true }).press('Enter');
+        assert.equal(await holders.getByRole('listitem').count(), 1);
+        await page.getByRole('button', { name: '다음 칭호', exact: true }).press('Enter');
+        await page.getByRole('button', { name: '칭호별 순위', exact: true }).press('Enter');
         const live = page.waitForResponse(
             (response) => new URL(response.url()).pathname === f.paths.stats + '/live'
         );
         await page.clock.fastForward(30_100);
         assert.equal((await live).status(), 200);
-        await dialog.getByText('주입 갱신 2', { exact: true }).waitFor();
+        await dialog.getByText('2CS/분', { exact: true }).first().waitFor();
         assert.equal(await selected.getAttribute('aria-pressed'), 'true');
         assert.equal(await sort.locator('..').getAttribute('aria-sort'), 'ascending');
         for (const label of ['리더보드 쪽 이동', '챔피언 쪽 이동'])
@@ -206,7 +210,7 @@ async function injectedState(
         };
         // 같은 조건의 표본이 사라졌다 돌아오면 쪽은 안전한 첫 쪽으로 줄이고 정렬 선택은 보존한다.
         await nextVersion(3);
-        await dialog.getByText('주입 갱신 3', { exact: true }).waitFor();
+        await dialog.getByText('3CS/분', { exact: true }).first().waitFor();
         await page.getByText('이 조건에는 챔피언 기록이 없어요', { exact: true }).waitFor();
         await nextVersion(4);
         await selected.waitFor({ state: 'hidden' });
@@ -219,7 +223,7 @@ async function injectedState(
                 await page.locator(`nav[aria-label="${label}"] button[aria-current="page"]`).innerText(),
                 '1'
             );
-        assert.equal(await page.getByRole('dialog', { name: '업적별 순위', exact: true }).count(), 0);
+        assert.equal(await page.getByRole('dialog', { name: '칭호별 순위', exact: true }).count(), 0);
         assert.deepEqual(errors, []);
     } finally {
         await context.close();
@@ -310,7 +314,7 @@ for (const width of [1440, 390])
                 assert.equal(await manual.count(), 1);
                 assert.equal(await automatic.getAttribute('aria-pressed'), 'true');
                 assert.equal(requests.length, 0);
-                assert.equal(await page.getByRole('heading', { name: '업적', exact: true }).count(), 0);
+                await page.getByRole('heading', { name: '시즌 칭호', exact: true }).waitFor();
                 await page
                     .getByRole('group', { name: '포지션 필터', exact: true })
                     .getByRole('button', { name: '탑', exact: true })
@@ -334,8 +338,7 @@ for (const width of [1440, 390])
                 const refreshed = await responseAfter(() => page.clock.fastForward(30_100));
                 const realSnapshot = (await refreshed.json()) as StatsSnapshot;
                 assert.ok(!realSnapshot.empty);
-                assert.equal(realSnapshot.showAchievements, false);
-                assert.deepEqual(realSnapshot.achievements, []);
+                assert.ok(realSnapshot.achievements.some((group) => group.id === 'season-champion-pool'));
                 const redTopId = f.identities[5]!.userId;
                 const redTop = realSnapshot.leaderboard.find((row) => row.userId === redTopId)!;
                 // 두 세트 모두 레드 탑은 5킬 7어시스트, 레드 팀은 합계 35킬이다.

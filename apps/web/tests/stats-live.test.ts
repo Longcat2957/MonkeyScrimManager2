@@ -242,7 +242,6 @@ test('형식이 깨지거나 다른 서버·조건인 JSON은 마지막 정상 s
     const complete = {
         ...snapshot(),
         empty: false,
-        showAchievements: false,
         kpis: {
             games: 1,
             players: 0,
@@ -252,7 +251,6 @@ test('형식이 깨지거나 다른 서버·조건인 JSON은 마지막 정상 s
             champions: 1
         },
         achievements: [],
-        achievementMinGames: 4,
         leaderboard: [],
         playerCount: 0,
         champions: [champion]
@@ -263,7 +261,8 @@ test('형식이 깨지거나 다른 서버·조건인 JSON은 마지막 정상 s
         { ...snapshot(), guildId: '다른 서버' },
         { ...snapshot(), requestKey: '이전 조건' },
         { ...snapshot(), empty: false, kpis: null },
-        { ...complete, champions: [champion, champion] }
+        { ...complete, champions: [champion, champion] },
+        { ...complete, achievements: [{ id: 'unknown', entries: [] }] }
     ]) {
         const pending = f.controller.refresh();
         await f.respond(f.calls.length - 1, value);

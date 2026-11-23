@@ -1,5 +1,6 @@
 import type { matchStatus } from '#lib/server/db/schema.ts';
 import type { LolPosition } from '#lib/features/guild/types.ts';
+import type { SeriesTitleId, SetTitle } from './titles.ts';
 
 /** 경기 전체에서 재사용하는 출전 라인업과 다음 세트 등록 권한이다. */
 export type MatchOperationContext = {
@@ -95,6 +96,7 @@ export type GamePlayer = {
     // 평점 기준이 정해지지 않은 실제 기록은 null이다. 개발 미리보기만 예시 평점을 가진다.
     score: number | null;
     badge: 'mvp' | 'ace' | null;
+    titles: SetTitle[];
     fearlessViolation: boolean;
 };
 
@@ -127,5 +129,9 @@ export type MatchDetail = {
     bestOf: number;
     status: MatchStatus;
     hardFearless: boolean;
+    seriesTitle: {
+        id: SeriesTitleId;
+        recipients: { key: string; userId: string | null; displayName: string }[];
+    } | null;
     games: { id: string; order: number; winner: 'a' | 'b' | null }[];
 };

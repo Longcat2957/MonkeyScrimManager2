@@ -21,9 +21,9 @@
     const item = $derived(items[current]);
 </script>
 
-<Dialog bind:open title="업적별 순위">
+<Dialog bind:open title="칭호별 순위">
     <div class="flex flex-col gap-4">
-        <ul aria-label="업적 선택" class="flex flex-wrap gap-1">
+        <ul aria-label="칭호 선택" class="flex flex-wrap gap-1">
             {#each items as achievement, index (achievement.id)}
                 <li>
                     <button
@@ -46,13 +46,13 @@
             <section aria-labelledby="ranking-title" class="flex flex-col gap-2">
                 <h3 id="ranking-title" class="text-sm text-muted">{item.description}</h3>
                 <ol class="flex flex-col divide-y divide-line">
-                    {#each item.entries as entry, index (entry.userId)}
+                    {#each item.entries as entry (entry.userId)}
                         <li class="flex min-h-11 items-center gap-2 py-1.5">
                             <span
                                 class={[
-                                    'w-6 text-right font-bold tabular-nums',
-                                    index === 0 && 'text-role-gold'
-                                ]}>{index + 1}</span
+                                    'shrink-0 text-right text-sm font-bold tabular-nums',
+                                    entry.rank === 1 && 'text-role-gold'
+                                ]}>{entry.tied ? '공동 ' : ''}{entry.rank}위</span
                             >
                             <PlayerFace name={entry.displayName} imageUrl={entry.iconUrl} />
                             <a
@@ -62,7 +62,7 @@
                             >
                             <span class="flex flex-col items-end text-sm tabular-nums">
                                 <span class="font-bold">{entry.value}</span>
-                                <span class="text-xs text-muted">{entry.games}게임</span>
+                                <span class="text-xs text-muted">{entry.sample}{item.sampleUnit}</span>
                             </span>
                         </li>
                     {/each}

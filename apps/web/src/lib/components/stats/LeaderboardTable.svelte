@@ -182,12 +182,12 @@
                                     {row.displayName}
                                 </span>
                                 {#if row.badges.length}
-                                    <ul aria-label="1위 업적" class="flex flex-wrap gap-x-2 gap-y-0.5">
+                                    <ul aria-label="시즌 칭호" class="flex flex-wrap gap-x-2 gap-y-0.5">
                                         {#each row.badges as badge (badge.id)}
                                             <li
                                                 class="max-w-full text-micro font-medium break-keep whitespace-normal text-role-gold"
                                             >
-                                                {badge.title}
+                                                {badge.title}{badge.tied ? ' (공동 1위)' : ''}
                                             </li>
                                         {/each}
                                     </ul>

@@ -33,6 +33,7 @@ import { INITIAL_MMR } from '../mmr/rules.ts';
 import { readGuild } from '../scrims/queries.ts';
 import type { ScrimAccessDependencies } from '../scrims/service.ts';
 import { selectRecordSeason } from './seasons.ts';
+import { readSeasonTitles } from './season-titles.ts';
 
 type ChampionResolver = (id: string) => ChampionRef;
 export type GuildPlayerRecords = {
@@ -40,7 +41,6 @@ export type GuildPlayerRecords = {
     identityKey?: string;
     displayName: string;
     iconUrl: string | null;
-    championId: string | null;
     games: PlayerGame[];
 };
 type RecordedGame = { id: string; durationSec: number | null; kills: number | null };
@@ -187,7 +187,6 @@ async function recordsInTransaction(
                 identityKey: identity.identityKey,
                 displayName: publicDisplayName(identity),
                 iconUrl: identity.avatarUrl,
-                championId: null,
                 games: []
             };
             player.games.push(record);
@@ -208,6 +207,7 @@ export async function getGuildRecords(
         const selection = await selectRecordSeason(tx, guildId, seasonId);
         return {
             ...selection,
+            titles: await readSeasonTitles(tx, guildId, selection.selectedSeasonId),
             ...(await recordsInTransaction(tx, guildId, selection.selectedSeasonId, champion))
         };
     });
@@ -378,6 +378,7 @@ export async function getPlayerRecords(
             return {
                 ...selection,
                 ...records,
+                titles: await readSeasonTitles(tx, guildId, selectedId, userId),
                 player: {
                     userId: identity.userId,
                     displayName: publicDisplayName(identity),

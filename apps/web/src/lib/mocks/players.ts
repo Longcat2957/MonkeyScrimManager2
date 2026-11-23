@@ -1,5 +1,6 @@
 import type { LolPosition } from '#lib/features/guild/types.ts';
 import type { ChampionRef, PlayerGame } from '#lib/features/players/types.ts';
+import type { SeasonTitleHolder } from '#lib/features/players/achievements.ts';
 import { mockAvatarUrl } from './avatar.ts';
 import { CHAMPIONS, mockPlayers, type MockPlayer } from './ranking.ts';
 import { listMockAuctionScrims } from './scrims.ts';
@@ -101,15 +102,54 @@ export function listMockPlayerGames(player: MockPlayer, champion: (id: string) =
     return buildGames(player, champion);
 }
 
-/** 서버 전체 사용자의 게임 기록과 업적 배경에 쓸 주 챔피언이다. */
+/** 점수 공식을 모방하지 않는 개발 화면용 시즌 결과 표본. */
+export function mockSeasonTitles(guildId: string): SeasonTitleHolder[] {
+    if (guildId !== 'devGuild001') return [];
+    return (
+        [
+            {
+                titleId: 'season-kills',
+                position: null,
+                score: 8,
+                sample: 12,
+                rank: 1,
+                tied: true,
+                userId: 'devUser001'
+            },
+            {
+                titleId: 'season-kills',
+                position: null,
+                score: 8,
+                sample: 15,
+                rank: 1,
+                tied: true,
+                userId: 'u02'
+            },
+            {
+                titleId: 'season-efficiency',
+                position: 'jungle',
+                score: 10,
+                sample: 10,
+                rank: 1,
+                tied: false,
+                userId: 'u03'
+            }
+        ] satisfies Omit<SeasonTitleHolder, 'displayName' | 'iconUrl'>[]
+    ).map((entry) => ({
+        ...entry,
+        displayName: mockPlayers.find((player) => player.userId === entry.userId)!.displayName,
+        iconUrl: mockAvatarUrl(entry.userId)
+    }));
+}
+
+/** 서버 전체 사용자의 게임 기록. */
 export function listMockGuildPlayers(champion: (id: string) => ChampionRef) {
     return mockPlayers.map((player) => {
-        const main = Object.values(player.records).sort((a, b) => b.games - a.games)[0];
+        const { userId, displayName } = player;
         return {
-            userId: player.userId,
-            displayName: player.displayName,
-            championId: main?.championId ?? null,
-            iconUrl: mockAvatarUrl(player.userId),
+            userId,
+            displayName,
+            iconUrl: mockAvatarUrl(userId),
             games: buildGames(player, champion)
         };
     });

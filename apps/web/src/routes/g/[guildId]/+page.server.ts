@@ -1,19 +1,18 @@
 import { dev } from '$app/env';
 import { error } from '@sveltejs/kit';
 import type { GuildRanking, NextScrim } from '#lib/features/guild/types.ts';
-import { ACHIEVEMENT_MIN_GAMES, rankAchievements } from '#lib/features/players/achievements.ts';
-import { summarize } from '#lib/features/players/stats.ts';
+import { groupSeasonTitles } from '#lib/features/players/achievements.ts';
 import { mapSection } from '#lib/features/section.ts';
 import { observedSection as toSection } from '#lib/server/operations/section.ts';
 import { listMockRecentMatches } from '#lib/mocks/matches.ts';
-import { listMockGuildPlayers } from '#lib/mocks/players.ts';
+import { mockSeasonTitles } from '#lib/mocks/players.ts';
 import { findMockNextScrim, listMockActiveScrims } from '#lib/mocks/scrims.ts';
 import { findMockGuild } from '#lib/mocks/session.ts';
 import { getDb } from '#lib/server/db/index.ts';
 import { listMatches } from '#lib/server/matches/queries.ts';
-import { findNextScrim, listActiveScrims } from '#lib/server/scrims/queries.ts';
-import { dataDragonSplashUrl } from '#lib/server/ddragon/assets.ts';
-import { championResolver, randomChampionSplash } from '#lib/server/ddragon/champions.ts';
+import { findNextScrim, listActiveScrims, readGuild } from '#lib/server/scrims/queries.ts';
+import { readSeasonTitles } from '#lib/server/records/season-titles.ts';
+import { randomChampionSplash } from '#lib/server/ddragon/champions.ts';
 import { getRankingPage, latestDataDragonVersion, POSITION_KEYS } from '#lib/server/guild/ranking.ts';
 import { getRecordSeasons, mockRecordSeasons } from '#lib/server/records/seasons.ts';
 import type { RecordSeasonSelection } from '#lib/features/seasons.ts';
@@ -38,21 +37,6 @@ async function loadRanking(
             POSITION_KEYS.map((position, index) => [position, pages[index]!.page])
         ) as GuildRanking['positions']
     };
-}
-
-// 서버 통계와 같은 업적을 전체 포지션·전체 게임 기준으로 고른다. 카드 배경은 1위의 주 챔피언 스플래시다.
-async function loadAchievements(guildId: string, version: string | null) {
-    if (!dev || guildId !== 'devGuild001') return [];
-    const players = listMockGuildPlayers(await championResolver(version));
-    const championOf = new Map(players.map((player) => [player.userId, player.championId]));
-    const achievements = rankAchievements(
-        players.map(({ games, ...player }) => ({ ...player, summary: summarize(games) })),
-        ACHIEVEMENT_MIN_GAMES
-    );
-    return achievements.map((item) => {
-        const championId = championOf.get(item.entries[0]!.userId);
-        return { ...item, splashUrl: version && championId ? dataDragonSplashUrl(championId) : null };
-    });
 }
 
 export const load: PageServerLoad = async ({ parent, params, url, depends, locals }) => {
@@ -84,7 +68,19 @@ export const load: PageServerLoad = async ({ parent, params, url, depends, local
                   pageSize: RECENT_MATCH_LIMIT
               }).then((result) => result.matches),
         loadRanking(params.guildId, user?.userId ?? null, seasonSelection.selectedSeasonId),
-        loadAchievements(params.guildId, version)
+        mock
+            ? groupSeasonTitles(mockSeasonTitles(params.guildId))
+            : readGuild(getDb(), locals.actor, params.guildId, async (tx) =>
+                  groupSeasonTitles(
+                      await readSeasonTitles(
+                          tx,
+                          params.guildId,
+                          seasonSelection.selectedSeasonId,
+                          undefined,
+                          1
+                      )
+                  )
+              )
     ]);
 
     const nextScrim: NextScrim | null =
@@ -102,7 +98,6 @@ export const load: PageServerLoad = async ({ parent, params, url, depends, local
         ),
         recentMatches: toSection(recentMatches, 'guild-home/recent-matches'),
         ranking: toSection(ranking, 'guild-home/ranking'),
-        // 업적은 볼거리라 조회에 실패하면 영역을 두지 않는다.
-        achievements: achievements.status === 'fulfilled' ? achievements.value : []
+        achievements: toSection(achievements, 'guild-home/season-titles')
     };
 };
