@@ -43,7 +43,7 @@
     <ul class="flex flex-col gap-1">
         {#each items as item (item.label)}
             {@const itemClass = [
-                'flex min-h-9.5 w-full items-center gap-2.5 overflow-hidden rounded-form border px-2.5 text-sm no-underline focus-visible:-outline-offset-2 lg:min-h-11 pointer-coarse:min-h-11',
+                'rail-control flex min-h-9.5 w-full items-center gap-2.5 overflow-hidden rounded-form border px-2.5 text-sm no-underline focus-visible:-outline-offset-2 pointer-coarse:min-h-11',
                 'motion-safe:transition-colors motion-safe:duration-200',
                 item.current
                     ? 'border-nexus bg-selected font-bold text-ink'

@@ -129,7 +129,7 @@
 {#snippet brand(rail: boolean)}
     <a
         href={resolve('/')}
-        class="flex shrink-0 items-center gap-2.5 px-1 py-0.5 no-underline"
+        class="rail-control flex shrink-0 items-center gap-2.5 px-1 py-0.5 no-underline"
         aria-label={`${SERVICE_NAME} 홈`}
     >
         <img
@@ -158,7 +158,7 @@
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
             title={desktop.current && railCollapsed ? '로그인' : undefined}
-            class="inline-flex min-h-9 items-center justify-center gap-2 overflow-hidden rounded-form bg-nexus px-3 text-ui font-semibold text-nexus-ink hover:bg-nexus-hover lg:justify-start pointer-coarse:min-h-11"
+            class="rail-control inline-flex min-h-9 items-center justify-center gap-2 overflow-hidden rounded-form bg-nexus px-3 text-ui font-semibold text-nexus-ink hover:bg-nexus-hover pointer-coarse:min-h-11"
         >
             {#if desktop.current}{@render sessionIcon()}{/if}
             <span class="rail-label">로그인</span>
@@ -175,7 +175,7 @@
             align={wide ? 'left' : 'right'}
             triggerVariant="secondary"
             triggerClass={wide
-                ? 'min-h-9.5 w-full justify-start overflow-hidden not-hover:bg-surface'
+                ? 'rail-control overflow-hidden not-hover:bg-surface'
                 : 'max-w-[55vw] not-hover:bg-surface'}
         >
             {#if wide}
@@ -210,6 +210,7 @@
         role="switch"
         aria-checked={mode === 'primary'}
         aria-label="라이트 모드"
+        class:rail-control={!user}
         class="inline-flex min-h-9 w-full items-center justify-between gap-2 overflow-hidden rounded-form px-2.5 text-ui text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
         onclick={toggleMode}
     >
@@ -229,7 +230,7 @@
 {/snippet}
 
 {#snippet gameTool()}
-    <Button variant="quiet" class="w-full justify-start overflow-hidden" onclick={openGames}>
+    <Button variant="quiet" class="rail-control w-full justify-start overflow-hidden" onclick={openGames}>
         <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
@@ -258,7 +259,7 @@
             side={desktop.current ? 'up' : 'down'}
             onselect={selectAccount}
             triggerVariant="secondary"
-            triggerClass="w-full justify-start gap-2.5 overflow-hidden p-2 not-hover:bg-surface"
+            triggerClass="rail-control w-full justify-start gap-2.5 overflow-hidden p-2 not-hover:bg-surface"
             footer={themeToggle}
         >
             <PlayerFace name={user.displayName} imageUrl={user.avatarUrl} size="sm" />
@@ -280,8 +281,8 @@
     <aside
         data-rail-collapsed={railCollapsed}
         class={[
-            'sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-4.5 border-r border-line bg-rail pt-4.5 text-ink motion-safe:transition-[width,padding-inline] motion-safe:duration-250 motion-safe:ease-in-out',
-            railCollapsed ? 'w-16 px-2' : 'w-56 px-3.5'
+            'sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-4.5 bg-rail pt-4.5 text-ink shadow-[inset_-1px_0_var(--color-line)] motion-safe:transition-[width,padding-inline] motion-safe:duration-250 motion-safe:ease-in-out',
+            railCollapsed ? 'w-16 px-2.5' : 'w-56 px-3.5'
         ]}
     >
         <div class="flex items-center overflow-hidden">
@@ -299,7 +300,7 @@
                 title={railLabel}
                 aria-expanded={!railCollapsed}
                 aria-controls="desktop-rail-content"
-                class="mt-auto flex min-h-11 shrink-0 items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-form px-3 text-ui font-medium text-muted hover:bg-surface-hover hover:text-ink"
+                class="rail-control mt-auto shrink-0 overflow-hidden whitespace-nowrap rounded-form text-ui font-medium text-muted hover:bg-surface-hover hover:text-ink"
                 onclick={toggleRail}
             >
                 <svg
@@ -323,7 +324,7 @@
                 bind:offsetHeight={accountHeight}
                 class={[
                     'flex min-h-16 shrink-0 flex-col justify-center gap-2 border-t border-line py-2',
-                    railCollapsed ? '-mx-2 px-2' : '-mx-3.5 px-3.5'
+                    railCollapsed ? '-mx-2.5 px-2.5' : '-mx-3.5 px-3.5'
                 ]}
             >
                 {#if user}
@@ -336,7 +337,7 @@
                     <button
                         type="button"
                         title={railCollapsed ? '로그아웃' : undefined}
-                        class="flex min-h-9 w-full items-center gap-2 overflow-hidden rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover pointer-coarse:min-h-11"
+                        class="rail-control overflow-hidden rounded-form border border-line-strong bg-surface text-ui font-semibold hover:bg-surface-hover"
                         onclick={logout}
                     >
                         {@render sessionIcon()}<span class="rail-label">로그아웃</span>

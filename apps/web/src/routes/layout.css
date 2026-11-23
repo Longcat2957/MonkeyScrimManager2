@@ -230,6 +230,27 @@
     }
 }
 
+[data-rail-collapsed] .rail-control {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: min(2.75rem, 100%) minmax(0, 1fr);
+    align-items: center;
+    justify-content: start;
+    gap: 0;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0;
+    text-align: start;
+}
+
+[data-rail-collapsed] .rail-control > :first-child {
+    justify-self: center;
+}
+
+[data-rail-collapsed] .rail-control > svg:last-child {
+    margin-inline-end: 0.5rem;
+}
+
 [data-rail-collapsed] .rail-label {
     white-space: nowrap;
 }
