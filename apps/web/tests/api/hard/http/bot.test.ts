@@ -228,19 +228,38 @@ test('HTTP 봇: 쿠키 없이 본인 계정으로 신청·수정·철회하고 �
         })
     );
     assert.deepEqual(edited.registration?.positions, ['top']);
-    for (const action of ['standby', 'select']) {
-        const changed: BotRegistrationContext = await success<BotRegistrationContext>(
-            await requestBot(f, base + '/registrations', 'PATCH', {
-                actorId: HTTP_IDS.member,
-                interactionId: interactionId(),
-                registrationId: joined.registration!.id,
-                action
-            })
-        );
-        assert.equal(changed.registration?.status, action === 'standby' ? 'standby' : 'selected');
-        assert.equal(changed.registration?.riotAccountId, account.id);
-        assert.deepEqual(changed.registration?.positions, ['top']);
-    }
+    const availableAt = new Date(Date.now() + 3_600_000).toISOString();
+    const registrationId = joined.registration!.id;
+    const change = { actorId: HTTP_IDS.member, registrationId, interactionId: interactionId() };
+    const waiting = await success<BotRegistrationContext>(
+        await requestBot(f, base + '/registrations', 'PATCH', { ...change, action: 'standby', availableAt })
+    );
+    assert.equal(waiting.registration?.status, 'standby');
+    assert.equal(waiting.registration?.availableAt, availableAt);
+    assert.equal(waiting.registration?.riotAccountId, account.id);
+    assert.deepEqual(waiting.registration?.positions, ['top']);
+    const selfSelect = await requestBot(f, base + '/registrations', 'PATCH', {
+        ...change,
+        interactionId: interactionId(),
+        action: 'select'
+    });
+    assert.equal(selfSelect.status, 400);
+    // 과거 시각을 만든 뒤 추가 HTTP 요청 없이 서버의 주기 작업이 선발하는지 확인한다.
+    await f.db
+        .update(schema.scrimParticipantRegistrations)
+        .set({ availableAt: new Date(0) })
+        .where(eq(schema.scrimParticipantRegistrations.id, registrationId));
+    await t.waitFor(
+        async () => {
+            const [row] = await f.db
+                .select()
+                .from(schema.scrimParticipantRegistrations)
+                .where(eq(schema.scrimParticipantRegistrations.id, registrationId));
+            assert.equal(row?.status, 'selected');
+            assert.equal(row.availableAt, null);
+        },
+        { interval: 200, timeout: 15_000 }
+    );
     const withdrawn = await success<BotRegistrationContext>(
         await requestBot(f, base + '/registrations', 'PATCH', {
             actorId: HTTP_IDS.member,

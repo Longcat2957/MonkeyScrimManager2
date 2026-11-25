@@ -47,6 +47,7 @@ export interface BotRegistrationContext {
         id: string;
         status: 'selected' | 'standby' | 'withdrawn' | 'excluded';
         riotAccountId: string | null;
+        availableAt: string | null;
         positions: BotPosition[];
     } | null;
 }
@@ -54,10 +55,11 @@ export interface BotRegistrationContext {
 export interface BotRegistrationInput {
     actorId: string;
     interactionId: string;
-    action: 'create' | 'update' | 'withdraw' | 'standby' | 'select';
+    action: 'create' | 'update' | 'withdraw' | 'standby';
     registrationId?: string;
     riotAccountId?: string | null;
     positions?: BotPosition[];
+    availableAt?: string;
 }
 
 export interface BotManualRegistrationContext {

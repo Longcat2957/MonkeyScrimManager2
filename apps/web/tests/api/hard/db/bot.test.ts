@@ -290,16 +290,18 @@ test('같은 참가 interaction의 동시 처리와 재전송은 신청·revisio
     assert.equal((await f.row()).revision, before.revision + 1);
 });
 
-test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환은 기존 신청 정보와 멱등성을 보존한다', async (t) => {
+test('도착 예약은 본인의 신청에만 저장되며 변경·재전송에도 계정과 희망 포지션을 보존한다', async (t) => {
     const f = await createBotFixture(t);
     const waiting: BotRegistrationInput = {
         ...f.input(),
         action: 'standby',
+        availableAt: new Date(Date.now() + 3_600_000).toISOString(),
         riotAccountId: null,
         positions: ['jungle', 'mid']
     };
     const joined = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, waiting, f.dependencies);
     assert.equal(joined.registration?.status, 'standby');
+    assert.equal(joined.registration?.availableAt, waiting.availableAt);
     assert.equal(joined.registration?.riotAccountId, null);
     assert.deepEqual(joined.registration?.positions, ['jungle', 'mid']);
     assert.deepEqual(
@@ -307,21 +309,16 @@ test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환
         joined
     );
     assert.equal((await f.registrationRows()).length, 1);
-    const select: BotRegistrationInput = {
+    const standby: BotRegistrationInput = {
         actorId: f.ids.member,
         interactionId: nextInteractionId(),
-        action: 'select',
+        action: 'standby',
+        availableAt: new Date(Date.now() + 7_200_000).toISOString(),
         registrationId: joined.registration!.id
-    };
-    const selected = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, select, f.dependencies);
-    assert.equal(selected.registration?.status, 'selected');
-    const standby: BotRegistrationInput = {
-        ...select,
-        interactionId: nextInteractionId(),
-        action: 'standby'
     };
     const demoted = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, standby, f.dependencies);
     assert.equal(demoted.registration?.status, 'standby');
+    assert.equal(demoted.registration?.availableAt, standby.availableAt);
     assert.equal(demoted.registration?.id, joined.registration?.id);
     assert.equal(demoted.registration?.riotAccountId, null);
     assert.deepEqual(demoted.registration?.positions, ['jungle', 'mid']);
@@ -334,7 +331,7 @@ test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환
             f.db,
             f.ids.guild,
             f.scrimId,
-            { ...select, interactionId: nextInteractionId(), registrationId: randomUUID() },
+            { ...standby, interactionId: nextInteractionId(), registrationId: randomUUID() },
             f.dependencies
         ),
         errorCode('CONFLICT')
@@ -344,7 +341,7 @@ test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환
             f.db,
             f.ids.guild,
             f.scrimId,
-            { ...select, actorId: f.ids.otherMember, interactionId: nextInteractionId() },
+            { ...standby, actorId: f.ids.otherMember, interactionId: nextInteractionId() },
             f.dependencies
         ),
         errorCode('CONFLICT')
@@ -355,7 +352,7 @@ test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환
             f.db,
             f.ids.guild,
             f.scrimId,
-            { ...select, interactionId: nextInteractionId() },
+            { ...standby, interactionId: nextInteractionId() },
             f.dependencies
         ),
         errorCode('CONFLICT')
@@ -372,7 +369,7 @@ test('대기 버튼은 빈 선발 자리에도 직접 대기하며 참가 전환
     );
 });
 
-test('참가 전환은 선발 정원을 넘지 않으며 직접 대기도 전체 정원과 동시 전환을 검증한다', async (t) => {
+test('만석이면 시각 없는 대기만 가능하며 마지막 예약 자리는 한 명만 점유한다', async (t) => {
     const f = await createRecruitmentFixture(t);
     for (let index = 0; index < 10; index++)
         await createRegistration(
@@ -392,15 +389,16 @@ test('참가 전환은 선발 정원을 넘지 않으며 직접 대기도 전체
     };
     const first = await mutateBotRegistration(f.db, f.guildId, f.scrimId, waiting, f.access);
     const revision = (await f.row()).revision;
-    const select: BotRegistrationInput = {
+    const reserve: BotRegistrationInput = {
         actorId: waiting.actorId,
         interactionId: nextInteractionId(),
-        action: 'select',
+        action: 'standby',
+        availableAt: new Date(Date.now() + 3_600_000).toISOString(),
         registrationId: first.registration!.id
     };
-    assert.equal(
-        (await mutateBotRegistration(f.db, f.guildId, f.scrimId, select, f.access)).registration?.status,
-        'standby'
+    await assert.rejects(
+        mutateBotRegistration(f.db, f.guildId, f.scrimId, reserve, f.access),
+        errorCode('CONFLICT')
     );
     assert.equal((await f.row()).revision, revision);
     const second = await mutateBotRegistration(
@@ -440,7 +438,7 @@ test('참가 전환은 선발 정원을 넘지 않으며 직접 대기도 전체
                 f.db,
                 f.guildId,
                 f.scrimId,
-                { ...select, interactionId: nextInteractionId() },
+                { ...reserve, interactionId: nextInteractionId() },
                 f.access
             ),
         () =>
@@ -449,7 +447,7 @@ test('참가 전환은 선발 정원을 넘지 않으며 직접 대기도 전체
                 f.guildId,
                 f.scrimId,
                 {
-                    ...select,
+                    ...reserve,
                     actorId: f.actors[11]!.userId,
                     registrationId: second.registration!.id,
                     interactionId: nextInteractionId()
@@ -457,13 +455,13 @@ test('참가 전환은 선발 정원을 넘지 않으며 직접 대기도 전체
                 f.access
             )
     ]);
-    assert.ok(results.every((result) => result.status === 'fulfilled'));
-    const statuses = results
-        .map((result) => (result.status === 'fulfilled' ? result.value.registration?.status : null))
-        .sort();
-    assert.deepEqual(statuses, ['selected', 'standby']);
+    const winners = results.filter((result) => result.status === 'fulfilled');
+    assert.equal(winners.length, 1);
+    assert.equal(winners[0]!.value.registration?.availableAt, reserve.availableAt);
+    assert.ok(results.some((result) => result.status === 'rejected' && errorCode('CONFLICT')(result.reason)));
     const registrations = await f.db.select().from(schema.scrimParticipantRegistrations);
-    assert.equal(registrations.filter((registration) => registration.status === 'selected').length, 10);
+    assert.equal(registrations.filter((registration) => registration.status === 'selected').length, 9);
+    assert.equal(registrations.filter((registration) => registration.availableAt !== null).length, 1);
     assert.equal(registrations.length, 12);
 });
 

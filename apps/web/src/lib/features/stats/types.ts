@@ -16,6 +16,7 @@ export type StatsLeaderboardRow = PlayerSummary & {
     identityKey?: string;
     displayName: string;
     iconUrl: string | null;
+    mmr: number | null;
     badges: AchievementBadge[];
 };
 
@@ -63,7 +64,7 @@ export function statsRequestKey(guildId: string, filters: StatsFilters): string 
     return JSON.stringify([guildId, filters.seasonId, filters.position, filters.minGames]);
 }
 
-/** 같은 조건의 최신 수치만 바뀌면 열린 화면과 로컬 쪽·정렬을 보존한다. */
+/** 같은 조건의 최신 수치만 바뀌면 열린 화면과 로컬 쪽을 보존한다. */
 export function statsViewKey(
     snapshot: Pick<StatsSnapshot, 'guildId' | 'selectedSeasonId' | 'position' | 'minGames'>
 ): string {
@@ -194,6 +195,7 @@ export function isStatsSnapshot(value: unknown): value is StatsSnapshot {
                 (row.identityKey === undefined || typeof row.identityKey === 'string') &&
                 typeof row.displayName === 'string' &&
                 nullableString(row.iconUrl) &&
+                nullableNumber(row.mmr) &&
                 count(row.games) &&
                 count(row.wins) &&
                 SUMMARY_NUMBERS.every((key) => nullableNumber(row[key])) &&

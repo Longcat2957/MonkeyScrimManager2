@@ -115,6 +115,21 @@ for (const width of [1440, 390])
 
                 await visit('/', 200);
                 await visit('/docs', 200);
+                for (const policy of [
+                    { path: '/terms', title: '이용약관', section: '제5조 이용 제한과 이의 제기' },
+                    { path: '/privacy', title: '개인정보 처리방침', section: '열람·정정·삭제·처리정지 요청' }
+                ]) {
+                    await visit(policy.path, 200);
+                    const article = page.getByRole('article');
+                    await article
+                        .getByRole('heading', { level: 1, name: policy.title, exact: true })
+                        .waitFor();
+                    await article
+                        .getByRole('heading', { level: 2, name: policy.section, exact: true })
+                        .waitFor();
+                    assert.equal(await article.locator('time').getAttribute('datetime'), '2026-11-25');
+                    assert.ok((await article.innerText()).includes(contactHref.slice('mailto:'.length)));
+                }
                 await visit('/footer-contact-missing-page', 404);
 
                 const { cookie } = await f.session(HTTP_IDS.manager);
@@ -132,7 +147,7 @@ for (const width of [1440, 390])
                 ]);
                 await visit('/me', 200);
                 await visit(`/g/${HTTP_IDS.guild}/admin`, 200);
-                assert.equal(visits.length, 5);
+                assert.equal(visits.length, 7);
 
                 if (width === 1440 && theme === 'primary') {
                     let documentRequests = 0;

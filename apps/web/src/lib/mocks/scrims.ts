@@ -493,18 +493,6 @@ export function counts(scrim: MockScrim): ScrimRegistrationCounts {
     };
 }
 
-// 선발 자리가 비면 가장 먼저 신청한 대기자부터 채운다. 신청·철회·제외·정원 변경 뒤에 부른다.
-function fillSelected(scrim: MockScrim) {
-    const limit = playCapacity(scrim.teamCount);
-    const standby = scrim.participants
-        .filter((participant) => participant.status === 'standby')
-        .toSorted((a, b) => a.registeredAt.localeCompare(b.registeredAt));
-    for (const participant of standby) {
-        if (counts(scrim).selected >= limit) break;
-        participant.status = 'selected';
-    }
-}
-
 export async function getMockScrimDetail(guildId: string, scrimId: string, userId: string | null) {
     await wait();
     const scrim = find(guildId, scrimId);
@@ -562,7 +550,6 @@ export async function updateMockScrimSettings(
     }
     Object.assign(scrim, settings);
     bumpMockRevision(scrim);
-    if (scrim.status === 'recruit') fillSelected(scrim);
     return null;
 }
 
@@ -636,7 +623,6 @@ export async function withdrawMock(
     if (!scrim || !mine) return { status: 404, message: '이미 철회된 신청이에요' };
     if (scrim.status !== 'recruit') return { status: 409, message: '모집이 마감되어 철회할 수 없어요' };
     mine.status = 'withdrawn';
-    fillSelected(scrim);
     return null;
 }
 
@@ -664,8 +650,6 @@ export async function setMockParticipantStatus(
             return { status: 409, message: `선발 인원은 ${limit}명을 넘을 수 없어요 (선택 후 ${after}명)` };
     }
     for (const participant of targets) participant.status = status;
-    // 운영자가 대기로 돌린 사람은 그대로 두고, 제외로 빈 자리만 대기자가 채운다.
-    if (status === 'excluded') fillSelected(scrim);
     return null;
 }
 

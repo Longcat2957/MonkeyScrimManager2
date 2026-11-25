@@ -1,20 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { LolPosition } from '../../../src/lib/features/guild/types.ts';
-import type { ScrimSettings, ScrimStatus } from '../../../src/lib/features/scrims/types.ts';
+import type {
+    RegistrationStatus,
+    ScrimSettings,
+    ScrimStatus
+} from '../../../src/lib/features/scrims/types.ts';
 import {
     assertCapacity,
     assertEditableSettings,
     assertRevision,
     parseScrimSettings,
-    promotionIds,
     requireRecruitment,
     requireRevision,
     requireUuid,
     validateRegistration,
     validateSelection,
     validateSettings,
-    type ActiveRegistration
+    validateStandbyTime
 } from '../../../src/lib/server/scrims/validation.ts';
 import { domainError } from '../support/error-assertions.ts';
 
@@ -34,10 +37,9 @@ const input = {
     reserveCapacity: 0,
     hardFearless: true
 };
-const registration = (id: string, status: ActiveRegistration['status'], minute = 0): ActiveRegistration => ({
-    id,
+const registration = (status: RegistrationStatus, availableAt: Date | null = null) => ({
     status,
-    joinedAt: new Date(Date.UTC(2026, 10, 3, 0, minute))
+    availableAt
 });
 
 test('윤년의 한국 일정을 UTC로 변환하며 미정 일정은 null이다', () => {
@@ -123,51 +125,23 @@ test('Riot 계정이 미지정이어도 희망 포지션으로 신청할 수 있
 });
 
 test('정원은 선발과 전체 활성 신청을 각각 제한하고 철회·제외 이력은 제외한다', () => {
-    const selected = Array.from({ length: 10 }, (_, index) => registration(String(index), 'selected'));
-    const active = [...selected, registration('a', 'standby'), registration('b', 'standby')];
+    const selected = Array.from({ length: 10 }, () => registration('selected'));
+    const active = [...selected, registration('standby'), registration('standby')];
     assert.doesNotThrow(() =>
-        assertCapacity(settings, [
-            ...active,
-            registration('old', 'withdrawn'),
-            registration('excluded', 'excluded')
-        ])
+        assertCapacity(settings, [...active, registration('withdrawn'), registration('excluded')])
     );
     assert.throws(() => assertCapacity({ ...settings, reserveCapacity: 1 }, active), domainError('CONFLICT'));
-    assert.throws(
-        () => assertCapacity(settings, [...selected, registration('extra', 'selected')]),
-        domainError('CONFLICT')
-    );
+    for (const extra of [registration('selected'), registration('standby', new Date())])
+        assert.throws(() => assertCapacity(settings, [...selected, extra]), domainError('CONFLICT'));
 });
 
-test('승급은 신청 시각·ID 순서로 빈 자리만 채우고 원본 순서를 변경하지 않는다', () => {
-    const selected = Array.from({ length: 8 }, (_, index) => registration(String(index), 'selected'));
-    const waiting = [
-        registration('z', 'standby', 5),
-        registration('b', 'standby', 2),
-        registration('a', 'standby', 2)
-    ];
-    assert.deepEqual(
-        promotionIds(2, [
-            ...selected,
-            ...waiting,
-            registration('old', 'withdrawn'),
-            registration('excluded', 'excluded')
-        ]),
-        ['a', 'b']
-    );
-    assert.deepEqual(
-        promotionIds(2, [
-            ...selected,
-            registration('8', 'selected'),
-            registration('9', 'selected'),
-            ...waiting
-        ]),
-        []
-    );
-    assert.deepEqual(
-        waiting.map((row) => row.id),
-        ['z', 'b', 'a']
-    );
+test('시간 지정 대기는 미래의 UTC 시각과 예약할 선발 자리가 모두 필요하다', () => {
+    const future = new Date(Date.now() + 60_000);
+    assert.equal(validateStandbyTime(undefined, false), null);
+    assert.deepEqual(validateStandbyTime(future.toISOString(), true), future);
+    assert.throws(() => validateStandbyTime(future.toISOString(), false), domainError('CONFLICT'));
+    for (const invalid of [null, '', '21:30', '2090-02-30T00:00:00.000Z', new Date(0).toISOString()])
+        assert.throws(() => validateStandbyTime(invalid, true), domainError('INVALID_INPUT'));
 });
 
 for (const [status, change, allowed] of [

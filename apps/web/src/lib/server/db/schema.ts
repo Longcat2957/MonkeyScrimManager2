@@ -1843,7 +1843,7 @@ export const scrimParticipantPreferences = pgTable(
     ]
 );
 
-// 신청하면 선발 정원이 남아 있을 때 선발, 찼으면 대기가 된다. 자진 철회·운영자 제외는 신청을 마감한다.
+// 즉시 참가 신청은 예약되지 않은 선발 자리가 있으면 선발, 없으면 대기가 된다. 자진 철회·운영자 제외는 신청을 마감한다.
 export const scrimRegistrationStatus = pgEnum('scrim_registration_status', [
     'selected',
     'standby',
@@ -1852,8 +1852,8 @@ export const scrimRegistrationStatus = pgEnum('scrim_registration_status', [
 ]);
 
 // 참가자 ID는 유지하고 신청마다 새 행을 만든다. 철회·제외한 행을 재사용하지 않아 재신청 이력이 남는다.
-// withdrawnAt이 없는 신청이 현재 정원에 포함된다. 선발 수는 팀 수 × 5명, 활성 신청 수는 여기에 reserveCapacity를 더한 값으로 제한한다.
-// 정원 검사·자동 선발·선발자 철회/제외 시 가장 먼저 신청한 대기자 승급·시작 후 제외 제한·미확정 팀 배정 정리는 서비스 트랜잭션에서 처리한다.
+// 선발자와 시각 지정 대기자는 실출전 정원을 차지한다. 활성 신청 전체는 여기에 reserveCapacity를 더한 값으로 제한한다.
+// 모집 중 예약 시각이 된 신청만 자동 선발한다. 철회·제외로 빈 자리는 자동으로 채우지 않는다.
 export const scrimParticipantRegistrations = pgTable(
     'scrim_participant_registrations',
     {
@@ -1863,6 +1863,7 @@ export const scrimParticipantRegistrations = pgTable(
             .references(() => scrimParticipants.id, { onDelete: 'restrict' }),
         status: scrimRegistrationStatus('status').notNull(),
         joinedAt: timestamp('joined_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        availableAt: timestamp('available_at', { withTimezone: true, precision: 3 }),
         joinedByUserId: text('joined_by_user_id').references(() => users.id, { onDelete: 'set null' }),
         // 자진 철회와 운영자 제외 모두 신청을 마감하며, 행위자·사유를 남기고 참가자 행은 삭제하지 않는다.
         withdrawnAt: timestamp('withdrawn_at', { withTimezone: true, precision: 3 }),
@@ -1873,10 +1874,17 @@ export const scrimParticipantRegistrations = pgTable(
         uniqueIndex('scrim_participant_registrations_active_unique')
             .on(table.scrimParticipantId)
             .where(sql`${table.withdrawnAt} is null`),
+        index('scrim_participant_registrations_due_idx')
+            .on(table.availableAt)
+            .where(sql`${table.availableAt} is not null`),
         index('scrim_participant_registrations_history_idx').on(table.scrimParticipantId, table.joinedAt),
         index('scrim_participant_registrations_joined_by_idx').on(table.joinedByUserId),
         index('scrim_participant_registrations_withdrawn_by_idx').on(table.withdrawnByUserId),
         check('scrim_participant_registrations_time_order', sql`${table.withdrawnAt} >= ${table.joinedAt}`),
+        check(
+            'scrim_participant_registrations_reservation_status',
+            sql`${table.availableAt} is null or ${table.status} = 'standby'`
+        ),
         check(
             'scrim_participant_registrations_status_closure',
             sql`(${table.status} in ('withdrawn', 'excluded')) = (${table.withdrawnAt} is not null)`

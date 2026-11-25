@@ -24,7 +24,7 @@ function games(page: Page) {
     return page.getByText('총 게임', { exact: true }).locator('xpath=../..').locator(':scope > p');
 }
 
-/** 계산 정확도가 아니라 기존 UI의 쪽·정렬·열린 항목 수명만 검증하는 명시적 화면 표본이다. */
+/** 계산 정확도가 아니라 기존 UI의 쪽·열린 항목 수명만 검증하는 명시적 화면 표본이다. */
 function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
     assert.equal(snapshot.empty, false);
     if (snapshot.empty) throw new Error('UI 보존 표본은 실제 기록이 있는 응답을 사용한다.');
@@ -49,6 +49,7 @@ function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
         iconUrl: null,
         games: 10,
         wins: 5,
+        mmr: 1700 - index,
         kda: 3 + index / 10,
         badges: index === 15 ? [{ id: 'season-cs', title: '20대 사망원인 1위 한라인만 더', tied: false }] : []
     });
@@ -159,14 +160,18 @@ async function injectedState(
             await firstRow.getByRole('rowheader').hover();
             assert.deepEqual(await rowColors(), [focused, focused]);
         }
-        const sort = leaderboard.getByRole('button', { name: '승률', exact: true });
-        await sort.press('Enter');
-        await sort.press('Enter');
-        assert.equal(await sort.locator('..').getAttribute('aria-sort'), 'ascending');
+        const rating = leaderboard.getByRole('columnheader', { name: '최고 MMR', exact: true });
+        assert.equal(await rating.getAttribute('aria-sort'), 'descending');
+        assert.equal(await leaderboard.locator('thead button').count(), 0);
+        const points = firstRow.getByRole('cell', { name: '1,700', exact: true });
+        const box = await points.boundingBox();
+        const region = await leaderboard.boundingBox();
+        assert.ok(box && region && box.x >= region.x && box.x + box.width <= region.x + region.width);
         await page
             .getByRole('navigation', { name: '리더보드 쪽 이동', exact: true })
             .getByRole('button', { name: '2', exact: true })
             .press('Enter');
+        assert.equal(await firstRow.getByRole('link').getAttribute('aria-label'), 'UI 주입 사용자 21');
         await page
             .getByRole('navigation', { name: '챔피언 쪽 이동', exact: true })
             .getByRole('button', { name: '2', exact: true })
@@ -192,7 +197,6 @@ async function injectedState(
         assert.equal((await live).status(), 200);
         await dialog.getByText('2CS/분', { exact: true }).first().waitFor();
         assert.equal(await selected.getAttribute('aria-pressed'), 'true');
-        assert.equal(await sort.locator('..').getAttribute('aria-sort'), 'ascending');
         for (const label of ['리더보드 쪽 이동', '챔피언 쪽 이동'])
             assert.equal(
                 await page.locator(`nav[aria-label="${label}"] button[aria-current="page"]`).innerText(),
@@ -208,7 +212,7 @@ async function injectedState(
             assert.equal((await response).status(), 200);
             await page.clock.runFor(40);
         };
-        // 같은 조건의 표본이 사라졌다 돌아오면 쪽은 안전한 첫 쪽으로 줄이고 정렬 선택은 보존한다.
+        // 같은 조건의 표본이 사라졌다 돌아오면 쪽은 안전한 첫 쪽으로 줄인다.
         await nextVersion(3);
         await dialog.getByText('3CS/분', { exact: true }).first().waitFor();
         await page.getByText('이 조건에는 챔피언 기록이 없어요', { exact: true }).waitFor();
@@ -217,7 +221,7 @@ async function injectedState(
         await page.getByText('이 시즌에는 기록된 게임이 없어요', { exact: true }).waitFor();
         await nextVersion(5);
         await leaderboard.locator('tbody tr').nth(19).waitFor();
-        assert.equal(await sort.locator('..').getAttribute('aria-sort'), 'ascending');
+        assert.equal(await firstRow.getByRole('link').getAttribute('aria-label'), 'UI 주입 사용자 1');
         for (const label of ['리더보드 쪽 이동', '챔피언 쪽 이동'])
             assert.equal(
                 await page.locator(`nav[aria-label="${label}"] button[aria-current="page"]`).innerText(),
@@ -388,9 +392,8 @@ for (const width of [1440, 390])
                 const leaderboard = page.getByRole('region', { name: '사용자별 지표', exact: true });
                 await leaderboard.locator('tbody tr').nth(1).waitFor();
                 assert.equal(await leaderboard.locator('tbody tr').count(), 2);
-                const sort = leaderboard.getByRole('button', { name: '승률', exact: true });
-                await sort.press('Enter');
-                await sort.press('Enter');
+                const rating = leaderboard.getByRole('columnheader', { name: 'MMR', exact: true });
+                assert.equal(await rating.getAttribute('aria-sort'), 'descending');
                 const selected = page
                     .getByRole('group', { name: '포지션 필터', exact: true })
                     .getByRole('button', { name: '탑', exact: true });
@@ -414,7 +417,7 @@ for (const width of [1440, 390])
                 assert.equal(requests.length, failedCount);
                 await responseAfter(() => manual.press('Enter'));
                 await page.getByText(fetchError, { exact: true }).waitFor({ state: 'hidden' });
-                assert.equal(await sort.locator('..').getAttribute('aria-sort'), 'ascending');
+                assert.equal(await rating.getAttribute('aria-sort'), 'descending');
 
                 const timedOut = hold();
                 await page.clock.fastForward(30_100);

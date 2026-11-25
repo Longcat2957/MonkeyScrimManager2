@@ -1,16 +1,21 @@
 <script lang="ts">
-    let { title }: { title: string } = $props();
+    import type { Snippet } from 'svelte';
+    import { SERVICE_NAME } from '#lib/branding.ts';
+
+    let { title, children }: { title: string; children: Snippet } = $props();
 </script>
 
-<!-- 승인된 본문과 시행일이 없으므로 발행 상태만 표시한다. -->
-<article class="mx-auto max-w-4xl pt-6 sm:pt-14">
-    <header
-        class="grid items-baseline gap-4 border-y border-line-strong py-6 sm:grid-cols-[1fr_auto] sm:py-10"
-    >
+<article class="mx-auto max-w-[72ch] py-6 sm:py-12">
+    <header class="space-y-3 border-y border-line-strong py-6">
         <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
-        <p class="inline-flex items-center gap-2 text-sm font-semibold text-muted">
-            <span aria-hidden="true" class="size-2 rounded-full border border-line-strong"></span>준비
-            중이에요.
+        <p class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+            <span>운영 주체: {SERVICE_NAME} 운영팀</span>
+            <span>시행일: <time datetime="2026-11-25">2026년 11월 25일</time></span>
         </p>
     </header>
+    <div
+        class="space-y-8 pt-7 leading-7 break-keep text-ink-2 [overflow-wrap:anywhere] [&_a]:font-semibold [&_a]:text-ink [&_a]:underline [&_a]:underline-offset-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-ink [&_li+li]:mt-2 [&_section>*+*]:mt-3 [&_ul]:list-disc [&_ul]:ps-5"
+    >
+        {@render children()}
+    </div>
 </article>

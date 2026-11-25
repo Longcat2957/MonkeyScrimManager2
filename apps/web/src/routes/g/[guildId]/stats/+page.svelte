@@ -11,7 +11,7 @@
     import SeasonSelector from '#lib/components/common/SeasonSelector.svelte';
     import AchievementCarousel from '#lib/components/stats/AchievementCarousel.svelte';
     import AchievementRankingDialog from '#lib/components/stats/AchievementRankingDialog.svelte';
-    import LeaderboardTable, { type LeaderboardSortKey } from '#lib/components/stats/LeaderboardTable.svelte';
+    import LeaderboardTable from '#lib/components/stats/LeaderboardTable.svelte';
     import StatsRefreshControls from '#lib/components/stats/StatsRefreshControls.svelte';
     import type { LolPosition } from '#lib/features/guild/types.ts';
     import { POSITIONS } from '#lib/features/labels.ts';
@@ -169,8 +169,6 @@
     }
 
     let championPage = $state(1);
-    let leaderboardSort = $state<LeaderboardSortKey>('kda');
-    let leaderboardDescending = $state(true);
     let selectedAchievement = $state<string | null>(null);
     const achievementIndex = $derived(
         data.empty
@@ -393,8 +391,7 @@
                         {guildId}
                         seasonId={data.selectedSeasonId}
                         contextKey={viewKey}
-                        bind:sortKey={leaderboardSort}
-                        bind:descending={leaderboardDescending}
+                        mmrLabel={data.position === 'all' ? '최고 MMR' : 'MMR'}
                     />
                 {:else}
                     <SectionState state="empty" message={`${data.minGames}게임 이상 뛴 사람이 없어요`} />

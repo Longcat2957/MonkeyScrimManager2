@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, exists, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import type { LolPosition } from '../../features/guild/types.ts';
 import type { ChampionRef, PlayerGame } from '../../features/players/types.ts';
 import type { Actor } from '../auth/types.ts';
 import {
@@ -41,6 +42,7 @@ export type GuildPlayerRecords = {
     identityKey?: string;
     displayName: string;
     iconUrl: string | null;
+    ratings: Partial<Record<LolPosition, number>>;
     games: PlayerGame[];
 };
 type RecordedGame = { id: string; durationSec: number | null; kills: number | null };
@@ -85,10 +87,36 @@ async function recordsInTransaction(
               .select({
                   participant: gameParticipants,
                   userId: scrimParticipants.userId,
+                  mmr: userPositionMmr.mmr,
                   data: roflParticipantDataV1
               })
               .from(gameParticipants)
               .innerJoin(scrimParticipants, eq(scrimParticipants.id, gameParticipants.scrimParticipantId))
+              .leftJoin(
+                  gameMmrApplications,
+                  and(
+                      eq(gameMmrApplications.gameId, gameParticipants.gameId),
+                      eq(gameMmrApplications.roflMetadataId, gameParticipants.roflMetadataId),
+                      isNull(gameMmrApplications.reversedAt)
+                  )
+              )
+              .leftJoin(
+                  mmrLedgerEntries,
+                  and(
+                      eq(mmrLedgerEntries.applicationId, gameMmrApplications.id),
+                      eq(mmrLedgerEntries.scrimParticipantId, gameParticipants.scrimParticipantId),
+                      eq(mmrLedgerEntries.kind, 'game_result')
+                  )
+              )
+              .leftJoin(
+                  userPositionMmr,
+                  and(
+                      eq(userPositionMmr.id, mmrLedgerEntries.ratingId),
+                      eq(userPositionMmr.seasonId, seasonId),
+                      eq(userPositionMmr.userId, scrimParticipants.userId),
+                      eq(userPositionMmr.position, gameParticipants.position)
+                  )
+              )
               .leftJoin(
                   roflParticipantDataV1,
                   and(
@@ -136,7 +164,7 @@ async function recordsInTransaction(
         const roster = (participantsByGame.get(game.id) ?? []).filter(
             (entry) => entry.participant.roflMetadataId === game.roflMetadataId
         );
-        for (const { participant, userId, data } of roster) {
+        for (const { participant, userId, data, mmr } of roster) {
             const s = data?.stats;
             const teammates = roster.filter((entry) => entry.participant.side === participant.side);
             const kills = teammates.map((entry) => entry.data?.stats.kills ?? null);
@@ -182,13 +210,15 @@ async function recordsInTransaction(
             if (!userId) continue;
             const identity = identities.get(userId);
             if (!identity) continue;
-            const player = players.get(userId) ?? {
+            const player: GuildPlayerRecords = players.get(userId) ?? {
                 userId: identity.userId,
                 identityKey: identity.identityKey,
                 displayName: publicDisplayName(identity),
                 iconUrl: identity.avatarUrl,
+                ratings: {},
                 games: []
             };
+            if (mmr !== null && participant.position) player.ratings[participant.position] = mmr;
             player.games.push(record);
             players.set(userId, player);
         }

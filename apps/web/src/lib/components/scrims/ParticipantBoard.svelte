@@ -64,10 +64,7 @@
         if (pending || ids.length === 0) return;
         if (
             status === 'excluded' &&
-            !(await confirm(
-                `${ids.length}명을 제외할까요? 제외한 신청은 되돌릴 수 없고, 빈 선발 자리는 먼저 신청한 대기자가 채워요.`,
-                '참가자 제외'
-            ))
+            !(await confirm(`${ids.length}명을 제외할까요? 제외한 신청은 되돌릴 수 없어요.`, '참가자 제외'))
         )
             return;
         pending = true;

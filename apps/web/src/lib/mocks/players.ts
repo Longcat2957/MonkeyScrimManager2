@@ -144,6 +144,9 @@ export function listMockGuildPlayers(champion: (id: string) => ChampionRef) {
             userId,
             displayName,
             iconUrl: mockAvatarUrl(userId),
+            ratings: Object.fromEntries(
+                Object.entries(player.records).map(([position, record]) => [position, record.mmr])
+            ),
             games: buildGames(player, champion)
         };
     });

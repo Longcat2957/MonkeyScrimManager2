@@ -142,33 +142,39 @@ export function assertEditableSettings(
     }
 }
 
-export type ActiveRegistration = { id: string; status: RegistrationStatus; joinedAt: Date };
+type RegistrationSlot = { status: RegistrationStatus; availableAt: Date | null };
+
+export function holdsPlaySlot(row: RegistrationSlot): boolean {
+    return row.status === 'selected' || (row.status === 'standby' && row.availableAt !== null);
+}
 
 export function assertCapacity(
     settings: Pick<ScrimSettings, 'teamCount' | 'reserveCapacity'>,
-    registrations: readonly ActiveRegistration[]
+    registrations: readonly RegistrationSlot[]
 ): void {
-    const selected = registrations.filter((row) => row.status === 'selected').length;
+    const occupied = registrations.filter(holdsPlaySlot).length;
     const active = registrations.filter(
         (row) => row.status === 'selected' || row.status === 'standby'
     ).length;
-    if (selected > playCapacity(settings.teamCount))
-        throw new DomainError('CONFLICT', '선발 인원보다 실출전 정원을 작게 바꿀 수 없어요');
+    if (occupied > playCapacity(settings.teamCount))
+        throw new DomainError('CONFLICT', '선발 인원과 시각 지정 대기가 실출전 정원을 넘어요');
     if (active > playCapacity(settings.teamCount) + settings.reserveCapacity)
         throw new DomainError('CONFLICT', '신청 인원보다 전체 정원을 작게 바꿀 수 없어요');
 }
 
-/** 같은 신청 시각에는 ID로 순서를 고정하여 동시 신청의 승급 결과도 일정하게 만든다. */
-export function promotionIds(teamCount: number, registrations: readonly ActiveRegistration[]): string[] {
-    const slots = Math.max(
-        0,
-        playCapacity(teamCount) - registrations.filter((row) => row.status === 'selected').length
-    );
-    return registrations
-        .filter((row) => row.status === 'standby')
-        .toSorted((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime() || a.id.localeCompare(b.id))
-        .slice(0, slots)
-        .map((row) => row.id);
+export function validateStandbyTime(value: unknown, hasPlaySlot: boolean): Date | null {
+    if (value === undefined) return null;
+    const date = typeof value === 'string' ? new Date(value) : null;
+    if (
+        !date ||
+        !Number.isFinite(date.getTime()) ||
+        date.toISOString() !== value ||
+        date.getTime() <= Date.now()
+    )
+        throw new DomainError('INVALID_INPUT', '참가 가능 시각은 미래의 날짜와 시각으로 지정해 주세요');
+    if (!hasPlaySlot)
+        throw new DomainError('CONFLICT', '예약할 선발 자리가 없어요. 시각 없이 대기 신청할 수 있어요');
+    return date;
 }
 
 export function validateSelection(registrationIds: readonly string[], status: string) {

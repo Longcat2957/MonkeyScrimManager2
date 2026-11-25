@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, lte, ne, sql } from 'drizzle-orm';
 import { playCapacity, RESERVE_CAPACITY, TEAM_COUNT, TEAM_NAMES } from '../../features/scrims/settings.ts';
 import type { LolPosition } from '../../features/guild/types.ts';
 import type { ManualRegistrationResult, ScrimSettings } from '../../features/scrims/types.ts';
@@ -44,18 +44,20 @@ import {
     assertCapacity,
     assertEditableSettings,
     assertRevision,
-    promotionIds,
+    holdsPlaySlot,
     requireRecruitment,
     requireRevision,
     requireUuid,
     validateRegistration,
     validateSelection,
-    validateSettings
+    validateSettings,
+    validateStandbyTime
 } from './validation.ts';
 
 type ScrimRow = typeof scrims.$inferSelect;
 export type RevisionInput = { expectedRevision: number };
-export type RegistrationInput = { riotAccountId: string | null; positions: readonly LolPosition[] };
+type RegistrationPreferences = { riotAccountId: string | null; positions: readonly LolPosition[] };
+export type RegistrationInput = RegistrationPreferences & { availableAt?: string };
 export type ScrimAccessDependencies = Pick<GuildAccessDependencies, 'discord'>;
 
 export function settingsFromRow(row: ScrimRow): ScrimSettings {
@@ -102,24 +104,65 @@ async function registrations(tx: Transaction, scrimId: string) {
             participantId: scrimParticipants.id,
             userId: scrimParticipants.userId,
             status: scrimParticipantRegistrations.status,
-            joinedAt: scrimParticipantRegistrations.joinedAt
+            availableAt: scrimParticipantRegistrations.availableAt
         })
         .from(scrimParticipantRegistrations)
         .innerJoin(
             scrimParticipants,
             eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
         )
-        .where(and(eq(scrimParticipants.scrimId, scrimId), isNull(scrimParticipantRegistrations.withdrawnAt)))
-        .orderBy(asc(scrimParticipantRegistrations.joinedAt), asc(scrimParticipantRegistrations.id));
+        .where(
+            and(eq(scrimParticipants.scrimId, scrimId), isNull(scrimParticipantRegistrations.withdrawnAt))
+        );
 }
 
-async function promoteStandby(tx: Transaction, row: ScrimRow): Promise<void> {
-    const ids = promotionIds(row.teamCount, await registrations(tx, row.id));
-    if (ids.length)
-        await tx
-            .update(scrimParticipantRegistrations)
-            .set({ status: 'selected' })
-            .where(inArray(scrimParticipantRegistrations.id, ids));
+function reservationsInScrim(tx: Transaction, scrimId: string) {
+    return and(
+        isNotNull(scrimParticipantRegistrations.availableAt),
+        inArray(
+            scrimParticipantRegistrations.scrimParticipantId,
+            tx
+                .select({ id: scrimParticipants.id })
+                .from(scrimParticipants)
+                .where(eq(scrimParticipants.scrimId, scrimId))
+        )
+    );
+}
+
+async function cancelReservations(tx: Transaction, scrimId: string) {
+    await tx
+        .update(scrimParticipantRegistrations)
+        .set({ availableAt: null })
+        .where(reservationsInScrim(tx, scrimId));
+}
+
+/** 신청·취소와 같은 내전 잠금 아래 예약을 소비하고 모집 게시 갱신까지 함께 커밋한다. */
+export async function promoteDueStandby(db: Database): Promise<void> {
+    const due = lte(scrimParticipantRegistrations.availableAt, sql`now()`);
+    const candidates = await db
+        .selectDistinct({ id: scrimParticipants.scrimId })
+        .from(scrimParticipantRegistrations)
+        .innerJoin(
+            scrimParticipants,
+            eq(scrimParticipants.id, scrimParticipantRegistrations.scrimParticipantId)
+        )
+        .innerJoin(scrims, eq(scrims.id, scrimParticipants.scrimId))
+        .where(and(due, eq(scrims.status, 'recruit')));
+    for (const { id } of candidates) {
+        await db.transaction(async (tx) => {
+            const [open] = await tx
+                .select({ id: scrims.id })
+                .from(scrims)
+                .where(and(eq(scrims.id, id), eq(scrims.status, 'recruit')))
+                .for('update', { skipLocked: true });
+            if (!open) return;
+            const promoted = await tx
+                .update(scrimParticipantRegistrations)
+                .set({ status: 'selected', availableAt: null })
+                .where(and(reservationsInScrim(tx, id), due));
+            if (promoted.rowCount) await bumpRevision(tx, id);
+        });
+    }
 }
 
 /** 계정 연결·해제와 같은 사용자 → 계정 → 내전 순서로 잠근다. */
@@ -273,7 +316,7 @@ export async function createRegistration(
 ): Promise<void> {
     const user = requireUser(actor);
     requireUuid(scrimId, '내전');
-    const next = validateRegistration(input);
+    const next = { ...validateRegistration(input), availableAt: input.availableAt };
     await requireGuildMember(user, guildId, { ...access, db });
     await db.transaction((tx) => createRegistrationInTransaction(tx, user, guildId, scrimId, next));
 }
@@ -302,6 +345,10 @@ export async function createRegistrationInTransaction(
     if (current) throw new DomainError('CONFLICT', '이미 신청했어요');
     if (active.length >= playCapacity(row.teamCount) + row.reserveCapacity)
         throw new DomainError('CONFLICT', '신청 정원이 찼어요');
+    const hasPlaySlot = active.filter(holdsPlaySlot).length < playCapacity(row.teamCount);
+    const availableAt = validateStandbyTime(next.availableAt, hasPlaySlot);
+    const status =
+        !availableAt && options.initialStatus !== 'standby' && hasPlaySlot ? 'selected' : 'standby';
     await requireUnusedAccount(tx, row.id, next.riotAccountId, participant?.id);
     const [membership] = await tx
         .select({ nickname: guildMembers.nickname })
@@ -332,16 +379,11 @@ export async function createRegistrationInTransaction(
         participantId = created!.id;
     }
     await replacePreferences(tx, participantId, next.positions);
-    const status =
-        options.initialStatus !== 'standby' &&
-        active.filter((registration) => registration.status === 'selected').length <
-            playCapacity(row.teamCount)
-            ? 'selected'
-            : 'standby';
     await tx.insert(scrimParticipantRegistrations).values({
         scrimParticipantId: participantId,
         joinedByUserId: joinedBy?.userId ?? user.userId,
-        status
+        status,
+        availableAt
     });
     await bumpRevision(tx, row.id);
     return status;
@@ -423,13 +465,13 @@ export async function createManualRegistrationInTransaction(
     );
 }
 
-/** 본인 신청의 참가·대기만 전환하며, 계정·희망 포지션과 신청 순서는 보존한다. */
-export async function setOwnRegistrationStatusInTransaction(
+/** 직접 대기를 선택할 때만 예약을 만들거나 해제하고, 기존 계정·포지션·신청 순서는 보존한다. */
+export async function setOwnStandbyInTransaction(
     tx: Transaction,
     user: Actor,
     guildId: string,
     scrimId: string,
-    input: { registrationId: string; status: 'selected' | 'standby' }
+    input: { registrationId: string; availableAt?: string }
 ): Promise<void> {
     await lockRegistrationAccounts(tx, user, guildId, scrimId);
     const row = await lockScrim(tx, user, guildId, scrimId, false);
@@ -438,23 +480,20 @@ export async function setOwnRegistrationStatusInTransaction(
     const mine = active.find((registration) => registration.userId === user.userId);
     if (!mine || mine.id !== input.registrationId)
         throw new DomainError('CONFLICT', '신청이 변경됐어요. 내 신청을 다시 열어 주세요');
-    if (mine.status === input.status) return;
-    if (
-        input.status === 'selected' &&
-        active.filter((registration) => registration.status === 'selected').length >=
-            playCapacity(row.teamCount)
-    )
-        return;
+    const availableAt = validateStandbyTime(
+        input.availableAt,
+        holdsPlaySlot(mine) || active.filter(holdsPlaySlot).length < playCapacity(row.teamCount)
+    );
+    if (mine.status === 'standby' && mine.availableAt?.getTime() === availableAt?.getTime()) return;
     await tx
         .update(scrimParticipantRegistrations)
-        .set({ status: input.status })
+        .set({ status: 'standby', availableAt })
         .where(eq(scrimParticipantRegistrations.id, mine.id));
-    if (input.status === 'standby')
+    if (mine.status === 'selected')
         await tx
             .update(scrimParticipants)
             .set({ teamId: null, position: null })
             .where(eq(scrimParticipants.id, mine.participantId));
-    // 직접 대기를 선택한 직후에는 승급하지 않고, 기존 철회·제외·설정 저장 때의 승급 정책을 유지한다.
     await bumpRevision(tx, row.id);
 }
 
@@ -463,7 +502,7 @@ export async function updateRegistration(
     actor: Actor | null,
     guildId: string,
     scrimId: string,
-    input: RegistrationInput,
+    input: RegistrationPreferences,
     access?: ScrimAccessDependencies
 ): Promise<void> {
     const user = requireUser(actor);
@@ -478,7 +517,7 @@ export async function updateRegistrationInTransaction(
     user: Actor,
     guildId: string,
     scrimId: string,
-    next: RegistrationInput,
+    next: RegistrationPreferences,
     expectedRegistrationId?: string
 ): Promise<void> {
     const { participant } = await lockRegistrationAccounts(tx, user, guildId, scrimId, next.riotAccountId);
@@ -532,6 +571,7 @@ export async function withdrawRegistrationInTransaction(
         .update(scrimParticipantRegistrations)
         .set({
             status: 'withdrawn',
+            availableAt: null,
             withdrawnAt: new Date(),
             withdrawnByUserId: user.userId,
             withdrawalReason: '본인 철회'
@@ -541,7 +581,6 @@ export async function withdrawRegistrationInTransaction(
         .update(scrimParticipants)
         .set({ teamId: null, position: null })
         .where(eq(scrimParticipants.id, mine.participantId));
-    await promoteStandby(tx, row);
     await bumpRevision(tx, row.id);
 }
 
@@ -572,7 +611,7 @@ export async function setParticipantStatus(
             settingsFromRow(row),
             active.map((registration) =>
                 next.registrationIds.includes(registration.id)
-                    ? { ...registration, status: next.status }
+                    ? { ...registration, status: next.status, availableAt: null }
                     : registration
             )
         );
@@ -580,6 +619,7 @@ export async function setParticipantStatus(
             .update(scrimParticipantRegistrations)
             .set({
                 status: next.status,
+                availableAt: null,
                 ...(next.status === 'excluded'
                     ? {
                           withdrawnAt: new Date(),
@@ -599,8 +639,6 @@ export async function setParticipantStatus(
                         targets.map((target) => target.participantId)
                     )
                 );
-        // 수동 대기 전환은 유지하며, 제외로 빈 자리만 자동으로 승급한다.
-        if (next.status === 'excluded') await promoteStandby(tx, row);
         await bumpRevision(tx, row.id);
     });
 }
@@ -633,7 +671,6 @@ export async function updateScrimSettings(
                 revision: row.revision + 1
             })
             .where(eq(scrims.id, row.id));
-        if (row.status === 'recruit') await promoteStandby(tx, { ...row, teamCount: settings.teamCount });
         await enqueueScrimPublications(tx, row.id);
     });
 }
@@ -679,6 +716,7 @@ export async function closeRecruitment(
                     isActive: true
                 });
         }
+        await cancelReservations(tx, row.id);
         await tx
             .update(scrims)
             .set({ status: 'preparing', revision: row.revision + 1 })
@@ -769,6 +807,7 @@ export async function cancelScrim(
             .from(auctions)
             .where(eq(auctions.scrimId, row.id))
             .for('update');
+        if (row.status === 'recruit') await cancelReservations(tx, row.id);
         await tx
             .update(scrims)
             .set({

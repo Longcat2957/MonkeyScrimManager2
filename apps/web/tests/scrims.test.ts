@@ -103,7 +103,7 @@ test('Riot 계정 없는 여러 참가자도 신청하고 계정 없이 수정·
     assert.deepEqual(withdrawn?.previousPositions, ['support']);
 });
 
-test('신청하면 선발 자리가 남았을 때 선발, 찼으면 대기가 되고 빈자리는 먼저 신청한 대기자가 채운다', async () => {
+test('선발자가 철회하거나 제외돼도 시각을 지정하지 않은 대기자는 수동 선발 전까지 대기한다', async () => {
     const { scrimId } = await nearlyFullScrim();
     assert.equal(await register(scrimId, 'tenth'), null);
     assert.equal(await register(scrimId, 'late1'), null);
@@ -112,15 +112,15 @@ test('신청하면 선발 자리가 남았을 때 선발, 찼으면 대기가 �
     assert.equal(statusOf(scrimId, 'late1'), 'standby');
 
     assert.equal(await withdrawMock(guildId, scrimId, 'tenth'), null);
-    assert.equal(statusOf(scrimId, 'late1'), 'selected');
+    assert.equal(statusOf(scrimId, 'late1'), 'standby');
     assert.equal(statusOf(scrimId, 'late2'), 'standby');
 
-    // 운영자가 대기로 돌린 자리는 자동으로 채우지 않고, 제외로 빈 자리만 채운다.
     const late1 = findMockScrimRecord(guildId, scrimId)!.participants.find(
         (item) => item.userId === 'late1'
     )!;
+    assert.equal(await setMockParticipantStatus(guildId, scrimId, [late1.registrationId], 'selected'), null);
     assert.equal(await setMockParticipantStatus(guildId, scrimId, [late1.registrationId], 'excluded'), null);
-    assert.equal(statusOf(scrimId, 'late2'), 'selected');
+    assert.equal(statusOf(scrimId, 'late2'), 'standby');
 });
 
 test('편성 방식은 모집 중·편성 중에 고르고, 모집을 다시 열어도 방식은 남는다', async () => {

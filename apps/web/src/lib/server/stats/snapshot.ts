@@ -63,13 +63,18 @@ export async function getGuildStatsSnapshot(
         if (!recordedGames.length) return { ...context, ...seasonSelection, empty: true };
     }
 
-    const scoped = players.map(({ games, ...player }) => ({
-        ...player,
-        games: filters.position === 'all' ? games : games.filter((game) => game.position === filters.position)
-    }));
-    const rows = scoped.flatMap(({ games, ...player }) => {
-        const summary = summarize(games);
-        return summary ? [{ ...player, ...summary }] : [];
+    const rows = players.flatMap(({ games, ratings, ...player }) => {
+        const summary = summarize(
+            filters.position === 'all' ? games : games.filter((game) => game.position === filters.position)
+        );
+        if (!summary) return [];
+        let mmr: number | null = null;
+        if (filters.position === 'all') {
+            for (const score of Object.values(ratings)) {
+                if (mmr === null || score > mmr) mmr = score;
+            }
+        } else mmr = ratings[filters.position] ?? null;
+        return [{ ...player, ...summary, mmr }];
     });
     const achievements = groupSeasonTitles(titles);
     const badges = achievementBadges(achievements);
@@ -109,6 +114,12 @@ export async function getGuildStatsSnapshot(
         achievements,
         leaderboard: rows
             .filter((row) => row.games >= filters.minGames)
+            .sort((a, b) => {
+                if (a.mmr !== b.mmr) return (b.mmr ?? -Infinity) - (a.mmr ?? -Infinity);
+                const left = a.identityKey ?? a.userId;
+                const right = b.identityKey ?? b.userId;
+                return left < right ? -1 : left > right ? 1 : 0;
+            })
             .map((row) => ({ ...row, badges: badges.get(row.userId) ?? [] })),
         playerCount: rows.length,
         champions: championRecords(

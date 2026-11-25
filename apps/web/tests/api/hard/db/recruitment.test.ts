@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import * as schema from '../../../../src/lib/server/db/schema.ts';
 import { unlinkRiotAccount } from '../../../../src/lib/server/accounts/service.ts';
 import {
@@ -11,7 +13,10 @@ import {
     createManualRegistration,
     createManualRegistrations,
     createScrim,
+    promoteDueStandby,
     reopenRecruitment,
+    restoreCancelledScrim,
+    setOwnStandbyInTransaction,
     setParticipantStatus,
     updateRegistration,
     updateScrimSettings,
@@ -34,13 +39,13 @@ import {
 } from '../../support/domain-fixtures.ts';
 
 type Fixture = Awaited<ReturnType<typeof createRecruitmentFixture>>;
-const join = (f: Fixture, index: number) =>
+const join = (f: Fixture, index: number, availableAt?: string) =>
     createRegistration(
         f.db,
         f.actors[index]!,
         f.guildId,
         f.scrimId,
-        { riotAccountId: f.accounts[index]!.id, positions: ['mid', 'top'] },
+        { riotAccountId: f.accounts[index]!.id, positions: ['mid', 'top'], availableAt },
         f.access
     );
 const registrations = (f: Fixture) =>
@@ -48,6 +53,7 @@ const registrations = (f: Fixture) =>
         .select({
             id: schema.scrimParticipantRegistrations.id,
             status: schema.scrimParticipantRegistrations.status,
+            availableAt: schema.scrimParticipantRegistrations.availableAt,
             userId: schema.scrimParticipants.userId,
             participantId: schema.scrimParticipants.id
         })
@@ -336,19 +342,26 @@ test('다른 사람의 연결 계정으로 신청하거나 신청 계정을 바�
     );
 });
 
-test('철회는 대기자를 승급시키고 재신청은 이전 이력을 덮어쓰지 않는다', async (t) => {
+test('기존 대기는 시각 없이 마이그레이션하고 철회 뒤에도 유지하며 재신청은 새 이력이다', async (t) => {
     const f = await createRecruitmentFixture(t);
     await fill(f, 12);
+    await f.pool.query('ALTER TABLE scrim_participant_registrations DROP COLUMN available_at');
+    await f.pool.query(f.migrationSql('0023_standby_reservations'));
     const before = await registrations(f);
     const original = before.find((row) => row.userId === f.manager.userId)!;
-    const promoted = before.find((row) => row.status === 'standby')!;
+    const waiting = before.filter((row) => row.status === 'standby');
+    assert.ok(before.every((row) => row.availableAt === null));
     await withdrawRegistration(f.db, f.manager, f.guildId, f.scrimId, f.access);
-    assert.equal((await registrations(f)).find((row) => row.id === promoted.id)?.status, 'selected');
+    await promoteDueStandby(f.db);
+    assert.deepEqual(
+        (await registrations(f)).filter((row) => row.status === 'standby'),
+        waiting
+    );
     await join(f, 0);
     const renewed = (await registrations(f)).find((row) => row.userId === f.manager.userId)!;
     assert.notEqual(renewed.id, original.id);
     assert.equal(renewed.participantId, original.participantId);
-    assert.equal(renewed.status, 'standby');
+    assert.equal(renewed.status, 'selected');
     assert.equal(
         (
             await f.db
@@ -544,7 +557,7 @@ test('마감·재개·취소는 실제 단계와 신청 이력을 보존한다',
     }
 });
 
-test('수동 대기 전환은 유지하고 운영자 제외로 빈 자리만 자동 승급한다', async (t) => {
+test('수동 대기 전환·제외·설정 확장 후에도 기존 대기자는 자동 승급하지 않는다', async (t) => {
     const f = await createRecruitmentFixture(t);
     await fill(f, 12);
     const active = await registrations(f);
@@ -565,9 +578,21 @@ test('수동 대기 전환은 유지하고 운영자 제외로 빈 자리만 자
         { ...(await f.revision()), registrationIds: [active[1]!.id], status: 'excluded' },
         f.access
     );
+    await updateScrimSettings(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        {
+            ...(await f.revision()),
+            settings: { ...f.input, teamCount: 4 }
+        },
+        f.access
+    );
+    await promoteDueStandby(f.db);
     const after = await registrations(f);
     assert.equal(after.length, 11);
-    assert.equal(after.filter((row) => row.status === 'selected').length, 10);
+    assert.equal(after.filter((row) => row.status === 'selected').length, 8);
     assert.ok(!after.some((row) => row.id === active[1]!.id));
     assert.equal(
         (
@@ -578,6 +603,146 @@ test('수동 대기 전환은 유지하고 운영자 제외로 빈 자리만 자
         )[0]?.status,
         'excluded'
     );
+});
+
+test('마지막 선발 자리의 시간 예약은 한 명만 성공하고 일반·운영자 신청과 수동 선발도 예약을 존중한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    await fill(f, 9);
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    const results = await concurrently([() => join(f, 9, future), () => join(f, 10, future)]);
+    assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
+    const failed = results.find((result) => result.status === 'rejected');
+    assert.ok(failed?.status === 'rejected' && errorCode('CONFLICT')(failed.reason));
+    const reserved = (await registrations(f)).find((row) => row.availableAt)!;
+    assert.equal(reserved.status, 'standby');
+    assert.equal(reserved.availableAt!.toISOString(), future);
+    await join(f, 11);
+    assert.equal(
+        await createManualRegistration(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { userId: f.actors[12]!.userId },
+            f.access
+        ),
+        'standby'
+    );
+    const ordinary = (await registrations(f)).filter(
+        (row) => row.status === 'standby' && row.availableAt === null
+    );
+    assert.equal(ordinary.length, 2);
+    const select = async (id: string) =>
+        setParticipantStatus(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { ...(await f.revision()), registrationIds: [id], status: 'selected' },
+            f.access
+        );
+    await assert.rejects(select(ordinary[0]!.id), errorCode('CONFLICT'));
+    await assert.rejects(
+        closeRecruitment(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
+        errorCode('CONFLICT')
+    );
+    await select(reserved.id);
+    await closeRecruitment(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    await reopenRecruitment(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    const after = await registrations(f);
+    assert.equal(after.filter((row) => row.status === 'selected').length, 10);
+    assert.ok(after.every((row) => row.availableAt === null));
+});
+
+test('예약 전에는 바뀌지 않고 재시작한 워커와 동시에 기한을 처리해도 명단·게시 작업은 한 번만 갱신한다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    await f.db
+        .insert(schema.guildDiscordSettings)
+        .values({ guildId: f.guildId, recruitmentChannelId: '810000000000000003' });
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    for (let index = 0; index < 3; index++) await join(f, index, future);
+    const before = await registrations(f);
+    const revision = (await f.row()).revision;
+    const job = async () =>
+        (
+            await f.db
+                .select()
+                .from(schema.discordPublicationJobs)
+                .where(
+                    and(
+                        eq(schema.discordPublicationJobs.scrimId, f.scrimId),
+                        eq(schema.discordPublicationJobs.kind, 'recruitment')
+                    )
+                )
+        )[0]!;
+    const jobRevision = (await job()).revision;
+    await promoteDueStandby(f.db);
+    assert.deepEqual(await registrations(f), before);
+    assert.equal((await f.row()).revision, revision);
+    assert.equal((await job()).revision, jobRevision);
+    await f.db
+        .update(schema.scrimParticipantRegistrations)
+        .set({ availableAt: sql`now() - interval '1 millisecond'` })
+        .where(
+            inArray(
+                schema.scrimParticipantRegistrations.id,
+                before.slice(0, 2).map((row) => row.id)
+            )
+        );
+    const pool = new Pool({ connectionString: f.connectionString });
+    try {
+        const restarted = drizzle(pool, { schema });
+        await Promise.all([promoteDueStandby(restarted), promoteDueStandby(f.db)]);
+        await promoteDueStandby(restarted);
+    } finally {
+        await pool.end();
+    }
+    const after = await registrations(f);
+    assert.deepEqual(
+        after.map((row) => row.status),
+        ['selected', 'selected', 'standby']
+    );
+    assert.deepEqual(
+        after.map((row) => row.availableAt?.toISOString() ?? null),
+        [null, null, future]
+    );
+    assert.equal((await f.row()).revision, revision + 1);
+    assert.equal((await job()).revision, jobRevision + 1);
+});
+
+test('대기 재지정·수동 배정·제외·철회·내전 취소가 예약을 해제하고 취소 복구는 예약을 되살리지 않는다', async (t) => {
+    const f = await createRecruitmentFixture(t);
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    for (let index = 0; index < 5; index++) await join(f, index, future);
+    const before = await registrations(f);
+    const id = (index: number) => before.find((row) => row.userId === f.actors[index]!.userId)!.id;
+    await f.db.transaction((tx) =>
+        setOwnStandbyInTransaction(tx, f.manager, f.guildId, f.scrimId, { registrationId: id(0) })
+    );
+    for (const [index, status] of [
+        [1, 'standby'],
+        [2, 'excluded']
+    ] as const)
+        await setParticipantStatus(
+            f.db,
+            f.manager,
+            f.guildId,
+            f.scrimId,
+            { ...(await f.revision()), registrationIds: [id(index)], status },
+            f.access
+        );
+    await withdrawRegistration(f.db, f.actors[3]!, f.guildId, f.scrimId, f.access);
+    const pending = await f.db.select().from(schema.scrimParticipantRegistrations);
+    assert.deepEqual(
+        pending.filter((row) => row.availableAt !== null).map((row) => row.id),
+        [id(4)]
+    );
+    await cancelScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    await restoreCancelledScrim(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
+    await promoteDueStandby(f.db);
+    const restored = await registrations(f);
+    assert.equal(restored.length, 3);
+    assert.ok(restored.every((row) => row.status === 'standby' && row.availableAt === null));
 });
 
 test('계정 해제와 신청이 경쟁해도 연결 없는 활성 신청을 남기지 않는다', async (t) => {

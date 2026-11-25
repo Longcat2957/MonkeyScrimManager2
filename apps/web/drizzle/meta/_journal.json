@@ -162,6 +162,13 @@
       "when": 1795340094090,
       "tag": "0022_auction_source_retries",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795585511024,
+      "tag": "0023_standby_reservations",
+      "breakpoints": true
     }
   ]
 }

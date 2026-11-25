@@ -42,6 +42,16 @@ test('통계 요청 문맥은 기존 기본값을 보정하고 무관한 쿼리�
 test('공통 통계는 실제 Game 표본과 포지션 지표를 구분하고 갱신 전후 개인정보 식별 키를 보존한다', async (t) => {
     const f = await createGameFixture(t);
     const first = await f.createGame(f.db, 1);
+    await f.db.insert(schema.userPositionMmr).values({
+        userId: f.manager.userId,
+        seasonId: f.season.id,
+        position: 'support',
+        mmr: 2999
+    });
+    const unapplied = await getGuildStatsSnapshot(f.db, null, f.guildId, filters('min=1'), { champion });
+    assert.ok(!unapplied.empty);
+    assert.equal(unapplied.leaderboard.length, 10);
+    assert.ok(unapplied.leaderboard.every((row) => row.mmr === null));
     await f.apply(first.id);
     const second = await f.createGame(f.db, 2, f.match.id, 'b', {
         missingStats: true,
@@ -60,6 +70,20 @@ test('공통 통계는 실제 Game 표본과 포지션 지표를 구분하고 �
     assert.equal(publicStats.kpis.killsPerMinute, 0.9);
     assert.equal(publicStats.position, 'top');
     assert.equal(publicStats.leaderboard.length, 2);
+    const topScores = beforeScores.filter((entry) => entry.position === 'top');
+    assert.deepEqual(
+        publicStats.leaderboard.map((row) => row.mmr),
+        topScores.map((entry) => entry.mmr).sort((a, b) => b - a)
+    );
+    for (const row of publicStats.leaderboard) {
+        assert.equal(row.mmr, topScores.find((entry) => entry.userId === row.userId)!.mmr);
+    }
+    const overall = await getGuildStatsSnapshot(f.db, null, f.guildId, filters('min=1'), { champion });
+    assert.ok(!overall.empty);
+    assert.equal(
+        overall.leaderboard.find((row) => row.userId === f.manager.userId)!.mmr,
+        topScores.find((entry) => entry.userId === f.manager.userId)!.mmr
+    );
     const titles = publicStats.achievements.find((group) => group.id === 'season-champion-pool')!;
     assert.equal(titles.entries.filter((entry) => entry.rank === 1).length, 5);
     assert.ok(titles.entries.every((entry) => entry.tied));
@@ -84,6 +108,8 @@ test('공통 통계는 실제 Game 표본과 포지션 지표를 구분하고 �
     assert.notEqual(hidden.userId, f.manager.userId);
     assert.equal(hidden.displayName, '비공개 사용자');
     assert.equal(hidden.iconUrl, null);
+    assert.equal(hidden.mmr, publicPlayer.mmr);
+    assert.equal(isStatsSnapshot({ ...privateStats, leaderboard: [{ ...hidden, mmr: undefined }] }), false);
     assert.deepEqual(privateStats.kpis, publicStats.kpis);
     const privateEntry = privateStats.achievements
         .flatMap((group) => group.entries)
@@ -204,6 +230,23 @@ test('개발 미리보기는 같은 시즌 칭호 계약을 사용하고 없는 
     assert.equal(new Set(demo.achievements.map((group) => group.titleId)).size, 15);
     assert.ok(demo.leaderboard.every((row) => row.iconUrl?.startsWith('https://cdn.discordapp.com/')));
     assert.equal(isStatsSnapshot(demo), true);
+    const all = await getGuildStatsSnapshot(null, null, 'devGuild001', filters('min=1'), {
+        preview: true,
+        champion
+    });
+    assert.ok(!all.empty);
+    assert.ok(all.leaderboard.length > 20);
+    const points = all.leaderboard.map((row) => row.mmr!);
+    assert.deepEqual(
+        points,
+        [...points].sort((a, b) => b - a)
+    );
+    assert.equal(demo.leaderboard.find((row) => row.userId === 'u07')!.mmr, 1560);
+    assert.equal(all.leaderboard.find((row) => row.userId === 'u07')!.mmr, 1702);
+    assert.deepEqual(
+        all.leaderboard.filter((row) => row.mmr === 1702).map((row) => row.userId),
+        ['devUser001', 'u07', 'u11', 'u12']
+    );
     assert.deepEqual(demo.seasons, []);
     const empty = await getGuildStatsSnapshot(null, null, 'devGuild002', selected, {
         preview: true,

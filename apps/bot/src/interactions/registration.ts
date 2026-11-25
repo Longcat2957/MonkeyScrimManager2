@@ -3,13 +3,18 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    LabelBuilder,
     MessageFlags,
-    StringSelectMenuBuilder
+    ModalBuilder,
+    StringSelectMenuBuilder,
+    TextInputBuilder,
+    TextInputStyle
 } from 'discord.js';
-import type { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
+import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from 'discord.js';
 import type { BotPosition, BotRegistrationContext } from '../../../../shared/bot-api.js';
 import type { BotApi } from '../api/client.js';
 import { BotApiError } from '../api/client.js';
+import { formatKstMinute, scheduleFromKst } from '../commands/schedule.js';
 import { card, label, notice, POSITIONS, preferredPositionLabel } from '../messages/shared.js';
 
 type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction;
@@ -23,6 +28,7 @@ export interface RegistrationForm {
     positions: BotPosition[];
     accountPage: number;
     confirmingWithdrawal: boolean;
+    pendingStandbyAt?: string | null;
     busy: boolean;
     feedback: string | null;
 }
@@ -74,14 +80,21 @@ export class RegistrationForms {
 
 export function parseFormId(value: string): { id: string; action: string } | null {
     const match =
-        /^form:([a-f0-9]{24}):(account|positions|submit|withdraw|confirm|cancel|previous|next)$/.exec(value);
+        /^form:([a-f0-9]{24}):(account|positions|submit|withdraw|confirm|standby|cancel|previous|next)$/.exec(
+            value
+        );
     return match ? { id: match[1]!, action: match[2]! } : null;
 }
 
 export function renderForm(form: RegistrationForm) {
     const current = form.context.registration;
     const status = current
-        ? { selected: '선발', standby: '대기', withdrawn: '철회', excluded: '제외' }[current.status]
+        ? {
+              selected: '선발',
+              standby: standbyStatus(current.availableAt),
+              withdrawn: '철회',
+              excluded: '제외'
+          }[current.status]
         : '신청 전';
     const account = form.context.accounts.find((value) => value.id === form.accountId);
     const parts = [`## ${label(form.context.title, 50)} · 내 신청`, `현재 상태: **${status}**`];
@@ -103,7 +116,7 @@ export function renderForm(form: RegistrationForm) {
     const customId = (action: string) => `form:${form.id}:${action}`;
     if (!form.context.canEdit) return message;
     if (form.confirmingWithdrawal) {
-        components.push(card('신청을 철회할까요? 빈자리는 대기자에게 돌아갈 수 있어요.'));
+        components.push(card('신청을 철회할까요?'));
         components.push(
             new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
@@ -190,6 +203,76 @@ export function renderForm(form: RegistrationForm) {
     return message;
 }
 
+function standbyStatus(availableAt: string | null) {
+    return availableAt
+        ? `${formatKstMinute(Date.parse(availableAt))} KST 자동 선발 예약`
+        : '시각 지정 없이 수동 배정 대기 중';
+}
+
+function joinPreferences(context: BotRegistrationContext) {
+    return {
+        riotAccountId:
+            context.accounts.find((account) => account.isPrimary)?.id ?? context.accounts[0]?.id ?? null,
+        positions: context.registration?.positions.length
+            ? context.registration.positions
+            : (Object.keys(POSITIONS) as BotPosition[])
+    };
+}
+
+export async function submitStandbyTime(
+    interaction: ModalSubmitInteraction,
+    api: BotApi,
+    forms: RegistrationForms
+) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const scrimId = /^standby-time:([a-f0-9-]{36})$/.exec(interaction.customId)?.[1];
+    if (!scrimId || !interaction.guildId) {
+        await interaction.editReply(notice('서버의 모집 글에서 대기 신청을 다시 열어 주세요.'));
+        return;
+    }
+    let availableAt: string | null;
+    try {
+        availableAt = scheduleFromKst(interaction.fields.getTextInputValue('availableAt'));
+    } catch {
+        await interaction.editReply(
+            notice('한국 시각으로 실제 날짜와 시각을 YYYY-MM-DD HH:mm 형식으로 입력해 주세요.')
+        );
+        return;
+    }
+    if (availableAt && Date.parse(availableAt) <= Date.now()) {
+        await interaction.editReply(notice('현재보다 늦은 참가 가능 시각을 입력해 주세요.'));
+        return;
+    }
+    const context = await api.registration(interaction.guildId, scrimId, interaction.user.id);
+    if (!context.canEdit) {
+        await interaction.editReply(notice(context.reason ?? '지금은 대기 신청을 변경할 수 없어요.'));
+        return;
+    }
+    const current = context.registration;
+    if (current?.status === 'standby' && current.availableAt === availableAt) {
+        await interaction.editReply(notice(`현재 상태: ${standbyStatus(current.availableAt)}`));
+        return;
+    }
+    const form = forms.create(interaction.user.id, interaction.guildId, context);
+    form.pendingStandbyAt = availableAt;
+    const detail = availableAt
+        ? `**${formatKstMinute(Date.parse(availableAt))} KST**까지 대기할까요? 선발 한 자리를 예약하고 모집 중에 해당 시각이 되면 자동 선발돼요.`
+        : `${current?.status === 'selected' || current?.availableAt ? '선발 자리를 반납하고 ' : ''}시각 지정 없이 운영자의 수동 배정을 기다릴까요?`;
+    const prompt = notice(`## ${label(context.title, 50)} · 대기 신청 확인\n${detail}`);
+    await interaction.editReply({
+        ...prompt,
+        components: [
+            ...prompt.components,
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`form:${form.id}:standby`)
+                    .setLabel(availableAt ? '예약 확정' : '수동 배정 대기 확정')
+                    .setStyle(ButtonStyle.Primary)
+            )
+        ]
+    });
+}
+
 export async function handleRegistration(
     interaction: ComponentInteraction,
     api: BotApi,
@@ -197,16 +280,37 @@ export async function handleRegistration(
 ) {
     const opener = /^registration(?:-(standby|withdraw))?:([a-f0-9-]{36})$/.exec(interaction.customId);
     if (opener) {
+        if (opener[1] === 'standby' && interaction.guildId) {
+            await interaction.showModal(
+                new ModalBuilder()
+                    .setCustomId(`standby-time:${opener[2]}`)
+                    .setTitle('대기 신청 / 시각 변경')
+                    .addLabelComponents(
+                        new LabelBuilder()
+                            .setLabel('참가 가능 시각 (한국 시간)')
+                            .setDescription(
+                                '날짜와 시각을 입력하면 한 자리를 예약해요. 비우면 예약 없이 수동 배정을 기다려요.'
+                            )
+                            .setTextInputComponent(
+                                new TextInputBuilder()
+                                    .setCustomId('availableAt')
+                                    .setStyle(TextInputStyle.Short)
+                                    .setRequired(false)
+                                    .setMaxLength(16)
+                                    .setPlaceholder('YYYY-MM-DD HH:mm')
+                            )
+                    )
+            );
+            return;
+        }
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         if (!interaction.guildId) {
             await interaction.editReply(notice('서버의 모집 글에서 신청해 주세요.'));
             return;
         }
         let context = await api.registration(interaction.guildId, opener[2]!, interaction.user.id);
-        if (opener[1]) {
-            const action = opener[1] === 'withdraw' ? 'withdraw' : 'standby';
-            const active = activeRegistration(context);
-            if (action === 'withdraw' && !active) {
+        if (opener[1] === 'withdraw') {
+            if (!activeRegistration(context)) {
                 await interaction.editReply(notice('참가 중인 신청이 없어요.'));
                 return;
             }
@@ -214,45 +318,18 @@ export async function handleRegistration(
                 await interaction.editReply(notice(context.reason ?? '지금은 신청을 변경할 수 없어요.'));
                 return;
             }
-            if (action === 'standby' && context.registration?.status === 'standby') {
-                await interaction.editReply(notice('이미 대기 중이에요.'));
-                return;
-            }
-            context = await api.saveRegistration(interaction.guildId, context.scrimId, {
+            await api.saveRegistration(interaction.guildId, context.scrimId, {
                 actorId: interaction.user.id,
                 interactionId: interaction.id,
-                action,
-                ...(active && context.registration ? { registrationId: context.registration.id } : {}),
-                ...(action === 'standby' && !active
-                    ? {
-                          riotAccountId:
-                              context.accounts.find((account) => account.isPrimary)?.id ??
-                              context.accounts[0]?.id ??
-                              null,
-                          positions: context.registration?.positions.length
-                              ? context.registration.positions
-                              : (Object.keys(POSITIONS) as BotPosition[])
-                      }
-                    : {})
+                action: 'withdraw',
+                registrationId: context.registration!.id
             });
-            await interaction.editReply(
-                notice(action === 'withdraw' ? '참가를 취소했어요.' : '대기로 신청했어요.')
-            );
+            await interaction.editReply(notice('참가를 취소했어요.'));
             return;
         }
         if (context.canEdit && context.registration?.status === 'standby') {
-            context = await api.saveRegistration(interaction.guildId, context.scrimId, {
-                actorId: interaction.user.id,
-                interactionId: interaction.id,
-                action: 'select',
-                registrationId: context.registration.id
-            });
             await interaction.editReply(
-                notice(
-                    context.registration?.status === 'selected'
-                        ? '참가자로 복귀했어요.'
-                        : '선발 자리가 없어 대기를 유지했어요.'
-                )
+                notice(`현재 상태: ${standbyStatus(context.registration.availableAt)}`)
             );
             return;
         }
@@ -263,13 +340,7 @@ export async function handleRegistration(
                 actorId: interaction.user.id,
                 interactionId: interaction.id,
                 action: 'create',
-                riotAccountId:
-                    context.accounts.find((account) => account.isPrimary)?.id ??
-                    context.accounts[0]?.id ??
-                    null,
-                positions: context.registration?.positions.length
-                    ? context.registration.positions
-                    : (Object.keys(POSITIONS) as BotPosition[])
+                ...joinPreferences(context)
             });
             joined = true;
         }
@@ -282,7 +353,9 @@ export async function handleRegistration(
     const form = parsed ? forms.get(parsed.id, interaction.user.id, interaction.guildId) : null;
     if (!parsed || !form) {
         await interaction.reply({
-            ...notice('신청 화면이 만료됐어요. 모집 글의 참가하기를 다시 눌러 주세요.'),
+            ...notice(
+                `신청 화면이 만료됐어요. 모집 글의 ${parsed?.action === 'standby' ? '대기 신청을' : '참가하기를'} 다시 눌러 주세요.`
+            ),
             flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
         });
         return;
@@ -298,6 +371,27 @@ export async function handleRegistration(
     try {
         await interaction.deferUpdate();
         form.feedback = null;
+        if (parsed.action === 'standby') {
+            const availableAt = form.pendingStandbyAt;
+            if (availableAt === undefined || (availableAt && Date.parse(availableAt) <= Date.now())) {
+                await interaction.editReply(notice('모집 글의 대기 신청에서 시각을 다시 입력해 주세요.'));
+                return;
+            }
+            const saved = await api.saveRegistration(form.guildId, form.context.scrimId, {
+                actorId: form.actorId,
+                interactionId: interaction.id,
+                action: 'standby',
+                ...(availableAt ? { availableAt } : {}),
+                ...(activeRegistration(form.context)
+                    ? { registrationId: form.context.registration!.id }
+                    : joinPreferences(form.context))
+            });
+            delete form.pendingStandbyAt;
+            await interaction.editReply(
+                notice(`대기 신청을 저장했어요. ${standbyStatus(saved.registration!.availableAt)}`)
+            );
+            return;
+        }
         if (parsed.action === 'account' && interaction.isStringSelectMenu()) {
             const account = interaction.values[0];
             if (account !== 'none' && !form.context.accounts.some((value) => value.id === account))

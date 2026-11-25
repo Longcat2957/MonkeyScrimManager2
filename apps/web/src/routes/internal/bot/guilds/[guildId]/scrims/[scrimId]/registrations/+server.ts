@@ -5,7 +5,15 @@ import { botResponse, botJson } from '#lib/server/discord/bot-http.ts';
 import { DomainError } from '#lib/server/errors.ts';
 import type { BotRegistrationInput } from '../../../../../../../../../../../shared/bot-api.js';
 
-const keys = ['actorId', 'interactionId', 'action', 'registrationId', 'riotAccountId', 'positions'];
+const keys = [
+    'actorId',
+    'interactionId',
+    'action',
+    'registrationId',
+    'riotAccountId',
+    'positions',
+    'availableAt'
+];
 export const POST: RequestHandler = ({ request, params }) =>
     botResponse(request, async () => {
         const input = await botJson<BotRegistrationInput>(request, keys);
@@ -16,7 +24,7 @@ export const POST: RequestHandler = ({ request, params }) =>
 export const PATCH: RequestHandler = ({ request, params }) =>
     botResponse(request, async () => {
         const input = await botJson<BotRegistrationInput>(request, keys);
-        if (!['update', 'withdraw', 'standby', 'select'].includes(input.action))
-            throw new DomainError('INVALID_INPUT', 'PATCH는 신청 수정·철회·참가/대기 전환에 사용해 주세요');
+        if (!['update', 'withdraw', 'standby'].includes(input.action))
+            throw new DomainError('INVALID_INPUT', 'PATCH는 신청 수정·철회·대기 예약에 사용해 주세요');
         return mutateBotRegistration(getDb(), params.guildId!, params.scrimId!, input);
     });

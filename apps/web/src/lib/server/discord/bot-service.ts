@@ -46,7 +46,7 @@ import {
 import { canPostToDiscordChannel } from '../guild/settings.ts';
 import {
     createRegistrationInTransaction,
-    setOwnRegistrationStatusInTransaction,
+    setOwnStandbyInTransaction,
     createManualRegistrationInTransaction,
     createScrimInTransaction,
     updateRegistrationInTransaction,
@@ -159,6 +159,7 @@ async function registrationContext(
             id: scrimParticipantRegistrations.id,
             participantId: scrimParticipants.id,
             status: scrimParticipantRegistrations.status,
+            availableAt: scrimParticipantRegistrations.availableAt,
             riotAccountId: scrimParticipants.riotAccountId,
             withdrawnAt: scrimParticipantRegistrations.withdrawnAt
         })
@@ -213,6 +214,7 @@ async function registrationContext(
             ? {
                   id: mine.id,
                   status: mine.status,
+                  availableAt: mine.availableAt?.toISOString() ?? null,
                   riotAccountId: mine.riotAccountId,
                   positions: preferences.map((preference) => preference.position)
               }
@@ -250,8 +252,13 @@ export async function mutateBotRegistration(
     requireGuildId(guildId);
     requireUuid(scrimId, '내전');
     const actor = botActor(input.actorId);
-    if (!['create', 'update', 'withdraw', 'standby', 'select'].includes(input.action))
+    if (!['create', 'update', 'withdraw', 'standby'].includes(input.action))
         throw new DomainError('INVALID_INPUT', '신청 동작이 올바르지 않아요');
+    if (
+        input.availableAt !== undefined &&
+        (input.action !== 'standby' || typeof input.availableAt !== 'string')
+    )
+        throw new DomainError('INVALID_INPUT', '도착 가능 시각은 대기 신청에서만 지정할 수 있어요');
     if (input.action === 'create' && input.registrationId !== undefined)
         throw new DomainError('INVALID_INPUT', '신규 신청에는 기존 신청 식별자를 사용할 수 없어요');
     const creating =
@@ -268,9 +275,14 @@ export async function mutateBotRegistration(
             { ...input, guildId, operation: 'registration:' + scrimId, payload: input },
             async () => {
                 if (creating)
-                    await createRegistrationInTransaction(tx, actor, guildId, scrimId, registration!, {
-                        ...(input.action === 'standby' ? { initialStatus: 'standby' as const } : {})
-                    });
+                    await createRegistrationInTransaction(
+                        tx,
+                        actor,
+                        guildId,
+                        scrimId,
+                        { ...registration!, availableAt: input.availableAt },
+                        input.action === 'standby' ? { initialStatus: 'standby' } : {}
+                    );
                 else if (input.action === 'update')
                     await updateRegistrationInTransaction(
                         tx,
@@ -280,10 +292,10 @@ export async function mutateBotRegistration(
                         registration!,
                         input.registrationId
                     );
-                else if (input.action === 'standby' || input.action === 'select')
-                    await setOwnRegistrationStatusInTransaction(tx, actor, guildId, scrimId, {
+                else if (input.action === 'standby')
+                    await setOwnStandbyInTransaction(tx, actor, guildId, scrimId, {
                         registrationId: input.registrationId!,
-                        status: input.action === 'standby' ? 'standby' : 'selected'
+                        availableAt: input.availableAt
                     });
                 else
                     await withdrawRegistrationInTransaction(

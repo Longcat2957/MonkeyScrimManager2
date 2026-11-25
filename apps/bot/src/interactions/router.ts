@@ -4,7 +4,7 @@ import type { BotApi } from '../api/client.js';
 import { BotApiError, errorCode } from '../api/client.js';
 import { handleAutocomplete, handleCommand } from '../commands/scrims.js';
 import { notice } from '../messages/shared.js';
-import { handleRegistration, RegistrationForms } from './registration.js';
+import { handleRegistration, RegistrationForms, submitStandbyTime } from './registration.js';
 import { handleManualRegistration, ManualRegistrationForms } from './manual-registration.js';
 import { SeasonPanels, openSeasonPanel, handleSeasonButton, submitSeasonName } from './seasons.js';
 import {
@@ -52,6 +52,8 @@ export function createInteractionHandler(api: BotApi, origin: URL) {
                 await submitRecoveryModal(interaction, api, recoveries);
             else if (interaction.isModalSubmit() && interaction.customId.startsWith('scrim-create:'))
                 await submitScrimCreation(interaction, api, origin, creations);
+            else if (interaction.isModalSubmit() && interaction.customId.startsWith('standby-time:'))
+                await submitStandbyTime(interaction, api, forms);
             else if (
                 (interaction.isButton() || interaction.isUserSelectMenu()) &&
                 interaction.customId.startsWith('manual-registration:')

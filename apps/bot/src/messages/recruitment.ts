@@ -36,7 +36,7 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             .setDisabled(data.status !== 'recruit'),
         new ButtonBuilder()
             .setCustomId(`registration-standby:${publication.scrimId}`)
-            .setLabel('대기하기')
+            .setLabel('대기 신청 / 시각 변경')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(data.status !== 'recruit'),
         new ButtonBuilder()

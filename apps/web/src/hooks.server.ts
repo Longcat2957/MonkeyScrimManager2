@@ -20,15 +20,33 @@ import { getActiveRegion } from '#lib/server/riot/account.ts';
 import { startAuctionWorker } from '#lib/server/riot/auction-worker.ts';
 import { getLeagueEntriesByPuuid } from '#lib/server/riot/lol/league.ts';
 import { getSoloMatchIds, getSoloMatchParticipants } from '#lib/server/riot/lol/match.ts';
+import { promoteDueStandby } from '#lib/server/scrims/service.ts';
 
 export const init: ServerInit = () => {
     if (building || !DATABASE_URL?.trim()) return;
-    const stop = startAuctionWorker(getDb, {
+    const stopAuction = startAuctionWorker(getDb, {
         getActiveRegion,
         getLeagueEntriesByPuuid,
         getSoloMatchIds,
         getSoloMatchParticipants
     });
+    // 봇 연결이나 페이지 조회가 없어도 모집 중인 내전의 도착 예약을 처리한다.
+    let promoting = false;
+    const timer = setInterval(async () => {
+        if (promoting) return;
+        promoting = true;
+        try {
+            await promoteDueStandby(getDb());
+        } catch {
+            console.warn('standby_promotion', 'storage_unavailable');
+        } finally {
+            promoting = false;
+        }
+    }, 5000).unref();
+    const stop = () => {
+        clearInterval(timer);
+        stopAuction();
+    };
     process.once('sveltekit:shutdown', stop);
     import.meta.hot?.dispose(() => {
         process.off('sveltekit:shutdown', stop);

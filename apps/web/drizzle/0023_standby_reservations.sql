@@ -1,0 +1,3 @@
+ALTER TABLE "scrim_participant_registrations" ADD COLUMN "available_at" timestamp (3) with time zone;--> statement-breakpoint
+CREATE INDEX "scrim_participant_registrations_due_idx" ON "scrim_participant_registrations" USING btree ("available_at") WHERE "scrim_participant_registrations"."available_at" is not null;--> statement-breakpoint
+ALTER TABLE "scrim_participant_registrations" ADD CONSTRAINT "scrim_participant_registrations_reservation_status" CHECK ("scrim_participant_registrations"."available_at" is null or "scrim_participant_registrations"."status" = 'standby');

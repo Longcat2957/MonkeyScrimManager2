@@ -36,12 +36,21 @@ test('신청 생성·수정·철회는 같은 사용자와 interaction ID를 JSO
         interactionId: '970000000000000102',
         registrationId: REGISTRATION
     });
+    const availableAt = '2099-02-28T15:15:00.000Z';
+    await api.saveRegistration(GUILD, SCRIM, {
+        action: 'standby',
+        actorId: USER,
+        interactionId: '970000000000000103',
+        registrationId: REGISTRATION,
+        availableAt
+    });
     assert.deepEqual(
         calls.map((call) => call.method),
-        ['POST', 'PATCH', 'PATCH']
+        ['POST', 'PATCH', 'PATCH', 'PATCH']
     );
     assert.ok(calls.every((call) => call.url.endsWith(`/guilds/${GUILD}/scrims/${SCRIM}/registrations`)));
     assert.equal(calls[1]!.body.registrationId, REGISTRATION);
+    assert.equal(calls[3]!.body.availableAt, availableAt);
     assert.equal(api.health.connected, true);
 });
 

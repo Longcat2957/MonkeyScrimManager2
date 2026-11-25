@@ -65,6 +65,10 @@ test('선발 정원이 차도 신청할 수 있고 모집 마감 후에는 웹 �
             actions.map((action) => `${action}:${job.scrimId}`).sort()
         );
         assert.ok(controls.every((button) => Boolean(button.disabled) === closed));
+        assert.equal(
+            controls.find((button) => button.custom_id?.startsWith('registration-standby:'))?.label,
+            '대기 신청 / 시각 변경'
+        );
         if (!closed) {
             const text = parts.map((part) => part.content).join('\n');
             assert.match(text, /모집 중/);
