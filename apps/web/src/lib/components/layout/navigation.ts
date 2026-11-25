@@ -1,7 +1,12 @@
+import { dev } from '$app/env';
 import { resolve } from '$app/paths';
 import type { GuildContext } from '#lib/features/guild/types.ts';
 import { formationPath, hasResult } from '#lib/features/scrims/paths.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
+
+export function serverHome() {
+    return resolve('/(app)') + (dev ? '?app=1' : '');
+}
 
 export type NavItem = {
     label: string;

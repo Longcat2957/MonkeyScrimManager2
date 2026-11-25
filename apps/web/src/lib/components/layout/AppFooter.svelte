@@ -5,9 +5,9 @@
 
     const serviceDomain = new URL(SERVICE_URL).hostname;
     const footerLinks = [
-        { label: '문서', href: resolve('/docs') },
-        { label: '이용약관', href: resolve('/terms') },
-        { label: '개인정보 처리방침', href: resolve('/privacy') },
+        { label: '문서', href: resolve('/(app)/docs') },
+        { label: '이용약관', href: resolve('/(app)/terms') },
+        { label: '개인정보 처리방침', href: resolve('/(app)/privacy') },
         { label: '문의', href: `mailto:${CONTACT_EMAIL}` }
     ] as const;
 </script>
@@ -27,7 +27,7 @@
                     href={link.href}
                     class={[
                         'inline-flex min-h-11 min-w-11 items-center justify-center rounded-form px-2 underline-offset-4 hover:underline',
-                        link.href === resolve('/privacy') && 'font-semibold'
+                        link.href === resolve('/(app)/privacy') && 'font-semibold'
                     ]}
                 >
                     {link.label}

@@ -78,8 +78,8 @@
         {
             title: '계정·관리',
             links: [
-                { label: '내 정보', href: `${resolve('/me')}?mock=1` },
-                { label: '백오피스', href: `${resolve('/backoffice')}?mock=1` },
+                { label: '내 정보', href: `${resolve('/(app)/me')}?mock=1` },
+                { label: '백오피스', href: `${resolve('/(app)/backoffice')}?mock=1` },
                 { label: '서버 관리', href: resolve('/g/[guildId]/admin', { guildId }) }
             ]
         }
@@ -225,7 +225,7 @@
         {/each}
         <a
             class="inline-flex min-h-9 items-center text-ui text-ink-2 underline underline-offset-4 hover:text-nexus pointer-coarse:min-h-11"
-            href={resolve('/dev/error')}
+            href={resolve('/(app)/dev/error')}
             data-sveltekit-preload-data="false">오류 화면</a
         >
     </nav>

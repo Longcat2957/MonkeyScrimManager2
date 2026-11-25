@@ -104,6 +104,13 @@
 }
 
 @layer components {
+    .formation-lanes {
+        display: grid;
+        grid-template-rows: repeat(5, minmax(3.75rem, auto));
+        gap: 0.375rem;
+        padding: 0.5rem;
+    }
+
     .panel {
         @apply min-w-0 rounded-box border border-line bg-surface;
     }

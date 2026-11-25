@@ -2,11 +2,15 @@
     import Button from '#lib/components/common/Button.svelte';
     import { resolve } from '$app/paths';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import { dev } from '$app/env';
+    import { page } from '$app/state';
     import type { PageProps } from './$types';
 
     let { data }: PageProps = $props();
 
-    const loginHref = `${resolve('/auth/discord')}?returnTo=${encodeURIComponent('/')}`;
+    const loginHref = $derived(
+        `${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + (dev ? page.url.search : ''))}`
+    );
 </script>
 
 <svelte:head>

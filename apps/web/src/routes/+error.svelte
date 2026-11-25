@@ -2,6 +2,7 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import Button from '#lib/components/common/Button.svelte';
+    import AppShell from './(app)/+layout.svelte';
     import { SERVICE_NAME } from '#lib/branding.ts';
 
     const messages: Record<number, { title: string; description: string }> = {
@@ -31,22 +32,24 @@
     <meta name="robots" content="noindex" />
 </svelte:head>
 
-<section
-    aria-labelledby="error-title"
-    class="mx-auto grid min-h-[52vh] max-w-4xl content-center gap-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10"
->
-    <p
-        class="border-b border-line pb-3 font-brand text-7xl leading-none font-semibold text-muted tabular-nums sm:border-r sm:border-b-0 sm:py-8 sm:pr-10"
+<AppShell>
+    <section
+        aria-labelledby="error-title"
+        class="mx-auto grid min-h-[52vh] max-w-4xl content-center gap-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10"
     >
-        <span class="sr-only">오류 </span>{page.status}
-    </p>
-    <div>
-        <h1 id="error-title" class="text-title font-bold sm:text-3xl">{message.title}</h1>
-        <p class="mt-2 mb-5 text-sm leading-6 text-ink-2">{message.description}</p>
-        {#if page.status >= 500}
-            <Button variant="primary" onclick={() => window.location.reload()}>다시 시도</Button>
-        {:else if page.status !== 401}
-            <Button href={resolve('/')}>홈으로 돌아가기</Button>
-        {/if}
-    </div>
-</section>
+        <p
+            class="border-b border-line pb-3 font-brand text-7xl leading-none font-semibold text-muted tabular-nums sm:border-r sm:border-b-0 sm:py-8 sm:pr-10"
+        >
+            <span class="sr-only">오류 </span>{page.status}
+        </p>
+        <div>
+            <h1 id="error-title" class="text-title font-bold sm:text-3xl">{message.title}</h1>
+            <p class="mt-2 mb-5 text-sm leading-6 text-ink-2">{message.description}</p>
+            {#if page.status >= 500}
+                <Button variant="primary" onclick={() => window.location.reload()}>다시 시도</Button>
+            {:else if page.status !== 401}
+                <Button href={resolve('/(app)')}>홈으로 돌아가기</Button>
+            {/if}
+        </div>
+    </section>
+</AppShell>

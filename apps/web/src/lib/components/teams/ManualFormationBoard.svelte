@@ -320,13 +320,6 @@
 </section>
 
 <style>
-    .manual-board :global(.formation-lanes) {
-        display: grid;
-        grid-template-rows: repeat(5, minmax(3.75rem, auto));
-        gap: 0.375rem;
-        padding: 0.5rem;
-    }
-
     .manual-board :global(button) {
         scroll-margin-block-start: var(--selection-height);
     }

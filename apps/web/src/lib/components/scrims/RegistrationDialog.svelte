@@ -17,6 +17,7 @@
         accounts: RegistrationAccount[];
         accountId: string;
         positions: LolPosition[];
+        onsave?: (accountId: string, positions: LolPosition[]) => void;
     };
 
     let {
@@ -24,7 +25,8 @@
         editing,
         accounts,
         accountId: initialAccount,
-        positions: initialPositions
+        positions: initialPositions,
+        onsave
     }: Props = $props();
 
     let accountId = $state(untrack(() => initialAccount));
@@ -78,6 +80,12 @@
         }
         formData.set('riotAccountId', accountId);
         formData.set('positions', positions.join(','));
+        if (onsave) {
+            cancel();
+            onsave(accountId, positions);
+            open = false;
+            return;
+        }
         pending = true;
         return async ({ result, update }) => {
             try {

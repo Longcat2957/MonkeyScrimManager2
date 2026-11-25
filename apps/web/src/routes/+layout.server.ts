@@ -3,9 +3,12 @@ import { findMockGuild, mockGuilds, mockUser } from '#lib/mocks/session.ts';
 import { listAccessibleGuilds } from '#lib/server/guild/queries.ts';
 import { DiscordError } from '#lib/server/discord/client.ts';
 import { DomainError } from '#lib/server/errors.ts';
+import { isLoopback } from '#lib/ui/local-preview.ts';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ locals, params, url }) => {
+export const load: LayoutServerLoad = async ({ locals, params, route, url }) => {
+    if (dev && route.id === '/dev/landing' && isLoopback(url.hostname))
+        return { user: null, guilds: [], authenticated: false, mockPreview: false, guildListError: null };
     // 개발 바로가기의 명시적 샘플 경로만 목 화면을 제공한다. 실제 조회 실패를 목으로 대체하지 않는다.
     const mockPreview =
         dev && (Boolean(findMockGuild(params.guildId ?? '')) || url.searchParams.get('mock') === '1');

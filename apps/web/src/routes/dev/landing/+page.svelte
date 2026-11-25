@@ -1,7 +1,60 @@
 <script lang="ts">
-    import Button from '#lib/components/common/Button.svelte';
+    import { tick } from 'svelte';
+    import LandingRecruitment from '#lib/components/scrims/LandingRecruitment.svelte';
+    import FormationPool from '#lib/components/teams/FormationPool.svelte';
+    import FormationTeamCard from '#lib/components/teams/FormationTeamCard.svelte';
+    import { DragState } from '#lib/components/teams/drag.svelte.ts';
+    import GamePlayerDialog from '#lib/components/matches/GamePlayerDialog.svelte';
+    import GameTeamTable from '#lib/components/matches/GameTeamTable.svelte';
+    import type { GamePlayer } from '#lib/features/matches/types.ts';
+    import { moveAssignment, type SlotKey } from '#lib/features/scrims/formation.ts';
     import { SERVICE_NAME } from '#lib/branding.ts';
-    import { landingMatch as match } from '#lib/mocks/landing.ts';
+    import {
+        initialAssignments,
+        landingPlayers,
+        landingTeams,
+        sampleLineup,
+        sampleSides,
+        visitor
+    } from '#lib/mocks/landing.ts';
+
+    let joined = $state(false);
+    let positions = $state([...visitor.positions]);
+    let assignments = $state({ ...initialAssignments });
+    let selectedId = $state<string | null>(null);
+    let board: HTMLElement;
+    let detail = $state<GamePlayer | null>(null);
+    let detailOpen = $state(false);
+    const players = $derived(
+        landingPlayers.flatMap((player) =>
+            player !== visitor ? [player] : joined ? [{ ...visitor, positions }] : []
+        )
+    );
+    const pool = $derived(players.filter((player) => !assignments[player.participantId]));
+    const drag = new DragState({
+        enabled: () => true,
+        accepts: (id, target) =>
+            players.some((player) => player.participantId === id) && (target !== 'pool' || !!assignments[id]),
+        ondrop: (id, target) => move(id, target === 'pool' ? null : (target as SlotKey))
+    });
+
+    function setJoined(value: boolean) {
+        joined = value;
+        if (!value) {
+            assignments = moveAssignment(assignments, visitor.participantId, null);
+            if (selectedId === visitor.participantId) selectedId = null;
+        }
+    }
+    function select(id: string) {
+        selectedId = selectedId === id ? null : id;
+    }
+    async function move(id: string, target: SlotKey | null) {
+        assignments = moveAssignment(assignments, id, target);
+        selectedId = null;
+        await tick();
+        const item = board.querySelector<HTMLElement>(`[data-formation-player="${CSS.escape(id)}"]`);
+        (item?.matches('button') ? item : item?.querySelector('button'))?.focus();
+    }
 </script>
 
 <svelte:head>
@@ -13,77 +66,77 @@
     />
 </svelte:head>
 
+<svelte:window
+    onkeydown={(event) => {
+        if (event.key === 'Escape') selectedId = null;
+    }}
+/>
+
 <div class="mx-auto max-w-6xl break-keep">
-    <header class="grid items-end gap-6 py-8 sm:py-14 xl:grid-cols-[1fr_auto]">
-        <div>
-            <h1 class="text-4xl font-bold leading-[1.15] tracking-tight sm:text-6xl">
-                모집은 디스코드에서.<br />전적은 <span class="font-brand text-nexus">{SERVICE_NAME}</span>에.
-            </h1>
-            <p class="mt-5 max-w-prose leading-relaxed text-ink-2">
-                함께할 사람을 모으고 팀을 나누세요. 경기가 끝나면 리플레이 파일 하나로 승패와 포지션별 MMR이
-                남습니다.
-            </p>
-        </div>
-        <Button href="#first-scrim" variant="primary" size="lg" class="justify-self-start"
-            >첫 내전 사용법 보기</Button
-        >
+    <header class="py-8 sm:py-12">
+        <h1 class="text-4xl font-bold leading-[1.15] tracking-tight sm:text-6xl">
+            모집은 디스코드에서.<br />전적은 <span class="font-brand text-nexus">{SERVICE_NAME}</span>에.
+        </h1>
+        <p class="mt-5 max-w-prose leading-relaxed text-ink-2">
+            함께할 사람을 모으고 팀을 나누세요. 경기가 끝나면 리플레이 파일 하나로 승패와 포지션별 MMR이
+            남습니다.
+        </p>
     </header>
 
-    <figure class="overflow-hidden rounded-box border border-line-strong bg-surface">
-        <figcaption
-            class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line-strong px-5 py-3 sm:px-7"
-        >
-            <strong>{match.title}</strong><span class="text-xs text-muted">가상 내전 예시</span>
-        </figcaption>
-        <div class="grid divide-y divide-line-strong md:grid-cols-2 md:divide-x md:divide-y-0">
-            <section class="p-5 sm:p-7" aria-labelledby="discord-post">
-                <h2 id="discord-post" class="text-sm font-semibold text-ink-2">Discord 모집 글</h2>
-                <p class="my-5 flex items-baseline gap-3">
-                    <strong class="font-brand text-5xl tabular-nums">{match.time}</strong><span
-                        class="text-sm text-muted">시작 예정 · 5 대 5</span
-                    >
-                </p>
-                <p class="mb-2 text-xs text-muted">참가 명단 일부</p>
-                <ul class="divide-y divide-line border-y border-line">
-                    {#each match.players as player (player.name)}
-                        <li class="flex items-baseline gap-3 py-2">
-                            <span class="min-w-8 text-sm text-role-gold">{player.position}</span><strong
-                                >{player.name}</strong
-                            ><span class="ml-auto text-sm text-muted">{player.status}</span>
-                        </li>
+    <section id="try-scrim" aria-labelledby="try-title" tabindex="-1" class="scroll-mt-20">
+        <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="try-title" class="text-2xl font-bold tracking-tight">한 판 체험하기</h2>
+            <p class="text-sm text-muted">연습 명단입니다. 새로고침하면 처음으로 돌아갑니다.</p>
+        </div>
+        <div class="grid items-start gap-4 lg:grid-cols-[minmax(15rem,1fr)_minmax(0,2fr)]">
+            <LandingRecruitment
+                bind:joined={() => joined, setJoined}
+                bind:positions
+                player={visitor.displayName}
+                participantCount={players.length}
+                capacity={landingPlayers.length}
+            />
+            <section bind:this={board} aria-labelledby="formation-title" class="panel overflow-hidden">
+                <h3 id="formation-title" class="panel-bar">팀 편성</h3>
+                <FormationPool players={pool} {selectedId} interactive {drag} onselect={select} />
+                <div class="grid gap-px border-t border-line bg-line sm:grid-cols-2">
+                    {#each landingTeams as team (team.id)}
+                        <FormationTeamCard
+                            {team}
+                            {players}
+                            {assignments}
+                            {selectedId}
+                            interactive
+                            details
+                            {drag}
+                            onselect={select}
+                            onplace={(slot) => selectedId && move(selectedId, slot)}
+                            onremove={(id) => move(id, null)}
+                        />
                     {/each}
-                </ul>
-            </section>
-            <section class="bg-surface-2 p-5 sm:p-7" aria-labelledby="web-record">
-                <h2 id="web-record" class="text-sm font-semibold text-ink-2">웹 경기 기록</h2>
-                <div
-                    class="my-5 flex items-center justify-between gap-2 border-b border-line pb-4 text-center"
-                >
-                    <div>
-                        <p class="text-xs text-muted">블루 진영</p>
-                        <strong>{match.winner}</strong>
-                    </div>
-                    <p
-                        aria-label="포로팀 1승, 칼날부리팀 0승"
-                        class="font-brand text-4xl tabular-nums sm:text-5xl"
-                    >
-                        1 : 0
-                    </p>
-                    <div>
-                        <p class="text-xs text-muted">레드 진영</p>
-                        <strong>{match.opponent}</strong>
-                    </div>
-                </div>
-                <div class="flex items-end justify-between gap-2">
-                    <div>
-                        <p class="text-xs text-muted">{match.position} MMR</p>
-                        <strong>{match.player}</strong>
-                    </div>
-                    <strong class="font-brand text-3xl tabular-nums text-nexus">{match.mmr}</strong>
                 </div>
             </section>
         </div>
-    </figure>
+        <details class="panel mt-4 overflow-hidden">
+            <summary class="cursor-pointer px-4 py-3 font-semibold hover:bg-surface-hover"
+                >이전 경기 기록 살펴보기</summary
+            >
+            <GameTeamTable
+                sides={sampleSides}
+                lineup={sampleLineup}
+                guildId="sample"
+                durationSec={1840}
+                maxDamage={Math.max(
+                    ...sampleSides.flatMap((side) => side.players.map((player) => player.damage ?? 0))
+                )}
+                ondetail={(player) => {
+                    detail = player;
+                    detailOpen = true;
+                }}
+            />
+        </details>
+        <GamePlayerDialog bind:open={detailOpen} player={detail} durationSec={1840} />
+    </section>
 
     <section
         id="first-scrim"

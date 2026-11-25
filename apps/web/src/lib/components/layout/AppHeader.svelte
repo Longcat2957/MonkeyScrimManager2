@@ -11,7 +11,7 @@
     import { desktop } from '#lib/ui/viewport.svelte.ts';
     import ContextNav from './ContextNav.svelte';
     import MenuButton from './MenuButton.svelte';
-    import { guildNavItems, type NavItem } from './navigation.ts';
+    import { guildNavItems, serverHome, type NavItem } from './navigation.ts';
 
     let { accountHeight = $bindable(0) }: { accountHeight?: number } = $props();
     let mode: ThemeMode = $state('dark');
@@ -53,14 +53,14 @@
             ? [
                   {
                       label: '내 정보',
-                      href: `${resolve('/me')}${page.data.mockPreview ? '?mock=1' : ''}`,
+                      href: `${resolve('/(app)/me')}${page.data.mockPreview ? '?mock=1' : ''}`,
                       current: pathname === '/me'
                   },
                   ...(user.isServiceAdmin
                       ? [
                             {
                                 label: '백오피스',
-                                href: `${resolve('/backoffice')}${page.data.mockPreview ? '?mock=1' : ''}`,
+                                href: `${resolve('/(app)/backoffice')}${page.data.mockPreview ? '?mock=1' : ''}`,
                                 current: pathname.startsWith('/backoffice')
                             }
                         ]
@@ -128,7 +128,7 @@
 
 {#snippet brand(rail: boolean)}
     <a
-        href={resolve('/')}
+        href={serverHome()}
         class="rail-control flex shrink-0 items-center gap-2.5 px-1 py-0.5 no-underline"
         aria-label={`${SERVICE_NAME} 홈`}
     >

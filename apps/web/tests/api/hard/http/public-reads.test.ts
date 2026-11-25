@@ -60,6 +60,10 @@ test('HTTP: 다른 서버의 내전 ID와 운영 빌드의 개발 샘플은 404�
         .returning();
     assert.equal((await f.request('/g/' + HTTP_IDS.otherGuild + '/scrims/' + scrim!.id)).status, 404);
     assert.equal((await f.request('/g/devGuild001/scrims')).status, 404);
+    assert.equal((await f.request('/dev/landing')).status, 404);
+    const home = await f.request('/');
+    assert.equal(home.status, 200);
+    assert.match(await home.text(), /내 Discord 서버/);
 });
 
 test('HTTP: 순위 endpoint는 공개 JSON을 반환하고 잘못된 URL 상태를 거절한다', async (t) => {

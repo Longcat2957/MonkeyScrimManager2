@@ -30,7 +30,7 @@
     let error = $state('');
     let notice = $state('');
     let refreshRequired = $state(false);
-    const moving = $derived(navigating.to?.route.id === '/backoffice');
+    const moving = $derived(navigating.to?.route.id === page.route.id);
     const locked = $derived(busy || moving || refreshRequired);
     const lastAdmin = $derived(overview.admins.length <= 1);
     const action = $derived(`?/setServiceAdmin${page.url.searchParams.get('mock') === '1' ? '&mock=1' : ''}`);

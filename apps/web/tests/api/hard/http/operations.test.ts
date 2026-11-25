@@ -30,7 +30,7 @@ test('실제 HTTP 요청 ID·업무 오류·부분 실패 로그는 비밀·원�
     assert.match(requestId ?? '', /^[0-9a-f-]{36}$/);
     await waitFor(() => f.requestObservations.some((line) => line.requestId === requestId));
     const entry = f.requestObservations.find((line) => line.requestId === requestId)!;
-    assert.equal(entry.route, '/docs');
+    assert.equal(entry.route, '/(app)/docs');
     assert.equal(entry.code, null);
     assert.ok(Number.isFinite(entry.durationMs));
     assert.deepEqual(
@@ -65,7 +65,7 @@ test('실제 HTTP 요청 ID·업무 오류·부분 실패 로그는 비밀·원�
         const failed = await f.request('/me?private=' + privateText, { headers: { cookie: session.cookie } });
         assert.equal(failed.status, 500);
         await waitFor(() =>
-            f.requestObservations.some((line) => line.route === '/me' && line.status === 500)
+            f.requestObservations.some((line) => line.route === '/(app)/me' && line.status === 500)
         );
     } finally {
         await f.pool.query('alter table accounts_temporarily_unavailable rename to guild_riot_accounts');
