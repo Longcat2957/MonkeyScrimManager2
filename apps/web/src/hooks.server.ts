@@ -22,6 +22,19 @@ import { getLeagueEntriesByPuuid } from '#lib/server/riot/lol/league.ts';
 import { getSoloMatchIds, getSoloMatchParticipants } from '#lib/server/riot/lol/match.ts';
 import { promoteDueStandby } from '#lib/server/scrims/service.ts';
 
+// PostgreSQL 연결·자원 부족(08·53·57P0x)과 Node 네트워크 오류는 저장소 장애로 본다.
+const STORAGE_FAILURE = /^(08|53|57P0)|^E(CONNREFUSED|CONNRESET|TIMEDOUT|HOSTUNREACH|NOTFOUND|PIPE)$/;
+
+/** 오류와 원인 사슬에서 첫 번째 문자열 코드(SQLSTATE 등)를, 없으면 오류 이름을 찾는다. */
+function failureCode(cause: unknown): string {
+    let current = cause;
+    for (let depth = 0; depth < 6 && current instanceof Error; depth++) {
+        if ('code' in current && typeof current.code === 'string') return current.code;
+        current = 'cause' in current ? current.cause : null;
+    }
+    return cause instanceof Error ? cause.name : 'unknown';
+}
+
 export const init: ServerInit = () => {
     if (building || !DATABASE_URL?.trim()) return;
     const stopAuction = startAuctionWorker(getDb, {
@@ -37,8 +50,11 @@ export const init: ServerInit = () => {
         promoting = true;
         try {
             await promoteDueStandby(getDb());
-        } catch {
-            console.warn('standby_promotion', 'storage_unavailable');
+        } catch (cause) {
+            // 원시 SQL·매개변수가 담긴 메시지 대신 오류 코드만 남기고, 연결 장애와 처리 오류를 구분한다.
+            const code = failureCode(cause);
+            if (STORAGE_FAILURE.test(code)) console.warn('standby_promotion', 'storage_unavailable', code);
+            else console.error('standby_promotion', 'failed', code);
         } finally {
             promoting = false;
         }

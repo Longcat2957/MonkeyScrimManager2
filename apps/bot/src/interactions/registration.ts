@@ -327,12 +327,7 @@ export async function handleRegistration(
             await interaction.editReply(notice('참가를 취소했어요.'));
             return;
         }
-        if (context.canEdit && context.registration?.status === 'standby') {
-            await interaction.editReply(
-                notice(`현재 상태: ${standbyStatus(context.registration.availableAt)}`)
-            );
-            return;
-        }
+        // 기존 대기자는 선발로 바꾸지 않고 본인 신청 화면(계정·희망 포지션 수정, 철회)을 연다.
         let joined = false;
         if (context.canEdit && !activeRegistration(context)) {
             // 처음에는 전 포지션을 허용하고, 희망 포지션은 신청 뒤 필요한 경우 수정한다.

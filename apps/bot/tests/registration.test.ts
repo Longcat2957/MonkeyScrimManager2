@@ -333,7 +333,7 @@ test('시각을 비우면 예약 없이 수동 배정을 기다리며 기존 예
     }
 });
 
-test('참가 버튼은 기존 대기자를 승격하지 않고 본인 예약 상태만 보여준다', async () => {
+test('참가 버튼은 기존 대기자를 승격하지 않고 본인 신청 화면을 연다', async () => {
     for (const availableAt of [null, '2099-02-28T15:15:00.000Z']) {
         const original = registrationContext({
             registration: {
@@ -347,10 +347,12 @@ test('참가 버튼은 기존 대기자를 승격하지 않고 본인 예약 상
         const api = { registration: async () => original } as unknown as BotApi;
         const request = interaction(`registration:${SCRIM}`);
         await handleRegistration(request.value, api, new RegistrationForms());
-        assert.match(
-            JSON.stringify(request.replies),
-            availableAt ? /2099-03-01 00:15 KST/ : /수동 배정 대기/
-        );
+        const reply = JSON.stringify(request.replies);
+        assert.match(reply, availableAt ? /2099-03-01 00:15 KST/ : /수동 배정 대기/);
+        // 저장 API 없이 화면만 열고, 포지션 수정과 철회를 제공한다.
+        assert.match(reply, /form:[0-9a-f]{24}:positions/);
+        assert.match(reply, /수정하기/);
+        assert.match(reply, /form:[0-9a-f]{24}:withdraw/);
     }
 });
 

@@ -18,11 +18,6 @@
         canRegister: boolean;
         canEdit: boolean;
         blockedReason: string | null;
-        actions?: {
-            register: (accountId: string, positions: LolPosition[]) => void;
-            update: (accountId: string, positions: LolPosition[]) => void;
-            withdraw: () => void;
-        };
     };
 
     let {
@@ -32,8 +27,7 @@
         previousPositions,
         canRegister,
         canEdit,
-        blockedReason,
-        actions
+        blockedReason
     }: Props = $props();
 
     let dialogOpen = $state(false);
@@ -50,14 +44,9 @@
             const positions = previousPositions.length
                 ? previousPositions
                 : POSITIONS.map((item) => item.key);
-            const accountId =
-                accounts.find((item) => item.id === primaryAccountId)?.id ?? accounts[0]?.id ?? '';
-            if (actions) {
-                actions.register(accountId, positions);
-                return;
-            }
             const message = await postAction('register', {
-                riotAccountId: accountId,
+                riotAccountId:
+                    accounts.find((item) => item.id === primaryAccountId)?.id ?? accounts[0]?.id ?? '',
                 positions: positions.join(',')
             });
             if (message) toast.error(message);
@@ -71,10 +60,6 @@
         if (!(await confirm('신청을 철회할까요?', '신청 철회'))) return;
         withdrawing = true;
         try {
-            if (actions) {
-                actions.withdraw();
-                return;
-            }
             const message = await postAction('withdraw', {});
             if (message) toast.error(message);
         } finally {
@@ -131,6 +116,5 @@
         {accounts}
         accountId={registration.riotAccountId ?? primaryAccountId ?? ''}
         positions={registration.positions as LolPosition[]}
-        onsave={actions?.update}
     />
 {/if}
