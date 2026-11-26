@@ -32,8 +32,9 @@ function discordCalls(f: Fixture) {
     return f.upstreamCalls.filter((path) => path.startsWith('https://discord.com/'));
 }
 
+// 사이트 화면은 서버 목록을 읽지 않으므로 레일 셸의 내 정보로 목록 캐시를 채운다.
 async function warmGuildList(f: Fixture, cookie: string) {
-    const response = await f.request('/docs', { headers: { cookie } });
+    const response = await f.request('/me', { headers: { cookie } });
     assert.equal(response.status, 200);
     await response.text();
     f.upstreamCalls.length = 0;
@@ -49,6 +50,7 @@ async function readData(f: Fixture, path: string, invalidated: string, cookie?: 
     return payload.nodes;
 }
 
+// 노드 순서: 루트, /g, /g/[guildId], 내전 layout, 페이지.
 /** SvelteKit data 응답의 참조 배열에서 해당 load가 반환한 문맥의 권한만 읽는다. */
 function permission(node: DataNode | undefined, context: 'guild' | 'scrim') {
     assert.equal(node?.type, 'data');
@@ -74,20 +76,21 @@ test('HTTP: 61초 지난 운영 권한은 공개 GET과 상위 layout 재사용 
 
     await expire(f);
     // 루트·서버 layout을 재사용하는 요청에서도 내전 조회보다 먼저 권한을 갱신한다.
-    const reused = await readData(f, path, '0011', cookie);
+    const reused = await readData(f, path, '00011', cookie);
     assert.equal(reused[0]?.type, 'skip');
     assert.equal(reused[1]?.type, 'skip');
-    assert.equal(permission(reused[2], 'scrim'), true);
+    assert.equal(reused[2]?.type, 'skip');
     assert.equal(permission(reused[3], 'scrim'), true);
+    assert.equal(permission(reused[4], 'scrim'), true);
     const refreshed = await f.db.query.guildMembers.findFirst({ where: memberWhere(HTTP_IDS.manager) });
     assert.ok(refreshed?.syncedAt && Date.now() - refreshed.syncedAt.getTime() < 60_000);
     assert.equal(discordCalls(f).length, 4);
 
-    const current = await readData(f, path, '0111', cookie);
-    assert.equal(permission(current[1], 'guild'), true);
-    assert.equal(permission(current[2], 'scrim'), true);
-    assert.equal(current[1]?.uses?.url, 1);
+    const current = await readData(f, path, '01111', cookie);
+    assert.equal(permission(current[2], 'guild'), true);
+    assert.equal(permission(current[3], 'scrim'), true);
     assert.equal(current[2]?.uses?.url, 1);
+    assert.equal(current[3]?.uses?.url, 1);
     assert.equal(discordCalls(f).length, 4, '갱신 직후 다시 읽을 때 Discord를 중복 조회하지 않는다.');
 });
 
@@ -100,15 +103,15 @@ test('HTTP: 운영 권한 회수는 내부 이동의 서버·내전·페이지 �
         .update(schema.guildMembers)
         .set({ manageGuild: true, isAdmin: true })
         .where(memberWhere(HTTP_IDS.member));
-    const initial = await readData(f, path, '0111', cookie);
-    assert.equal(permission(initial[1], 'guild'), true);
-    assert.equal(permission(initial[2], 'scrim'), true);
+    const initial = await readData(f, path, '01111', cookie);
+    assert.equal(permission(initial[2], 'guild'), true);
+    assert.equal(permission(initial[3], 'scrim'), true);
     await expire(f, HTTP_IDS.member);
 
-    const revoked = await readData(f, path, '0111', cookie);
-    assert.equal(permission(revoked[1], 'guild'), false);
-    assert.equal(permission(revoked[2], 'scrim'), false);
+    const revoked = await readData(f, path, '01111', cookie);
+    assert.equal(permission(revoked[2], 'guild'), false);
     assert.equal(permission(revoked[3], 'scrim'), false);
+    assert.equal(permission(revoked[4], 'scrim'), false);
     const membership = await f.db.query.guildMembers.findFirst({ where: memberWhere(HTTP_IDS.member) });
     assert.equal(membership?.manageGuild, false);
     assert.equal(membership?.isAdmin, false);
@@ -132,10 +135,10 @@ test('HTTP: 탈퇴한 운영자의 공개 열람은 유지하고 소속과 운�
         roleIds: [],
         syncedAt: new Date(Date.now() - 61_000)
     });
-    const nodes = await readData(f, path, '0111', cookie);
-    assert.equal(permission(nodes[1], 'guild'), false);
-    assert.equal(permission(nodes[2], 'scrim'), false);
+    const nodes = await readData(f, path, '01111', cookie);
+    assert.equal(permission(nodes[2], 'guild'), false);
     assert.equal(permission(nodes[3], 'scrim'), false);
+    assert.equal(permission(nodes[4], 'scrim'), false);
     assert.equal(
         await f.db.query.guildMembers.findFirst({ where: memberWhere(HTTP_IDS.manager) }),
         undefined
@@ -155,10 +158,10 @@ test('HTTP: Discord 503이면 공개 HTML과 내부 이동은 200이며 만료�
     const response = await f.request(path, { headers: { cookie } });
     assert.equal(response.status, 200);
     assert.doesNotMatch(await response.text(), /운영 메뉴/);
-    const nodes = await readData(f, path, '0111', cookie);
-    assert.equal(permission(nodes[1], 'guild'), false);
-    assert.equal(permission(nodes[2], 'scrim'), false);
+    const nodes = await readData(f, path, '01111', cookie);
+    assert.equal(permission(nodes[2], 'guild'), false);
     assert.equal(permission(nodes[3], 'scrim'), false);
+    assert.equal(permission(nodes[4], 'scrim'), false);
     const membership = await f.db.query.guildMembers.findFirst({ where: memberWhere(HTTP_IDS.manager) });
     assert.ok(membership?.syncedAt && Date.now() - membership.syncedAt.getTime() > 60_000);
     assert.ok(discordCalls(f).includes(memberUrl + HTTP_IDS.manager));
@@ -171,9 +174,9 @@ test('HTTP: 비로그인 사용자는 공개 열람과 내부 이동 중 Discord
     const response = await f.request(path);
     assert.equal(response.status, 200);
     assert.doesNotMatch(await response.text(), /운영 메뉴/);
-    const nodes = await readData(f, path, '0111');
-    assert.equal(permission(nodes[1], 'guild'), false);
-    assert.equal(permission(nodes[2], 'scrim'), false);
+    const nodes = await readData(f, path, '01111');
+    assert.equal(permission(nodes[2], 'guild'), false);
     assert.equal(permission(nodes[3], 'scrim'), false);
+    assert.equal(permission(nodes[4], 'scrim'), false);
     assert.deepEqual(discordCalls(f), []);
 });

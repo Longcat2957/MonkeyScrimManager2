@@ -11,6 +11,8 @@ const policyLinks = [
     { label: '개인정보 처리방침', path: '/privacy' }
 ];
 
+const width = (page: Page) => page.viewportSize()!.width;
+
 async function footerContact(page: Page) {
     const footer = page.getByRole('contentinfo');
     assert.equal(await footer.count(), 1);
@@ -22,8 +24,17 @@ async function footerContact(page: Page) {
     assert.equal(await navigation.locator(`a[href="${contactHref}"]`).count(), 1);
     assert.equal(await contact.innerText(), '문의');
 
+    // 사이트 셸은 이용 안내를 상단 바가 맡으므로 푸터에서 같은 목적지를 빼고 한 곳에만 둔다.
+    const railShell = /^\/(g|me|backoffice)(\/|$)/.test(new URL(page.url()).pathname);
+    // 좁은 사이트 화면의 이용 안내는 닫힌 메뉴 시트 안에 있어 보이지 않는다.
+    const docsLinks = page.locator('a[href="/docs"]:visible');
+    assert.equal(await docsLinks.count(), railShell || width(page) >= 768 ? 1 : 0);
     for (const { label, path } of policyLinks) {
         const link = navigation.getByRole('link', { name: label, exact: true });
+        if (label === '문서' && !railShell) {
+            assert.equal(await link.count(), 0);
+            continue;
+        }
         assert.equal(await link.count(), 1);
         const destination = new URL((await link.getAttribute('href'))!, page.url());
         assert.equal(destination.origin, new URL(page.url()).origin);

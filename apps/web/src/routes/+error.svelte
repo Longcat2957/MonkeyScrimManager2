@@ -2,8 +2,12 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import Button from '#lib/components/common/Button.svelte';
-    import AppShell from './(app)/+layout.svelte';
     import { SERVICE_NAME } from '#lib/branding.ts';
+    import RailShell from '#lib/components/layout/RailShell.svelte';
+    import SiteShell from '#lib/components/layout/SiteShell.svelte';
+
+    // 서버·계정 문맥의 경로는 레일 셸, 나머지는 사이트 셸에서 오류를 보여 준다.
+    const Shell = $derived(/^\/(g|me|backoffice|dev)(\/|$)/.test(page.url.pathname) ? RailShell : SiteShell);
 
     const messages: Record<number, { title: string; description: string }> = {
         401: {
@@ -32,7 +36,7 @@
     <meta name="robots" content="noindex" />
 </svelte:head>
 
-<AppShell>
+<Shell>
     <section
         aria-labelledby="error-title"
         class="mx-auto grid min-h-[52vh] max-w-4xl content-center gap-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10"
@@ -48,8 +52,8 @@
             {#if page.status >= 500}
                 <Button variant="primary" onclick={() => window.location.reload()}>다시 시도</Button>
             {:else if page.status !== 401}
-                <Button href={resolve('/(app)')}>홈으로 돌아가기</Button>
+                <Button href={resolve('/(site)')}>홈으로 돌아가기</Button>
             {/if}
         </div>
     </section>
-</AppShell>
+</Shell>

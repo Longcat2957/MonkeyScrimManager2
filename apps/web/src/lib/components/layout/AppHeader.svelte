@@ -1,20 +1,22 @@
 <script lang="ts">
-    import { asset, resolve } from '$app/paths';
+    import { browser } from '$app/env';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { onMount, tick } from 'svelte';
-    import { SERVICE_NAME } from '#lib/branding.ts';
     import Button from '#lib/components/common/Button.svelte';
     import Dialog from '#lib/components/common/Dialog.svelte';
-    import PlayerFace from '#lib/components/common/PlayerFace.svelte';
     import { overlay } from '#lib/ui/overlay.ts';
-    import { currentMode, setMode, type ThemeMode } from '#lib/ui/theme.ts';
     import { desktop } from '#lib/ui/viewport.svelte.ts';
+    import AccountMenu from './AccountMenu.svelte';
+    import BrandLink from './BrandLink.svelte';
     import ContextNav from './ContextNav.svelte';
     import MenuButton from './MenuButton.svelte';
-    import { guildNavItems, serverHome, type NavItem } from './navigation.ts';
+    import ThemeToggle from './ThemeToggle.svelte';
+    import { logout } from './logout.ts';
+    import { guildNavItems } from './navigation.ts';
 
     let { accountHeight = $bindable(0) }: { accountHeight?: number } = $props();
-    let mode: ThemeMode = $state('dark');
+    const showRail = $derived(desktop.current);
     let menuOpen = $state(false);
     let gamesOpen = $state(false);
     let railCollapsed = $state(false);
@@ -37,38 +39,12 @@
         }
     }
 
-    // 하이드레이션 뒤 첫 페인트에서 복원한 모드를 스위치에 반영한다.
-    $effect(() => {
-        mode = currentMode();
-    });
-
     const user = $derived(page.data.user ?? null);
     const guilds = $derived(page.data.guilds ?? []);
     const guild = $derived(page.data.guild ?? null);
     const pathname = $derived(page.url.pathname);
+    const returnTo = $derived(pathname + page.url.search + (browser ? page.url.hash : ''));
     const guildItems = $derived(guild ? guildNavItems(guild, pathname) : []);
-
-    const accountItems = $derived<NavItem[]>(
-        user
-            ? [
-                  {
-                      label: '내 정보',
-                      href: `${resolve('/(app)/me')}${page.data.mockPreview ? '?mock=1' : ''}`,
-                      current: pathname === '/me'
-                  },
-                  ...(user.isServiceAdmin
-                      ? [
-                            {
-                                label: '백오피스',
-                                href: `${resolve('/(app)/backoffice')}${page.data.mockPreview ? '?mock=1' : ''}`,
-                                current: pathname.startsWith('/backoffice')
-                            }
-                        ]
-                      : []),
-                  ...(page.data.authenticated ? [{ label: '로그아웃', href: '', current: false }] : [])
-              ]
-            : []
-    );
 
     const guildActions = $derived(
         guilds.length
@@ -86,30 +62,12 @@
         if (target) location.assign(resolve('/g/[guildId]', { guildId: target.id }));
     }
 
-    function toggleMode() {
-        mode = mode === 'dark' ? 'primary' : 'dark';
-        setMode(mode);
-    }
-
     async function openGames() {
         if (menuOpen) {
             menuOpen = false;
             await tick();
         }
         gamesOpen = true;
-    }
-
-    function logout() {
-        const form = document.getElementById('logout-form');
-        if (form instanceof HTMLFormElement) form.requestSubmit();
-    }
-
-    function selectAccount(index: number) {
-        menuOpen = false;
-        const item = accountItems[index];
-        if (!item) return;
-        if (item.label === '로그아웃') logout();
-        else location.assign(item.href);
     }
 </script>
 
@@ -126,35 +84,10 @@
     </svg>
 {/snippet}
 
-{#snippet brand(rail: boolean)}
-    <a
-        href={serverHome()}
-        class="rail-control flex shrink-0 items-center gap-2.5 px-1 py-0.5 no-underline"
-        aria-label={`${SERVICE_NAME} 홈`}
-    >
-        <img
-            src={asset('brand/logo.png')}
-            alt=""
-            width="34"
-            height="34"
-            class="size-8.5 rounded-full border border-nexus"
-        />
-        {#if rail}
-            <span class="rail-label font-brand text-[1.3125rem] leading-none font-bold tracking-[-0.02em]"
-                >{SERVICE_NAME}</span
-            >
-        {/if}
-    </a>
-{/snippet}
-
-{#if page.data.authenticated}
-    <form id="logout-form" method="POST" action={resolve('/auth/logout')} class="hidden"></form>
-{/if}
-
 {#snippet sessionControl()}
-    {#if !page.data.authenticated && !user && pathname !== '/'}
+    {#if !page.data.authenticated && !user}
         <a
-            href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(page.url.pathname + page.url.search)}`}
+            href={`${resolve('/auth/discord')}?returnTo=${encodeURIComponent(returnTo)}`}
             data-sveltekit-reload
             data-sveltekit-preload-data="false"
             title={desktop.current && railCollapsed ? '로그인' : undefined}
@@ -167,7 +100,7 @@
 {/snippet}
 
 {#snippet guildSwitcher(wide: boolean)}
-    {#if user && pathname !== '/'}
+    {#if user}
         <MenuButton
             label="서버 선택"
             actions={guildActions}
@@ -204,29 +137,8 @@
     {/if}
 {/snippet}
 
-{#snippet themeToggle()}
-    <button
-        type="button"
-        role="switch"
-        aria-checked={mode === 'primary'}
-        aria-label="라이트 모드"
-        class:rail-control={!user}
-        class="inline-flex min-h-9 w-full items-center justify-between gap-2 overflow-hidden rounded-form px-2.5 text-ui text-ink-2 hover:bg-surface-hover pointer-coarse:min-h-11"
-        onclick={toggleMode}
-    >
-        <span
-            class="relative flex h-4 w-7 shrink-0 items-center rounded-full border border-line-strong bg-surface"
-            aria-hidden="true"
-        >
-            <span
-                class={[
-                    'size-3 rounded-full bg-nexus motion-safe:transition-transform',
-                    mode === 'primary' ? 'translate-x-3.5' : 'translate-x-0.5'
-                ]}
-            ></span>
-        </span>
-        <span aria-hidden="true" class:rail-label={!user}>라이트 모드</span>
-    </button>
+{#snippet menuThemeToggle()}
+    <ThemeToggle />
 {/snippet}
 
 {#snippet gameTool()}
@@ -248,35 +160,16 @@
 {/snippet}
 
 {#snippet accountMenu()}
-    {#if user}
-        <MenuButton
-            label="계정 메뉴"
-            actions={accountItems.map((item) => ({
-                content: item.label,
-                current: item.current
-            }))}
-            align="left"
-            side={desktop.current ? 'up' : 'down'}
-            onselect={selectAccount}
-            triggerVariant="secondary"
-            triggerClass="rail-control w-full justify-start gap-2.5 overflow-hidden p-2 not-hover:bg-surface"
-            footer={themeToggle}
-        >
-            <PlayerFace name={user.displayName} imageUrl={user.avatarUrl} size="sm" />
-            <span class="rail-label min-w-0 flex-1 truncate text-left text-ui">{user.displayName}</span>
-            <svg
-                aria-hidden="true"
-                viewBox="0 0 16 16"
-                class={['rail-label size-4 shrink-0 text-muted', !desktop.current && 'rotate-180']}
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"><path d="m4 10 4-4 4 4" /></svg
-            >
-        </MenuButton>
-    {/if}
+    <AccountMenu
+        rail
+        side={showRail ? 'up' : 'down'}
+        triggerClass="w-full justify-start"
+        footer={menuThemeToggle}
+        onselect={() => (menuOpen = false)}
+    />
 {/snippet}
 
-{#if desktop.current}
+{#if showRail}
     <!-- 좌측 서버 레일: 목업의 사이드 내비게이션. 현재 서버·메뉴·계정을 한 곳에 둔다. -->
     <aside
         data-rail-collapsed={railCollapsed}
@@ -286,7 +179,7 @@
         ]}
     >
         <div class="flex items-center overflow-hidden">
-            {@render brand(true)}
+            <BrandLink class="rail-control" />
         </div>
         <div id="desktop-rail-content" class="contents">
             {@render guildSwitcher(true)}
@@ -330,7 +223,7 @@
                 {#if user}
                     {@render accountMenu()}
                 {:else}
-                    {@render themeToggle()}
+                    <ThemeToggle rail />
                     {@render sessionControl()}
                 {/if}
                 {#if page.data.authenticated && !user}
@@ -350,7 +243,7 @@
     <header
         class="sticky top-0 z-50 flex h-(--app-header-height) items-center gap-2 border-b border-line bg-rail px-3 text-ink"
     >
-        {@render brand(false)}
+        <BrandLink wordmark={false} />
         <div class="ml-auto flex min-w-0 items-center gap-1">
             {@render guildSwitcher(false)}
             {@render sessionControl()}
@@ -376,7 +269,7 @@
     </header>
 {/if}
 
-{#if !desktop.current && menuOpen}
+{#if !showRail && menuOpen}
     <div
         class="fixed inset-0 z-[1500]"
         {@attach overlay({ open: true, label: '메뉴', onclose: () => (menuOpen = false) })}
@@ -397,13 +290,7 @@
             {#if user}
                 {@render accountMenu()}
             {:else}
-                <button
-                    type="button"
-                    class="min-h-11 rounded-form border border-line-strong bg-surface px-2.5 text-left text-ui font-semibold hover:bg-surface-hover"
-                    onclick={toggleMode}
-                >
-                    {mode === 'primary' ? '다크 모드로 전환' : '라이트 모드로 전환'}
-                </button>
+                <ThemeToggle />
             {/if}
             {#if page.data.authenticated && !user}
                 <button

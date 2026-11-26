@@ -30,7 +30,7 @@ test('실제 HTTP 요청 ID·업무 오류·부분 실패 로그는 비밀·원�
     assert.match(requestId ?? '', /^[0-9a-f-]{36}$/);
     await waitFor(() => f.requestObservations.some((line) => line.requestId === requestId));
     const entry = f.requestObservations.find((line) => line.requestId === requestId)!;
-    assert.equal(entry.route, '/(app)/docs');
+    assert.equal(entry.route, '/(site)/docs');
     assert.equal(entry.code, null);
     assert.ok(Number.isFinite(entry.durationMs));
     assert.deepEqual(

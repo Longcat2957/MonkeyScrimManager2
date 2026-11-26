@@ -10,7 +10,7 @@
 | 본문·보조 글자·구분선 | `ink`, `ink-2`, `muted`, `line`, `line-strong` |
 | 주요 행동·현재 항목 | `nexus`, `nexus-ink`, `selected`; 호버는 `nexus-hover` 또는 `surface-hover` |
 | 상태와 게임 정보 | `success`, `warning`, `error`, `info`는 상태 문구와 함께 사용. `team-blue/red`, `role-gold`, `medal-*`은 진영·포지션·순위 전용 |
-| 표·문서 | `.data-table`은 명부·전적의 열 비교, `.doc`은 장문 안내 |
+| 표·문서 | `.data-table`은 명부·전적의 열 비교. 장문 안내·정책은 [docs](../../apps/web/src/lib/components/docs/)의 `DocLayout`·`DocSection`과 `.doc` 본문 서식 |
 
 서비스 이름은 `SERVICE_NAME`, 워드마크는 `font-brand`를 사용한다. 본문·메뉴는 Noto Sans KR이며 숫자의 자릿수 폭은 고정한다. 두 테마는 같은 의미의 토큰을 공유한다. [theme.ts](../../apps/web/src/lib/ui/theme.ts)가 `html[data-mode]`와 `theme-mode` 저장값을 맞춘다. [app.html](../../apps/web/src/app.html)은 다크를 기본으로 쓰고 저장된 선택을 첫 페인트 전에 복원한다.
 

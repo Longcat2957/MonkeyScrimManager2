@@ -13,7 +13,7 @@
 
 | 페이지 문서 | 라우트 |
 | --- | --- |
-| [pages/global.md](pages/global.md) | `/`, `/me`, `/docs`, `/terms`, `/privacy`, `/backoffice`, `/dev/*`, 오류 화면 |
+| [pages/global.md](pages/global.md) | `/`, `/servers`, `/me`, `/docs`, `/terms`, `/privacy`, `/discord`, `/backoffice`, `/dev/*`, 오류 화면 |
 | [pages/guild.md](pages/guild.md) | `/g/[guildId]`, `/g/[guildId]/admin` |
 | [pages/scrims.md](pages/scrims.md) | `/g/[guildId]/scrims/**` |
 | [pages/records.md](pages/records.md) | `/g/[guildId]/matches/**`, `/players/[userId]`, `/stats` |
@@ -55,7 +55,7 @@
 - 활성 서버의 일반 화면은 비로그인·비소속자도 볼 수 있다. 본인 신청은 현재 멤버만, 관리 작업은 현재 관리자만 가능하다. 서비스 운영 권한은 서버 관리 권한을 대신하지 않는다.
 - 경기·MMR 이력은 보존한다. 공개 화면에는 본인의 프로필·Riot ID 공개 설정을 각각 적용한다. 비공개·탈퇴 후에도 옛 스냅샷으로 이름이나 계정을 복원하지 않는다.
 - [시즌 칭호 15종](../season-titles.md)은 서버 홈·통계·개인 전적에서 같은 시즌 결과를 사용한다. 운영 배포는 별도 검증 대상이다. 그 밖의 미확정 업적·MVP·ACE·종합 평점은 제공하지 않는다.
-- [이용약관·개인정보 처리방침](pages/global.md#docs-terms-privacy--안내와-정책)은 공개 페이지로 제공한다. 개인정보 요청은 서비스 운영팀이 이메일로 접수한다.
+- [이용약관·개인정보 처리방침](pages/global.md#docs-terms-privacy-discord--안내와-정책)은 공개 페이지로 제공한다. 개인정보 요청은 서비스 운영팀이 이메일로 접수한다.
 - 실제 인증, Discord 게시 및 운영 환경의 점검은 [배포 안내](../deployment.md)를 따른다. 개발 샘플과 실제 조회 결과는 구분하며, 실제 오류를 샘플로 대체하지 않는다.
 
 ## 근거 문서

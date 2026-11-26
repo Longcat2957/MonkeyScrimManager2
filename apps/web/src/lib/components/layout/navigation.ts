@@ -1,12 +1,7 @@
-import { dev } from '$app/env';
 import { resolve } from '$app/paths';
 import type { GuildContext } from '#lib/features/guild/types.ts';
 import { formationPath, hasResult } from '#lib/features/scrims/paths.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
-
-export function serverHome() {
-    return resolve('/(app)') + (dev ? '?app=1' : '');
-}
 
 export type NavItem = {
     label: string;
@@ -19,6 +14,14 @@ export type NavItem = {
 // 하위 경로까지 현재 항목으로 표시한다. exact는 홈·요약처럼 하위 메뉴가 따로 있는 항목에 쓴다.
 function isCurrent(pathname: string, href: string, exact = false) {
     return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+// 서버 문맥이 없는 사이트 화면의 상단 바 메뉴다. 약관·개인정보·문의는 푸터가 맡는다.
+export function siteNavItems(pathname: string): NavItem[] {
+    return [
+        { label: '이용 안내', href: resolve('/(site)/docs') },
+        { label: '봇 설치', href: resolve('/(site)/discord') }
+    ].map((item) => ({ ...item, current: isCurrent(pathname, item.href) }));
 }
 
 export function guildNavItems(guild: GuildContext, pathname: string): NavItem[] {

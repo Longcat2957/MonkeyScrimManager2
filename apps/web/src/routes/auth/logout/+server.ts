@@ -1,5 +1,11 @@
 import { error, redirect } from '@sveltejs/kit';
-import { OAUTH_COOKIE, SESSION_COOKIE, authCookieOptions } from '#lib/server/auth/cookies.ts';
+import {
+    LAST_GUILD_COOKIE,
+    OAUTH_COOKIE,
+    SESSION_COOKIE,
+    authCookieOptions,
+    lastGuildCookieOptions
+} from '#lib/server/auth/cookies.ts';
 import { deleteSession } from '#lib/server/auth/session.ts';
 import { DomainError } from '#lib/server/errors.ts';
 import type { RequestHandler } from './$types';
@@ -16,6 +22,8 @@ export const POST: RequestHandler = async ({ request, url, cookies, locals, setH
     }
     cookies.delete(SESSION_COOKIE, authCookieOptions);
     cookies.delete(OAUTH_COOKIE, authCookieOptions);
+    // 같은 브라우저의 다음 계정이 이전 사용자의 대표 서버로 들어가지 않게 한다.
+    cookies.delete(LAST_GUILD_COOKIE, lastGuildCookieOptions);
     locals.actor = null;
     locals.user = null;
     locals.session = null;

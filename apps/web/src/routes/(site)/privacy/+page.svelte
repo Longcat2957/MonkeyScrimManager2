@@ -1,15 +1,27 @@
 <script lang="ts">
     import { CONTACT_EMAIL, SERVICE_NAME } from '#lib/branding.ts';
-    import PolicyNotice from '#lib/components/layout/PolicyNotice.svelte';
+    import DocSection from '#lib/components/docs/DocSection.svelte';
+    import PolicyDocument from '#lib/components/docs/PolicyDocument.svelte';
+    import { docHeadings } from '#lib/components/docs/toc.ts';
+
+    const titles = {
+        registration: '가입하지 않아도 등록되는 정보',
+        records: '신청, 편성과 경기 기록에 쓰는 정보',
+        visibility: '누가 전적과 프로필을 볼 수 있나요?',
+        retention: '보유 기간과 탈퇴 후 남는 기록',
+        cookies: '쿠키, 접속 기록과 보호 조치',
+        external: '외부 서비스와 국외 처리',
+        rights: '열람·정정·삭제·처리정지 요청'
+    };
+    const sections = docHeadings(titles);
 </script>
 
 <svelte:head>
     <title>개인정보 처리방침 | {SERVICE_NAME}</title>
 </svelte:head>
 
-<PolicyNotice title="개인정보 처리방침">
-    <section>
-        <h2>가입하지 않아도 등록되는 정보</h2>
+<PolicyDocument title="개인정보 처리방침" {sections}>
+    <DocSection id="registration" title={titles.registration}>
         <p>
             웹에 가입한 적이 없어도 내전 서버의 명단에 있을 수 있습니다. 서버 관리자가 Discord 봇에서
             초기설정을 하면 봇 계정을 제외한 멤버의 사용자 ID, 사용자명·표시 이름, 아바타 식별값, 서버별
@@ -21,9 +33,8 @@
             만듭니다. 이 과정은 웹 로그인 세션을 만들지 않습니다. 본인이 웹에서 로그인할 때에는 Discord가
             확인한 계정으로 본인을 구분하며, Discord 비밀번호나 계정 이메일을 요청하지 않습니다.
         </p>
-    </section>
-    <section>
-        <h2>신청, 편성과 경기 기록에 쓰는 정보</h2>
+    </DocSection>
+    <DocSection id="records" title={titles.records}>
         <ul>
             <li>
                 <strong>모집과 출전:</strong> 신청 대상과 신청한 사람, 신청·철회·참가 확인 상태와 시각, 희망 포지션,
@@ -46,9 +57,8 @@
                 덤프는 보관하지 않습니다.
             </li>
         </ul>
-    </section>
-    <section>
-        <h2>누가 전적과 프로필을 볼 수 있나요?</h2>
+    </DocSection>
+    <DocSection id="visibility" title={titles.visibility}>
         <p>
             활성 서버의 모집·팀·경기 결과, 개인 전적·MMR·시즌 통계는 비로그인 방문자와 서버 밖 사람도 볼 수
             있습니다. 프로필 정보와 Riot ID는 처음에는 둘 다 공개되며 내 정보의 ‘공개 설정’에서 각각 끌 수
@@ -63,9 +73,8 @@
             모집·명단·결과는 설정된 Discord 채널에도 게시되며 그 채널의 열람 권한이 적용됩니다. 운영팀이 봇
             게시물을 갱신하더라도 다른 사람이 저장하거나 전달한 사본까지 회수할 수는 없습니다.
         </p>
-    </section>
-    <section>
-        <h2>보유 기간과 탈퇴 후 남는 기록</h2>
+    </DocSection>
+    <DocSection id="retention" title={titles.retention}>
         <ul>
             <li>
                 <strong>계정·소속·선호:</strong> 서비스 이용 기간 동안 보유합니다. 내 정보에서 탈퇴하면 모든 기기의
@@ -94,14 +103,14 @@
             파일도 삭제합니다. 신청 철회는 탈퇴와 달리 신청 상태를 바꾸는 조치이며, 이미 성립한 경기 기록을
             지우지 않습니다.
         </p>
-    </section>
-    <section>
-        <h2>쿠키, 접속 기록과 보호 조치</h2>
+    </DocSection>
+    <DocSection id="cookies" title={titles.cookies}>
         <p>
             웹 로그인 요청을 확인하는 임시 쿠키는 10분, 로그인 유지용 세션은 발급 후 최대 30일 동안
-            유효합니다. 로그아웃하면 해당 세션은 더 이상 쓸 수 없습니다. 브라우저에서 쿠키를 차단하면 공개
-            전적은 열람할 수 있지만 본인 설정과 관리 기능은 이용할 수 없습니다. 화면 테마 등 기기에 저장된
-            설정은 브라우저의 사이트 데이터에서 지울 수 있습니다.
+            유효합니다. 로그아웃하면 해당 세션은 더 이상 쓸 수 없습니다. 로그인한 상태로 연 마지막 서버의 ID는
+            다음 로그인 때 그 서버로 바로 이동하도록 최대 1년간 쿠키에 저장합니다. 브라우저에서 쿠키를
+            차단하면 공개 전적은 열람할 수 있지만 본인 설정과 관리 기능은 이용할 수 없습니다. 화면 테마 등
+            기기에 저장된 설정은 브라우저의 사이트 데이터에서 지울 수 있습니다.
         </p>
         <p>
             장애 진단에는 요청 식별자, 요청 종류·결과 코드와 처리 시간을 사용합니다. 웹 요청 로그에
@@ -109,9 +118,8 @@
             대신 해시를 저장합니다. 본인·서버 관리자·서비스 운영자의 접근 범위를 구분하며 운영 권한을 누가
             언제 변경했는지 기록합니다.
         </p>
-    </section>
-    <section>
-        <h2>외부 서비스와 국외 처리</h2>
+    </DocSection>
+    <DocSection id="external" title={titles.external}>
         <p>
             운영팀은 내전 운영과 전적 제공에 필요한 범위에서 정보를 처리하며 광고 목적으로 판매하지 않습니다.
             웹·데이터베이스·복구용 백업은 운영팀이 관리하는 서버에서 처리합니다. 외부 기능을 이용할 때에는
@@ -146,9 +154,8 @@
             없습니다. 브라우저에서 외부 리소스를 차단하면 일부 이미지나 글꼴이 표시되지 않을 수 있습니다. 관계
             법령에 따라 별도 동의나 고지가 필요한 제공·위탁·국외 이전은 해당 절차를 거칩니다.
         </p>
-    </section>
-    <section>
-        <h2>열람·정정·삭제·처리정지 요청</h2>
+    </DocSection>
+    <DocSection id="rights" title={titles.rights}>
         <p>
             본인 또는 적법한 대리인은 개인정보 담당자인 {SERVICE_NAME} 운영팀({CONTACT_EMAIL})에 열람,
             정정·삭제, 처리정지 또는 동의 철회를 요청할 수 있습니다. 웹에 로그인하지 않았거나 탈퇴가 막혀
@@ -166,5 +173,5 @@
             분쟁조정위원회(1833-6972)를 이용할 수 있습니다. 방침을 변경할 때는 바뀌는 항목과 시행일을 이
             페이지에서 적용 전에 알립니다.
         </p>
-    </section>
-</PolicyNotice>
+    </DocSection>
+</PolicyDocument>

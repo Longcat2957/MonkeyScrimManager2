@@ -1,8 +1,8 @@
 <script lang="ts">
-    import AppShell from '../(app)/+layout.svelte';
+    import RailShell from '#lib/components/layout/RailShell.svelte';
     import type { LayoutProps } from './$types';
 
     let { children }: LayoutProps = $props();
 </script>
 
-<AppShell {children} />
+<RailShell {children} />
