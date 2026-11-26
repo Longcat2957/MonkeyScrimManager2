@@ -274,7 +274,7 @@ for (const width of [1440, 390])
                 await page.waitForURL((url) => url.pathname === '/');
                 await page
                     .getByRole('main')
-                    .getByRole('link', { name: 'Discord로 로그인', exact: true })
+                    .getByRole('link', { name: '서버에 봇 추가', exact: true })
                     .waitFor();
                 assert.equal(
                     (await context.cookies()).some((cookie) => cookie.name === '__Host-monkeybot_session'),

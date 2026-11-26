@@ -3,6 +3,7 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { MediaQuery } from 'svelte/reactivity';
+    import { BOT_INVITE_URL } from '#lib/branding.ts';
     import Button from '#lib/components/common/Button.svelte';
     import { overlay } from '#lib/ui/overlay.ts';
     import AccountMenu from './AccountMenu.svelte';
@@ -18,8 +19,13 @@
 
     const user = $derived(page.data.user ?? null);
     const pathname = $derived(page.url.pathname);
-    const items = $derived(siteNavItems(pathname));
     const landing = $derived(page.route.id === '/(site)');
+    // 비로그인 홈은 본문의 시작 버튼이 봇 설치 안내로 가므로 상단 바의 같은 링크를 숨긴다.
+    const items = $derived(
+        siteNavItems(pathname).filter(
+            (item) => !(landing && !user && !BOT_INVITE_URL && item.href === resolve('/(site)/discord'))
+        )
+    );
     // 홈의 로그인은 본문 시작 버튼과 같이 서버 진입으로 돌아온다.
     const returnTo = $derived(
         landing ? resolve('/(site)/servers') : pathname + page.url.search + (browser ? page.url.hash : '')
@@ -34,13 +40,12 @@
             : page.data.authenticated
               ? null
               : {
-                    label: landing ? 'Discord로 로그인' : '로그인',
+                    label: '로그인',
                     href: `${resolve('/auth/discord')}?returnTo=${encodeURIComponent(returnTo)}`,
                     reload: true
                 }
     );
-    // 홈의 내 서버 이동은 본문 시작 버튼만 맡는다. 비로그인 홈의 로그인 버튼은 상단 바에도 두는
-    // 유일한 예외로, 스크롤 위치와 관계없이 로그인할 수 있게 한다.
+    // 홈의 내 서버 이동은 본문 시작 버튼만 맡는다. 비로그인 홈의 로그인은 상단 바만 맡는다.
     const showEntry = $derived(Boolean(entry) && (!landing || !user));
     const staleSession = $derived(page.data.authenticated && !user);
 

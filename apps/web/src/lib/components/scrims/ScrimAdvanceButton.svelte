@@ -5,7 +5,7 @@
     import Button from '#lib/components/common/Button.svelte';
     import { formationPath } from '#lib/features/scrims/paths.ts';
     import type { ScrimNextAction } from '#lib/features/scrims/types.ts';
-    import { postAction } from '#lib/ui/actions.ts';
+    import { actionPoster, localActions } from '#lib/ui/actions.ts';
     import { confirm } from '#lib/ui/confirm.ts';
     import { toast } from '#lib/ui/toast.ts';
 
@@ -24,6 +24,9 @@
     };
 
     let advancing = $state(false);
+    const postAction = actionPoster();
+    // 체험 화면은 다음 단계를 직접 보여 주므로 편성 화면으로 이동하지 않는다.
+    const local = Boolean(localActions());
 
     async function advance() {
         if (!phaseAction || advancing) return;
@@ -33,7 +36,7 @@
         try {
             const message = await postAction('advance', { key });
             if (message) toast.error(message);
-            else if (key === 'close' && page.data.scrim?.formationMethod) {
+            else if (!local && key === 'close' && page.data.scrim?.formationMethod) {
                 const target = formationPath(
                     { guildId: page.params.guildId!, scrimId: page.params.scrimId! },
                     page.data.scrim.formationMethod

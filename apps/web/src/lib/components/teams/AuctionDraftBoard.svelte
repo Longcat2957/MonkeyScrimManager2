@@ -6,7 +6,7 @@
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import { toast } from '#lib/ui/toast.ts';
     import { TEAM_SIZE, type AuctionView } from '#lib/features/scrims/formation.ts';
-    import { postAction } from '#lib/ui/actions.ts';
+    import { actionPoster, localActions } from '#lib/ui/actions.ts';
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import { bracketPath } from '#lib/features/scrims/paths.ts';
@@ -23,6 +23,10 @@
         refreshAction,
         refreshing = false
     }: { auction: AuctionView; manager: boolean; refreshAction?: Snippet; refreshing?: boolean } = $props();
+
+    const postAction = actionPoster();
+    // 체험 화면은 편성 확정 뒤 다음 단계를 직접 보여 주고, 방식·팀장 재설정 같은 앞 단계 복귀는 제공하지 않는다.
+    const local = Boolean(localActions());
 
     // 입찰가를 조정할 때마다 다시 차는 진행자용 타이머다. 결과를 강제하지 않는 안내용이다.
     const TIMER_MS = 10_000;
@@ -92,7 +96,7 @@
                 ...(auction.openLotId ? { lotId: auction.openLotId } : {})
             });
             if (message) toast.error(message);
-            else if (auction.status === 'completed')
+            else if (!local && auction.status === 'completed')
                 await goto(
                     bracketPath({ guildId: page.params.guildId!, scrimId: page.params.scrimId! }, 'ready')
                 );
@@ -168,7 +172,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-1">
             {@render refreshAction?.()}
-            {#if controls}
+            {#if controls && !local}
                 <!-- 진행 중에도 앞 단계로 돌아갈 수 있다. 기존 경매 기록은 무효화해 보존한다. -->
                 <Button variant="quiet" class="px-3 text-ui" disabled={busy} onclick={reopenSetup}
                     >팀장 다시 정하기</Button

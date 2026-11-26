@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { deserialize } from '$app/forms';
+    import type { ActionResult } from '$app/forms';
     import { tick, untrack } from 'svelte';
     import Button from '#lib/components/common/Button.svelte';
     import CheckboxField from '#lib/components/common/CheckboxField.svelte';
@@ -7,6 +7,7 @@
     import RadioGroup from '#lib/components/common/RadioGroup.svelte';
     import { POSITIONS } from '#lib/features/labels.ts';
     import type { RoflPreview } from '#lib/features/matches/rofl-preview.ts';
+    import { localActions, submitAction } from '#lib/ui/actions.ts';
 
     type Props = {
         open: boolean;
@@ -22,6 +23,8 @@
         };
         // 하나라도 기록되면 닫을 때 마지막으로 기록된 세트 번호를 넘긴다.
         onrecorded: (order: number | null) => void;
+        // 열 때 미리 담아 둘 파일. 소개 화면 체험의 샘플 리플레이에만 쓴다.
+        initialFiles?: File[];
     };
 
     type SideChoice = { slot: string; confirmed: boolean };
@@ -33,7 +36,8 @@
         message: string;
     };
 
-    let { open = $bindable(false), context, onrecorded }: Props = $props();
+    let { open = $bindable(false), context, onrecorded, initialFiles = [] }: Props = $props();
+    const local = localActions();
 
     const MAX_SIZE = 64 * 1024 * 1024;
 
@@ -66,6 +70,7 @@
             uploadContext = { ...context };
             requestPath = location.pathname;
             firstSide = { slot: context.plannedBlueTeamSlot ?? '', confirmed: false };
+            if (!files.length && initialFiles.length) addFiles(initialFiles);
         });
     });
 
@@ -105,12 +110,7 @@
         body.set('blueTeamConfirmed', String(item.side.confirmed));
         if (action === 'upload' && preview) body.set('previewDigest', preview.digest);
         try {
-            const response = await fetch(`${requestPath}?/${action}`, {
-                method: 'POST',
-                body,
-                headers: { 'x-sveltekit-action': 'true' }
-            });
-            const result = deserialize<
+            const result = (await submitAction(local, action, body, requestPath)) as ActionResult<
                 {
                     preview?: RoflPreview;
                     order?: number;
@@ -118,7 +118,7 @@
                     completed?: boolean;
                 },
                 { message?: string }
-            >(await response.text());
+            >;
             if (result.type === 'failure') {
                 item.status = 'error';
                 item.message =
