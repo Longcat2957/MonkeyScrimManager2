@@ -63,79 +63,85 @@
 <!-- 업적 탐색은 사용자 데이터·키보드 제어가 필요해 서비스에서 직접 구성한다. -->
 {#if item}
     <div role="group" aria-roledescription="캐러셀" aria-label="시즌 칭호" class="deck min-w-0">
-        <div
-            role="presentation"
-            class="stage relative isolate grid touch-pan-y place-items-center overflow-clip"
-            ontouchstart={swipeStart}
-            ontouchend={swipeEnd}
-            ontouchcancel={() => (touch = null)}
-        >
-            {#each slides as { entry, offset, winners } (entry.id)}
-                {@const art = artwork[entry.titleId]}
-                <article
-                    class="slide"
-                    data-art={art}
-                    data-active={offset === 0}
-                    data-prev={entry.id === items[(current - 1 + items.length) % items.length]?.id}
-                    data-next={entry.id === items[(current + 1) % items.length]?.id}
-                    inert={offset !== 0}
-                    aria-hidden={offset !== 0}
-                    style:--offset={offset}
-                    style:--depth={Math.abs(offset)}
-                >
-                    <img class="splash" src={`/riot/title-art/${art}.webp`} alt="" />
-                    <div class="content">
-                        <header class="caption">
-                            <h3 class="title text-title font-bold @min-[35rem]:text-3xl">{entry.title}</h3>
-                            <p class="mt-1 text-sm leading-relaxed text-pretty break-keep text-white/80">
-                                {entry.description}
-                            </p>
-                        </header>
-                        <div class="portraits" aria-hidden="true">
-                            {#each winners.slice(0, 2) as winner (winner.userId)}
-                                <div class="portrait">
-                                    <PlayerFace
-                                        size="lg"
-                                        name={winner.displayName}
-                                        imageUrl={winner.iconUrl}
-                                    />
-                                </div>
-                            {/each}
-                        </div>
-                        <div class="result min-w-0">
-                            {#if winners[0]}
-                                <p class="flex flex-wrap items-baseline gap-x-2">
-                                    <strong class="text-base tabular-nums">{winners[0].value}</strong>
-                                    <span class="text-xs text-white/80">
-                                        {winners[0].tied ? `공동 1위 · ${winners.length}명` : '1위'}
-                                    </span>
+        <!-- 컨테이너는 자기 자신을 조회할 수 없으므로 배치 격자는 안쪽에 둔다. -->
+        <div class="frame">
+            <div
+                role="presentation"
+                class="stage relative isolate grid touch-pan-y place-items-center overflow-clip"
+                ontouchstart={swipeStart}
+                ontouchend={swipeEnd}
+                ontouchcancel={() => (touch = null)}
+            >
+                {#each slides as { entry, offset, winners } (entry.id)}
+                    {@const art = artwork[entry.titleId]}
+                    <article
+                        class="slide"
+                        data-art={art}
+                        data-active={offset === 0}
+                        data-prev={entry.id === items[(current - 1 + items.length) % items.length]?.id}
+                        data-next={entry.id === items[(current + 1) % items.length]?.id}
+                        inert={offset !== 0}
+                        aria-hidden={offset !== 0}
+                        style:--offset={offset}
+                        style:--depth={Math.abs(offset)}
+                    >
+                        <img class="splash" src={`/riot/title-art/${art}.webp`} alt="" />
+                        <div class="content">
+                            <header class="caption">
+                                <h3 class="title text-lg font-bold @min-[35rem]:text-xl">{entry.title}</h3>
+                                <p class="mt-1 text-sm leading-relaxed text-pretty break-keep text-ink-2">
+                                    {entry.description}
                                 </p>
-                            {/if}
-                            <ul
-                                aria-label="시즌 칭호 보유자"
-                                class="mt-2 grid gap-x-4 gap-y-1 @min-[35rem]:grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))]"
-                            >
-                                {#each winners as winner (winner.userId)}
-                                    <li class="flex flex-wrap items-baseline gap-x-2">
-                                        <b class="text-sm font-semibold wrap-anywhere">{winner.displayName}</b
-                                        >
-                                        <span class="text-xs whitespace-nowrap text-white/75 tabular-nums"
-                                            >{winner.sample}{entry.sampleUnit}</span
-                                        >
-                                    </li>
+                            </header>
+                            <div class="portraits" aria-hidden="true">
+                                {#each winners.slice(0, 2) as winner (winner.userId)}
+                                    <div class="portrait">
+                                        <PlayerFace
+                                            size="lg"
+                                            name={winner.displayName}
+                                            imageUrl={winner.iconUrl}
+                                        />
+                                    </div>
                                 {/each}
-                            </ul>
+                            </div>
+                            <div class="result min-w-0">
+                                {#if winners[0]}
+                                    <p class="flex flex-wrap items-baseline gap-x-2">
+                                        <strong class="font-brand text-lg font-semibold tabular-nums"
+                                            >{winners[0].value}</strong
+                                        >
+                                        <span class="text-xs text-muted">
+                                            {winners[0].tied ? `공동 1위 · ${winners.length}명` : '1위'}
+                                        </span>
+                                    </p>
+                                {/if}
+                                <ul
+                                    aria-label="시즌 칭호 보유자"
+                                    class="mt-2 grid gap-x-4 gap-y-1 @min-[35rem]:grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))]"
+                                >
+                                    {#each winners as winner (winner.userId)}
+                                        <li class="flex flex-wrap items-baseline gap-x-2">
+                                            <b class="text-sm font-semibold wrap-anywhere"
+                                                >{winner.displayName}</b
+                                            >
+                                            <span class="text-xs whitespace-nowrap text-muted tabular-nums"
+                                                >{winner.sample}{entry.sampleUnit}</span
+                                            >
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
                         </div>
-                    </div>
-                </article>
-            {/each}
+                    </article>
+                {/each}
+            </div>
             {#if items.length > 1}
                 {#each [-1, 1] as direction (direction)}
-                    <div class={['arrow', direction < 0 ? 'prev left-1' : 'next right-1']}>
+                    <div class={['arrow', direction < 0 ? 'prev' : 'next']}>
                         <Button
-                            variant="quiet"
+                            variant="secondary"
                             ariaLabel={direction < 0 ? '이전 칭호' : '다음 칭호'}
-                            class="size-11! rounded-full! border border-line-strong bg-ground/90 p-0!"
+                            class="size-11! p-0!"
                             onclick={() => move(direction)}
                         >
                             <svg
@@ -152,35 +158,44 @@
                     </div>
                 {/each}
             {/if}
+            <p class="sr-only" aria-live="polite" aria-atomic="true">
+                {items.length}개 중 {current + 1}번째 칭호: {item.title}
+            </p>
+            {#if items.length > 1}
+                <div role="group" aria-label="칭호 바로 선택" class="dots flex flex-wrap justify-center">
+                    {#each items as achievement, index (achievement.id)}
+                        <button
+                            type="button"
+                            class="dot"
+                            aria-label={achievement.title}
+                            aria-current={index === current ? 'true' : undefined}
+                            onclick={() => (current = index)}
+                        ></button>
+                    {/each}
+                </div>
+            {/if}
         </div>
-        <p class="sr-only" aria-live="polite" aria-atomic="true">
-            {items.length}개 중 {current + 1}번째 칭호: {item.title}
-        </p>
-        {#if items.length > 1}
-            <div role="group" aria-label="칭호 바로 선택" class="flex flex-wrap justify-center">
-                {#each items as achievement, index (achievement.id)}
-                    <button
-                        type="button"
-                        class="dot"
-                        aria-label={achievement.title}
-                        aria-current={index === current ? 'true' : undefined}
-                        onclick={() => (current = index)}
-                    ></button>
-                {/each}
-            </div>
-        {/if}
     </div>
 {/if}
 
 <style>
+    /* 주변 패널과 같은 괘선·모서리·표면을 쓰고, 칭호마다 다른 것은 챔피언 스플래시뿐이다. */
     .deck {
         container-type: inline-size;
     }
+    .frame {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: 'stage stage stage' '. dots .';
+    }
     .stage {
-        padding-block: 0.75rem 0.5rem;
+        grid-area: stage;
+        padding-block: 0.25rem;
+    }
+    .dots {
+        grid-area: dots;
     }
     .slide {
-        --accent: #eda6d1;
         --spread: min(21cqi, 18rem);
         grid-area: 1 / 1;
         position: relative;
@@ -188,34 +203,23 @@
         display: grid;
         align-content: center;
         width: min(36rem, calc(100% - 6rem));
-        min-height: clamp(14rem, 21cqi, 17rem);
+        min-height: clamp(12rem, 18cqi, 14.5rem);
         overflow: hidden;
-        border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
-        border-radius: 1.4rem;
-        background: #090c15;
-        color: white;
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-box);
+        background: var(--color-surface-2);
+        color: var(--color-ink);
         transform: translateX(calc(var(--offset) * var(--spread))) scale(calc(1 - var(--depth) * 0.075));
         z-index: calc(3 - var(--depth));
         transition:
             transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
-            opacity 240ms,
-            filter 240ms;
+            opacity 240ms;
     }
-    .slide[data-art='Zed'] {
-        --accent: #ff99ab;
-    }
-    .slide[data-art='Azir'] {
-        --accent: #f4cb78;
-    }
-    .slide[data-art='Thresh'] {
-        --accent: #78e5d3;
-    }
-    .slide[data-art='Ornn'] {
-        --accent: #abc3ff;
+    .slide[data-active='true'] {
+        border-color: var(--color-line-strong);
     }
     .slide[data-active='false'] {
-        opacity: 0.45;
-        filter: blur(1.3px);
+        opacity: 0.4;
         pointer-events: none;
     }
     .splash,
@@ -230,18 +234,20 @@
         object-fit: cover;
         object-position: 64% 32%;
     }
+    /* 글자가 놓이는 왼쪽은 표면색으로 덮고 오른쪽에만 스플래시가 비친다. 두 테마 모두 같은 토큰을 쓴다. */
     .slide::after {
         content: '';
-        background:
-            linear-gradient(110deg, color-mix(in srgb, var(--accent) 20%, #080a13) 0%, transparent 57%),
-            linear-gradient(90deg, rgb(5 7 13 / 0.63), rgb(5 7 13 / 0.84) 60%),
-            linear-gradient(0deg, #080a13, transparent);
+        background: linear-gradient(
+            90deg,
+            color-mix(in oklab, var(--color-surface-2) 96%, transparent) 0 42%,
+            color-mix(in oklab, var(--color-surface-2) 80%, transparent)
+        );
     }
     .content {
         display: grid;
         grid-template: 'portraits caption' auto 'portraits result' auto / auto minmax(0, 1fr);
-        gap: 1rem 1.25rem;
-        padding: 2rem clamp(1rem, 3cqi, 3rem);
+        gap: 0.75rem 1rem;
+        padding: 1.25rem clamp(1rem, 2.5cqi, 1.5rem);
     }
     .caption {
         grid-area: caption;
@@ -254,30 +260,31 @@
         display: grid;
         grid-area: portraits;
         align-self: center;
-        gap: 0.25rem;
-    }
-    .portrait {
-        padding: 2px;
-        border: 1px solid var(--accent);
-        border-radius: 0.8rem;
-        background: #0a0c15;
+        gap: 0.375rem;
     }
     .portrait :global(img),
     .portrait :global(span) {
-        border-radius: 0.6rem;
+        border-radius: var(--radius-form);
+        outline: 1px solid var(--color-line);
     }
     .title {
-        color: var(--accent);
-        line-height: 1.18;
+        line-height: 1.25;
         text-wrap: balance;
         word-break: keep-all;
         overflow-wrap: anywhere;
     }
     .arrow {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
+        grid-area: stage;
+        align-self: center;
         z-index: 4;
+    }
+    .arrow.prev {
+        justify-self: start;
+        margin-inline-start: 0.25rem;
+    }
+    .arrow.next {
+        justify-self: end;
+        margin-inline-end: 0.25rem;
     }
     .dot {
         display: grid;
@@ -290,58 +297,65 @@
         height: 0.375rem;
         width: 0.375rem;
         border-radius: 1rem;
-        background: var(--color-muted);
+        background: var(--color-line-strong);
     }
     .dot[aria-current='true']::after {
         width: 1.15rem;
         background: var(--color-nexus);
     }
-    .stage:has(.prev :global(button:focus-visible)) .slide[data-prev='true'],
-    .stage:has(.next :global(button:focus-visible)) .slide[data-next='true'] {
+    .frame:has(.prev :global(button:focus-visible)) .slide[data-prev='true'],
+    .frame:has(.next :global(button:focus-visible)) .slide[data-next='true'] {
         opacity: 0.85;
-        filter: none;
     }
     .dot:not([aria-current]):focus-visible::after {
         background: var(--color-ink);
     }
     @media (hover: hover) and (pointer: fine) {
-        .stage:has(.prev:hover) .slide[data-prev='true'],
-        .stage:has(.next:hover) .slide[data-next='true'] {
-            opacity: 0.85;
-            filter: none;
-        }
-        .slide[data-active='true']:hover::after {
+        .frame:has(.prev:hover) .slide[data-prev='true'],
+        .frame:has(.next:hover) .slide[data-next='true'] {
             opacity: 0.85;
         }
         .dot:not([aria-current]):hover::after {
             background: var(--color-ink);
         }
     }
-    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-        .slide::after {
-            transition: opacity 140ms ease-out;
-        }
-    }
+    /* 좁으면 화살표가 카드 모서리를 가리지 않도록 점과 한 행에 둔다. */
     @container (max-width: 35rem) {
+        .frame {
+            grid-template-areas: 'stage stage stage' 'prev dots next';
+            align-items: center;
+        }
+        .arrow.prev,
+        .arrow.next {
+            grid-area: auto;
+            margin: 0;
+        }
+        .arrow.prev {
+            grid-area: prev;
+        }
+        .arrow.next {
+            grid-area: next;
+        }
         .slide {
             width: calc(100% - 3rem);
             --spread: 48cqi;
-            border-radius: 1rem;
         }
         .content {
             grid-template-areas: 'caption caption' 'portraits result';
-            gap: 1rem 0.75rem;
-            padding: 1.5rem;
+            gap: 0.75rem;
+            padding: 1rem 1.125rem;
         }
         .portrait :global(img),
         .portrait :global(span) {
             width: 2.5rem;
             height: 2.5rem;
         }
-        .arrow {
-            top: auto;
-            bottom: 0;
-            transform: none;
+        /* 칭호 15개가 화살표 사이 한 줄에 들어가는 폭이다. 같은 이동은 화살표로도 할 수 있다. */
+        .dot {
+            width: 0.875rem;
+        }
+        .dot[aria-current='true']::after {
+            width: 0.75rem;
         }
     }
     @media (prefers-reduced-motion: reduce) {

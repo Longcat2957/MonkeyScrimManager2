@@ -28,17 +28,21 @@
             resolve('/g/[guildId]/scrims/[scrimId]', { guildId, scrimId: data.nextScrim.scrim.id })}
     />
 
-    <section aria-labelledby="achievements" class="min-w-0 border-t border-line">
-        <h2 id="achievements" class="py-3 text-base font-semibold">시즌 칭호</h2>
-        {#if !data.achievements.ok}
-            <SectionState state="error" message="시즌 칭호를 불러오지 못했어요" onretry={retry} />
-        {:else if data.achievements.value.length}
-            {#key data.selectedSeasonId}
-                <AchievementCarousel items={data.achievements.value} />
-            {/key}
-        {:else}
-            <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
-        {/if}
+    <section aria-labelledby="achievements" class="panel overflow-hidden">
+        <div class="panel-bar">
+            <h2 id="achievements" class="text-base font-semibold">시즌 칭호</h2>
+        </div>
+        <div class="p-3">
+            {#if !data.achievements.ok}
+                <SectionState state="error" message="시즌 칭호를 불러오지 못했어요" onretry={retry} />
+            {:else if data.achievements.value.length}
+                {#key data.selectedSeasonId}
+                    <AchievementCarousel items={data.achievements.value} />
+                {/key}
+            {:else}
+                <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
+            {/if}
+        </div>
     </section>
     <div class="grid min-w-0 items-start gap-6 @min-[50rem]:grid-cols-[minmax(0,1.65fr)_minmax(17rem,1fr)]">
         <RankingBoard

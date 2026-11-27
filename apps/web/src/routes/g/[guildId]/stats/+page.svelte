@@ -305,8 +305,8 @@
     {/if}
 
     {#if !data.empty}
-        <section aria-labelledby="achievements" class="flex min-w-0 flex-col gap-3">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+        <section aria-labelledby="achievements" class="panel overflow-hidden">
+            <div class="panel-bar">
                 <h2 id="achievements" tabindex="-1" class="scroll-mt-20 text-base font-semibold">
                     시즌 칭호
                 </h2>
@@ -318,14 +318,16 @@
                     >
                 {/if}
             </div>
-            {#if data.achievements.length}
-                <AchievementCarousel
-                    items={data.achievements}
-                    bind:current={() => achievementIndex, selectAchievement}
-                />
-            {:else}
-                <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
-            {/if}
+            <div class="p-3">
+                {#if data.achievements.length}
+                    <AchievementCarousel
+                        items={data.achievements}
+                        bind:current={() => achievementIndex, selectAchievement}
+                    />
+                {:else}
+                    <SectionState state="empty" message="이 시즌에는 아직 칭호 보유자가 없어요" />
+                {/if}
+            </div>
         </section>
         <!-- 포지션 필터는 리더보드와 챔피언에만 적용한다. -->
         <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
