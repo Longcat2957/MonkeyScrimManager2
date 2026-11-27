@@ -1,10 +1,15 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import type { BotPublication } from '../../../../shared/bot-api.js';
 import { card, CARD_COLORS, label, preferredPositionLabel, publicationUrl, STATUSES } from './shared.js';
+import { standbyButton } from './standby.js';
 
 export function renderRecruitment(publication: BotPublication, origin: URL) {
     const data = publication.data;
-    const date = data.scheduledAt ? `<t:${Math.floor(Date.parse(data.scheduledAt) / 1000)}:F>` : '일정 미정';
+    const date = data.scheduledAt
+        ? `<t:${Math.floor(Date.parse(data.scheduledAt) / 1000)}:F>`
+        : data.status === 'recruit'
+          ? '일정 미정 · 시작 시각이 정해지면 대기 신청 가능'
+          : '일정 미정';
     const selected = data.participants.filter((player) => player.status === 'selected');
     const standby = data.participants.filter((player) => player.status === 'standby');
     const roster = (players: typeof selected) =>
@@ -34,11 +39,9 @@ export function renderRecruitment(publication: BotPublication, origin: URL) {
             .setLabel('참가하기')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(data.status !== 'recruit'),
-        new ButtonBuilder()
-            .setCustomId(`registration-standby:${publication.scrimId}`)
-            .setLabel('대기 신청 / 시각 변경')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(data.status !== 'recruit'),
+        standbyButton(publication.scrimId, data.scheduledAt).setDisabled(
+            !data.scheduledAt || data.status !== 'recruit'
+        ),
         new ButtonBuilder()
             .setCustomId(`registration-withdraw:${publication.scrimId}`)
             .setLabel('참가 취소')

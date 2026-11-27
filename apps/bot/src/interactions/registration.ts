@@ -3,18 +3,16 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
-    LabelBuilder,
+    ComponentType,
     MessageFlags,
-    ModalBuilder,
-    StringSelectMenuBuilder,
-    TextInputBuilder,
-    TextInputStyle
+    StringSelectMenuBuilder
 } from 'discord.js';
 import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from 'discord.js';
 import type { BotPosition, BotRegistrationContext } from '../../../../shared/bot-api.js';
 import type { BotApi } from '../api/client.js';
 import { BotApiError } from '../api/client.js';
 import { formatKstMinute, scheduleFromKst } from '../commands/schedule.js';
+import { standbyModal, standbyPrompt } from '../messages/standby.js';
 import { card, label, notice, POSITIONS, preferredPositionLabel } from '../messages/shared.js';
 
 type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction;
@@ -28,7 +26,6 @@ export interface RegistrationForm {
     positions: BotPosition[];
     accountPage: number;
     confirmingWithdrawal: boolean;
-    pendingStandbyAt?: string | null;
     busy: boolean;
     feedback: string | null;
 }
@@ -80,9 +77,7 @@ export class RegistrationForms {
 
 export function parseFormId(value: string): { id: string; action: string } | null {
     const match =
-        /^form:([a-f0-9]{24}):(account|positions|submit|withdraw|confirm|standby|cancel|previous|next)$/.exec(
-            value
-        );
+        /^form:([a-f0-9]{24}):(account|positions|submit|withdraw|confirm|cancel|previous|next)$/.exec(value);
     return match ? { id: match[1]!, action: match[2]! } : null;
 }
 
@@ -205,7 +200,7 @@ export function renderForm(form: RegistrationForm) {
 
 function standbyStatus(availableAt: string | null) {
     return availableAt
-        ? `${formatKstMinute(Date.parse(availableAt))} KST 자동 선발 예약`
+        ? `${formatKstMinute(Date.parse(availableAt))} KST부터 합류 가능 · 선발 대기 중`
         : '시각 지정 없이 수동 배정 대기 중';
 }
 
@@ -219,58 +214,62 @@ function joinPreferences(context: BotRegistrationContext) {
     };
 }
 
-export async function submitStandbyTime(
-    interaction: ModalSubmitInteraction,
-    api: BotApi,
-    forms: RegistrationForms
-) {
+export async function submitStandbyTime(interaction: ModalSubmitInteraction, api: BotApi) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const scrimId = /^standby-time:([a-f0-9-]{36})$/.exec(interaction.customId)?.[1];
-    if (!scrimId || !interaction.guildId) {
-        await interaction.editReply(notice('서버의 모집 글에서 대기 신청을 다시 열어 주세요.'));
+    const match = /^standby-time:([a-f0-9-]{36}):(\d{1,15})$/.exec(interaction.customId);
+    if (!match || !interaction.guildId) {
+        await interaction.editReply(notice('모집 글에서 대기 신청을 다시 열어 주세요.'));
+        return;
+    }
+    const scrimId = match[1]!;
+    const context = await api.registration(interaction.guildId, scrimId, interaction.user.id);
+    if (!context.canEdit) {
+        await interaction.editReply(notice(context.reason ?? '지금은 대기 신청을 변경할 수 없어요.'));
+        return;
+    }
+    const retry = (message: string) =>
+        interaction.editReply(standbyPrompt(message, scrimId, context.scheduledAt));
+    const start = Number(match[2]);
+    if (!context.scheduledAt || Date.parse(context.scheduledAt) !== start) {
+        await retry('예정 시작 시각이 변경됐어요. 새 일정을 확인하고 합류 시각을 다시 입력해 주세요.');
         return;
     }
     let availableAt: string | null;
     try {
         availableAt = scheduleFromKst(interaction.fields.getTextInputValue('availableAt'));
     } catch {
-        await interaction.editReply(
-            notice('한국 시각으로 실제 날짜와 시각을 YYYY-MM-DD HH:mm 형식으로 입력해 주세요.')
-        );
+        availableAt = null;
+    }
+    if (!availableAt) {
+        await retry('합류 가능한 날짜와 시각을 한국 시간으로 YYYY-MM-DD HH:mm 형식에 맞춰 입력해 주세요.');
         return;
     }
-    if (availableAt && Date.parse(availableAt) <= Date.now()) {
-        await interaction.editReply(notice('현재보다 늦은 참가 가능 시각을 입력해 주세요.'));
+    const arrival = Date.parse(availableAt);
+    if (arrival <= start) {
+        await retry(`예정 시작(${formatKstMinute(start)})보다 늦은 합류 시각을 입력해 주세요.`);
         return;
     }
-    const context = await api.registration(interaction.guildId, scrimId, interaction.user.id);
-    if (!context.canEdit) {
-        await interaction.editReply(notice(context.reason ?? '지금은 대기 신청을 변경할 수 없어요.'));
+    if (arrival <= Date.now()) {
+        await retry('이미 지난 합류 시각이에요. 지금보다 늦은 시각을 입력해 주세요.');
         return;
     }
-    const current = context.registration;
-    if (current?.status === 'standby' && current.availableAt === availableAt) {
-        await interaction.editReply(notice(`현재 상태: ${standbyStatus(current.availableAt)}`));
+    if (context.registration?.status === 'standby' && context.registration.availableAt === availableAt) {
+        await interaction.editReply(notice(`현재 상태 · ${standbyStatus(availableAt)}`));
         return;
     }
-    const form = forms.create(interaction.user.id, interaction.guildId, context);
-    form.pendingStandbyAt = availableAt;
-    const detail = availableAt
-        ? `**${formatKstMinute(Date.parse(availableAt))} KST**까지 대기할까요? 선발 한 자리를 예약하고 모집 중에 해당 시각이 되면 자동 선발돼요.`
-        : `${current?.status === 'selected' || current?.availableAt ? '선발 자리를 반납하고 ' : ''}시각 지정 없이 운영자의 수동 배정을 기다릴까요?`;
-    const prompt = notice(`## ${label(context.title, 50)} · 대기 신청 확인\n${detail}`);
-    await interaction.editReply({
-        ...prompt,
-        components: [
-            ...prompt.components,
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`form:${form.id}:standby`)
-                    .setLabel(availableAt ? '예약 확정' : '수동 배정 대기 확정')
-                    .setStyle(ButtonStyle.Primary)
-            )
-        ]
+    const saved = await api.saveRegistration(interaction.guildId, scrimId, {
+        action: 'standby',
+        actorId: interaction.user.id,
+        interactionId: interaction.id,
+        expectedScheduledAt: context.scheduledAt,
+        availableAt,
+        ...(activeRegistration(context)
+            ? { registrationId: context.registration!.id }
+            : joinPreferences(context))
     });
+    await interaction.editReply(
+        notice(`대기 신청을 저장했어요. ${standbyStatus(saved.registration!.availableAt)}`)
+    );
 }
 
 export async function handleRegistration(
@@ -278,31 +277,35 @@ export async function handleRegistration(
     api: BotApi,
     forms: RegistrationForms
 ) {
-    const opener = /^registration(?:-(standby|withdraw))?:([a-f0-9-]{36})$/.exec(interaction.customId);
-    if (opener) {
-        if (opener[1] === 'standby' && interaction.guildId) {
-            await interaction.showModal(
-                new ModalBuilder()
-                    .setCustomId(`standby-time:${opener[2]}`)
-                    .setTitle('대기 신청 / 시각 변경')
-                    .addLabelComponents(
-                        new LabelBuilder()
-                            .setLabel('참가 가능 시각 (한국 시간)')
-                            .setDescription(
-                                '날짜와 시각을 입력하면 한 자리를 예약해요. 비우면 예약 없이 수동 배정을 기다려요.'
-                            )
-                            .setTextInputComponent(
-                                new TextInputBuilder()
-                                    .setCustomId('availableAt')
-                                    .setStyle(TextInputStyle.Short)
-                                    .setRequired(false)
-                                    .setMaxLength(16)
-                                    .setPlaceholder('YYYY-MM-DD HH:mm')
-                            )
-                    )
-            );
-            return;
+    const standby = /^registration-standby:([a-f0-9-]{36})(?::(\d{1,15}|unset))?$/.exec(interaction.customId);
+    if (standby && interaction.guildId) {
+        const scrimId = standby[1]!;
+        let start = Number(standby[2]);
+        if (!standby[2]) {
+            // 이전 모집 글의 제목 바로 아래에 있는 Discord 타임스탬프를 읽는다.
+            const card = interaction.message.components[0];
+            const heading = card?.type === ComponentType.Container ? card.components[0] : null;
+            if (heading?.type === ComponentType.TextDisplay) {
+                const timestamp = /^<t:(\d+):F>$/m.exec(heading.content)?.[1];
+                if (timestamp) start = Number(timestamp) * 1000;
+            }
         }
+        if (Number.isFinite(start)) {
+            await interaction.showModal(standbyModal(scrimId, start, interaction.createdTimestamp));
+        } else {
+            // 공지에서 시각을 읽을 수 없는 경우에도 조회 전에 Discord에 응답한다.
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            const context = await api.registration(interaction.guildId, scrimId, interaction.user.id);
+            await interaction.editReply(
+                context.canEdit
+                    ? standbyPrompt('합류 가능한 날짜와 시각을 입력해 주세요.', scrimId, context.scheduledAt)
+                    : notice(context.reason ?? '대기 신청이 마감됐어요.')
+            );
+        }
+        return;
+    }
+    const opener = /^registration(?:-(withdraw))?:([a-f0-9-]{36})$/.exec(interaction.customId);
+    if (opener) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         if (!interaction.guildId) {
             await interaction.editReply(notice('서버의 모집 글에서 신청해 주세요.'));
@@ -349,7 +352,9 @@ export async function handleRegistration(
     if (!parsed || !form) {
         await interaction.reply({
             ...notice(
-                `신청 화면이 만료됐어요. 모집 글의 ${parsed?.action === 'standby' ? '대기 신청을' : '참가하기를'} 다시 눌러 주세요.`
+                interaction.customId.endsWith(':standby')
+                    ? '모집 글에서 대기 신청을 다시 열어 주세요.'
+                    : '신청 화면이 만료됐어요. 모집 글의 참가하기를 다시 눌러 주세요.'
             ),
             flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
         });
@@ -366,27 +371,6 @@ export async function handleRegistration(
     try {
         await interaction.deferUpdate();
         form.feedback = null;
-        if (parsed.action === 'standby') {
-            const availableAt = form.pendingStandbyAt;
-            if (availableAt === undefined || (availableAt && Date.parse(availableAt) <= Date.now())) {
-                await interaction.editReply(notice('모집 글의 대기 신청에서 시각을 다시 입력해 주세요.'));
-                return;
-            }
-            const saved = await api.saveRegistration(form.guildId, form.context.scrimId, {
-                actorId: form.actorId,
-                interactionId: interaction.id,
-                action: 'standby',
-                ...(availableAt ? { availableAt } : {}),
-                ...(activeRegistration(form.context)
-                    ? { registrationId: form.context.registration!.id }
-                    : joinPreferences(form.context))
-            });
-            delete form.pendingStandbyAt;
-            await interaction.editReply(
-                notice(`대기 신청을 저장했어요. ${standbyStatus(saved.registration!.availableAt)}`)
-            );
-            return;
-        }
         if (parsed.action === 'account' && interaction.isStringSelectMenu()) {
             const account = interaction.values[0];
             if (account !== 'none' && !form.context.accounts.some((value) => value.id === account))

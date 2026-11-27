@@ -131,17 +131,19 @@ test('정원은 선발과 전체 활성 신청을 각각 제한하고 철회·�
         assertCapacity(settings, [...active, registration('withdrawn'), registration('excluded')])
     );
     assert.throws(() => assertCapacity({ ...settings, reserveCapacity: 1 }, active), domainError('CONFLICT'));
-    for (const extra of [registration('selected'), registration('standby', new Date())])
-        assert.throws(() => assertCapacity(settings, [...selected, extra]), domainError('CONFLICT'));
+    assert.throws(
+        () => assertCapacity(settings, [...selected, registration('selected')]),
+        domainError('CONFLICT')
+    );
+    assert.doesNotThrow(() => assertCapacity(settings, [...selected, registration('standby', new Date())]));
 });
 
-test('시간 지정 대기는 미래의 UTC 시각과 예약할 선발 자리가 모두 필요하다', () => {
+test('시간 지정 대기는 미래의 UTC 시각을 요구한다', () => {
     const future = new Date(Date.now() + 60_000);
-    assert.equal(validateStandbyTime(undefined, false), null);
-    assert.deepEqual(validateStandbyTime(future.toISOString(), true), future);
-    assert.throws(() => validateStandbyTime(future.toISOString(), false), domainError('CONFLICT'));
+    assert.equal(validateStandbyTime(undefined), null);
+    assert.deepEqual(validateStandbyTime(future.toISOString()), future);
     for (const invalid of [null, '', '21:30', '2090-02-30T00:00:00.000Z', new Date(0).toISOString()])
-        assert.throws(() => validateStandbyTime(invalid, true), domainError('INVALID_INPUT'));
+        assert.throws(() => validateStandbyTime(invalid), domainError('INVALID_INPUT'));
 });
 
 for (const [status, change, allowed] of [

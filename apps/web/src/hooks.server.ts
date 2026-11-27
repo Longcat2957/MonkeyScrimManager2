@@ -45,7 +45,7 @@ export const init: ServerInit = () => {
         getSoloMatchIds,
         getSoloMatchParticipants
     });
-    // 봇 연결이나 페이지 조회가 없어도 모집 중인 내전의 도착 예약을 처리한다.
+    // 봇 연결이나 페이지 조회가 없어도 모집 중인 내전에서 합류 시각이 된 대기자를 빈자리로 이동한다.
     let promoting = false;
     const timer = setInterval(async () => {
         if (promoting) return;

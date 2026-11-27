@@ -12,7 +12,8 @@ const keys = [
     'registrationId',
     'riotAccountId',
     'positions',
-    'availableAt'
+    'availableAt',
+    'expectedScheduledAt'
 ];
 export const POST: RequestHandler = ({ request, params }) =>
     botResponse(request, async () => {
@@ -25,6 +26,6 @@ export const PATCH: RequestHandler = ({ request, params }) =>
     botResponse(request, async () => {
         const input = await botJson<BotRegistrationInput>(request, keys);
         if (!['update', 'withdraw', 'standby'].includes(input.action))
-            throw new DomainError('INVALID_INPUT', 'PATCH는 신청 수정·철회·대기 예약에 사용해 주세요');
+            throw new DomainError('INVALID_INPUT', 'PATCH는 신청 수정·철회·대기 신청에 사용해 주세요');
         return mutateBotRegistration(getDb(), params.guildId!, params.scrimId!, input);
     });

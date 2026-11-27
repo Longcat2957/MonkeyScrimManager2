@@ -364,9 +364,9 @@ erDiagram
 실출전 정원은 `team_count × 5`, 전체 신청 정원은 여기에 `reserve_capacity`를 더한 값이다.
 `team_count`는 2 또는 4만 허용한다. `reserve_capacity`는 기본값 0이며 0~10 범위의 정수다. 예를 들어 `team_count = 2`,
 `reserve_capacity = 2`이면 10명 내전에 최대 12명의 활성 신청을 받아 최종 참가자 10명을 정할 수 있다.
-일반 신청은 선발과 도착 예약을 합한 인원이 실출전 정원 미만이면 `selected`, 아니면 `standby`가 된다.
-`scrim_participant_registrations.available_at`은 대기자가 지정한 도착 시각이다. 값이 있으면 실출전 자리 하나를 예약한다.
-모집 중 이 시각이 지난 대기 신청만 자동 선발한다. 철회·제외·정원 변경은 자동 선발 사유가 아니다.
+일반 신청은 선발 인원이 실출전 정원 미만이면 `selected`, 아니면 `standby`가 된다.
+`scrim_participant_registrations.available_at`은 대기자가 지정한 도착 시각이다. 시각 지정 대기도 전체 활성 신청 수에 포함한다.
+모집 중 이 시각에 도달한 대기자를 빈 선발 자리 수만큼 이동한다. 만석이면 대기를 유지하며 철회·제외·정원 증가 등으로 자리가 생기면 다시 이동한다.
 도착 시각이 없는 기존 대기자는 별도 이관 없이 운영자가 수동 배정할 수 있다.
 
 신청 상태는 `selected`(선발), `standby`(대기), `withdrawn`(자진 철회),

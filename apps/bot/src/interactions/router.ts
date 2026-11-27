@@ -53,7 +53,7 @@ export function createInteractionHandler(api: BotApi, origin: URL) {
             else if (interaction.isModalSubmit() && interaction.customId.startsWith('scrim-create:'))
                 await submitScrimCreation(interaction, api, origin, creations);
             else if (interaction.isModalSubmit() && interaction.customId.startsWith('standby-time:'))
-                await submitStandbyTime(interaction, api, forms);
+                await submitStandbyTime(interaction, api);
             else if (
                 (interaction.isButton() || interaction.isUserSelectMenu()) &&
                 interaction.customId.startsWith('manual-registration:')

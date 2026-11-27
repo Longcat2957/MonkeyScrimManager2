@@ -11,6 +11,7 @@ export function registrationContext(patch: Partial<BotRegistrationContext> = {})
         guildId: GUILD,
         scrimId: SCRIM,
         title: '금요일 내전',
+        scheduledAt: '2099-02-28T14:45:00.000Z',
         status: 'recruit',
         canEdit: true,
         reason: null,

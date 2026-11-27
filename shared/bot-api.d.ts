@@ -39,6 +39,7 @@ export interface BotRegistrationContext {
     guildId: string;
     scrimId: string;
     title: string;
+    scheduledAt: string | null;
     status: BotScrimStatus;
     canEdit: boolean;
     reason: string | null;
@@ -60,6 +61,7 @@ export interface BotRegistrationInput {
     riotAccountId?: string | null;
     positions?: BotPosition[];
     availableAt?: string;
+    expectedScheduledAt?: string;
 }
 
 export interface BotManualRegistrationContext {

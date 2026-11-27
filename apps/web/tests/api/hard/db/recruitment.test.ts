@@ -605,56 +605,112 @@ test('수동 대기 전환·제외·설정 확장 후에도 기존 대기자는 
     );
 });
 
-test('마지막 선발 자리의 시간 예약은 한 명만 성공하고 일반·운영자 신청과 수동 선발도 예약을 존중한다', async (t) => {
+test('시간 지정 대기는 선발 자리를 비워 두며 만석일 때에는 합류 시각 순으로 빈자리만 채운다', async (t) => {
     const f = await createRecruitmentFixture(t);
     await fill(f, 9);
     const future = new Date(Date.now() + 3_600_000).toISOString();
-    const results = await concurrently([() => join(f, 9, future), () => join(f, 10, future)]);
-    assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
-    const failed = results.find((result) => result.status === 'rejected');
-    assert.ok(failed?.status === 'rejected' && errorCode('CONFLICT')(failed.reason));
-    const reserved = (await registrations(f)).find((row) => row.availableAt)!;
-    assert.equal(reserved.status, 'standby');
-    assert.equal(reserved.availableAt!.toISOString(), future);
-    await join(f, 11);
+    await Promise.all([join(f, 9, future), join(f, 10, future)]);
     assert.equal(
         await createManualRegistration(
             f.db,
             f.manager,
             f.guildId,
             f.scrimId,
-            { userId: f.actors[12]!.userId },
+            { userId: f.actors[11]!.userId },
             f.access
         ),
-        'standby'
+        'selected'
     );
-    const ordinary = (await registrations(f)).filter(
-        (row) => row.status === 'standby' && row.availableAt === null
+
+    const standby = (await registrations(f)).filter((r) => r.status === 'standby');
+    assert.equal(standby.length, 2);
+    // 늦게 신청한 사람의 합류 시각이 먼저인 상황을 만든다.
+    await f.db
+        .update(schema.scrimParticipantRegistrations)
+        .set({ availableAt: sql`now() - interval '1 minute'` })
+        .where(eq(schema.scrimParticipantRegistrations.id, standby[0]!.id));
+    await f.db
+        .update(schema.scrimParticipantRegistrations)
+        .set({ availableAt: sql`now() - interval '2 minutes'` })
+        .where(eq(schema.scrimParticipantRegistrations.id, standby[1]!.id));
+    const revision = (await f.row()).revision;
+    await promoteDueStandby(f.db);
+    assert.equal((await f.row()).revision, revision);
+    assert.equal((await registrations(f)).filter((r) => r.availableAt !== null).length, 2);
+
+    await withdrawRegistration(f.db, f.actors[0]!, f.guildId, f.scrimId, f.access);
+    const after = await registrations(f);
+    assert.equal(after.filter((r) => r.status === 'selected').length, 10);
+    assert.equal(after.find((r) => r.id === standby[1]!.id)?.status, 'selected');
+    assert.ok(after.find((r) => r.id === standby[0]!.id)?.availableAt);
+    assert.equal((await f.row()).revision, revision + 1);
+
+    const target = after.find((r) => r.userId === f.actors[1]!.userId)!;
+    await setParticipantStatus(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        {
+            ...(await f.revision()),
+            registrationIds: [target.id],
+            status: 'excluded'
+        },
+        f.access
     );
-    assert.equal(ordinary.length, 2);
-    const select = async (id: string) =>
-        setParticipantStatus(
-            f.db,
-            f.manager,
-            f.guildId,
-            f.scrimId,
-            { ...(await f.revision()), registrationIds: [id], status: 'selected' },
-            f.access
-        );
-    await assert.rejects(select(ordinary[0]!.id), errorCode('CONFLICT'));
-    await assert.rejects(
-        closeRecruitment(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access),
-        errorCode('CONFLICT')
-    );
-    await select(reserved.id);
+    const remaining = await registrations(f);
+    assert.equal(remaining.filter((r) => r.status === 'selected').length, 10);
+    assert.ok(remaining.every((r) => r.availableAt === null));
+    await join(f, 12, future);
     await closeRecruitment(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
     await reopenRecruitment(f.db, f.manager, f.guildId, f.scrimId, await f.revision(), f.access);
-    const after = await registrations(f);
-    assert.equal(after.filter((row) => row.status === 'selected').length, 10);
-    assert.ok(after.every((row) => row.availableAt === null));
+    const waiting = (await registrations(f)).find((r) => r.userId === f.actors[12]!.userId);
+    assert.equal(waiting?.status, 'standby');
+    assert.equal(waiting.availableAt, null);
 });
 
-test('예약 전에는 바뀌지 않고 재시작한 워커와 동시에 기한을 처리해도 명단·게시 작업은 한 번만 갱신한다', async (t) => {
+test('신규 신청보다 합류 가능한 대기가 먼저 이동하고 정원 증가 시 같은 시각의 대기자는 신청순으로 이동한다', async (t) => {
+    const f = await createRecruitmentFixture(t, { reserveCapacity: 4 });
+    await fill(f, 9);
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    for (const index of [9, 10, 11]) await join(f, index, future);
+    const waiters = (await registrations(f)).filter((r) => r.status === 'standby');
+    await f.db
+        .update(schema.scrimParticipantRegistrations)
+        .set({ availableAt: sql`now() - interval '1 second'` })
+        .where(
+            inArray(
+                schema.scrimParticipantRegistrations.id,
+                waiters.slice(0, 2).map((r) => r.id)
+            )
+        );
+
+    await Promise.all([join(f, 12), promoteDueStandby(f.db)]);
+    const full = await registrations(f);
+    assert.equal(full.find((r) => r.id === waiters[0]!.id)?.status, 'selected');
+    assert.equal(full.find((r) => r.id === waiters[1]!.id)?.status, 'standby');
+    assert.equal(full.find((r) => r.userId === f.actors[12]!.userId)?.status, 'standby');
+    assert.equal(full.filter((r) => r.status === 'selected').length, 10);
+
+    await updateScrimSettings(
+        f.db,
+        f.manager,
+        f.guildId,
+        f.scrimId,
+        {
+            ...(await f.revision()),
+            settings: { ...f.input, teamCount: 4 }
+        },
+        f.access
+    );
+    const expanded = await registrations(f);
+    assert.equal(expanded.filter((r) => r.status === 'selected').length, 11);
+    assert.equal(expanded.find((r) => r.id === waiters[1]!.id)?.status, 'selected');
+    assert.equal(expanded.find((r) => r.id === waiters[2]!.id)?.availableAt?.toISOString(), future);
+    assert.equal(expanded.find((r) => r.userId === f.actors[12]!.userId)?.status, 'standby');
+});
+
+test('합류 시각 전에는 바뀌지 않고 재시작한 워커와 동시에 기한을 처리해도 명단·게시 작업은 한 번만 갱신한다', async (t) => {
     const f = await createRecruitmentFixture(t);
     await f.db
         .insert(schema.guildDiscordSettings)
@@ -710,7 +766,7 @@ test('예약 전에는 바뀌지 않고 재시작한 워커와 동시에 기한�
     assert.equal((await job()).revision, jobRevision + 1);
 });
 
-test('대기 재지정·수동 배정·제외·철회·내전 취소가 예약을 해제하고 취소 복구는 예약을 되살리지 않는다', async (t) => {
+test('대기 재지정·수동 배정·제외·철회·내전 취소가 합류 시각을 해제하고 취소 복구는 합류 시각을 되살리지 않는다', async (t) => {
     const f = await createRecruitmentFixture(t);
     const future = new Date(Date.now() + 3_600_000).toISOString();
     for (let index = 0; index < 5; index++) await join(f, index, future);

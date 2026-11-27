@@ -11,18 +11,26 @@
         'season-assists': 'Yuumi',
         'season-damage': 'Azir',
         'season-participation': 'Thresh',
-        'season-wards': 'Thresh',
+        'season-wards': 'Nocturne',
         'season-efficiency': 'Ornn',
-        'season-cs': 'Azir',
-        'season-tanking': 'Ornn',
-        'season-protection': 'Yuumi',
-        'season-clean-sheet': 'Zed',
-        'season-champion-pool': 'Azir',
-        'season-one-trick': 'Zed',
-        'season-positions': 'Thresh',
-        'season-decider': 'Ornn',
-        'season-series-rate': 'Yuumi'
+        'season-cs': 'Sivir',
+        'season-tanking': 'Malphite',
+        'season-protection': 'Soraka',
+        'season-clean-sheet': 'Janna',
+        'season-champion-pool': 'Sylas',
+        'season-one-trick': 'Yasuo',
+        'season-positions': 'Neeko',
+        'season-decider': 'Ekko',
+        'season-series-rate': 'Jhin'
     } as const satisfies Record<SeasonTitleId, string>;
+
+    const efficiencyArtwork = {
+        top: 'Ornn',
+        jungle: 'Vi',
+        mid: 'Viktor',
+        bot: 'Jinx',
+        support: 'Bard'
+    } as const;
 
     // 양끝을 이어 붙이되 칭호가 적은 시즌에는 같은 카드를 복제하지 않는다.
     const slides = $derived.by(() => {
@@ -73,7 +81,10 @@
                 ontouchcancel={() => (touch = null)}
             >
                 {#each slides as { entry, offset, winners } (entry.id)}
-                    {@const art = artwork[entry.titleId]}
+                    {@const art =
+                        entry.titleId === 'season-efficiency' && entry.position
+                            ? efficiencyArtwork[entry.position]
+                            : artwork[entry.titleId]}
                     <article
                         class="slide"
                         data-art={art}
@@ -217,6 +228,8 @@
     }
     .slide[data-active='true'] {
         border-color: var(--color-line-strong);
+        /* 연속 이동 중에도 앞 카드 너머로 이전 스플래시가 비치지 않게 한다. */
+        transition-property: transform;
     }
     .slide[data-active='false'] {
         opacity: 0.4;

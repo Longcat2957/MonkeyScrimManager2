@@ -462,7 +462,7 @@ export const scrims = pgTable(
         isHardFearless: boolean('is_hard_fearless').default(false).notNull(),
         // 실출전 정원은 팀 수 × 5명이다. 추가 신청 인원은 팀 수나 실출전 정원을 늘리지 않는다.
         teamCount: integer('team_count').$type<TeamCount>().default(2).notNull(),
-        // 전체 신청 정원은 실출전 정원 + 추가 신청 정원이다. 신청 순서대로 실출전 정원까지 선발하고 나머지는 대기다.
+        // 전체 신청 정원은 실출전 정원 + 추가 신청 정원이다. 선발과 대기 모두 이 정원에 포함한다.
         reserveCapacity: integer('reserve_capacity').default(0).notNull(),
         // 모집 때 안내한 예정 시각이며 실제 경기 시작 시각과 구분한다.
         expectedStartAt: timestamp('expected_start_at', { withTimezone: true, precision: 3 }),
@@ -1865,7 +1865,7 @@ export const scrimParticipantPreferences = pgTable(
     ]
 );
 
-// 즉시 참가 신청은 예약되지 않은 선발 자리가 있으면 선발, 없으면 대기가 된다. 자진 철회·운영자 제외는 신청을 마감한다.
+// 즉시 참가 신청은 빈 선발 자리가 있으면 선발, 없으면 대기가 된다. 자진 철회·운영자 제외는 신청을 마감한다.
 export const scrimRegistrationStatus = pgEnum('scrim_registration_status', [
     'selected',
     'standby',
@@ -1874,8 +1874,8 @@ export const scrimRegistrationStatus = pgEnum('scrim_registration_status', [
 ]);
 
 // 참가자 ID는 유지하고 신청마다 새 행을 만든다. 철회·제외한 행을 재사용하지 않아 재신청 이력이 남는다.
-// 선발자와 시각 지정 대기자는 실출전 정원을 차지한다. 활성 신청 전체는 여기에 reserveCapacity를 더한 값으로 제한한다.
-// 모집 중 예약 시각이 된 신청만 자동 선발한다. 철회·제외로 빈 자리는 자동으로 채우지 않는다.
+// 선발자만 실출전 정원에 포함한다. 활성 신청 전체는 여기에 reserveCapacity를 더한 값으로 제한한다.
+// 모집 중 합류 시각이 된 대기자를 빈 선발 자리만큼 이동한다.
 export const scrimParticipantRegistrations = pgTable(
     'scrim_participant_registrations',
     {

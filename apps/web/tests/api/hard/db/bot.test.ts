@@ -42,7 +42,7 @@ let interactionNumber = 990000000000000001n;
 const nextInteractionId = () => String(interactionNumber++);
 const messageId = '990000000000000091';
 
-async function createBotFixture(t: TestContext, configured = true) {
+async function createBotFixture(t: TestContext, configured = true, scheduledAt: string | null = null) {
     const f = await createAccessFixture(t);
     await f.db
         .insert(schema.mmrSeasons)
@@ -56,7 +56,7 @@ async function createBotFixture(t: TestContext, configured = true) {
         f.db,
         f.owner,
         f.ids.guild,
-        { ...settings, requestId: randomUUID() },
+        { ...settings, scheduledAt, requestId: randomUUID() },
         f.dependencies
     );
     const row = async () =>
@@ -290,15 +290,27 @@ test('같은 참가 interaction의 동시 처리와 재전송은 신청·revisio
     assert.equal((await f.row()).revision, before.revision + 1);
 });
 
-test('도착 예약은 본인의 신청에만 저장되며 변경·재전송에도 계정과 희망 포지션을 보존한다', async (t) => {
-    const f = await createBotFixture(t);
+test('합류 시각은 본인의 신청에만 저장되며 변경·재전송에도 계정과 희망 포지션을 보존한다', async (t) => {
+    const expectedScheduledAt = new Date().toISOString();
+    const f = await createBotFixture(t, true, expectedScheduledAt);
     const waiting: BotRegistrationInput = {
         ...f.input(),
         action: 'standby',
+        expectedScheduledAt,
         availableAt: new Date(Date.now() + 3_600_000).toISOString(),
         riotAccountId: null,
         positions: ['jungle', 'mid']
     };
+    for (const [patch, code] of [
+        [{ availableAt: undefined }, 'INVALID_INPUT'],
+        [{ expectedScheduledAt: undefined }, 'INVALID_INPUT'],
+        [{ expectedScheduledAt: waiting.availableAt }, 'CONFLICT']
+    ] as const) {
+        await assert.rejects(
+            mutateBotRegistration(f.db, f.ids.guild, f.scrimId, { ...waiting, ...patch }, f.dependencies),
+            errorCode(code)
+        );
+    }
     const joined = await mutateBotRegistration(f.db, f.ids.guild, f.scrimId, waiting, f.dependencies);
     assert.equal(joined.registration?.status, 'standby');
     assert.equal(joined.registration?.availableAt, waiting.availableAt);
@@ -313,6 +325,7 @@ test('도착 예약은 본인의 신청에만 저장되며 변경·재전송에�
         actorId: f.ids.member,
         interactionId: nextInteractionId(),
         action: 'standby',
+        expectedScheduledAt,
         availableAt: new Date(Date.now() + 7_200_000).toISOString(),
         registrationId: joined.registration!.id
     };
@@ -369,8 +382,9 @@ test('도착 예약은 본인의 신청에만 저장되며 변경·재전송에�
     );
 });
 
-test('만석이면 시각 없는 대기만 가능하며 마지막 예약 자리는 한 명만 점유한다', async (t) => {
-    const f = await createRecruitmentFixture(t);
+test('선발 만석에서도 봇으로 합류 시각을 등록·변경하고 전체 신청 정원을 지킨다', async (t) => {
+    const expectedScheduledAt = new Date().toISOString();
+    const f = await createRecruitmentFixture(t, { scheduledAt: expectedScheduledAt });
     for (let index = 0; index < 10; index++)
         await createRegistration(
             f.db,
@@ -380,89 +394,58 @@ test('만석이면 시각 없는 대기만 가능하며 마지막 예약 자리�
             { riotAccountId: null, positions: ['mid'] },
             f.access
         );
+    const availableAt = new Date(Date.now() + 3_600_000).toISOString();
     const waiting: BotRegistrationInput = {
         actorId: f.actors[10]!.userId,
         interactionId: nextInteractionId(),
         action: 'standby',
         riotAccountId: null,
-        positions: ['mid']
+        positions: ['mid'],
+        expectedScheduledAt,
+        availableAt
     };
-    const first = await mutateBotRegistration(f.db, f.guildId, f.scrimId, waiting, f.access);
-    const revision = (await f.row()).revision;
-    const reserve: BotRegistrationInput = {
-        actorId: waiting.actorId,
+    const save = (input: BotRegistrationInput) =>
+        mutateBotRegistration(f.db, f.guildId, f.scrimId, input, f.access);
+    const timed = await save(waiting);
+    assert.equal(timed.registration?.status, 'standby');
+    assert.equal(timed.registration?.availableAt, availableAt);
+    const immediate = await save({
+        action: 'create',
+        actorId: f.actors[11]!.userId,
         interactionId: nextInteractionId(),
-        action: 'standby',
-        availableAt: new Date(Date.now() + 3_600_000).toISOString(),
-        registrationId: first.registration!.id
-    };
+        riotAccountId: null,
+        positions: ['mid']
+    });
+    assert.equal(immediate.registration?.status, 'standby');
+    assert.equal(immediate.registration?.availableAt, null);
     await assert.rejects(
-        mutateBotRegistration(f.db, f.guildId, f.scrimId, reserve, f.access),
+        save({ ...waiting, actorId: f.actors[12]!.userId, interactionId: nextInteractionId() }),
         errorCode('CONFLICT')
     );
-    assert.equal((await f.row()).revision, revision);
-    const second = await mutateBotRegistration(
-        f.db,
-        f.guildId,
-        f.scrimId,
-        { ...waiting, actorId: f.actors[11]!.userId, interactionId: nextInteractionId() },
-        f.access
-    );
+    const change = { ...waiting, registrationId: immediate.registration!.id, actorId: f.actors[11]!.userId };
+    const edited = await save({ ...change, interactionId: nextInteractionId() });
+    assert.equal(edited.registration?.availableAt, availableAt);
     await assert.rejects(
-        mutateBotRegistration(
-            f.db,
-            f.guildId,
-            f.scrimId,
-            { ...waiting, actorId: f.actors[12]!.userId, interactionId: nextInteractionId() },
-            f.access
-        ),
-        errorCode('CONFLICT')
+        save({ ...change, availableAt: undefined, interactionId: nextInteractionId() }),
+        errorCode('INVALID_INPUT')
     );
-    const initial = await getBotRegistration(f.db, f.guildId, f.scrimId, f.actors[0]!.userId, f.access);
-    const demoted = await mutateBotRegistration(
-        f.db,
-        f.guildId,
-        f.scrimId,
-        {
-            action: 'standby',
-            actorId: f.actors[0]!.userId,
-            interactionId: nextInteractionId(),
-            registrationId: initial.registration!.id
-        },
-        f.access
-    );
-    assert.equal(demoted.registration?.status, 'standby');
-    const results = await concurrently([
-        () =>
-            mutateBotRegistration(
-                f.db,
-                f.guildId,
-                f.scrimId,
-                { ...reserve, interactionId: nextInteractionId() },
-                f.access
-            ),
-        () =>
-            mutateBotRegistration(
-                f.db,
-                f.guildId,
-                f.scrimId,
-                {
-                    ...reserve,
-                    actorId: f.actors[11]!.userId,
-                    registrationId: second.registration!.id,
-                    interactionId: nextInteractionId()
-                },
-                f.access
-            )
-    ]);
-    const winners = results.filter((result) => result.status === 'fulfilled');
-    assert.equal(winners.length, 1);
-    assert.equal(winners[0]!.value.registration?.availableAt, reserve.availableAt);
-    assert.ok(results.some((result) => result.status === 'rejected' && errorCode('CONFLICT')(result.reason)));
-    const registrations = await f.db.select().from(schema.scrimParticipantRegistrations);
-    assert.equal(registrations.filter((registration) => registration.status === 'selected').length, 9);
-    assert.equal(registrations.filter((registration) => registration.availableAt !== null).length, 1);
-    assert.equal(registrations.length, 12);
+    await f.db
+        .update(schema.scrimParticipantRegistrations)
+        .set({ availableAt: sql`now() - interval '1 minute'` })
+        .where(eq(schema.scrimParticipantRegistrations.id, timed.registration!.id));
+    const actorId = f.actors[0]!.userId;
+    const selected = await getBotRegistration(f.db, f.guildId, f.scrimId, actorId, f.access);
+    const switched = await save({
+        ...change,
+        actorId,
+        registrationId: selected.registration!.id,
+        interactionId: nextInteractionId()
+    });
+    assert.equal(switched.registration?.status, 'standby');
+    const all = await f.db.select().from(schema.scrimParticipantRegistrations);
+    assert.equal(all.find((r) => r.id === timed.registration!.id)?.status, 'selected');
+    assert.equal(all.filter((r) => r.status === 'selected').length, 10);
+    assert.equal(all.filter((r) => r.status === 'standby' && r.availableAt !== null).length, 2);
 });
 
 test('웹 가입·Riot 연결 없는 Discord 멤버도 참가 화면에서 자동 사용자 생성 후 모든 포지션으로 신청한다', async (t) => {

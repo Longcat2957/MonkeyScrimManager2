@@ -37,6 +37,10 @@ test('모집 공지는 저장된 한국 자정 이후의 시각을 표시하고 
         const text = messageComponents(value.components.map((component) => component.toJSON()))
             .map((part) => part.content)
             .join('\n');
+        const standby = messageComponents(value.components.map((component) => component.toJSON())).find(
+            (part) => part.custom_id?.startsWith('registration-standby:')
+        );
+        assert.equal(standby?.disabled, scheduledAt === null);
         assert.equal(text.includes(stamp), scheduledAt !== null);
         assert.equal(text.includes('일정 미정'), scheduledAt === null);
     }
@@ -62,7 +66,13 @@ test('선발 정원이 차도 신청할 수 있고 모집 마감 후에는 웹 �
         const controls = buttons.filter((button) => button.custom_id);
         assert.deepEqual(
             controls.map((button) => button.custom_id).sort(),
-            actions.map((action) => `${action}:${job.scrimId}`).sort()
+            actions
+                .map(
+                    (action) =>
+                        `${action}:${job.scrimId}` +
+                        (action === 'registration-standby' ? ':' + Date.parse(job.data.scheduledAt!) : '')
+                )
+                .sort()
         );
         assert.ok(controls.every((button) => Boolean(button.disabled) === closed));
         assert.equal(

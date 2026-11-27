@@ -203,6 +203,7 @@ async function registrationContext(
         guildId,
         scrimId,
         title: row.title,
+        scheduledAt: row.expectedStartAt?.toISOString() ?? null,
         status: row.status,
         canEdit: reason === null,
         reason,
@@ -255,11 +256,15 @@ export async function mutateBotRegistration(
     const actor = botActor(input.actorId);
     if (!['create', 'update', 'withdraw', 'standby'].includes(input.action))
         throw new DomainError('INVALID_INPUT', '신청 동작이 올바르지 않아요');
-    if (
-        input.availableAt !== undefined &&
-        (input.action !== 'standby' || typeof input.availableAt !== 'string')
-    )
-        throw new DomainError('INVALID_INPUT', '도착 가능 시각은 대기 신청에서만 지정할 수 있어요');
+    if (input.action === 'standby') {
+        if (typeof input.availableAt !== 'string' || typeof input.expectedScheduledAt !== 'string')
+            throw new DomainError(
+                'INVALID_INPUT',
+                '모집 글에서 대기 신청을 다시 열고 합류 시각을 입력해 주세요'
+            );
+    } else if (input.availableAt !== undefined || input.expectedScheduledAt !== undefined) {
+        throw new DomainError('INVALID_INPUT', '합류 시각은 대기 신청에서만 지정할 수 있어요');
+    }
     if (input.action === 'create' && input.registrationId !== undefined)
         throw new DomainError('INVALID_INPUT', '신규 신청에는 기존 신청 식별자를 사용할 수 없어요');
     const creating =
@@ -282,7 +287,7 @@ export async function mutateBotRegistration(
                         guildId,
                         scrimId,
                         { ...registration!, availableAt: input.availableAt },
-                        input.action === 'standby' ? { initialStatus: 'standby' } : {}
+                        { expectedScheduledAt: input.expectedScheduledAt }
                     );
                 else if (input.action === 'update')
                     await updateRegistrationInTransaction(
@@ -296,6 +301,7 @@ export async function mutateBotRegistration(
                 else if (input.action === 'standby')
                     await setOwnStandbyInTransaction(tx, actor, guildId, scrimId, {
                         registrationId: input.registrationId!,
+                        expectedScheduledAt: input.expectedScheduledAt,
                         availableAt: input.availableAt
                     });
                 else

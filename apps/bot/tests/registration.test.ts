@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ComponentType, ModalBuilder } from 'discord.js';
 import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from 'discord.js';
 import type { BotApi } from '../src/api/client.ts';
 import type { BotRegistrationInput } from '../../../shared/bot-api.js';
@@ -20,6 +21,7 @@ function interaction(customId: string, values?: string[], actorId = USER) {
         user: { id: actorId },
         id: '970000000000000100',
         values: values ?? [],
+        message: { components: [] },
         deferReply: async () => {},
         deferUpdate: async () => {},
         showModal: async (modal: unknown) => {
@@ -213,123 +215,112 @@ test('계정이 25개를 넘어도 페이지별로 모두 선택할 수 있다',
     assert.equal(parseFormId(`form:${form.id}:next`)?.id, form.id);
 });
 
-function standbyModal(time: string) {
-    const request = interaction(`standby-time:${SCRIM}`);
+const scheduledAt = '2099-02-28T14:45:00.000Z';
+const start = Date.parse(scheduledAt);
+
+function standbyModal(availableAt: string, startTime = start) {
+    const request = interaction(`standby-time:${SCRIM}:${startTime}`);
     const value = Object.assign(request.value, {
-        fields: { getTextInputValue: () => time }
+        fields: {
+            getTextInputValue: (id: string) => {
+                assert.equal(id, 'availableAt');
+                return availableAt;
+            }
+        }
     }) as unknown as ModalSubmitInteraction;
     return { value, replies: request.replies };
 }
 
-test('대기 신청은 즉시 모달을 열고 한국 날짜·시각과 예약 좌석을 확인한 뒤에만 저장한다', async () => {
-    const forms = new RegistrationForms();
-    const open = interaction(`registration-standby:${SCRIM}`);
-    await handleRegistration(open.value, {} as BotApi, forms);
-    assert.match(JSON.stringify(open.replies), new RegExp(`"custom_id":"standby-time:${SCRIM}"`));
-    assert.match(JSON.stringify(open.replies), /참가 가능 시각/);
-    const availableAt = '2099-02-28T15:15:00.000Z';
-    for (const [status, previous] of [
-        [null, null],
-        ['selected', null],
-        ['standby', null],
-        ['standby', '2099-02-28T16:00:00.000Z']
-    ] as const) {
-        const original = registrationContext({
-            registration: status
-                ? {
-                      id: REGISTRATION,
-                      status,
-                      riotAccountId: ACCOUNT,
-                      positions: ['mid'],
-                      availableAt: previous
-                  }
-                : null
+test('새 공지와 기존 공지 모두 버튼을 누른 한국 시각을 필수 입력칸 하나에 미리 채운다', async () => {
+    for (const suffix of [':' + start, '']) {
+        const open = interaction(`registration-standby:${SCRIM}${suffix}`);
+        Object.assign(open.value, {
+            createdTimestamp: Date.parse('2026-11-28T15:07:58Z'),
+            message: {
+                components: [
+                    {
+                        type: 17,
+                        components: [{ type: 10, content: `## 내전\n<t:${start / 1000}:F>\n모집 중` }]
+                    }
+                ]
+            }
         });
+        await handleRegistration(open.value, {} as BotApi, new RegistrationForms());
+        const [modal] = open.replies;
+        assert.ok(modal instanceof ModalBuilder);
+        const { components } = modal.toJSON();
+        assert.equal(components.length, 1);
+        const [label] = components;
+        assert.ok(label?.type === ComponentType.Label);
+        assert.match(label.description!, /2099-02-28 23:45/);
+        assert.match(label.description!, /대기 명단.*합류 시각부터 선발 자리가 비면 자동으로 이동/);
+        assert.ok(label.component.type === ComponentType.TextInput);
+        assert.equal(label.component.custom_id, 'availableAt');
+        assert.equal(label.component.required, true);
+        assert.equal(label.component.value, '2026-11-29 00:07');
+    }
+});
+
+test('신규·기존 신청 모두 사용자가 고친 한국 날짜와 시각을 합류 시각으로 저장한다', async () => {
+    for (const [inputTime, availableAt, existing] of [
+        ['2099-02-28 23:46', '2099-02-28T14:46:00.000Z', false],
+        ['2099-03-01 00:15', '2099-02-28T15:15:00.000Z', true]
+    ] as const) {
+        const registration = {
+            id: REGISTRATION,
+            status: 'selected' as const,
+            riotAccountId: ACCOUNT,
+            positions: ['mid' as const],
+            availableAt: null
+        };
         const calls: BotRegistrationInput[] = [];
         const api = {
-            registration: async () => original,
+            registration: async () => registrationContext({ registration: existing ? registration : null }),
             saveRegistration: async (_guild: string, _scrim: string, input: BotRegistrationInput) => {
                 calls.push(input);
                 return registrationContext({
-                    registration: {
-                        id: REGISTRATION,
-                        status: 'standby',
-                        riotAccountId: ACCOUNT,
-                        positions: ['mid'],
-                        availableAt
-                    }
+                    registration: { ...registration, status: 'standby', availableAt }
                 });
             }
         } as unknown as BotApi;
-        const submitted = standbyModal('2099-03-01 00:15');
-        await submitStandbyTime(submitted.value, api, forms);
-        const confirmation = JSON.stringify(submitted.replies);
-        assert.match(confirmation, /2099-03-01 00:15 KST/);
-        assert.match(confirmation, /한 자리/);
-        assert.equal(calls.length, 0);
-        const id = confirmation.match(/form:[0-9a-f]{24}:standby/)![0];
-        const confirmed = interaction(id);
-        await handleRegistration(confirmed.value, api, forms);
+        const submitted = standbyModal(inputTime);
+        await submitStandbyTime(submitted.value, api);
         assert.deepEqual(calls, [
             {
                 action: 'standby',
                 actorId: USER,
-                interactionId: confirmed.value.id,
+                interactionId: submitted.value.id,
+                expectedScheduledAt: scheduledAt,
                 availableAt,
-                ...(status
+                ...(existing
                     ? { registrationId: REGISTRATION }
-                    : {
-                          riotAccountId: ACCOUNT,
-                          positions: ['top', 'jungle', 'mid', 'bot', 'support']
-                      })
+                    : { riotAccountId: ACCOUNT, positions: ['top', 'jungle', 'mid', 'bot', 'support'] })
             }
         ]);
-        assert.match(JSON.stringify(confirmed.replies), /2099-03-01 00:15 KST 자동 선발 예약/);
+        assert.match(JSON.stringify(submitted.replies), /합류 가능 · 선발 대기 중/);
     }
 });
 
-test('시각을 비우면 예약 없이 수동 배정을 기다리며 기존 예약은 자리 반납을 확인한다', async () => {
-    for (const previous of [null, '2099-03-01T01:00:00.000Z']) {
-        const forms = new RegistrationForms();
-        const current = registrationContext({
-            registration: previous
-                ? {
-                      id: REGISTRATION,
-                      status: 'standby',
-                      riotAccountId: ACCOUNT,
-                      positions: ['mid'],
-                      availableAt: previous
-                  }
-                : null
-        });
-        const calls: BotRegistrationInput[] = [];
+test('빈 값·형식 오류·과거·예정 시작 이하·일정 변경은 저장하지 않고 다시 입력하게 한다', async () => {
+    const old = '2020-01-01T00:00:00.000Z';
+    for (const [inputTime, scheduled, shown, error] of [
+        ['', scheduledAt, start, /YYYY-MM-DD HH:mm/],
+        ['30분', scheduledAt, start, /YYYY-MM-DD HH:mm/],
+        ['2099-02-29 23:46', scheduledAt, start, /YYYY-MM-DD HH:mm/],
+        ['2099-02-28 23:44', scheduledAt, start, /예정 시작.*보다 늦은/],
+        ['2099-02-28 23:45', scheduledAt, start, /예정 시작.*보다 늦은/],
+        ['2020-01-01 09:01', old, Date.parse(old), /이미 지난/],
+        ['2099-03-01 00:15', scheduledAt, Date.parse(old), /시각이 변경/],
+        ['2099-03-01 00:15', null, start, /정해지면/]
+    ] as const) {
         const api = {
-            registration: async () => current,
-            saveRegistration: async (_guild: string, _scrim: string, input: BotRegistrationInput) => {
-                calls.push(input);
-                return registrationContext({
-                    registration: {
-                        id: REGISTRATION,
-                        status: 'standby',
-                        riotAccountId: ACCOUNT,
-                        positions: ['mid'],
-                        availableAt: null
-                    }
-                });
-            }
+            registration: async () => registrationContext({ scheduledAt: scheduled })
         } as unknown as BotApi;
-        const submitted = standbyModal('');
-        await submitStandbyTime(submitted.value, api, forms);
-        const confirmation = JSON.stringify(submitted.replies);
-        assert.match(confirmation, /수동 배정 대기 확정/);
-        assert.equal(confirmation.includes('자리를 반납'), !!previous);
-        const confirmed = interaction(confirmation.match(/form:[0-9a-f]{24}:standby/)![0]);
-        await handleRegistration(confirmed.value, api, forms);
-        assert.equal(calls.length, 1);
-        assert.equal(calls[0]!.action, 'standby');
-        assert.ok(!Object.hasOwn(calls[0]!, 'availableAt'));
-        assert.equal(calls[0]!.registrationId, previous ? REGISTRATION : undefined);
-        assert.match(JSON.stringify(confirmed.replies), /수동 배정 대기 중/);
+        const submitted = standbyModal(inputTime, shown);
+        await submitStandbyTime(submitted.value, api);
+        const result = JSON.stringify(submitted.replies);
+        assert.match(result, error);
+        assert.equal(result.includes('합류 시각 입력'), scheduled !== null);
     }
 });
 
@@ -356,28 +347,6 @@ test('참가 버튼은 기존 대기자를 승격하지 않고 본인 신청 화
     }
 });
 
-test('잘못된 날짜·과거·날짜 없는 시각은 업무 API 호출 없이 거절한다', async () => {
-    for (const [text, message] of [
-        ['2099-02-29 22:00', /실제 날짜/],
-        ['2099-03-01 25:00', /날짜와 시각/],
-        ['00:15', /날짜와 시각/],
-        ['2020-03-01 00:15', /현재보다 늦은/]
-    ] as const) {
-        const submitted = standbyModal(text);
-        await submitStandbyTime(submitted.value, {} as BotApi, new RegistrationForms());
-        assert.match(JSON.stringify(submitted.replies), message);
-    }
-});
-
-test('확인 버튼을 누르기 전에 지난 시각은 예약하지 않는다', async () => {
-    const forms = new RegistrationForms();
-    const form = forms.create(USER, GUILD, registrationContext());
-    form.pendingStandbyAt = '2020-01-01T00:00:00.000Z';
-    const confirm = interaction(`form:${form.id}:standby`);
-    await handleRegistration(confirm.value, {} as BotApi, forms);
-    assert.match(JSON.stringify(confirm.replies), /시각을 다시 입력/);
-});
-
 test('모집 마감·미신청 철회·동일 대기는 쓰기 없이 상태를 안내한다', async () => {
     let context = registrationContext({
         registration: {
@@ -402,7 +371,7 @@ test('모집 마감·미신청 철회·동일 대기는 쓰기 없이 상태를 
     await handleRegistration(request.value, api, new RegistrationForms());
     assert.match(JSON.stringify(request.replies), /마감/);
     const submitted = standbyModal('');
-    await submitStandbyTime(submitted.value, api, new RegistrationForms());
+    await submitStandbyTime(submitted.value, api);
     assert.match(JSON.stringify(submitted.replies), /마감/);
     context = registrationContext();
     await handleRegistration(
@@ -419,7 +388,10 @@ test('모집 마감·미신청 철회·동일 대기는 쓰기 없이 상태를 
             availableAt: null
         }
     });
-    await submitStandbyTime(standbyModal('').value, api, new RegistrationForms());
+    context.registration!.availableAt = new Date(start + 30 * 60_000).toISOString();
+    const repeat = standbyModal('2099-03-01 00:15');
+    await submitStandbyTime(repeat.value, api);
+    assert.match(JSON.stringify(repeat.replies), /현재 상태/);
     assert.equal(calls, 0);
 });
 

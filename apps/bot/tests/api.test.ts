@@ -42,6 +42,7 @@ test('신청 생성·수정·철회는 같은 사용자와 interaction ID를 JSO
         actorId: USER,
         interactionId: '970000000000000103',
         registrationId: REGISTRATION,
+        expectedScheduledAt: '2099-02-28T14:45:00.000Z',
         availableAt
     });
     assert.deepEqual(

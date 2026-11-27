@@ -67,7 +67,10 @@ function uiSnapshot(snapshot: StatsSnapshot, version: number): StatsSnapshot {
         ...snapshot,
         achievements: groupSeasonTitles([
             { ...entries[0]!, titleId: 'season-kills', tied: false },
-            ...entries.map((entry) => ({ ...entry, titleId: 'season-cs' as const }))
+            ...entries.map((entry) => ({ ...entry, titleId: 'season-cs' as const })),
+            { ...entries[0]!, titleId: 'season-efficiency', position: 'mid' },
+            { ...entries[0]!, titleId: 'season-efficiency', position: 'support' },
+            { ...entries[0]!, titleId: 'season-one-trick' }
         ]),
         leaderboard: version === 3 ? [] : Array.from({ length: 30 }, (_, index) => row(index)),
         playerCount: 30,
@@ -176,6 +179,28 @@ async function injectedState(
             .getByRole('navigation', { name: '챔피언 쪽 이동', exact: true })
             .getByRole('button', { name: '2', exact: true })
             .press('Enter');
+        const deck = page.getByRole('group', { name: '시즌 칭호', exact: true });
+        const cards = deck.locator('article');
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        // 양끝을 지나고 바로 반대로 움직여도 칭호와 포지션마다 자기 배경 한 장만 보인다.
+        for (const direction of ['이전', '다음', '다음', '이전']) {
+            await deck.getByRole('button', { name: direction + ' 칭호' }).dispatchEvent('click');
+            const sources = await cards
+                .locator('img.splash')
+                .evaluateAll((images) => images.map((image) => image.getAttribute('src')));
+            assert.equal(new Set(sources).size, 5);
+            await page.clock.runFor(32);
+            assert.equal(
+                await deck.locator('[data-active="true"]').evaluate((card) => getComputedStyle(card).opacity),
+                '1'
+            );
+            const selected = deck.locator('button[aria-current="true"]');
+            assert.equal(
+                await deck.locator('[data-active="true"] h3').innerText(),
+                await selected.getAttribute('aria-label')
+            );
+        }
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.getByRole('button', { name: '칭호별 순위', exact: true }).press('Enter');
         const dialog = page.getByRole('dialog', { name: '칭호별 순위', exact: true });
         const selected = dialog.getByRole('button', { name: '20대 사망원인 1위 한라인만 더', exact: true });

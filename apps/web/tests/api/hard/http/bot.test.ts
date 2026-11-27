@@ -51,13 +51,17 @@ async function seedAccount(f: HttpFixture, userId = HTTP_IDS.member, guildId = H
     return account!;
 }
 
-async function createRecruitment(f: HttpFixture, guildId = HTTP_IDS.guild) {
+async function createRecruitment(
+    f: HttpFixture,
+    guildId = HTTP_IDS.guild,
+    scheduledAt: string | null = null
+) {
     return success<{ scrimId: string }>(
         await requestBot(f, guildPath(guildId) + '/scrims', 'POST', {
             actorId: HTTP_IDS.manager,
             interactionId: interactionId(),
             title: 'Discord에서 만든 내전',
-            scheduledAt: null,
+            scheduledAt,
             teamCount: 2,
             reserveCapacity: 1,
             hardFearless: true
@@ -198,12 +202,14 @@ test('HTTP 봇: 운영자의 수동 참가 선택을 서비스 인증·실제 �
 test('HTTP 봇: 쿠키 없이 본인 계정으로 신청·수정·철회하고 오래된 생성 재전송은 재가입시키지 않는다', async (t) => {
     const f = await createHttpFixture(t);
     const account = await seedAccount(f);
-    const { scrimId } = await createRecruitment(f);
+    const expectedScheduledAt = new Date().toISOString();
+    const { scrimId } = await createRecruitment(f, HTTP_IDS.guild, expectedScheduledAt);
     const base = guildPath() + '/scrims/' + scrimId;
     const context = await success<BotRegistrationContext>(
         await requestBot(f, base + '/registration?actorId=' + HTTP_IDS.member)
     );
     assert.equal(context.registration, null);
+    assert.equal(context.scheduledAt, expectedScheduledAt);
     assert.equal(context.accounts[0]!.id, account.id);
     assert.equal(context.canEdit, true);
     const create = {
@@ -232,7 +238,12 @@ test('HTTP 봇: 쿠키 없이 본인 계정으로 신청·수정·철회하고 �
     const registrationId = joined.registration!.id;
     const change = { actorId: HTTP_IDS.member, registrationId, interactionId: interactionId() };
     const waiting = await success<BotRegistrationContext>(
-        await requestBot(f, base + '/registrations', 'PATCH', { ...change, action: 'standby', availableAt })
+        await requestBot(f, base + '/registrations', 'PATCH', {
+            ...change,
+            action: 'standby',
+            expectedScheduledAt,
+            availableAt
+        })
     );
     assert.equal(waiting.registration?.status, 'standby');
     assert.equal(waiting.registration?.availableAt, availableAt);

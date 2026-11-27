@@ -44,7 +44,6 @@ import {
     assertCapacity,
     assertEditableSettings,
     assertRevision,
-    holdsPlaySlot,
     requireRecruitment,
     requireRevision,
     requireUuid,
@@ -116,7 +115,7 @@ async function registrations(tx: Transaction, scrimId: string) {
         );
 }
 
-function reservationsInScrim(tx: Transaction, scrimId: string) {
+function timedStandbyInScrim(tx: Transaction, scrimId: string) {
     return and(
         isNotNull(scrimParticipantRegistrations.availableAt),
         inArray(
@@ -129,14 +128,36 @@ function reservationsInScrim(tx: Transaction, scrimId: string) {
     );
 }
 
-async function cancelReservations(tx: Transaction, scrimId: string) {
+async function clearStandbyTimes(tx: Transaction, scrimId: string) {
     await tx
         .update(scrimParticipantRegistrations)
         .set({ availableAt: null })
-        .where(reservationsInScrim(tx, scrimId));
+        .where(timedStandbyInScrim(tx, scrimId));
 }
 
-/** 신청·취소와 같은 내전 잠금 아래 예약을 소비하고 모집 게시 갱신까지 함께 커밋한다. */
+/** 호출자가 잡은 모집 내전 잠금 안에서만 빈 선발 자리를 채운다. */
+async function fillStandbyVacancies(tx: Transaction, scrimId: string, teamCount: number) {
+    const result = await tx.execute(sql`
+        WITH active AS (
+            SELECT r.id, r.status, r.available_at, r.joined_at
+            FROM ${scrimParticipantRegistrations} AS r
+            JOIN ${scrimParticipants} AS p ON p.id = r.scrim_participant_id
+            WHERE p.scrim_id = ${scrimId} AND r.withdrawn_at IS NULL
+        ), ready AS (
+            SELECT id FROM active
+            WHERE status = 'standby' AND available_at <= statement_timestamp()
+            ORDER BY available_at, joined_at, id
+            LIMIT (
+                SELECT greatest(0, ${playCapacity(teamCount)}::int - count(*) FILTER (WHERE status = 'selected'))
+                FROM active
+            )
+        )
+        UPDATE ${scrimParticipantRegistrations} SET status = 'selected', available_at = NULL
+        WHERE id IN (SELECT id FROM ready)
+    `);
+    return (result.rowCount ?? 0) > 0;
+}
+
 export async function promoteDueStandby(db: Database): Promise<void> {
     const due = lte(scrimParticipantRegistrations.availableAt, sql`now()`);
     const candidates = await db
@@ -151,16 +172,12 @@ export async function promoteDueStandby(db: Database): Promise<void> {
     for (const { id } of candidates) {
         await db.transaction(async (tx) => {
             const [open] = await tx
-                .select({ id: scrims.id })
+                .select({ teamCount: scrims.teamCount })
                 .from(scrims)
                 .where(and(eq(scrims.id, id), eq(scrims.status, 'recruit')))
                 .for('update', { skipLocked: true });
             if (!open) return;
-            const promoted = await tx
-                .update(scrimParticipantRegistrations)
-                .set({ status: 'selected', availableAt: null })
-                .where(and(reservationsInScrim(tx, id), due));
-            if (promoted.rowCount) await bumpRevision(tx, id);
+            if (await fillStandbyVacancies(tx, id, open.teamCount)) await bumpRevision(tx, id);
         });
     }
 }
@@ -327,7 +344,7 @@ export async function createRegistrationInTransaction(
     guildId: string,
     scrimId: string,
     next: RegistrationInput,
-    options: { joinedBy?: Actor; initialStatus?: 'standby' } = {}
+    options: { joinedBy?: Actor; expectedScheduledAt?: string } = {}
 ): Promise<'selected' | 'standby'> {
     const { joinedBy } = options;
     const { user: profile, participant } = await lockRegistrationAccounts(
@@ -340,15 +357,18 @@ export async function createRegistrationInTransaction(
     const row = await lockScrim(tx, joinedBy ?? user, guildId, scrimId, Boolean(joinedBy));
     if (joinedBy) await assertGuildAccess(tx, user, guildId);
     requireRecruitment(row.status);
+    // 주기 작업 직전에 신청하더라도 이미 합류할 수 있는 대기자가 먼저 들어간다.
+    await fillStandbyVacancies(tx, row.id, row.teamCount);
     const active = await registrations(tx, row.id);
     const current = active.find((registration) => registration.userId === user.userId);
     if (current) throw new DomainError('CONFLICT', '이미 신청했어요');
     if (active.length >= playCapacity(row.teamCount) + row.reserveCapacity)
         throw new DomainError('CONFLICT', '신청 정원이 찼어요');
-    const hasPlaySlot = active.filter(holdsPlaySlot).length < playCapacity(row.teamCount);
-    const availableAt = validateStandbyTime(next.availableAt, hasPlaySlot);
-    const status =
-        !availableAt && options.initialStatus !== 'standby' && hasPlaySlot ? 'selected' : 'standby';
+    const hasPlaySlot =
+        active.filter((entry) => entry.status === 'selected').length < playCapacity(row.teamCount);
+    const availableAt = validateStandbyTime(next.availableAt);
+    checkStandbySchedule(row, options.expectedScheduledAt, availableAt);
+    const status = !availableAt && hasPlaySlot ? 'selected' : 'standby';
     await requireUnusedAccount(tx, row.id, next.riotAccountId, participant?.id);
     const [membership] = await tx
         .select({ nickname: guildMembers.nickname })
@@ -465,13 +485,28 @@ export async function createManualRegistrationInTransaction(
     );
 }
 
-/** 직접 대기를 선택할 때만 예약을 만들거나 해제하고, 기존 계정·포지션·신청 순서는 보존한다. */
+function checkStandbySchedule(
+    row: ScrimRow,
+    expectedScheduledAt: string | undefined,
+    availableAt: Date | null
+) {
+    if (expectedScheduledAt === undefined) return;
+    if (!row.expectedStartAt || row.expectedStartAt.toISOString() !== expectedScheduledAt)
+        throw new DomainError(
+            'CONFLICT',
+            '예정 시작 시각이 변경됐어요. 모집 글에서 대기 신청을 다시 열어 주세요'
+        );
+    if (!availableAt || availableAt <= row.expectedStartAt)
+        throw new DomainError('INVALID_INPUT', '예정 시작 시각보다 늦은 합류 시각을 입력해 주세요');
+}
+
+/** 대기로 변경해도 기존 계정·포지션·신청 순서는 보존한다. */
 export async function setOwnStandbyInTransaction(
     tx: Transaction,
     user: Actor,
     guildId: string,
     scrimId: string,
-    input: { registrationId: string; availableAt?: string }
+    input: { registrationId: string; availableAt?: string; expectedScheduledAt?: string }
 ): Promise<void> {
     await lockRegistrationAccounts(tx, user, guildId, scrimId);
     const row = await lockScrim(tx, user, guildId, scrimId, false);
@@ -480,20 +515,20 @@ export async function setOwnStandbyInTransaction(
     const mine = active.find((registration) => registration.userId === user.userId);
     if (!mine || mine.id !== input.registrationId)
         throw new DomainError('CONFLICT', '신청이 변경됐어요. 내 신청을 다시 열어 주세요');
-    const availableAt = validateStandbyTime(
-        input.availableAt,
-        holdsPlaySlot(mine) || active.filter(holdsPlaySlot).length < playCapacity(row.teamCount)
-    );
+    const availableAt = validateStandbyTime(input.availableAt);
+    checkStandbySchedule(row, input.expectedScheduledAt, availableAt);
     if (mine.status === 'standby' && mine.availableAt?.getTime() === availableAt?.getTime()) return;
     await tx
         .update(scrimParticipantRegistrations)
         .set({ status: 'standby', availableAt })
         .where(eq(scrimParticipantRegistrations.id, mine.id));
-    if (mine.status === 'selected')
+    if (mine.status === 'selected') {
         await tx
             .update(scrimParticipants)
             .set({ teamId: null, position: null })
             .where(eq(scrimParticipants.id, mine.participantId));
+        await fillStandbyVacancies(tx, row.id, row.teamCount);
+    }
     await bumpRevision(tx, row.id);
 }
 
@@ -581,6 +616,7 @@ export async function withdrawRegistrationInTransaction(
         .update(scrimParticipants)
         .set({ teamId: null, position: null })
         .where(eq(scrimParticipants.id, mine.participantId));
+    if (mine.status === 'selected') await fillStandbyVacancies(tx, row.id, row.teamCount);
     await bumpRevision(tx, row.id);
 }
 
@@ -639,6 +675,7 @@ export async function setParticipantStatus(
                         targets.map((target) => target.participantId)
                     )
                 );
+        if (next.status !== 'selected') await fillStandbyVacancies(tx, row.id, row.teamCount);
         await bumpRevision(tx, row.id);
     });
 }
@@ -671,6 +708,8 @@ export async function updateScrimSettings(
                 revision: row.revision + 1
             })
             .where(eq(scrims.id, row.id));
+        if (row.status === 'recruit' && settings.teamCount > row.teamCount)
+            await fillStandbyVacancies(tx, row.id, settings.teamCount);
         await enqueueScrimPublications(tx, row.id);
     });
 }
@@ -690,6 +729,7 @@ export async function closeRecruitment(
     await db.transaction(async (tx) => {
         const row = await lockScrim(tx, user, guildId, scrimId, true, expectedRevision);
         requireRecruitment(row.status);
+        await fillStandbyVacancies(tx, row.id, row.teamCount);
         const selected = (await registrations(tx, row.id)).filter(
             (registration) => registration.status === 'selected'
         ).length;
@@ -716,7 +756,7 @@ export async function closeRecruitment(
                     isActive: true
                 });
         }
-        await cancelReservations(tx, row.id);
+        await clearStandbyTimes(tx, row.id);
         await tx
             .update(scrims)
             .set({ status: 'preparing', revision: row.revision + 1 })
@@ -807,7 +847,7 @@ export async function cancelScrim(
             .from(auctions)
             .where(eq(auctions.scrimId, row.id))
             .for('update');
-        if (row.status === 'recruit') await cancelReservations(tx, row.id);
+        if (row.status === 'recruit') await clearStandbyTimes(tx, row.id);
         await tx
             .update(scrims)
             .set({
