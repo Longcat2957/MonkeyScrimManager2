@@ -64,7 +64,8 @@ for (const width of [1440, 390])
                     .click();
                 await page.waitForURL((url) => url.searchParams.get('game') === latest.id);
                 const publicLink = page.locator(`a[href$="/players/${owner.userId}"]`);
-                const row = page.getByRole('row').filter({ has: publicLink });
+                // 한 포지션 행에 두 팀 선수가 함께 있으므로 해당 선수의 칸으로 좁힌다.
+                const row = page.locator('td').filter({ has: publicLink });
                 assert.equal(await publicLink.innerText(), snapshotName);
                 await row.getByText(`${owner.gameName}#${owner.tagLine}`, { exact: true }).waitFor();
                 await row.getByRole('button', { name: /^상세/ }).press('Enter');
@@ -134,7 +135,7 @@ for (const width of [1440, 390])
         await page.goto(f.url + f.path);
         await page.locator('#game-heading').getByText('2세트', { exact: true }).waitFor();
         const target = page
-            .locator('tr')
+            .locator('td')
             .filter({ has: page.locator(`a[href$="/players/${f.identities[0]!.userId}"]`) })
             .getByRole('button', { name: /^상세/ });
         await target.press('Enter');
