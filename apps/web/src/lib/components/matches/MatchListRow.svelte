@@ -28,7 +28,8 @@
 
 <LinkCell {href} {line} subTitle={meta}>
     {#snippet leftChild()}
-        <DateBadge iso={match.playedAt} emptyText="날짜 미확인" />
+        <!-- 경기 기록 목록과 같이 실제 시각이 없으면 내전 예정 시각의 날짜를 쓴다. -->
+        <DateBadge iso={match.playedAt ?? match.scheduledAt ?? null} emptyText="일정 없음" />
     {/snippet}
     {#snippet titleChild()}
         <!--

@@ -153,11 +153,13 @@
         <span
             class={[
                 'min-w-0 break-words text-ui font-bold sm:text-xl',
-                winner && winner !== side && 'text-muted'
+                winner && winner !== side && 'font-semibold text-muted'
             ]}
         >
-            {name}{#if winner === side}
-                <small class="text-xs text-success">승리</small>{/if}
+            {name}
+            {#if winner === side}<small class="ml-1 align-middle text-xs font-semibold text-success"
+                    >승리</small
+                >{/if}
         </span>
         {#if side === 'a'}<strong class="font-brand text-3xl tabular-nums sm:text-4xl">{score}</strong>{/if}
     </span>
@@ -185,8 +187,13 @@
                     >
                     {@render team(match.teamB, 'b', match.scoreB)}
                 </h2>
+                <!-- 종료는 승리 표시와 내전 요약이 이미 알려 주므로 진행·중도 종료·취소만 태그로 표시한다. -->
                 <p class="flex items-center gap-2 text-xs font-semibold text-ink-2">
-                    <span>BO{match.bestOf}</span><StatusTag text={status.text} state={status.state} />
+                    <span>BO{match.bestOf}</span>
+                    {#if match.status !== 'completed'}<StatusTag
+                            text={status.text}
+                            state={status.state}
+                        />{/if}
                 </p>
             </div>
             {#if match.games.length > 1 || data.can.upload}
@@ -227,7 +234,8 @@
                                             guildId,
                                             userId: player.userId
                                         })}
-                                        class="underline underline-offset-2">{player.displayName}</a
+                                        class="underline decoration-line-strong underline-offset-4 hover:text-ink hover:decoration-current"
+                                        >{player.displayName}</a
                                     >
                                 {:else}
                                     {player.displayName}

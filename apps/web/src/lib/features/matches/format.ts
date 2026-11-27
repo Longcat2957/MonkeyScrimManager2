@@ -26,7 +26,7 @@ export function formatThousands(value: number | null) {
 export const formatNumber = (value: number | null) =>
     value === null ? '-' : Math.round(value).toLocaleString('ko-KR');
 
-// 데스가 0이면 킬+어시스트를 그대로 비율로 쓴다(예: 9/0/1 → 10).
+// 소수 한 자리로 표시한다. 데스가 0이면 비율 대신 Perfect로 표시한다.
 export function kdaRatio({
     kills,
     deaths,
@@ -37,8 +37,12 @@ export function kdaRatio({
     assists: number | null;
 }) {
     if (kills === null || deaths === null || assists === null) return '-';
-    return ((kills + assists) / Math.max(1, deaths)).toFixed(0);
+    if (deaths === 0) return 'Perfect';
+    return ((kills + assists) / deaths).toFixed(1);
 }
+
+// 빌드 번호를 뺀 주·부 버전만 표시한다(예: 16.23.839.6405 → 16.23).
+export const formatPatch = (patch: string) => patch.split('.').slice(0, 2).join('.');
 
 export function perMinute(value: number | null, seconds: number | null) {
     return value === null || seconds === null || seconds <= 0 ? '-' : (value / (seconds / 60)).toFixed(0);

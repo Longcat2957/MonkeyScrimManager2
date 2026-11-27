@@ -128,9 +128,14 @@ async function upload(page: Page, file: File, order: number, newLinks = false) {
     await dialog.waitFor({ state: 'hidden' });
     await page.waitForURL((url) => url.searchParams.has('game'));
     await page.locator('#game-heading').getByText(`${order}세트`, { exact: true }).waitFor();
+    // 세트 비교표는 한 표에서 A팀을 왼쪽에 고정하고 포지션 행마다 두 팀을 맞춘다.
+    const table = page.getByRole('table', { name: /선수 비교$/ });
     for (const { name, outcome, riotId, position, champion, kda } of rows) {
-        const table = page.getByRole('table', { name: `${name} 선수` });
-        await table.getByText(outcome, { exact: true }).waitFor();
+        await table
+            .getByRole('columnheader')
+            .filter({ hasText: name.split(' ')[1]! })
+            .getByText(outcome, { exact: true })
+            .waitFor();
         const row = table.getByRole('row').filter({ has: page.getByText(riotId, { exact: true }) });
         await row.getByText(position, { exact: true }).waitFor();
         await row.getByText(champion, { exact: true }).waitFor();

@@ -169,6 +169,7 @@ export async function listMatches(
                 bestOf: matches.bestOf,
                 status: matches.status,
                 playedAt: min(games.startedAt).as('played_at'),
+                scheduledAt: scrims.expectedStartAt,
                 scoreA: scoreA.as('score_a'),
                 scoreB: scoreB.as('score_b')
             })
@@ -223,16 +224,21 @@ export async function listMatches(
                       .select()
                       .from(archive)
                       .where(condition)
-                      .orderBy(sql`${archive.playedAt} desc nulls last`, asc(archive.id))
+                      .orderBy(
+                          // ROFL에는 절대 시각이 없으므로 실제 시각이 없으면 내전 예정 시각으로 최신순을 정한다.
+                          sql`coalesce(${archive.playedAt}, ${archive.scheduledAt}) desc nulls last`,
+                          asc(archive.id)
+                      )
                       .limit(options.pageSize)
                       .offset(offset)
                 : [];
         const empty =
             total === 0 &&
             (!condition || !(await tx.select({ id: archive.id }).from(archive).limit(1)).length);
-        const items: MatchListItem[] = rows.map(({ seasonId: _seasonId, playedAt, ...row }) => ({
+        const items: MatchListItem[] = rows.map(({ seasonId: _seasonId, playedAt, scheduledAt, ...row }) => ({
             ...row,
-            playedAt: playedAt?.toISOString() ?? null
+            playedAt: playedAt?.toISOString() ?? null,
+            scheduledAt: scheduledAt?.toISOString() ?? null
         }));
         return {
             matches: items,

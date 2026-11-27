@@ -1,7 +1,7 @@
 <script lang="ts">
     import StatusTag from '#lib/components/common/StatusTag.svelte';
     import type { GameDetail } from '#lib/features/matches/types.ts';
-    import { formatDuration, formatLongDate, kdaRatio } from '#lib/features/matches/format.ts';
+    import { formatDuration, formatLongDate, formatPatch, kdaRatio } from '#lib/features/matches/format.ts';
 
     // 시리즈 점수와 구분하여 선택 세트의 일시·패치·MVP를 비교표 머리에 표시한다.
     let { game }: { game: GameDetail } = $props();
@@ -13,7 +13,7 @@
         [
             game.playedAt ? formatLongDate(game.playedAt) : null,
             formatDuration(game.durationSec),
-            `패치 ${game.patch}`
+            `패치 ${formatPatch(game.patch)}`
         ]
             .filter(Boolean)
             .join(' · ')

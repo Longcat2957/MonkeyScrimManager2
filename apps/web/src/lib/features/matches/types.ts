@@ -51,6 +51,8 @@ export type MatchListItem = {
     status: MatchStatus;
     // 실제 경기 시각을 확인하지 못했으면 null이다. 업로드 시각으로 대신하지 않는다.
     playedAt: string | null;
+    // 내전 예정 시각. 실제 시각이 없을 때 목록의 정렬과 날짜 묶음에만 쓰며 경기 시각으로 표시하지 않는다.
+    scheduledAt?: string | null;
     matchedGameId?: string | null;
 };
 

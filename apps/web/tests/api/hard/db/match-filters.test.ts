@@ -62,6 +62,44 @@ test('경기 필터 날짜는 실제 달력과 윤년을 검사하고 한국 시
     assert.ok(parseMatchDateFilters({ from: '2026-11-16', to: '2026-11-15' }).error);
 });
 
+test('실제 시각이 없는 경기는 내전 예정 시각으로 정렬하고 기간 검색에는 쓰지 않는다', async (t) => {
+    const f = await archiveFixture(t);
+    const schedule = async (iso: string | null) =>
+        f.db
+            .update(schema.scrims)
+            .set({ expectedStartAt: iso ? new Date(iso) : null })
+            .where(eq(schema.scrims.id, f.archiveValues.scrimId));
+    const ids = [f.match.id];
+    for (let index = 1; index < 3; index++) {
+        const [row] = await f.db.insert(schema.matches).values(f.archiveValues).returning();
+        ids.push(row!.id);
+    }
+    // 첫 경기만 실제 시각이 없고, 내전 예정 시각은 두 실제 시각 사이다.
+    const instants = [null, '2026-11-18T12:00:00Z', '2026-11-22T12:00:00Z'];
+    for (const [index, instant] of instants.entries())
+        await f.createGame(f.db, 1, ids[index], 'a', { startedAt: instant ? new Date(instant) : null });
+    await schedule('2026-11-21T12:00:00Z');
+
+    const result = await listMatches(f.db, null, f.guildId, page);
+    assert.deepEqual(
+        result.matches.map((row) => row.id),
+        [ids[2], ids[0], ids[1]]
+    );
+    assert.equal(result.matches[1]!.playedAt, null);
+    assert.equal(result.matches[1]!.scheduledAt, '2026-11-21T12:00:00.000Z');
+    assert.equal(
+        (await listMatches(f.db, null, f.guildId, { ...page, from: '2026-11-21', to: '2026-11-21' })).total,
+        0
+    );
+
+    // 예정 시각도 없으면 시각을 아는 경기 뒤에 둔다.
+    await schedule(null);
+    assert.deepEqual(
+        (await listMatches(f.db, null, f.guildId, page)).matches.map((row) => row.id),
+        [ids[2], ids[1], ids[0]]
+    );
+});
+
 test('경기 필터는 한국 날짜의 첫 밀리초부터 마지막 밀리초까지 포함하고 미확인 시각은 제외한다', async (t) => {
     const f = await archiveFixture(t);
     const instants = [
