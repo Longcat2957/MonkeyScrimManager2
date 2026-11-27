@@ -34,7 +34,7 @@
 | 사용자 전적 | `season`, `position`, `page` | 활성 시즌, 전체 포지션, 1쪽 |
 | 서버 통계 | `season`, `position`, `min` | 활성 시즌, 전체 포지션, 최소 5게임(1~50). 시즌 칭호에는 `season`만 적용하며 기존 `recent=1`은 무시 |
 | 경매 기록 | `season`; 서버 장부의 `q`, `player`, `page`, `archive`, `auction` | 선수 이름 검색과 펼친 선수, 선수·완료 경매 쪽을 보존한다. `auction`은 같은 시즌의 내전 ID, `#signing-…`은 복기에서 강조할 영입이다 |
-| 서버 관리 | `tab=members\|discord\|audit\|seasons`, `q`, `page` | 멤버, 빈 검색어, 1쪽. 탭을 바꾸면 검색·쪽 초기화 |
+| 서버 관리 | `tab=members\|discord\|audit\|errors\|seasons`, `q`, `page` | 멤버, 빈 검색어, 1쪽. 탭을 바꾸면 검색·쪽 초기화 |
 | 백오피스 | `page` | 서비스 운영자 변경 이력의 쪽 번호 |
 
 선택 시즌은 같은 서버의 UUID만 허용한다. 명시한 UUID가 잘못되거나 비었으면 400, 없거나 다른 서버의 시즌이면 404다. 순위·개인 전적·통계의 시즌 변경은 쪽·offset을 초기화하고 다른 조건은 유지한다. 경기 검색·기간·시즌은 조회 시 함께 적용한다.

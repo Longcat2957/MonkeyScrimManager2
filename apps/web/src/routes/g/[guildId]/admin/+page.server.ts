@@ -7,6 +7,7 @@ import {
     getMockDiscord,
     isMockMember,
     listMockGuildAudit,
+    listMockGuildRequestErrors,
     listMockMembers,
     setMockDiscordSetting
 } from '#lib/mocks/admin.ts';
@@ -25,6 +26,7 @@ import { linkRiotAccount, setPrimaryRiotAccount, unlinkRiotAccount } from '#lib/
 import { getDb } from '#lib/server/db/index.ts';
 import { DiscordError } from '#lib/server/discord/client.ts';
 import { DomainError } from '#lib/server/errors.ts';
+import { listGuildRequestErrors } from '#lib/server/guild/request-errors.ts';
 import { listGuildAudit } from '#lib/server/guild/audit.ts';
 import { getGuildDiscordSettings, setGuildDiscordSetting } from '#lib/server/guild/settings.ts';
 import { getGuildSeasons, rotateGuildSeason } from '#lib/server/guild/seasons.ts';
@@ -81,7 +83,10 @@ async function runAction<T>(
 export const load: PageServerLoad = async ({ params, url, locals, request, depends, setHeaders }) => {
     const requestedTab = url.searchParams.get('tab');
     const tab =
-        requestedTab === 'discord' || requestedTab === 'audit' || requestedTab === 'seasons'
+        requestedTab === 'discord' ||
+        requestedTab === 'audit' ||
+        requestedTab === 'errors' ||
+        requestedTab === 'seasons'
             ? requestedTab
             : 'members';
     const q = (url.searchParams.get('q') ?? '').slice(0, 50);
@@ -92,6 +97,24 @@ export const load: PageServerLoad = async ({ params, url, locals, request, depen
             : 1;
     const pagination = { tab, q, page, pageSize: PAGE_SIZE };
     try {
+        if (tab === 'errors') {
+            depends('app:guild-request-errors');
+            if (request.method === 'GET') setHeaders({ 'Cache-Control': 'private, no-store' });
+            const mock = isMockGuild(params.guildId);
+            if (mock) requireMockAdmin(params.guildId);
+            return {
+                ...pagination,
+                members: [],
+                total: 0,
+                adminCount: 0,
+                discord: null,
+                audit: null,
+                seasons: null,
+                errors: mock
+                    ? listMockGuildRequestErrors(params.guildId, page, PAGE_SIZE)
+                    : await listGuildRequestErrors(getDb(), locals.actor, params.guildId, page, PAGE_SIZE)
+            };
+        }
         if (tab === 'seasons') {
             depends('app:guild-seasons');
             if (request.method === 'GET') setHeaders({ 'Cache-Control': 'no-store' });

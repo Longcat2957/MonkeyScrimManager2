@@ -6,6 +6,7 @@ import type { Database, Transaction } from '../db/types.ts';
 import { guildDiscordSettings, guildMembers, guilds, users } from '../db/schema.ts';
 import { createDiscordClient, DiscordError, isDiscordId, type DiscordClient } from '../discord/client.ts';
 import { fetchGuildMembership, isGuildOperator, synchronizeGuildMembership } from '../discord/membership.ts';
+import { noteVerifiedGuild } from '../operations/context.ts';
 import { DomainError } from '../errors.ts';
 
 export type GuildAccessDependencies = { db: Database; discord: DiscordClient };
@@ -30,10 +31,15 @@ export async function refreshGuildViewAccess(
             )
         )
         .limit(1);
-    if (!membership || (membership.syncedAt && Date.now() - membership.syncedAt.getTime() <= 60_000)) return;
+    if (!membership) return;
+    if (membership.syncedAt && Date.now() - membership.syncedAt.getTime() <= 60_000) {
+        noteVerifiedGuild(guildId);
+        return;
+    }
     try {
         const { discord } = await getGuildAccessDependencies({ ...dependencies, db });
-        await synchronizeGuildMembership(db, discord, actor.userId, guildId);
+        const guild = await synchronizeGuildMembership(db, discord, actor.userId, guildId);
+        if (guild) noteVerifiedGuild(guild.id);
     } catch (cause) {
         // 연동 장애에도 공개 열람은 유지한다. 오래된 권한은 assertGuildView에서 계속 제외한다.
         if (!(cause instanceof DiscordError)) throw cause;
@@ -51,6 +57,7 @@ export async function assertGuildView(
         where: and(eq(guilds.id, guildId), eq(guilds.isActive, true))
     });
     if (!guild) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+    noteVerifiedGuild(guild.id);
     let isAdmin = false;
     if (actor) {
         const [membership] = await db
@@ -123,6 +130,7 @@ export async function readLiveGuildMembership(
     const { discord } = await getGuildAccessDependencies(dependencies);
     const { member, guild } = await fetchGuildMembership(discord, user.userId, guildId);
     if (!member || !guild) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+    noteVerifiedGuild(guild.id);
     const syncedAt = Date.now();
     return async (db: Database | Transaction): Promise<GuildContext> => {
         const [row] = await db
@@ -147,6 +155,7 @@ export async function requireGuildMember(
     const guild = await synchronizeGuildMembership(db, discord, user.userId, guildId);
     // 다른 서버의 존재 여부를 구분해서 알려 주지 않는다.
     if (!guild) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+    noteVerifiedGuild(guild.id);
     return guild;
 }
 
@@ -198,6 +207,7 @@ export async function assertGuildAccess(
         (membership.operatorRoleId !== null &&
             membership.operatorRoleId !== guildId &&
             membership.roleIds.includes(membership.operatorRoleId));
+    noteVerifiedGuild(membership.id);
     if (requireAdmin && !isAdmin) throw new DomainError('FORBIDDEN', '서버를 관리할 권한이 없어요');
     return { id: membership.id, name: membership.name, isAdmin };
 }

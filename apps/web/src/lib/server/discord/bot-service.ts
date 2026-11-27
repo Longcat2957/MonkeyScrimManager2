@@ -1,3 +1,4 @@
+import { noteVerifiedGuild } from '../operations/context.ts';
 import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -707,6 +708,7 @@ export async function listKnownBotMembers(
         where: and(eq(guilds.id, guildId), eq(guilds.isActive, true))
     });
     if (!guild) throw new DomainError('NOT_FOUND', '서버를 찾을 수 없어요');
+    noteVerifiedGuild(guild.id);
     const rows = await db
         .select({ id: guildMembers.userId })
         .from(guildMembers)

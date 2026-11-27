@@ -1,4 +1,5 @@
 // SvelteKit 공통 타입 확장: https://svelte.dev/docs/kit/types#app.d.ts
+import type { CaughtError } from '@sveltejs/kit/hooks';
 import type { GuildContext, GuildSummary, SessionUser } from '#lib/features/guild/types.ts';
 import type { ScrimContext } from '#lib/features/scrims/types.ts';
 import type { Actor, AuthSession } from '#lib/server/auth/types.ts';
@@ -8,6 +9,9 @@ declare global {
         // interface Error {}
         interface Locals {
             requestId: string;
+            verifiedGuildId?: string;
+            // null은 handle이 응답을 기다리는 동안, undefined는 그 경계 밖을 뜻한다.
+            pendingRequestError?: { status: number; kind: CaughtError['kind'] } | null;
             actor: Actor | null;
             user: SessionUser | null;
             session: AuthSession | null;

@@ -1,18 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { building } from '$app/env';
 import { DATABASE_URL } from '$app/env/private';
-import { error, isHttpError, isRedirect } from '@sveltejs/kit';
-import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
+import { error, isHttpError, isRedirect, type RequestEvent } from '@sveltejs/kit';
+import type { CaughtError, Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
 import { SESSION_COOKIE, authCookieOptions } from '#lib/server/auth/cookies.ts';
 import { validateSession } from '#lib/server/auth/session.ts';
 import { DomainError } from '#lib/server/errors.ts';
+import { deleteExpiredRequestErrors, storeRequestError } from '#lib/server/guild/request-errors.ts';
 import { refreshGuildViewAccess } from '#lib/server/guild/access.ts';
 import {
     observeRequest,
     noteResponseStatus,
     currentOperationCode,
     noteOperationIssue,
-    notePhase
+    notePhase,
+    requestMethod
 } from '#lib/server/operations/context.ts';
 import { noteRequestError, operationalFailure, OperationLimitError } from '#lib/server/operations/errors.ts';
 import { getDb } from '#lib/server/db/index.ts';
@@ -59,7 +61,17 @@ export const init: ServerInit = () => {
             promoting = false;
         }
     }, 5000).unref();
+    async function purgeRequestErrors() {
+        try {
+            await deleteExpiredRequestErrors(getDb());
+        } catch {
+            console.warn('web_request_errors', 'cleanup_failed');
+        }
+    }
+    void purgeRequestErrors();
+    const purgeTimer = setInterval(purgeRequestErrors, 60 * 60 * 1000).unref();
     const stop = () => {
+        clearInterval(purgeTimer);
         clearInterval(timer);
         stopAuction();
     };
@@ -70,17 +82,38 @@ export const init: ServerInit = () => {
     });
 };
 
+async function recordError(event: RequestEvent, status: number, kind: CaughtError['kind'] | null) {
+    if (building || !DATABASE_URL?.trim()) return;
+    try {
+        await storeRequestError(getDb(), {
+            requestId: (event.locals.requestId ??= randomUUID()),
+            guildId: event.locals.verifiedGuildId ?? null,
+            method: requestMethod(event.request.method),
+            route: event.route.id,
+            status,
+            kind
+        });
+    } catch {
+        console.warn('web_request_errors', 'write_failed', event.locals.requestId);
+    }
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
     event.locals.requestId = randomUUID();
+    event.locals.pendingRequestError = null;
     event.setHeaders({ 'x-request-id': event.locals.requestId });
     return observeRequest(
         {
             requestId: event.locals.requestId,
             routeId: event.route.id,
             method: event.request.method,
-            isDataRequest: event.isDataRequest
+            isDataRequest: event.isDataRequest,
+            onGuildVerified(guildId) {
+                if (guildId === event.params.guildId) event.locals.verifiedGuildId = guildId;
+            }
         },
         async () => {
+            let response: Response | undefined;
             try {
                 event.locals.actor = null;
                 event.locals.user = null;
@@ -114,7 +147,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                         notePhase('accessMs', performance.now() - accessStarted);
                     }
                 }
-                return await resolve(event);
+                response = await resolve(event);
+                return response;
             } catch (cause) {
                 cause = operationalFailure(cause);
                 if (isRedirect(cause) || isHttpError(cause)) {
@@ -127,16 +161,23 @@ export const handle: Handle = async ({ event, resolve }) => {
                     error(cause.status, cause.message);
                 }
                 throw cause;
+            } finally {
+                const issue = event.locals.pendingRequestError;
+                delete event.locals.pendingRequestError;
+                if (issue) await recordError(event, issue.status, issue.kind);
+                else if (response && response.status >= 400 && response.status <= 599) {
+                    await recordError(event, response.status, null);
+                }
             }
         }
     );
 };
 
 /** SvelteKit 기본 원시 오류 출력 대신 요청 요약의 허용된 코드만 남긴다. 공개 오류 문구는 유지한다. */
-export const handleError: HandleServerError = ({ kind, error: cause }) => {
+export const handleError: HandleServerError = ({ event, kind, error: cause }) => {
+    const status = kind === 'unknown' ? 500 : cause.status;
     if (kind === 'unknown') noteRequestError(cause);
     else if (!currentOperationCode()) {
-        const status = cause && typeof cause === 'object' && 'status' in cause ? cause.status : 500;
         noteOperationIssue(
             status === 404
                 ? 'NOT_FOUND'
@@ -152,6 +193,12 @@ export const handleError: HandleServerError = ({ kind, error: cause }) => {
                           ? 'SERVICE_UNAVAILABLE'
                           : 'INTERNAL_ERROR'
         );
+    }
+    // 렌더링 중 동기 훅을 유지하고, 응답이 끝난 뒤 전달된 예외도 같은 요청 ID로 저장한다.
+    if (event.locals.pendingRequestError !== undefined) {
+        event.locals.pendingRequestError ??= { status, kind };
+    } else {
+        void recordError(event, status, kind);
     }
     return {};
 };

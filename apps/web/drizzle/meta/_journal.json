@@ -169,6 +169,13 @@
       "when": 1795585511024,
       "tag": "0023_standby_reservations",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795752990231,
+      "tag": "0024_web_request_errors",
+      "breakpoints": true
     }
   ]
 }

@@ -117,7 +117,7 @@ for (const width of [1440, 390])
                 assert.equal(await page.getByRole('tab').count(), 0);
                 assert.equal(await input.count(), 1);
                 assert.equal(await submit.count(), 1);
-                for (const name of ['멤버', 'Discord 연동', '변경 이력', '시즌']) {
+                for (const name of ['멤버', 'Discord 연동', '변경 이력', '오류 로그', '시즌']) {
                     const button = views.getByRole('button', { name, exact: true });
                     assert.equal(await button.count(), 1);
                     assert.equal(await button.getAttribute('type'), 'button');
@@ -127,7 +127,7 @@ for (const width of [1440, 390])
                             return bounds.left >= 0 && bounds.right <= innerWidth && bounds.height >= 44;
                         }),
                         true,
-                        '네 관리 항목을 모바일에서도 화면 안에서 조작할 수 있어야 한다.'
+                        '모든 관리 항목을 모바일에서도 화면 안에서 조작할 수 있어야 한다.'
                     );
                 }
                 assert.equal(await page.getByRole('link', { name: '관리', exact: true }).count(), 0);

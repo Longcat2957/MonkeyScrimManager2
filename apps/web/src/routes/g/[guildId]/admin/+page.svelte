@@ -2,11 +2,12 @@
     import Button from '#lib/components/common/Button.svelte';
     import TextField from '#lib/components/common/TextField.svelte';
     import type { MenuAction } from '#lib/components/common/menu.ts';
-    import { goto } from '$app/navigation';
+    import { goto, invalidate } from '$app/navigation';
     import { navigating, page } from '$app/state';
     import { SERVICE_NAME } from '#lib/branding.ts';
     import DiscordSettingRow from '#lib/components/admin/DiscordSettingRow.svelte';
     import GuildAuditHistory from '#lib/components/admin/GuildAuditHistory.svelte';
+    import GuildRequestErrors from '#lib/components/admin/GuildRequestErrors.svelte';
     import GuildSeasonManagement from '#lib/components/admin/GuildSeasonManagement.svelte';
     import MemberRiotAccountsDialog from '#lib/components/admin/MemberRiotAccountsDialog.svelte';
     import PageNav from '#lib/components/common/PageNav.svelte';
@@ -34,6 +35,7 @@
         { key: 'members', text: '멤버' },
         { key: 'discord', text: 'Discord 연동' },
         { key: 'audit', text: '변경 이력' },
+        { key: 'errors', text: '오류 로그' },
         { key: 'seasons', text: '시즌' }
     ] as const;
     const active = $derived(TABS.findIndex((tab) => tab.key === data.tab));
@@ -171,7 +173,7 @@
     <div
         role="group"
         aria-label="관리 항목"
-        class="grid min-w-0 grid-cols-2 gap-1 rounded-box border border-line bg-surface p-1 sm:grid-cols-4 xl:sticky xl:top-6 xl:grid-cols-1"
+        class="grid min-w-0 grid-cols-2 gap-1 rounded-box border border-line bg-surface p-1 sm:grid-cols-5 xl:sticky xl:top-6 xl:grid-cols-1"
     >
         {#each TABS as tab, index (tab.key)}
             <button
@@ -205,6 +207,26 @@
                 label="변경 이력 쪽 이동"
                 onchange={(current) => navigate({ page: current })}
             />
+        </section>
+    {:else if data.tab === 'errors'}
+        <section aria-labelledby="errors" class="panel min-w-0" aria-busy={Boolean(navigating.to)}>
+            <h2 id="errors" class="panel-bar font-bold">오류 로그</h2>
+            {#if data.errors}
+                <GuildRequestErrors entries={data.errors.entries} total={data.errors.total} />
+                <PageNav
+                    total={data.errors.total}
+                    pageSize={data.pageSize}
+                    current={data.page}
+                    label="오류 로그 쪽 이동"
+                    onchange={(current) => navigate({ page: current })}
+                />
+            {:else}
+                <SectionState
+                    state="error"
+                    message="오류 로그를 불러오지 못했어요"
+                    onretry={() => invalidate('app:guild-request-errors')}
+                />
+            {/if}
         </section>
     {:else if data.tab === 'discord'}
         <section aria-labelledby="discord" class="grid min-w-0 gap-3">

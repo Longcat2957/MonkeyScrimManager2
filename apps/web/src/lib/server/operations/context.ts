@@ -34,6 +34,7 @@ export type OperationCode =
 type Duration = { count: number; totalMs: number; maxMs: number };
 type Observation = {
     requestId: string;
+    onGuildVerified?: (guildId: string) => void;
     route: string;
     kind: string;
     method: string;
@@ -50,6 +51,10 @@ const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIO
 // statement timeout보다 훨씬 짧은 값으로 실제 병목 후보만 남긴다.
 const SLOW_DATABASE_MS = 200;
 
+export function requestMethod(method: string) {
+    return methods.has(method) ? method : 'OTHER';
+}
+
 function round(milliseconds: number) {
     return Math.round(milliseconds * 100) / 100;
 }
@@ -58,6 +63,11 @@ function addDuration(target: Duration, durationMs: number) {
     target.count += 1;
     target.totalMs += durationMs;
     target.maxMs = Math.max(target.maxMs, durationMs);
+}
+
+/** 요청에서 실제로 확인한 길드만 서버 훅에 전달한다. */
+export function noteVerifiedGuild(guildId: string) {
+    observations.getStore()?.onGuildVerified?.(guildId);
 }
 
 export function currentOperationCode() {
@@ -130,13 +140,20 @@ function requestKind(routeId: string | null, method: string, isDataRequest: bool
 
 /** 라우트 ID는 manifest의 템플릿만 받는다. URL·헤더·본문·실행자 식별자는 받지 않는다. */
 export function observeRequest(
-    input: { requestId: string; routeId: string | null; method: string; isDataRequest?: boolean },
+    input: {
+        requestId: string;
+        routeId: string | null;
+        method: string;
+        isDataRequest?: boolean;
+        onGuildVerified?: (guildId: string) => void;
+    },
     run: () => Promise<Response>,
     write: (line: string) => void = (line) => console.info(line)
 ) {
-    const method = methods.has(input.method) ? input.method : 'OTHER';
+    const method = requestMethod(input.method);
     const state: Observation = {
         requestId: input.requestId,
+        onGuildVerified: input.onGuildVerified,
         route: input.routeId ?? 'unmatched',
         kind: requestKind(input.routeId, method, input.isDataRequest ?? false),
         method,

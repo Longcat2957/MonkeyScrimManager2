@@ -44,6 +44,35 @@ const discord = new Map<string, GuildDiscord>([
 
 const auditEntries = new Map<string, GuildAuditEntry[]>();
 
+const requestErrorSamples = [
+    ['GET', '/g/[guildId]/scrims/[scrimId]/auction/live', 503, 'app'],
+    ['POST', '/g/[guildId]/scrims/[scrimId]/auction', 409, null],
+    ['GET', '/g/[guildId]/admin', 403, 'app'],
+    ['POST', '/g/[guildId]/scrims/[scrimId]/result', 413, null],
+    ['GET', '/g/[guildId]/matches/[matchId]', 404, 'app'],
+    ['GET', '/g/[guildId]/stats', 500, 'unknown'],
+    ['POST', '/g/[guildId]/admin', 400, null],
+    ['GET', '/g/[guildId]/players/[userId]', 404, 'app']
+] as const;
+
+const sampleTime = Date.now();
+const requestErrors = Array.from({ length: 24 }, (_, index) => {
+    const [method, route, status, kind] = requestErrorSamples[index % requestErrorSamples.length]!;
+    return {
+        requestId: crypto.randomUUID(),
+        occurredAt: new Date(sampleTime - (4 + index * 37) * 60_000),
+        method,
+        route,
+        status,
+        kind
+    };
+});
+
+export function listMockGuildRequestErrors(guildId: string, page: number, pageSize: number) {
+    const rows = guildId === 'devGuild001' ? requestErrors : [];
+    return { entries: rows.slice((page - 1) * pageSize, page * pageSize), total: rows.length };
+}
+
 function mockIdentity(guildId: string, userId: string) {
     return {
         userId,

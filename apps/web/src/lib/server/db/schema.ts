@@ -1,3 +1,4 @@
+import type { CaughtError } from '@sveltejs/kit/hooks';
 import { relations, sql } from 'drizzle-orm';
 import type { GuildAuditKind } from '../../features/guild/audit.ts';
 import type { GuildDiscordSettingKey } from '../../features/guild/types.ts';
@@ -137,6 +138,27 @@ export const guilds = pgTable('guilds', {
         .notNull()
         .$onUpdate(() => new Date())
 });
+
+export const webRequestErrors = pgTable(
+    'web_request_errors',
+    {
+        requestId: uuid('request_id').primaryKey(),
+        occurredAt: timestamp('occurred_at', { withTimezone: true, precision: 3 }).defaultNow().notNull(),
+        guildId: text('guild_id').references(() => guilds.id, { onDelete: 'set null' }),
+        method: text('method').notNull(),
+        route: text('route'),
+        status: integer('status').notNull(),
+        kind: text('kind').$type<CaughtError['kind']>()
+    },
+    (table) => [
+        index('web_request_errors_guild_time_idx').on(
+            table.guildId,
+            table.occurredAt.desc(),
+            table.requestId.desc()
+        ),
+        index('web_request_errors_time_idx').on(table.occurredAt)
+    ]
+);
 
 // 현재 사용자와 길드의 연결 및 길드별 서비스 권한을 관리한다. 과거 경기 참가 이력과는 구분한다.
 export const guildMembers = pgTable(
